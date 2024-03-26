@@ -1,0 +1,1 @@
+export const operations = { "getNodes": { "path": "/nodes", "method": "get" }, "get_captivemessages": { "path": "/captiveMessages", "method": "get" }, "post_delivermessage-messageid": { "path": "/deliverMessage/:messageId", "method": "post" }, "post_reset": { "path": "/reset", "method": "post" } } as const;
