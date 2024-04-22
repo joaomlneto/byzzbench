@@ -1,17 +1,16 @@
 package bftbench.runner.pbft;
 
 import bftbench.runner.Node;
-import bftbench.runner.Transport;
 import bftbench.runner.pbft.message.*;
 import bftbench.runner.pbft.pojo.ReplicaRequestKey;
 import bftbench.runner.pbft.pojo.ReplicaTicketPhase;
 import bftbench.runner.pbft.pojo.ViewChangeResult;
+import bftbench.runner.transport.Transport;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.java.Log;
 
 import java.io.Serializable;
-import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -19,7 +18,6 @@ import java.util.concurrent.atomic.AtomicLong;
 
 @Log
 public class PbftNode<O extends Serializable, R extends Serializable> extends Node {
-    private final transient MessageDigest md = MessageDigest.getInstance("SHA-1");
 
     @Getter
     private final int tolerance;
@@ -55,10 +53,6 @@ public class PbftNode<O extends Serializable, R extends Serializable> extends No
         this.tolerance = tolerance;
         this.timeout = timeout;
         this.messageLog = messageLog;
-    }
-
-    protected byte[] digest(Serializable message) {
-        return md.digest(message.toString().getBytes());
     }
 
     public Collection<ReplicaRequestKey> activeTimers() {

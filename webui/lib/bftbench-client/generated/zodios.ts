@@ -1,7 +1,12 @@
 import { makeApi, Zodios } from "@zodios/core";
 import { getNodesQueryResponseSchema } from "./zod/getNodesSchema";
+import { getNodeByIdQueryResponseSchema, getNodeByIdPathParamsSchema } from "./zod/getNodeByIdSchema";
 import { getCaptivemessagesQueryResponseSchema } from "./zod/getCaptivemessagesSchema";
-import { postDelivermessageMessageidMutationResponseSchema, postDelivermessageMessageidPathParamsSchema } from "./zod/postDelivermessageMessageidSchema";
+import { getMessagesCaptiveQueryResponseSchema } from "./zod/getMessagesCaptiveSchema";
+import { getMessagesDeliveredQueryResponseSchema } from "./zod/getMessagesDeliveredSchema";
+import { getMessagesDroppedQueryResponseSchema } from "./zod/getMessagesDroppedSchema";
+import { postMessageMessageidDeliverMutationResponseSchema, postMessageMessageidDeliverPathParamsSchema } from "./zod/postMessageMessageidDeliverSchema";
+import { postMessageMessageidDropMutationResponseSchema, postMessageMessageidDropPathParamsSchema } from "./zod/postMessageMessageidDropSchema";
 import { postResetMutationResponseSchema } from "./zod/postResetSchema";
 
  export const endpoints = makeApi([
@@ -16,6 +21,22 @@ import { postResetMutationResponseSchema } from "./zod/postResetSchema";
     },
     {
         method: "get",
+        path: "/node/:nodeId",
+        description: ``,
+        requestFormat: "json",
+        parameters: [
+            {
+                name: "nodeId",
+                description: `The ID of the node`,
+                type: "Path",
+                schema: getNodeByIdPathParamsSchema.shape["nodeId"]
+            }
+        ],
+        response: getNodeByIdQueryResponseSchema,
+        errors: [],
+    },
+    {
+        method: "get",
         path: "/captiveMessages",
         description: ``,
         requestFormat: "json",
@@ -24,8 +45,35 @@ import { postResetMutationResponseSchema } from "./zod/postResetSchema";
         errors: [],
     },
     {
+        method: "get",
+        path: "/messages/captive",
+        description: ``,
+        requestFormat: "json",
+        parameters: [],
+        response: getMessagesCaptiveQueryResponseSchema,
+        errors: [],
+    },
+    {
+        method: "get",
+        path: "/messages/delivered",
+        description: ``,
+        requestFormat: "json",
+        parameters: [],
+        response: getMessagesDeliveredQueryResponseSchema,
+        errors: [],
+    },
+    {
+        method: "get",
+        path: "/messages/dropped",
+        description: ``,
+        requestFormat: "json",
+        parameters: [],
+        response: getMessagesDroppedQueryResponseSchema,
+        errors: [],
+    },
+    {
         method: "post",
-        path: "/deliverMessage/:messageId",
+        path: "/message/:messageId/deliver",
         description: ``,
         requestFormat: "json",
         parameters: [
@@ -33,10 +81,26 @@ import { postResetMutationResponseSchema } from "./zod/postResetSchema";
                 name: "messageId",
                 description: `The ID of the message to deliver`,
                 type: "Path",
-                schema: postDelivermessageMessageidPathParamsSchema.shape["messageId"]
+                schema: postMessageMessageidDeliverPathParamsSchema.shape["messageId"]
             }
         ],
-        response: postDelivermessageMessageidMutationResponseSchema,
+        response: postMessageMessageidDeliverMutationResponseSchema,
+        errors: [],
+    },
+    {
+        method: "post",
+        path: "/message/:messageId/drop",
+        description: ``,
+        requestFormat: "json",
+        parameters: [
+            {
+                name: "messageId",
+                description: `The ID of the message to drop`,
+                type: "Path",
+                schema: postMessageMessageidDropPathParamsSchema.shape["messageId"]
+            }
+        ],
+        response: postMessageMessageidDropMutationResponseSchema,
         errors: [],
     },
     {

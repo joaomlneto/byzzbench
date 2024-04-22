@@ -1,74 +1,30 @@
 package bftbench.runner.api;
 
-import com.google.gson.*;
-import com.google.gson.reflect.TypeToken;
-import com.google.gson.stream.JsonReader;
-import com.google.gson.stream.JsonWriter;
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
 import spark.ResponseTransformer;
 
 import java.io.IOException;
-import java.util.Base64;
-import java.util.concurrent.atomic.AtomicReference;
+import java.io.StringWriter;
 
 public class JsonResponseTransformer implements ResponseTransformer {
-
-    private final Gson gson;
-
-    // type adapter factory that serializes the object as usual, but also
-    // includes the class name in the serialized json in the __className__ field
-    public static class ClassNameTypeAdapterFactory implements TypeAdapterFactory {
-
-        @Override
-        public <T> TypeAdapter<T> create(Gson gson, TypeToken<T> typeToken) {
-            final TypeAdapter<T> delegate = gson.getDelegateAdapter(this, typeToken);
-            final TypeAdapter<JsonElement> elementAdapter = gson.getAdapter(JsonElement.class);
-
-            return new TypeAdapter<T>() {
-                @Override
-                public void write(JsonWriter out, T value) throws IOException {
-                    if (value instanceof byte[]) {
-                        out.value(Base64.getEncoder().encodeToString((byte[]) value));
-                        return;
-                    }
-                    if (value instanceof AtomicReference atomicReference) {
-                        //value = ((AtomicReference<T>) value).get();
-                        out.value(atomicReference.get().toString());
-                        return;
-                    }
-                    JsonElement tree = delegate.toJsonTree(value);
-                    if (tree.isJsonObject()) {
-                        tree.getAsJsonObject().addProperty("__className__", value.getClass().getName());
-                    }
-                    elementAdapter.write(out, tree);
-                }
-
-                @Override
-                public T read(JsonReader in) throws IOException {
-                    return delegate.read(in);
-                }
-            };
+    @Override
+    public String render(Object data) throws Exception {
+        try {
+            ObjectMapper mapper = new ObjectMapper();
+            mapper.enable(SerializationFeature.INDENT_OUTPUT);
+            mapper.configure(SerializationFeature.WRAP_ROOT_VALUE, false);
+            mapper.setVisibility(mapper.getSerializationConfig().getDefaultVisibilityChecker()
+                    .withFieldVisibility(JsonAutoDetect.Visibility.ANY)
+                    .withGetterVisibility(JsonAutoDetect.Visibility.NONE)
+                    .withSetterVisibility(JsonAutoDetect.Visibility.NONE)
+                    .withCreatorVisibility(JsonAutoDetect.Visibility.NONE));
+            StringWriter sw = new StringWriter();
+            mapper.writeValue(sw, data);
+            return sw.toString();
+        } catch (IOException e){
+            throw new RuntimeException("IOException from a StringWriter?");
         }
     }
-
-
-    public JsonResponseTransformer() {
-        this.gson = new GsonBuilder()
-                .setPrettyPrinting()
-                .serializeNulls()
-                .registerTypeAdapterFactory(new ClassNameTypeAdapterFactory())
-                //.registerTypeAdapter(byte[].class, (JsonSerializer<byte[]>) (src, typeOfSrc, context) -> new JsonPrimitive(Base64.getEncoder().encodeToString(src)))
-                //.registerTypeAdapter(byte[].class, (JsonDeserializer<byte[]>) (json, typeOfT, context) -> Base64.getDecoder().decode(json.getAsString()))
-
-                .create();
-
-    }
-
-    @Override
-    public String render(Object model) {
-        JsonElement serializedModel = gson.toJsonTree(model);
-        // include class name in serialized json
-        serializedModel.getAsJsonObject().addProperty("__className__", model.getClass().getSimpleName());
-        return serializedModel.toString();
-    }
-
 }

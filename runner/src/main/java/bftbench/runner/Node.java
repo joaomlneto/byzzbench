@@ -1,19 +1,32 @@
 package bftbench.runner;
 
+import bftbench.runner.transport.Transport;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Getter;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.java.Log;
 
 import java.io.Serializable;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.Set;
 
 @Log
-@RequiredArgsConstructor
 @Getter
 public abstract class Node implements Serializable {
-    private final String nodeId;
+    private final transient MessageDigest md;
+    @JsonIgnore
+    private final transient String nodeId;
+    @JsonIgnore
     private final transient Set<String> nodeIds;
+    @JsonIgnore
     private final transient Transport transport;
+
+    public Node(String nodeId, Set<String> nodeIds, Transport transport) throws NoSuchAlgorithmException {
+        this.nodeId = nodeId;
+        this.nodeIds = nodeIds;
+        this.transport = transport;
+        this.md = MessageDigest.getInstance("SHA-1");
+    }
 
     protected void sendMessage(Serializable message, String recipient) {
         this.transport.sendMessage(this.nodeId, message, recipient);
@@ -33,6 +46,12 @@ public abstract class Node implements Serializable {
                 .filter(nodeId -> !nodeId.equals(this.nodeId))
                 .collect(java.util.stream.Collectors.toSet());
         this.transport.multicast(this.nodeId, otherNodes, message);
+    }
+
+
+
+    protected byte[] digest(Serializable message) {
+        return md.digest(message.toString().getBytes());
     }
 
     public abstract void handleMessage(String sender, Serializable message) throws Exception;

@@ -1,7 +1,7 @@
 /**
  * @description The status of the message delivery
 */
-export type PostDelivermessageMessageid200 = {
+export type PostMessageMessageidDrop200 = {
     /**
      * @description The status of the message delivery
      * @type string | undefined
@@ -12,7 +12,7 @@ export type PostDelivermessageMessageid200 = {
  /**
  * @description The status of the message delivery
 */
-export type PostDelivermessageMessageidMutationResponse = {
+export type PostMessageMessageidDropMutationResponse = {
     /**
      * @description The status of the message delivery
      * @type string | undefined
@@ -20,14 +20,14 @@ export type PostDelivermessageMessageidMutationResponse = {
     status?: string;
 };
 
- export type PostDelivermessageMessageidPathParams = {
+ export type PostMessageMessageidDropPathParams = {
     /**
-     * @description The ID of the message to deliver
+     * @description The ID of the message to drop
      * @type string
     */
     messageId: string;
 };
-export type PostDelivermessageMessageidMutation = {
-    Response: PostDelivermessageMessageidMutationResponse;
-    PathParams: PostDelivermessageMessageidPathParams;
+export type PostMessageMessageidDropMutation = {
+    Response: PostMessageMessageidDropMutationResponse;
+    PathParams: PostMessageMessageidDropPathParams;
 };

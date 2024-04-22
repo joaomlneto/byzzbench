@@ -1,16 +1,12 @@
 /**
  * @description OK
 */
-export type GetNodes200 = {
-    [key: string]: object;
-};
+export type GetNodes200 = string[];
 
  /**
  * @description OK
 */
-export type GetNodesQueryResponse = {
-    [key: string]: object;
-};
+export type GetNodesQueryResponse = string[];
 export type GetNodesQuery = {
     Response: GetNodesQueryResponse;
 };

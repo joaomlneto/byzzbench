@@ -18,6 +18,10 @@ dependencies {
     implementation("com.google.code.gson:gson:2.10.1")
     implementation("com.sparkjava:spark-core:2.9.4")
     implementation("org.slf4j:slf4j-simple:2.0.12")
+
+    implementation("com.fasterxml.jackson.core:jackson-core:2.17.0")
+    implementation("com.fasterxml.jackson.core:jackson-annotations:2.17.0")
+    implementation("com.fasterxml.jackson.core:jackson-databind:2.17.0")
 }
 
 application {

@@ -1,20 +1,21 @@
 "use client";
 
-import { usePostDelivermessageMessageid } from "@/lib/bftbench-client";
+import { usePostMessageMessageidDrop } from "@/lib/bftbench-client";
 import { ActionIcon } from "@mantine/core";
 import { showNotification } from "@mantine/notifications";
-import { IconSend } from "@tabler/icons-react";
+import { IconSendOff } from "@tabler/icons-react";
 import { useQueryClient } from "@tanstack/react-query";
+import React from "react";
 
-type DeliverMessageActionIconProps = {
+type DropMessageActionIconProps = {
   messageId: string;
 };
 
-export const DeliverMessageActionIcon = ({
+export const DropMessageActionIcon = ({
   messageId,
-}: DeliverMessageActionIconProps) => {
+}: DropMessageActionIconProps) => {
   const queryClient = useQueryClient();
-  const { mutate } = usePostDelivermessageMessageid(messageId);
+  const { mutate } = usePostMessageMessageidDrop(messageId);
 
   return (
     <ActionIcon
@@ -23,12 +24,12 @@ export const DeliverMessageActionIcon = ({
         mutate(null as never, {
           onSuccess: () => {
             showNotification({
-              message: `Message ${messageId} delivered`,
+              message: `Message ${messageId} dropped`,
             });
           },
           onError: () => {
             showNotification({
-              message: "Failed to deliver message",
+              message: "Failed to drop message",
               color: "red",
             });
           },
@@ -38,7 +39,7 @@ export const DeliverMessageActionIcon = ({
         });
       }}
     >
-      <IconSend />
+      <IconSendOff />
     </ActionIcon>
   );
 };

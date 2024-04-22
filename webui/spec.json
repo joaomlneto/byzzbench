@@ -22,6 +22,39 @@
             "content": {
               "application/json": {
                 "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/node/{nodeId}": {
+      "get": {
+        "operationId": "getNodeById",
+        "summary": "Get a Node by its ID",
+        "tags": ["nodes"],
+        "parameters": [
+          {
+            "name": "nodeId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The ID of the node"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
                   "type": "object",
                   "additionalProperties": {
                     "type": "object"
@@ -64,7 +97,100 @@
         }
       }
     },
-    "/deliverMessage/{messageId}": {
+    "/messages/captive": {
+      "get": {
+        "summary": "Get the list of captive messages",
+        "tags": ["nodes"],
+        "responses": {
+          "200": {
+            "description": "The list of captive messages",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string",
+                        "description": "The ID of the captive message"
+                      },
+                      "status": {
+                        "type": "string",
+                        "description": "The status of the captive message"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/messages/delivered": {
+      "get": {
+        "summary": "Get the list of dropped messages",
+        "tags": ["nodes"],
+        "responses": {
+          "200": {
+            "description": "The list of dropped messages",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string",
+                        "description": "The ID of the captive message"
+                      },
+                      "status": {
+                        "type": "string",
+                        "description": "The status of the captive message"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/messages/dropped": {
+      "get": {
+        "summary": "Get the list of dropped messages",
+        "tags": ["nodes"],
+        "responses": {
+          "200": {
+            "description": "The list of dropped messages",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string",
+                        "description": "The ID of the captive message"
+                      },
+                      "status": {
+                        "type": "string",
+                        "description": "The status of the captive message"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/message/{messageId}/deliver": {
       "post": {
         "summary": "Deliver a message",
         "tags": ["nodes"],
@@ -77,6 +203,41 @@
               "type": "string"
             },
             "description": "The ID of the message to deliver"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The status of the message delivery",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "description": "The status of the message delivery"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/message/{messageId}/drop": {
+      "post": {
+        "summary": "Drop a message",
+        "tags": ["nodes"],
+        "parameters": [
+          {
+            "name": "messageId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The ID of the message to drop"
           }
         ],
         "responses": {
