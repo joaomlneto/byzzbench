@@ -1,5 +1,5 @@
 import { NodeStateNavLink } from "@/components/NodeStateNavLink";
-import { useGetNodeById } from "@/lib/bftbench-client";
+import { useGetNode } from "@/lib/bftbench-client";
 import { Container, JsonInput, Title } from "@mantine/core";
 import React from "react";
 
@@ -8,7 +8,7 @@ export type NodeCardProps = {
 };
 
 export const NodeCard = ({ nodeId }: NodeCardProps) => {
-  const { data } = useGetNodeById(nodeId);
+  const { data } = useGetNode(nodeId);
 
   return (
     <Container fluid style={{ border: "1px solid black" }} p="md">

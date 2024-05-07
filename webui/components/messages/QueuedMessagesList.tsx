@@ -1,11 +1,11 @@
 "use client";
 
 import { MessagesList } from "@/components/messages/MessagesList";
-import { useGetMessagesCaptive } from "@/lib/bftbench-client";
+import { useGetQueuedMessages } from "@/lib/bftbench-client";
 import React from "react";
 
 export const QueuedMessagesList = () => {
-  const { data } = useGetMessagesCaptive({ query: { refetchInterval: 1000 } });
+  const { data } = useGetQueuedMessages({ query: { retry: true } });
 
-  return <MessagesList messages={data?.data ?? {}} />;
+  return <MessagesList messageIds={data?.data ?? []} />;
 };

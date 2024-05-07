@@ -1,6 +1,6 @@
 "use client";
 
-import { usePostReset } from "@/lib/bftbench-client";
+import { useReset } from "@/lib/bftbench-client";
 import { ActionIcon } from "@mantine/core";
 import { showNotification } from "@mantine/notifications";
 import { IconTrash } from "@tabler/icons-react";
@@ -9,7 +9,7 @@ import React from "react";
 
 export const ResetActionIcon = () => {
   const queryClient = useQueryClient();
-  const { mutate } = usePostReset();
+  const { mutate } = useReset();
 
   return (
     <ActionIcon

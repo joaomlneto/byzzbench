@@ -1,8 +1,11 @@
+"use client";
+
 import {
   DeliveredMessagesList,
   DroppedMessagesList,
   QueuedMessagesList,
 } from "@/components/messages";
+import { MutatorsList } from "@/components/MutatorsList";
 import { NodeList } from "@/components/NodeList";
 import { ResetActionIcon } from "@/components/ResetActionIcon";
 import { Container, Stack, Title } from "@mantine/core";
@@ -24,6 +27,9 @@ export default function Home() {
         <br />
         <Title order={3}>Dropped Messages</Title>
         <DroppedMessagesList />
+        <br />
+        <Title order={3}>Message Mutators</Title>
+        <MutatorsList />
       </Stack>
     </Container>
   );

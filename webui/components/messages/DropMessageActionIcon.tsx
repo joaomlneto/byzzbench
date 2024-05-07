@@ -1,6 +1,6 @@
 "use client";
 
-import { usePostMessageMessageidDrop } from "@/lib/bftbench-client";
+import { useDropMessage } from "@/lib/bftbench-client/generated";
 import { ActionIcon } from "@mantine/core";
 import { showNotification } from "@mantine/notifications";
 import { IconSendOff } from "@tabler/icons-react";
@@ -8,14 +8,14 @@ import { useQueryClient } from "@tanstack/react-query";
 import React from "react";
 
 type DropMessageActionIconProps = {
-  messageId: string;
+  messageId: number;
 };
 
 export const DropMessageActionIcon = ({
   messageId,
 }: DropMessageActionIconProps) => {
   const queryClient = useQueryClient();
-  const { mutate } = usePostMessageMessageidDrop(messageId);
+  const { mutate } = useDropMessage(messageId);
 
   return (
     <ActionIcon

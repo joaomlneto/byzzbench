@@ -1,20 +1,20 @@
 "use client";
 
-import { usePostMessageMessageidDeliver } from "@/lib/bftbench-client";
+import { useDeliverMessage } from "@/lib/bftbench-client/generated";
 import { ActionIcon } from "@mantine/core";
 import { showNotification } from "@mantine/notifications";
 import { IconSend } from "@tabler/icons-react";
 import { useQueryClient } from "@tanstack/react-query";
 
 type DeliverMessageActionIconProps = {
-  messageId: string;
+  messageId: number;
 };
 
 export const DeliverMessageActionIcon = ({
   messageId,
 }: DeliverMessageActionIconProps) => {
   const queryClient = useQueryClient();
-  const { mutate } = usePostMessageMessageidDeliver(messageId);
+  const { mutate } = useDeliverMessage(messageId);
 
   return (
     <ActionIcon

@@ -6,16 +6,14 @@ import React from "react";
 import { NodeCard } from "./NodeCard";
 
 export const NodeList = () => {
-  const { data } = useGetNodes({ query: { refetchInterval: 1000 } });
+  const { data: nodeIds } = useGetNodes({ query: { retry: true } });
   return (
     <Grid gutter="md">
-      {Object.entries(data?.data ?? {})
-        .filter(([id, node]) => id !== "__className__")
-        .map(([id, node]) => (
-          <Grid.Col span="auto" key={id}>
-            <NodeCard nodeId={node} />
-          </Grid.Col>
-        ))}
+      {nodeIds?.data.map((nodeId) => (
+        <Grid.Col span="auto" key={nodeId}>
+          <NodeCard nodeId={nodeId} />
+        </Grid.Col>
+      ))}
     </Grid>
   );
 };
