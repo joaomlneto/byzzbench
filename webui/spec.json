@@ -1,282 +1,330 @@
-{
-  "openapi": "3.0.3",
-  "info": {
-    "title": "BFT Bench API",
-    "description": "Inspect and control the BFT Bench",
-    "version": "1.0.0"
-  },
-  "servers": [
-    {
-      "url": "http://localhost:4567"
-    }
-  ],
-  "paths": {
-    "/nodes": {
-      "get": {
-        "operationId": "getNodes",
-        "summary": "Get the list of nodes",
-        "tags": ["nodes"],
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "type": "string"
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/node/{nodeId}": {
-      "get": {
-        "operationId": "getNodeById",
-        "summary": "Get a Node by its ID",
-        "tags": ["nodes"],
-        "parameters": [
-          {
-            "name": "nodeId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            },
-            "description": "The ID of the node"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "additionalProperties": {
-                    "type": "object"
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/captiveMessages": {
-      "get": {
-        "summary": "Get the list of captive messages",
-        "tags": ["nodes"],
-        "responses": {
-          "200": {
-            "description": "The list of captive messages",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "type": "object",
-                    "properties": {
-                      "id": {
-                        "type": "string",
-                        "description": "The ID of the captive message"
-                      },
-                      "status": {
-                        "type": "string",
-                        "description": "The status of the captive message"
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/messages/captive": {
-      "get": {
-        "summary": "Get the list of captive messages",
-        "tags": ["nodes"],
-        "responses": {
-          "200": {
-            "description": "The list of captive messages",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "type": "object",
-                    "properties": {
-                      "id": {
-                        "type": "string",
-                        "description": "The ID of the captive message"
-                      },
-                      "status": {
-                        "type": "string",
-                        "description": "The status of the captive message"
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/messages/delivered": {
-      "get": {
-        "summary": "Get the list of dropped messages",
-        "tags": ["nodes"],
-        "responses": {
-          "200": {
-            "description": "The list of dropped messages",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "type": "object",
-                    "properties": {
-                      "id": {
-                        "type": "string",
-                        "description": "The ID of the captive message"
-                      },
-                      "status": {
-                        "type": "string",
-                        "description": "The status of the captive message"
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/messages/dropped": {
-      "get": {
-        "summary": "Get the list of dropped messages",
-        "tags": ["nodes"],
-        "responses": {
-          "200": {
-            "description": "The list of dropped messages",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "type": "object",
-                    "properties": {
-                      "id": {
-                        "type": "string",
-                        "description": "The ID of the captive message"
-                      },
-                      "status": {
-                        "type": "string",
-                        "description": "The status of the captive message"
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/message/{messageId}/deliver": {
-      "post": {
-        "summary": "Deliver a message",
-        "tags": ["nodes"],
-        "parameters": [
-          {
-            "name": "messageId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            },
-            "description": "The ID of the message to deliver"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "The status of the message delivery",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "status": {
-                      "type": "string",
-                      "description": "The status of the message delivery"
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/message/{messageId}/drop": {
-      "post": {
-        "summary": "Drop a message",
-        "tags": ["nodes"],
-        "parameters": [
-          {
-            "name": "messageId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            },
-            "description": "The ID of the message to drop"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "The status of the message delivery",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "status": {
-                      "type": "string",
-                      "description": "The status of the message delivery"
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/reset": {
-        "post": {
-            "summary": "Reset the BFT Bench",
-            "tags": ["nodes"],
-            "responses": {
-            "200": {
-                "description": "The status of the reset",
-                "content": {
-                "application/json": {
-                    "schema": {
-                    "type": "string"
-                    }
-                }
-                }
-            }
-            }
-        }
-    }
-  }
-}
+openapi: 3.1.0
+x-stoplight:
+  id: ncutrj66wg1zj
+info:
+  title: ByzzBench
+  version: '1.0'
+  contact:
+    name: Joao Neto
+    email: J.M.LouroNeto@tudelft.nl
+  description: The REST API for the ByzzBench network controller
+servers:
+  - url: 'http://localhost:4567'
+    description: Local
+paths:
+  /nodes:
+    get:
+      summary: Get Node IDs
+      tags:
+        - nodes
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  x-stoplight:
+                    id: evee51z4aae45
+                  type: string
+      operationId: get-nodes
+      requestBody:
+        content: {}
+      description: Return the list of Node IDs
+  '/node/{nodeId}':
+    parameters:
+      - schema:
+          type: string
+        name: nodeId
+        in: path
+        required: true
+        description: Node ID
+    get:
+      summary: Get Node Information
+      tags:
+        - nodes
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Node'
+      operationId: get-node
+      description: Return the current state of a node by its identifier.
+  /messages:
+    get:
+      summary: Get All Message IDs
+      tags:
+        - messages
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  x-stoplight:
+                    id: 62m46ozmtdtmo
+                  type: integer
+      operationId: get-message-ids
+      description: Get IDs of all messages ever created
+  /messages/queued:
+    get:
+      summary: Get Queued Message IDs
+      tags:
+        - messages
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  x-stoplight:
+                    id: 62m46ozmtdtmo
+                  type: integer
+      operationId: get-queued-messages
+      description: Get IDs of messages currently in transit
+    parameters: []
+  /messages/dropped:
+    get:
+      summary: Get Dropped Message IDs
+      tags:
+        - messages
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  x-stoplight:
+                    id: 62m46ozmtdtmo
+                  type: integer
+      operationId: get-dropped-messages
+      description: Get IDs of messages that were dropped
+    parameters: []
+  /messages/delivered:
+    get:
+      summary: Get Dropped Message IDs
+      tags:
+        - messages
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  x-stoplight:
+                    id: 62m46ozmtdtmo
+                  type: integer
+      operationId: get-delivered-messages
+      description: Get IDs of messages that have been delivered to the recipient
+    parameters: []
+  '/message/{messageId}':
+    parameters:
+      - schema:
+          type: integer
+        name: messageId
+        in: path
+        required: true
+    get:
+      summary: Get message details
+      tags:
+        - messages
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Message'
+      operationId: get-message
+      description: Get details on a message by its id
+  '/message/{messageId}/deliver':
+    parameters:
+      - schema:
+          type: integer
+        name: messageId
+        in: path
+        required: true
+    post:
+      summary: Deliver Message
+      operationId: deliver-message
+      responses:
+        '200':
+          description: OK
+      tags:
+        - messages
+      description: Deliver a message to its recipient
+  '/message/{messageId}/drop':
+    parameters:
+      - schema:
+          type: integer
+        name: messageId
+        in: path
+        required: true
+    post:
+      summary: Drop Message
+      operationId: drop-message
+      responses:
+        '200':
+          description: OK
+      tags:
+        - messages
+      description: Drop a message
+  /reset:
+    parameters: []
+    post:
+      summary: Reset Simulation
+      operationId: reset
+      responses:
+        '200':
+          description: OK
+      description: Reset the simulation and revert to its original state
+      tags:
+        - global
+  /mutators:
+    get:
+      summary: Get Registered Mutator IDs
+      tags:
+        - mutators
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  x-stoplight:
+                    id: ikj64i3w7l1qk
+                  type: integer
+      operationId: get-mutator-ids
+      description: Retrieve the IDs of all registered mutators
+  '/mutators/{mutatorId}':
+    parameters:
+      - schema:
+          type: integer
+        name: mutatorId
+        in: path
+        required: true
+    get:
+      summary: Get Message Mutator details
+      tags:
+        - mutators
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageMutator'
+      operationId: get-mutator-by-id
+      description: Retrieve details about a given message mutator
+  '/message/{messageId}/mutate/{mutatorId}':
+    parameters:
+      - schema:
+          type: integer
+        name: messageId
+        in: path
+        required: true
+      - schema:
+          type: integer
+        name: mutatorId
+        in: path
+        required: true
+    get:
+      summary: Mutate Message
+      tags:
+        - mutators
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Message'
+      operationId: mutate-message
+      description: Apply a given mutation to a message
+components:
+  schemas:
+    Message:
+      title: Message
+      x-stoplight:
+        id: bk4kw4lj9wo8m
+      type: object
+      properties:
+        messageId:
+          type: integer
+          x-stoplight:
+            id: ra5f5xoya39h0
+        senderId:
+          type: string
+          x-stoplight:
+            id: ujjnl7gfk5951
+        recipientId:
+          type: string
+          x-stoplight:
+            id: b8k42uyn3gvr3
+        payload:
+          type: object
+          x-stoplight:
+            id: p6pja28q32j5m
+          properties:
+            __className__:
+              type: string
+              x-stoplight:
+                id: 20frctrt0dlxn
+        status:
+          type: string
+          x-stoplight:
+            id: jx44zl56dvj97
+          enum:
+            - QUEUED
+            - DELIVERED
+            - DROPPED
+    Node:
+      title: Node
+      x-stoplight:
+        id: hl8yuqaa8xrwl
+      type: object
+      properties:
+        nodeId:
+          type: string
+          x-stoplight:
+            id: 3jlhgti9efgbi
+    MessageMutator:
+      title: Message Mutator
+      x-stoplight:
+        id: rzwx09c3w1ynw
+      type: object
+      properties:
+        mutatorId:
+          type: string
+          x-stoplight:
+            id: wqcx8lkrr3yja
+        name:
+          type: string
+          x-stoplight:
+            id: ufcnojyrsoiyt
+        inputClasses:
+          type: array
+          x-stoplight:
+            id: mx1o26uimulhd
+          items:
+            x-stoplight:
+              id: 4xpy5yerumyjy
+            type: string
+tags:
+  - name: global
+  - name: messages
+  - name: mutators
+  - name: nodes
