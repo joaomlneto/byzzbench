@@ -1,16 +1,23 @@
-package bftbench.runner.pbft.message;
+package bftbench.runner.protocols.pbft.message;
 
+import bftbench.runner.transport.MessagePayload;
 import lombok.Data;
+import lombok.With;
 
-import java.io.Serializable;
 import java.util.Collection;
 import java.util.Map;
 
 @Data
-public class ViewChangeMessage implements Serializable {
+@With
+public class ViewChangeMessage implements MessagePayload {
     private final long newViewNumber;
     private final long lastSeqNumber;
     private final Collection<CheckpointMessage> checkpointProofs;
     private final Map<Long, Collection<IPhaseMessage>> preparedProofs;
     private final String replicaId;
+
+    @Override
+    public String getType() {
+        return "VIEW-CHANGE";
+    }
 }

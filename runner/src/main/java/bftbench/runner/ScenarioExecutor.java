@@ -10,7 +10,7 @@ public abstract class ScenarioExecutor {
     protected final Transport transport;
 
     @Getter
-    protected final Map<String, Node> nodes = new java.util.HashMap<>();
+    protected final Map<String, Replica> nodes = new java.util.HashMap<>();
 
     public ScenarioExecutor(Transport transport) {
         this.transport = transport;
@@ -23,11 +23,12 @@ public abstract class ScenarioExecutor {
         this.setup();
     }
 
-    public void addNode(Node node) {
-        this.nodes.put(node.getNodeId(), node);
+    public void addNode(Replica replica) {
+        this.nodes.put(replica.getNodeId(), replica);
     }
 
 
     public abstract void setup();
+
     public abstract void run();
 }

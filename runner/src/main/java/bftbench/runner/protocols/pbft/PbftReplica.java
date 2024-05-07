@@ -1,54 +1,45 @@
-package bftbench.runner.pbft;
+package bftbench.runner.protocols.pbft;
 
-import bftbench.runner.Node;
-import bftbench.runner.pbft.message.*;
-import bftbench.runner.pbft.pojo.ReplicaRequestKey;
-import bftbench.runner.pbft.pojo.ReplicaTicketPhase;
-import bftbench.runner.pbft.pojo.ViewChangeResult;
+import bftbench.runner.Replica;
+import bftbench.runner.protocols.pbft.message.*;
+import bftbench.runner.protocols.pbft.pojo.ReplicaRequestKey;
+import bftbench.runner.protocols.pbft.pojo.ReplicaTicketPhase;
+import bftbench.runner.protocols.pbft.pojo.ViewChangeResult;
 import bftbench.runner.transport.Transport;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.java.Log;
 
 import java.io.Serializable;
-import java.security.NoSuchAlgorithmException;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 
 @Log
-public class PbftNode<O extends Serializable, R extends Serializable> extends Node {
+public class PbftReplica<O extends Serializable, R extends Serializable> extends Replica {
 
     @Getter
     private final int tolerance;
 
     @Getter
     private final long timeout;
-
+    private final AtomicLong seqCounter = new AtomicLong(1);
+    @Getter
+    private final MessageLog messageLog;
+    private final Map<ReplicaRequestKey, LinearBackoff> timeouts = new ConcurrentHashMap<>();
     @Getter
     @Setter
     private volatile long viewNumber = 1;
-
     @Getter
     @Setter
     private volatile boolean disgruntled = false;
 
-    private final AtomicLong seqCounter = new AtomicLong(1);
-
-    @Getter
-    private final MessageLog messageLog;
-
-    @Getter
-    private final List<Serializable> operationLog = new LinkedList<>();
-
-    private final Map<ReplicaRequestKey, LinearBackoff> timeouts = new ConcurrentHashMap<>();
-
-    public PbftNode(String replicaId,
-                          Set<String> nodeIds,
-                          int tolerance,
-                          long timeout,
-                          MessageLog messageLog,
-                          Transport transport) throws NoSuchAlgorithmException {
+    public PbftReplica(String replicaId,
+                       Set<String> nodeIds,
+                       int tolerance,
+                       long timeout,
+                       MessageLog messageLog,
+                       Transport transport) {
         super(replicaId, nodeIds, transport);
         this.tolerance = tolerance;
         this.timeout = timeout;
@@ -110,9 +101,9 @@ public class PbftNode<O extends Serializable, R extends Serializable> extends No
     private void resendReply(String clientId, Ticket<O, R> ticket) {
         ticket.getResult().thenAccept(result -> {
             long viewNumber = ticket.getViewNumber();
-            RequestMessage<O> request = ticket.getRequest();
+            RequestMessage request = ticket.getRequest();
             long timestamp = request.getTimestamp();
-            ReplyMessage<R> reply = new ReplyMessage<>(
+            ReplyMessage reply = new ReplyMessage(
                     viewNumber,
                     timestamp,
                     clientId,
@@ -124,7 +115,7 @@ public class PbftNode<O extends Serializable, R extends Serializable> extends No
         });
     }
 
-    private void recvRequest(RequestMessage<O> request, boolean wasRequestBuffered) {
+    private void recvRequest(RequestMessage request, boolean wasRequestBuffered) {
         String clientId = request.getClientId();
         long timestamp = request.getTimestamp();
 
@@ -197,7 +188,7 @@ public class PbftNode<O extends Serializable, R extends Serializable> extends No
          * 4.2 which contains the view, the sequence number, request digest,
          * and the request message that was received.
          */
-        PrePrepareMessage<O> prePrepare = new PrePrepareMessage<>(
+        PrePrepareMessage prePrepare = new PrePrepareMessage(
                 currentViewNumber,
                 seqNumber,
                 this.digest(request),
@@ -208,7 +199,7 @@ public class PbftNode<O extends Serializable, R extends Serializable> extends No
         ticket.append(prePrepare);
     }
 
-    public void recvRequest(RequestMessage<O> request) {
+    public void recvRequest(RequestMessage request) {
         // PBFT 4.4 - Do not accept REQUEST when disgruntled
         if (this.disgruntled) {
             return;
@@ -218,7 +209,7 @@ public class PbftNode<O extends Serializable, R extends Serializable> extends No
         this.recvRequest(request, false);
     }
 
-    public void sendRequest(String replicaId, RequestMessage<O> request) {
+    public void sendRequest(String replicaId, RequestMessage request) {
         this.sendMessage(request, replicaId);
     }
 
@@ -246,14 +237,14 @@ public class PbftNode<O extends Serializable, R extends Serializable> extends No
         return messageLog.isBetweenWaterMarks(seqNumber);
     }
 
-    public void recvPrePrepare(PrePrepareMessage<O> prePrepare) {
+    public void recvPrePrepare(PrePrepareMessage prePrepare) {
         if (!this.verifyPhaseMessage(prePrepare)) {
             return;
         }
 
         long currentViewNumber = this.viewNumber;
         byte[] digest = prePrepare.getDigest();
-        RequestMessage<O> request = prePrepare.getRequest();
+        RequestMessage request = prePrepare.getRequest();
         long seqNumber = prePrepare.getSequenceNumber();
 
         // PBFT 4.2 - Verify request digest
@@ -416,14 +407,14 @@ public class PbftNode<O extends Serializable, R extends Serializable> extends No
              * callback of some sort.
              */
             if (ticket.isCommittedLocal(this.tolerance) && ticket.casPhase(phase, ReplicaTicketPhase.COMMIT)) {
-                RequestMessage<O> request = ticket.getRequest();
+                RequestMessage request = ticket.getRequest();
                 if (request != null) {
-                    O operation = request.getOperation();
-                    R result = this.compute(operation);
+                    Serializable operation = request.getOperation();
+                    Serializable result = this.compute(operation);
 
                     String clientId = request.getClientId();
                     long timestamp = request.getTimestamp();
-                    ReplyMessage<R> reply = new ReplyMessage<>(
+                    ReplyMessage reply = new ReplyMessage(
                             currentViewNumber,
                             timestamp,
                             clientId,
@@ -464,7 +455,7 @@ public class PbftNode<O extends Serializable, R extends Serializable> extends No
     }
 
     private void handleNextBufferedRequest() {
-        RequestMessage<O> bufferedRequest = messageLog.popBuffer();
+        RequestMessage bufferedRequest = messageLog.popBuffer();
 
         if (bufferedRequest != null) {
             // Process the bufferred request
@@ -472,7 +463,7 @@ public class PbftNode<O extends Serializable, R extends Serializable> extends No
         }
     }
 
-    public void sendReply(String clientId, ReplyMessage<R> reply) {
+    public void sendReply(String clientId, ReplyMessage reply) {
         this.sendMessage(reply, clientId);
 
         // When prior requests are fulfilled, attempt to process the buffer
@@ -565,8 +556,8 @@ public class PbftNode<O extends Serializable, R extends Serializable> extends No
                  * dispatched after the view change occurs must have a
                  * sufficiently high sequence number to pass the watermark test.
                  */
-                Collection<PrePrepareMessage<?>> preparedProofs = newView.getPreparedProofs();
-                for (PrePrepareMessage<?> prePrepare : preparedProofs) {
+                Collection<PrePrepareMessage> preparedProofs = newView.getPreparedProofs();
+                for (PrePrepareMessage prePrepare : preparedProofs) {
                     long seqNumber = prePrepare.getSequenceNumber();
                     if (this.seqCounter.get() < seqNumber) {
                         this.seqCounter.set(seqNumber + 1);
@@ -599,10 +590,10 @@ public class PbftNode<O extends Serializable, R extends Serializable> extends No
         }
 
         long newViewNumber = newView.getNewViewNumber();
-        Collection<PrePrepareMessage<?>> preparedProofs = newView.getPreparedProofs();
-        for (PrePrepareMessage<?> prePrepare : preparedProofs) {
-            RequestMessage<O> request = (RequestMessage<O>) prePrepare.getRequest();
-            O operation = request.getOperation();
+        Collection<PrePrepareMessage> preparedProofs = newView.getPreparedProofs();
+        for (PrePrepareMessage prePrepare : preparedProofs) {
+            RequestMessage request = prePrepare.getRequest();
+            Serializable operation = request.getOperation();
 
             // PBFT 4.4 - No-op request used to fulfill the NEW-VIEW constraints
             if (operation == null) {
@@ -643,56 +634,24 @@ public class PbftNode<O extends Serializable, R extends Serializable> extends No
         return this.computePrimaryId(this.getViewNumber(), this.getNodeIds().size());
     }
 
-    public R compute(O operation) {
-        this.operationLog.add(operation.toString());
-        return (R) operation;
+    public Serializable compute(Serializable operation) {
+        this.commitOperation(operation);
+        return operation;
     }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
     @Override
     public void handleMessage(String sender, Serializable m) {
         if (m instanceof RequestMessage request) {
-            //handleClientRequest(request, sender);
             recvRequest(request);
             return;
         } else if (m instanceof PrePrepareMessage prePrepare) {
             recvPrePrepare(prePrepare);
-            //handlePrePrepare(prePrepare, sender);
             return;
         } else if (m instanceof PrepareMessage prepare) {
             recvPrepare(prepare);
-            //handlePrepare(prepare, sender);
             return;
         } else if (m instanceof CommitMessage commit) {
             recvCommit(commit);
-            //handleCommit(commit, sender);
-            return;
-        } else if (m instanceof ReplyMessage reply) {
-            //handleReply(reply, sender);
             return;
         }
         throw new RuntimeException("Unknown message type");

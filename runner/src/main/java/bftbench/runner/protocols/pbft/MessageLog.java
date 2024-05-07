@@ -1,10 +1,10 @@
-package bftbench.runner.pbft;
+package bftbench.runner.protocols.pbft;
 
-import bftbench.runner.pbft.message.*;
-import bftbench.runner.pbft.pojo.ReplicaRequestKey;
-import bftbench.runner.pbft.pojo.ReplicaTicketPhase;
-import bftbench.runner.pbft.pojo.TicketKey;
-import bftbench.runner.pbft.pojo.ViewChangeResult;
+import bftbench.runner.protocols.pbft.message.*;
+import bftbench.runner.protocols.pbft.pojo.ReplicaRequestKey;
+import bftbench.runner.protocols.pbft.pojo.ReplicaTicketPhase;
+import bftbench.runner.protocols.pbft.pojo.TicketKey;
+import bftbench.runner.protocols.pbft.pojo.ViewChangeResult;
 import lombok.Getter;
 import lombok.NonNull;
 
@@ -16,7 +16,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 
 public class MessageLog {
     private static final byte[] NULL_DIGEST = new byte[0];
-    private static final RequestMessage<Object> NULL_REQ = new RequestMessage<>(null, 0, "");
+    private static final RequestMessage NULL_REQ = new RequestMessage(null, 0, "");
 
     private final int bufferThreshold;
     @Getter
@@ -24,7 +24,7 @@ public class MessageLog {
     @Getter
     private final int watermarkInterval;
 
-    private final Deque<RequestMessage<?>> buffer = new ConcurrentLinkedDeque<>();
+    private final Deque<RequestMessage> buffer = new ConcurrentLinkedDeque<>();
 
     private final Map<ReplicaRequestKey, Ticket<?, ?>> ticketCache = new ConcurrentHashMap<>();
     private final Map<TicketKey, Ticket<?, ?>> tickets = new ConcurrentHashMap<>();
@@ -133,7 +133,7 @@ public class MessageLog {
          */
         Collection<IPhaseMessage> proof = new ArrayList<>();
         for (Object prePrepareObject : ticket.getMessages()) {
-            if (!(prePrepareObject instanceof PrePrepareMessage<?> prePrepare)) {
+            if (!(prePrepareObject instanceof PrePrepareMessage prePrepare)) {
                 continue;
             }
 
@@ -301,7 +301,7 @@ public class MessageLog {
         return new ViewChangeResult(shouldBandwagon, smallestView, beginNextVote);
     }
 
-    private Collection<PrePrepareMessage<?>> selectPreparedProofs(long newViewNumber, long minS, long maxS, Map<Long, PrePrepareMessage<?>> prePrepareMap) {
+    private Collection<PrePrepareMessage> selectPreparedProofs(long newViewNumber, long minS, long maxS, Map<Long, PrePrepareMessage> prePrepareMap) {
         /*
          * This procedure computes the prepared proofs for the NEW-VIEW message
          * that is sent by the primary when it is elected in accordance with
@@ -314,11 +314,11 @@ public class MessageLog {
          * implementation sends the request along with the PRE-PREPARE as
          * explained in DefaultReplica.
          */
-        Collection<PrePrepareMessage<?>> sequenceProofs = new ArrayList<>();
+        Collection<PrePrepareMessage> sequenceProofs = new ArrayList<>();
         for (long i = minS; minS != maxS && i <= maxS; i++) {
-            PrePrepareMessage<?> prePrepareProofMessage = prePrepareMap.get(i);
+            PrePrepareMessage prePrepareProofMessage = prePrepareMap.get(i);
             if (prePrepareProofMessage == null) {
-                prePrepareProofMessage = new PrePrepareMessage<>(
+                prePrepareProofMessage = new PrePrepareMessage(
                         newViewNumber,
                         i,
                         NULL_DIGEST,
@@ -367,7 +367,7 @@ public class MessageLog {
         long minS = Long.MAX_VALUE;
         long maxS = Long.MIN_VALUE;
         Collection<CheckpointMessage> minSProof = null;
-        Map<Long, PrePrepareMessage<?>> prePrepareMap = new HashMap<>();
+        Map<Long, PrePrepareMessage> prePrepareMap = new HashMap<>();
         for (ViewChangeMessage viewChange : newViewSet.values()) {
             long seqNumber = viewChange.getLastSeqNumber();
             Collection<CheckpointMessage> proofs = viewChange.getCheckpointProofs();
@@ -391,7 +391,7 @@ public class MessageLog {
                         continue;
                     }
 
-                    prePrepareMap.put(prePrepareSeqNumber, (PrePrepareMessage<?>) phaseMessage);
+                    prePrepareMap.put(prePrepareSeqNumber, (PrePrepareMessage) phaseMessage);
                     break;
                 }
             }
@@ -409,7 +409,7 @@ public class MessageLog {
             viewChangeProofs.add(this.produceViewChange(newViewNumber, replicaId, tolerance));
         }
 
-        Collection<PrePrepareMessage<?>> preparedProofs = this.selectPreparedProofs(newViewNumber, minS, maxS, prePrepareMap);
+        Collection<PrePrepareMessage> preparedProofs = this.selectPreparedProofs(newViewNumber, minS, maxS, prePrepareMap);
 
         return new NewViewMessage(
                 newViewNumber,
@@ -468,7 +468,7 @@ public class MessageLog {
         return this.tickets.size() >= this.bufferThreshold;
     }
 
-    public <O> void buffer(RequestMessage<O> request) {
+    public <O> void buffer(RequestMessage request) {
         this.buffer.addLast(request);
     }
 

@@ -1,4 +1,4 @@
-package bftbench.runner.pbft.pojo;
+package bftbench.runner.protocols.pbft.pojo;
 
 import lombok.Data;
 

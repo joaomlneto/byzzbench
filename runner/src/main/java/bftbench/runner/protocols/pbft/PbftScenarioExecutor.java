@@ -1,9 +1,9 @@
-package bftbench.runner.pbft;
+package bftbench.runner.protocols.pbft;
 
-import bftbench.runner.Node;
+import bftbench.runner.Replica;
 import bftbench.runner.ScenarioExecutor;
-import bftbench.runner.pbft.message.RequestMessage;
-import bftbench.runner.pbft.mutator.PrePrepareMessageMutatorFactory;
+import bftbench.runner.protocols.pbft.message.RequestMessage;
+import bftbench.runner.protocols.pbft.mutator.PrePrepareMessageMutatorFactory;
 import bftbench.runner.transport.Transport;
 import lombok.extern.java.Log;
 
@@ -23,22 +23,18 @@ public class PbftScenarioExecutor extends ScenarioExecutor {
         try {
             Set<String> nodeIds = new TreeSet<>();
             for (int i = 0; i < NUM_NODES; i++) {
-                nodeIds.add("p" + i);
+                nodeIds.add(Character.toString((char) ('A' + i)));
             }
 
-            for (int i = 0; i < NUM_NODES; i++) {
-                String nodeId = "p" + i;
+            nodeIds.forEach(nodeId -> {
                 MessageLog messageLog = new MessageLog(100, 100, 200);
-                nodes.put(nodeId, new PbftNode<String, String>(nodeId, nodeIds, 1, 1000, messageLog, transport));
-            }
+                Replica replica = new PbftReplica<String, String>(nodeId, nodeIds, 1, 1000, messageLog, transport);
+                nodes.put(nodeId, replica);
+                transport.addNode(replica);
+            });
 
-            for (Node node : nodes.values()) {
-                transport.addNode(node);
-            }
-
-            transport.registerMessageMutators(new PrePrepareMessageMutatorFactory<String>());
-        }
-        catch (Exception e) {
+            transport.registerMessageMutators(new PrePrepareMessageMutatorFactory());
+        } catch (Exception e) {
             throw new RuntimeException(e);
         }
     }
@@ -47,7 +43,7 @@ public class PbftScenarioExecutor extends ScenarioExecutor {
     public synchronized void run() {
         try {
             RequestMessage m = new RequestMessage("123", System.currentTimeMillis(), "c0");
-            nodes.get("p1").handleMessage("c0", m);
+            nodes.get("A").handleMessage("c0", m);
         } catch (Exception e) {
             e.printStackTrace();
             throw new RuntimeException(e);

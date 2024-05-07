@@ -1,4 +1,4 @@
-package bftbench.runner.pbft;
+package bftbench.runner.protocols.pbft;
 
 import lombok.Getter;
 

@@ -1,10 +1,10 @@
-package bftbench.runner.pbft;
+package bftbench.runner.protocols.pbft;
 
-import bftbench.runner.pbft.message.CommitMessage;
-import bftbench.runner.pbft.message.PrePrepareMessage;
-import bftbench.runner.pbft.message.PrepareMessage;
-import bftbench.runner.pbft.message.RequestMessage;
-import bftbench.runner.pbft.pojo.ReplicaTicketPhase;
+import bftbench.runner.protocols.pbft.message.CommitMessage;
+import bftbench.runner.protocols.pbft.message.PrePrepareMessage;
+import bftbench.runner.protocols.pbft.message.PrepareMessage;
+import bftbench.runner.protocols.pbft.message.RequestMessage;
+import bftbench.runner.protocols.pbft.pojo.ReplicaTicketPhase;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
@@ -25,14 +25,11 @@ public class Ticket<O extends Serializable, R extends Serializable> implements S
 
     @Getter
     private final Collection<Serializable> messages = new ConcurrentLinkedQueue<>();
-
-    @Getter
-    private volatile RequestMessage<O> request;
-
     private final transient AtomicReference<ReplicaTicketPhase> phase = new AtomicReference<>(ReplicaTicketPhase.PRE_PREPARE);
-
     @Getter
     private final transient CompletableFuture<R> result = new CompletableFuture<>();
+    @Getter
+    private volatile RequestMessage request;
 
     public void append(Serializable message) {
         this.messages.add(message);
@@ -54,11 +51,9 @@ public class Ticket<O extends Serializable, R extends Serializable> implements S
         final int requiredMatches = 2 * tolerance;
 
         for (Object prePrepareObject : this.messages) {
-            if (!(prePrepareObject instanceof PrePrepareMessage)) {
+            if (!(prePrepareObject instanceof PrePrepareMessage prePrepare)) {
                 continue;
             }
-
-            PrePrepareMessage<O> prePrepare = (PrePrepareMessage<O>) prePrepareObject;
 
             int matchingPrepares = 0;
             for (Object prepareObject : this.messages) {
