@@ -14,11 +14,11 @@ import java.util.Set;
 
 @Log
 @Getter
-public abstract class Replica implements Serializable {
+public abstract class Replica<T extends Serializable> implements Serializable {
     private final transient MessageDigest md;
 
     @Getter(AccessLevel.NONE)
-    private final CommitLog commitLog;
+    private final CommitLog<T> commitLog;
 
     @JsonIgnore
     private final transient String nodeId;
@@ -59,7 +59,7 @@ public abstract class Replica implements Serializable {
         this.transport.multicast(this.nodeId, otherNodes, message);
     }
 
-    protected byte[] digest(Serializable message) {
+    public byte[] digest(Serializable message) {
         return md.digest(message.toString().getBytes());
     }
 
@@ -67,9 +67,19 @@ public abstract class Replica implements Serializable {
         return this;
     }
 
-    public abstract void handleMessage(String sender, Serializable message) throws Exception;
+    public void handleMessageWrapper(String sender, MessagePayload message) {
+        try {
+            log.info(String.format("Delivering %s message from %s to %s", message.getType(), sender, this.getNodeId()));
+            this.handleMessage(sender, message);
+        } catch (Exception e) {
+            log.severe(String.format("Failed to handle message from %s: %s", sender, e.getMessage()));
+            e.printStackTrace();
+        }
+    }
 
-    public void commitOperation(Serializable message) {
+    public abstract void handleMessage(String sender, MessagePayload message) throws Exception;
+
+    public void commitOperation(T message) {
         this.commitLog.append(message);
     }
 }

@@ -14,7 +14,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
-public class MessageLog {
+public class MessageLog implements Serializable {
     private static final byte[] NULL_DIGEST = new byte[0];
     private static final RequestMessage NULL_REQ = new RequestMessage(null, 0, "");
 

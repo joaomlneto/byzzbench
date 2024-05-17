@@ -4,10 +4,10 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
-public class CommitLog implements Serializable {
-    private final List<Serializable> log = new ArrayList<>();
+public class CommitLog<T extends Serializable> implements Serializable {
+    private final List<T> log = new ArrayList<>();
 
-    public void append(Serializable operation) {
+    public void append(T operation) {
         log.add(operation);
     }
 }

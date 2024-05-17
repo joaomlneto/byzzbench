@@ -5,6 +5,7 @@ import bftbench.runner.protocols.pbft.message.*;
 import bftbench.runner.protocols.pbft.pojo.ReplicaRequestKey;
 import bftbench.runner.protocols.pbft.pojo.ReplicaTicketPhase;
 import bftbench.runner.protocols.pbft.pojo.ViewChangeResult;
+import bftbench.runner.transport.MessagePayload;
 import bftbench.runner.transport.Transport;
 import lombok.Getter;
 import lombok.Setter;
@@ -16,7 +17,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 
 @Log
-public class PbftReplica<O extends Serializable, R extends Serializable> extends Replica {
+public class PbftReplica<O extends Serializable, R extends Serializable> extends Replica<Serializable> {
 
     @Getter
     private final int tolerance;
@@ -640,7 +641,7 @@ public class PbftReplica<O extends Serializable, R extends Serializable> extends
     }
 
     @Override
-    public void handleMessage(String sender, Serializable m) {
+    public void handleMessage(String sender, MessagePayload m) {
         if (m instanceof RequestMessage request) {
             recvRequest(request);
             return;
