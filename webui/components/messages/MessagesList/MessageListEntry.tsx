@@ -37,10 +37,12 @@ export const MessageListEntry = ({ messageId }: { messageId: number }) => {
             {message.data.payload?.__className__?.split(".").pop()}
           </Text>
         </Group>
-        <Group gap="xs" wrap="nowrap">
-          <DeliverMessageActionIcon messageId={messageId} />
-          <DropMessageActionIcon messageId={messageId} />
-        </Group>
+        {message.data.status == "QUEUED" && (
+          <Group gap="xs" wrap="nowrap">
+            <DeliverMessageActionIcon messageId={messageId} />
+            <DropMessageActionIcon messageId={messageId} />
+          </Group>
+        )}
       </Group>
       {/*false && <JsonTable data={payloadWithoutClassname} />*/}
       {Object.entries(payloadWithoutClassname).map(([key, value]) => (
