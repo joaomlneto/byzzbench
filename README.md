@@ -1,12 +1,27 @@
 # bftbench
+
 BFT Protocol Benchmarking Suite
+
+This is a Gradle monorepo that contains the following modules:
+
+- `runner`: The core benchmarking suite. Currently also includes the protocol implementations.
+- `webui`: A web interface for the benchmarking suite.
+
+```
+TODO restructure project later into the following modules:
+- `bftbench-core`: The core benchmarking suite
+- `bftbench-webui`: A web interface for the benchmarking suite
+- `bftbench-protocols`: Implementations of various BFT protocols
+```
 
 ## Prerequisites
 
 For the benchmarking suite to work, you need to have the following installed on your system:
+
 - Java 21
 
 For the user interface to work, you need to have the following installed on your system:
+
 - Node.js
 - pnpm
 
@@ -37,7 +52,7 @@ To run the benchmarking suite, run the following command:
 To run the web interface, run the following command:
 
 ```
-(cd webui && pnpm install && pnpm run dev)
+(cd webui && pnpm install && pnpm run kubb:generate && pnpm run dev)
 ```
 
 The UI should then be available at http://localhost:3000.
