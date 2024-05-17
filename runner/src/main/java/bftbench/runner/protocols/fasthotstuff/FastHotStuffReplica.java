@@ -2,6 +2,7 @@ package bftbench.runner.protocols.fasthotstuff;
 
 import bftbench.runner.Replica;
 import bftbench.runner.protocols.fasthotstuff.message.*;
+import bftbench.runner.state.TotalOrderCommitLog;
 import bftbench.runner.transport.MessagePayload;
 import bftbench.runner.transport.Transport;
 import lombok.Getter;
@@ -12,7 +13,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.stream.Collectors;
 
 @Log
 public class FastHotStuffReplica extends Replica<Block> {
@@ -31,33 +31,32 @@ public class FastHotStuffReplica extends Replica<Block> {
     private QuorumCertificate highestQc = new QuorumCertificate(null);
 
     public FastHotStuffReplica(String nodeId, Set<String> nodeIds, Transport transport) {
-        super(nodeId, nodeIds, transport);
+        super(nodeId, nodeIds, transport, new TotalOrderCommitLog());
         createGenesisBlocks();
 
         if (this.getNodeId().equals(this.getLeader())) {
-            System.out.println("OH! IM THE LEADER: " + this.getNodeId());
             this.broadcastMessage(new Block(highestQc, this.round.get(), this.getNodeId(), null));
         }
     }
 
     private void createGenesisBlocks() {
-        List<String> nodeIds = this.getNodeIds().stream().sorted().collect(Collectors.toList());
+        List<String> nodeIds = this.getNodeIds().stream().sorted().toList();
         // Genesis Block
         Block b0 = new Block(null, 0, nodeIds.get(0), null);
         QuorumCertificate qc0 = new QuorumCertificate(
                 nodeIds.stream()
                         .map(nodeId -> new VoteMessage(nodeId, hash(b0).array()))
-                        .collect(Collectors.toUnmodifiableList()));
+                        .toList());
         Block b1 = new Block(qc0, 1, nodeIds.get(1), b0);
         QuorumCertificate qc1 = new QuorumCertificate(
                 nodeIds.stream()
                         .map(nodeId -> new VoteMessage(nodeId, hash(b1).array()))
-                        .collect(Collectors.toUnmodifiableList()));
+                        .toList());
         Block b2 = new Block(qc1, 2, nodeIds.get(2), b1);
         QuorumCertificate qc2 = new QuorumCertificate(
                 nodeIds.stream()
                         .map(nodeId -> new VoteMessage(nodeId, hash(b2).array()))
-                        .collect(Collectors.toUnmodifiableList()));
+                        .toList());
         // TODO: Add blocks to storage of all replicas!!
         this.storage.addBlock(b0);
         this.storage.addBlock(b1);

@@ -5,6 +5,7 @@ import bftbench.runner.protocols.pbft.message.*;
 import bftbench.runner.protocols.pbft.pojo.ReplicaRequestKey;
 import bftbench.runner.protocols.pbft.pojo.ReplicaTicketPhase;
 import bftbench.runner.protocols.pbft.pojo.ViewChangeResult;
+import bftbench.runner.state.TotalOrderCommitLog;
 import bftbench.runner.transport.MessagePayload;
 import bftbench.runner.transport.Transport;
 import lombok.Getter;
@@ -41,7 +42,7 @@ public class PbftReplica<O extends Serializable, R extends Serializable> extends
                        long timeout,
                        MessageLog messageLog,
                        Transport transport) {
-        super(replicaId, nodeIds, transport);
+        super(replicaId, nodeIds, transport, new TotalOrderCommitLog());
         this.tolerance = tolerance;
         this.timeout = timeout;
         this.messageLog = messageLog;

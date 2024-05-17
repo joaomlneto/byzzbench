@@ -1,7 +1,7 @@
 package bftbench.runner.api;
 
 import bftbench.runner.ScenarioExecutor;
-import bftbench.runner.transport.Message;
+import bftbench.runner.transport.MessageEvent;
 import bftbench.runner.transport.MessageMutator;
 import spark.ResponseTransformer;
 
@@ -44,9 +44,9 @@ public class RestController {
         get("/nodes", (req, res) -> scenarioExecutor.getNodes().keySet(), jsonTransformer);
         get("/node/:nodeId", (req, res) -> scenarioExecutor.getNodes().get(req.params(":nodeId")).getState(), jsonTransformer);
         get("/message/:messageId", (req, res) -> scenarioExecutor.getTransport().getMessages().get(Long.parseLong(req.params(":messageId"))), jsonTransformer);
-        get("/messages/queued", (req, res) -> scenarioExecutor.getTransport().getMessagesInState(Message.MessageStatus.QUEUED).stream().map(Message::getMessageId).toArray(), jsonTransformer);
-        get("/messages/dropped", (req, res) -> scenarioExecutor.getTransport().getMessagesInState(Message.MessageStatus.DROPPED).stream().map(Message::getMessageId).toArray(), jsonTransformer);
-        get("/messages/delivered", (req, res) -> scenarioExecutor.getTransport().getMessagesInState(Message.MessageStatus.DELIVERED).stream().map(Message::getMessageId).toArray(), jsonTransformer);
+        get("/messages/queued", (req, res) -> scenarioExecutor.getTransport().getMessagesInState(MessageEvent.MessageStatus.QUEUED).stream().map(MessageEvent::getMessageId).toArray(), jsonTransformer);
+        get("/messages/dropped", (req, res) -> scenarioExecutor.getTransport().getMessagesInState(MessageEvent.MessageStatus.DROPPED).stream().map(MessageEvent::getMessageId).toArray(), jsonTransformer);
+        get("/messages/delivered", (req, res) -> scenarioExecutor.getTransport().getMessagesInState(MessageEvent.MessageStatus.DELIVERED).stream().map(MessageEvent::getMessageId).toArray(), jsonTransformer);
         get("/mutators", (req, res) -> scenarioExecutor.getTransport().getMutators().keySet(), jsonTransformer);
         get("/mutators/:mutatorId", (req, res) -> scenarioExecutor.getTransport().getMutators().get(Long.parseLong(req.params(":mutatorId"))), jsonTransformer);
         get("/message/:messageId/mutators", (req, res) -> {

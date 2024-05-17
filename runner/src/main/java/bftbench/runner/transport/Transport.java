@@ -16,7 +16,7 @@ public class Transport {
     private final Map<String, Replica> nodes = new HashMap<>();
 
     @Getter(onMethod_ = {@Synchronized})
-    private final Map<Long, Message> messages = new TreeMap<>();
+    private final Map<Long, MessageEvent> messages = new TreeMap<>();
 
     @Getter(onMethod_ = {@Synchronized})
     private final Map<Long, MessageMutator> mutators = new TreeMap<>();
@@ -48,7 +48,7 @@ public class Transport {
         this.mutators.clear();
     }
 
-    public List<Message> getMessagesInState(Message.MessageStatus status) {
+    public List<MessageEvent> getMessagesInState(MessageEvent.MessageStatus status) {
         return this.messages.values().stream().filter(m -> m.getStatus() == status).toList();
     }
 
@@ -56,34 +56,34 @@ public class Transport {
         for (String recipient : recipients) {
             long messageId = this.messageSeqNum.getAndIncrement();
             boolean nodesInSamePartition = this.partitions.getOrDefault(sender, 0).equals(this.partitions.getOrDefault(recipient, 0));
-            Message message = new Message(messageId, sender, recipient, payload);
+            MessageEvent messageEvent = new MessageEvent(messageId, sender, recipient, payload);
             if (nodesInSamePartition) {
-                message.setStatus(Message.MessageStatus.QUEUED);
-                log.info("Queued: " + sender + "->" + recipient + ": " + message);
+                messageEvent.setStatus(MessageEvent.MessageStatus.QUEUED);
+                log.info("Queued: " + sender + "->" + recipient + ": " + messageEvent);
             } else {
-                message.setStatus(Message.MessageStatus.DROPPED);
-                log.info("Dropped: " + sender + "->" + recipient + ": " + message);
+                messageEvent.setStatus(MessageEvent.MessageStatus.DROPPED);
+                log.info("Dropped: " + sender + "->" + recipient + ": " + messageEvent);
             }
-            messages.put(messageId, message);
+            messages.put(messageId, messageEvent);
         }
     }
 
     public void deliverMessage(long messageId) throws Exception {
-        Message m = messages.get(messageId);
-        if (m == null || m.getStatus() != Message.MessageStatus.QUEUED) {
+        MessageEvent m = messages.get(messageId);
+        if (m == null || m.getStatus() != MessageEvent.MessageStatus.QUEUED) {
             throw new RuntimeException("Message not found or not in QUEUED state");
         }
-        m.setStatus(Message.MessageStatus.DELIVERED);
+        m.setStatus(MessageEvent.MessageStatus.DELIVERED);
         nodes.get(m.getRecipientId()).handleMessage(m.getSenderId(), m.getPayload());
         log.info("Delivered: " + m.getSenderId() + "->" + m.getRecipientId() + ": " + m.getPayload());
     }
 
     public void dropMessage(long messageId) {
-        Message m = messages.get(messageId);
-        if (m == null || m.getStatus() != Message.MessageStatus.QUEUED) {
+        MessageEvent m = messages.get(messageId);
+        if (m == null || m.getStatus() != MessageEvent.MessageStatus.QUEUED) {
             throw new RuntimeException("Message not found or not in QUEUED state");
         }
-        m.setStatus(Message.MessageStatus.DROPPED);
+        m.setStatus(MessageEvent.MessageStatus.DROPPED);
         log.info("Dropped: " + m.getSenderId() + "->" + m.getRecipientId() + ": " + m.getPayload());
     }
 

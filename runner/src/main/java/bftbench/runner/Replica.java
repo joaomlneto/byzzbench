@@ -1,5 +1,6 @@
 package bftbench.runner;
 
+import bftbench.runner.state.CommitLog;
 import bftbench.runner.transport.MessagePayload;
 import bftbench.runner.transport.Transport;
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -15,7 +16,7 @@ import java.util.Set;
 @Log
 @Getter
 public abstract class Replica<T extends Serializable> implements Serializable {
-    private final transient MessageDigest md;
+    static MessageDigest md;
 
     @Getter(AccessLevel.NONE)
     private final CommitLog<T> commitLog;
@@ -30,12 +31,12 @@ public abstract class Replica<T extends Serializable> implements Serializable {
     private final transient Transport transport;
 
     @SneakyThrows
-    public Replica(String nodeId, Set<String> nodeIds, Transport transport) {
+    public Replica(String nodeId, Set<String> nodeIds, Transport transport, CommitLog commitLog) {
         this.nodeId = nodeId;
         this.nodeIds = nodeIds;
         this.transport = transport;
-        this.commitLog = new CommitLog();
-        this.md = MessageDigest.getInstance("SHA-1");
+        this.commitLog = commitLog;
+        md = MessageDigest.getInstance("SHA-1");
     }
 
     protected void sendMessage(MessagePayload message, String recipient) {
@@ -80,6 +81,6 @@ public abstract class Replica<T extends Serializable> implements Serializable {
     public abstract void handleMessage(String sender, MessagePayload message) throws Exception;
 
     public void commitOperation(T message) {
-        this.commitLog.append(message);
+        this.commitLog.add(message);
     }
 }
