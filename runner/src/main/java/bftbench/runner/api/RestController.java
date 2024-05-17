@@ -51,7 +51,7 @@ public class RestController {
         get("/mutators/:mutatorId", (req, res) -> scenarioExecutor.getTransport().getMutators().get(Long.parseLong(req.params(":mutatorId"))), jsonTransformer);
         get("/message/:messageId/mutators", (req, res) -> {
             Serializable message = scenarioExecutor.getTransport().getMessages().get(Long.parseLong(req.params(":messageId")));
-            System.out.println("Message: " + message);
+            //System.out.println("Message: " + message);
             return scenarioExecutor.getTransport().getMutators().entrySet().stream().filter(e -> e.getValue().getInputClasses().contains(message.getClass())).map(Map.Entry::getKey).toList();
         }, jsonTransformer);
         post("/message/:messageId/deliver", (req, res) -> {
@@ -65,7 +65,7 @@ public class RestController {
                 throw new RuntimeException("Mutator " + mutator.getName() + " does not support message type " + message.getClass().getName());
             }
             Serializable mutatedMessage = mutator.apply(message);
-            System.out.println("Mutated message: " + message);
+            //System.out.println("Mutated message: " + message);
             return mutatedMessage;
         }, jsonTransformer);
         post("/message/:messageId/drop", (req, res) -> {

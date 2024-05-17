@@ -97,6 +97,6 @@ public class Transport {
                 this.registerMessageMutator(clazz, mutator);
             }
         }
-        System.out.println(this.mutators);
+        log.info("Registered Message Mutators:" + this.mutators);
     }
 }

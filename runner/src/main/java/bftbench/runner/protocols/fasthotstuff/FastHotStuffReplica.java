@@ -31,7 +31,7 @@ public class FastHotStuffReplica extends Replica<Block> {
     private QuorumCertificate highestQc = new QuorumCertificate(null);
 
     public FastHotStuffReplica(String nodeId, Set<String> nodeIds, Transport transport) {
-        super(nodeId, nodeIds, transport, new TotalOrderCommitLog());
+        super(nodeId, nodeIds, transport, new TotalOrderCommitLog<Block>());
         createGenesisBlocks();
 
         if (this.getNodeId().equals(this.getLeader())) {
@@ -70,7 +70,7 @@ public class FastHotStuffReplica extends Replica<Block> {
 
         this.highestQc = qc2;
 
-        System.out.println("BLOCKS DONE!!");
+        log.info("Initial blocks committed!");
 
     }
 

@@ -3,10 +3,12 @@ package bftbench.runner.protocols.fasthotstuff;
 import bftbench.runner.Replica;
 import bftbench.runner.ScenarioExecutor;
 import bftbench.runner.transport.Transport;
+import lombok.extern.java.Log;
 
 import java.util.Set;
 import java.util.TreeSet;
 
+@Log
 public class FastHotStuffScenarioExecutor extends ScenarioExecutor {
     private final int NUM_NODES = 4;
 
@@ -28,7 +30,7 @@ public class FastHotStuffScenarioExecutor extends ScenarioExecutor {
                 transport.addNode(replica);
             });
 
-            System.out.println("Nodes: " + nodes);
+            log.info("Nodes: " + nodes);
 
             //transport.registerMessageMutators(new PrePrepareMessageMutatorFactory());
         } catch (Exception e) {
