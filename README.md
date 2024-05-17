@@ -56,3 +56,51 @@ To run the web interface, run the following command:
 ```
 
 The UI should then be available at http://localhost:3000.
+
+## Simulator Structure
+
+```mermaid
+---
+title: Simulator Components
+---
+classDiagram
+    class Event {
+        -int eventId
+    }
+    class MessageEvent {
+        -String senderId
+        -String recipientId
+        -MessagePayload message
+        -MessageStatus status
+    }
+    class TimeoutEvent {
+    }
+    class MessageStatus {
+        <<Enumeration>>
+        QUEUED
+        DELIVERED
+        DROPPED
+    }
+    class MessagePayload {
+        <<Interface>>
+        +String getType()
+    }
+    class Replica {
+        <<Abstract>>
+        +String getType()
+    }
+    class CommitLog {
+        <<Abstract>>
+    }
+    class TotalOrderCommitLog {
+    }
+    class PartialOrderCommitLog {
+    }
+    Event <|-- MessageEvent
+    Event <|-- TimeoutEvent
+    MessageEvent -- MessageStatus
+    CommitLog <|-- TotalOrderCommitLog
+    CommitLog <|-- PartialOrderCommitLog
+    CommitLog -- Replica
+
+```
