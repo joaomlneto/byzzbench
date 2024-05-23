@@ -4,16 +4,11 @@ import lombok.Data;
 
 @Data
 public class MessageEvent implements Event {
-    private final long messageId;
+    private final long eventId;
     private final String senderId;
     private final String recipientId;
     private final MessagePayload payload;
     private MessageStatus status;
-
-    @Override
-    public long getEventId() {
-        return this.getMessageId();
-    }
 
     public enum MessageStatus {
         QUEUED,

@@ -21,7 +21,6 @@ import java.util.Set;
 public class BlockDirectedAcyclicGraph<K, B extends PartialOrderLogEntry<K>> implements Serializable {
     private final Map<K, B> knownBlocks = new HashMap<>();
     private final Set<K> committedBlocks = new HashSet<>();
-    private final TotalOrderCommitLog<B> commitLog;
 
     public void add(K key, B block) {
         this.knownBlocks.put(key, block);
@@ -32,15 +31,16 @@ public class BlockDirectedAcyclicGraph<K, B extends PartialOrderLogEntry<K>> imp
     }
 
     public void commitBlock(K key) {
+        // Check if the block is already committed
         if (committedBlocks.contains(key)) {
-            //throw new IllegalArgumentException("Cannot commit block: Block already committed");
-            log.info("Cannot commit block: Block already committed: " + knownBlocks.get(key));
+            throw new IllegalArgumentException("Cannot commit block: Block already committed");
         }
 
         // Check if the block is known
         if (!knownBlocks.containsKey(key)) {
             throw new IllegalArgumentException("Cannot commit block: Block not found:");
         }
+
         B block = knownBlocks.get(key);
 
         // Check if the parent is known
@@ -48,11 +48,11 @@ public class BlockDirectedAcyclicGraph<K, B extends PartialOrderLogEntry<K>> imp
             throw new IllegalArgumentException("Cannot commit block: parent not found");
         }
 
+        // Check if the parent is committed
         if (block.getParentHash() != null && !committedBlocks.contains(block.getParentHash())) {
             throw new IllegalArgumentException("Cannot commit block: parent not committed");
         }
 
         committedBlocks.add(key);
-        this.commitLog.add(block);
     }
 }

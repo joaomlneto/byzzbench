@@ -4,7 +4,6 @@ import bftbench.runner.state.CommitLog;
 import bftbench.runner.transport.MessagePayload;
 import bftbench.runner.transport.Transport;
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.SneakyThrows;
 import lombok.extern.java.Log;
@@ -18,7 +17,7 @@ import java.util.Set;
 public abstract class Replica<T extends Serializable> implements Serializable {
     static MessageDigest md;
 
-    @Getter(AccessLevel.NONE)
+    @Getter
     private final CommitLog<T> commitLog;
 
     @JsonIgnore

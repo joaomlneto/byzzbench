@@ -17,7 +17,7 @@ public class NodeStorage implements Serializable {
     public NodeStorage(FastHotStuffReplica replica) {
         this.replica = replica;
         TotalOrderCommitLog<Block> log = new TotalOrderCommitLog<>();
-        this.dag = new BlockDirectedAcyclicGraph<>(log);
+        this.dag = new BlockDirectedAcyclicGraph<>();
     }
 
     // Adds a block to the storage
@@ -39,6 +39,8 @@ public class NodeStorage implements Serializable {
     // Commits a block
     public void commit(Block block) {
         this.dag.commitBlock(this.replica.hash(block));
+        // if the above does not throw an exception, commit the block
+        this.replica.commitOperation(block);
     }
 
     // Adds a vote to the storage
