@@ -1,7 +1,9 @@
 package bftbench.runner.state;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.java.Log;
 
+import java.io.Serializable;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -15,10 +17,11 @@ import java.util.Set;
  * @param <B> The type of the blocks
  */
 @RequiredArgsConstructor
-public class BlockDirectedAcyclicGraph<K, B extends PartialOrderLogEntry<K>> {
+@Log
+public class BlockDirectedAcyclicGraph<K, B extends PartialOrderLogEntry<K>> implements Serializable {
     private final Map<K, B> knownBlocks = new HashMap<>();
     private final Set<K> committedBlocks = new HashSet<>();
-    private final TotalOrderCommitLog<B> log;
+    private final TotalOrderCommitLog<B> commitLog;
 
     public void add(K key, B block) {
         this.knownBlocks.put(key, block);
@@ -29,6 +32,11 @@ public class BlockDirectedAcyclicGraph<K, B extends PartialOrderLogEntry<K>> {
     }
 
     public void commitBlock(K key) {
+        if (committedBlocks.contains(key)) {
+            //throw new IllegalArgumentException("Cannot commit block: Block already committed");
+            log.info("Cannot commit block: Block already committed: " + knownBlocks.get(key));
+        }
+
         // Check if the block is known
         if (!knownBlocks.containsKey(key)) {
             throw new IllegalArgumentException("Cannot commit block: Block not found:");
@@ -45,6 +53,6 @@ public class BlockDirectedAcyclicGraph<K, B extends PartialOrderLogEntry<K>> {
         }
 
         committedBlocks.add(key);
-        this.log.add(block);
+        this.commitLog.add(block);
     }
 }

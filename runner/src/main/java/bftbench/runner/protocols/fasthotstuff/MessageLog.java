@@ -21,7 +21,7 @@ public class MessageLog {
     }
 
     public void addVote(VoteMessage vote) {
-        byte[] digest = vote.getBlockHash();
+        String digest = vote.getBlockHash();
         //Set<Object> votes = this.
     }
 

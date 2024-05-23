@@ -6,6 +6,6 @@ import java.io.Serializable;
 import java.util.Collection;
 
 @Data
-public class AggregateQuorumCertificate implements Serializable {
-    private final Collection<NewViewMessage> newViews;
+public class AggregateQuorumCertificate implements Serializable, GenericQuorumCertificate {
+    private final Collection<NewViewMessage> votes;
 }

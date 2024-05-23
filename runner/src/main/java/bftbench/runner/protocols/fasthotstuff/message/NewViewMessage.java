@@ -10,7 +10,7 @@ public class NewViewMessage implements MessagePayload, GenericVoteMessage {
     private final QuorumCertificate qc;
     private final long round;
     private final String author;
-    private final byte[] blockHash;
+    private final String blockHash;
 
     @Override
     public String getType() {

@@ -5,10 +5,9 @@ import bftbench.runner.transport.MessagePayload;
 import lombok.Data;
 
 import java.io.Serializable;
-import java.nio.ByteBuffer;
 
 @Data
-public class Block implements MessagePayload, PartialOrderLogEntry<ByteBuffer> {
+public class Block implements MessagePayload, PartialOrderLogEntry<String> {
     private final QuorumCertificate qc;
     private final long round;
     private final String author;
@@ -21,10 +20,10 @@ public class Block implements MessagePayload, PartialOrderLogEntry<ByteBuffer> {
 
 
     @Override
-    public ByteBuffer getParentHash() {
+    public String getParentHash() {
         if (qc == null || qc.getVotes().isEmpty()) {
             return null;
         }
-        return ByteBuffer.wrap(qc.getVotes().stream().findAny().get().getBlockHash());
+        return qc.getVotes().stream().findAny().get().getBlockHash();
     }
 }

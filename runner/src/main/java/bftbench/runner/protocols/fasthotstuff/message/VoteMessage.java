@@ -8,7 +8,7 @@ import lombok.With;
 @With
 public class VoteMessage implements MessagePayload, GenericVoteMessage {
     private final String author;
-    private final byte[] blockHash;
+    private final String blockHash;
 
     @Override
     public String getType() {
