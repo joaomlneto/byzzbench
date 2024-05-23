@@ -11,12 +11,12 @@ import java.util.concurrent.atomic.AtomicLong;
 
 @Log
 public class Transport {
-    private final AtomicLong messageSeqNum = new AtomicLong(1);
+    private final AtomicLong eventSeqNum = new AtomicLong(1);
     private final AtomicLong mutatorSeqNum = new AtomicLong(1);
     private final Map<String, Replica> nodes = new HashMap<>();
 
     @Getter(onMethod_ = {@Synchronized})
-    private final Map<Long, MessageEvent> messages = new TreeMap<>();
+    private final Map<Long, Event> events = new TreeMap<>();
 
     @Getter(onMethod_ = {@Synchronized})
     private final Map<Long, MessageMutator> mutators = new TreeMap<>();
@@ -42,19 +42,23 @@ public class Transport {
     }
 
     public void reset() {
-        this.messageSeqNum.set(1);
+        this.eventSeqNum.set(1);
         this.nodes.clear();
-        this.messages.clear();
+        this.events.clear();
         this.mutators.clear();
     }
 
     public List<MessageEvent> getMessagesInState(MessageEvent.MessageStatus status) {
-        return this.messages.values().stream().filter(m -> m.getStatus() == status).toList();
+        return this.events.values().stream()
+                // filter only messages in the given state
+                .filter(m -> m instanceof MessageEvent)
+                .map(m -> (MessageEvent) m)
+                .filter(m -> m.getStatus() == status).toList();
     }
 
     public void multicast(String sender, Set<String> recipients, MessagePayload payload) {
         for (String recipient : recipients) {
-            long messageId = this.messageSeqNum.getAndIncrement();
+            long messageId = this.eventSeqNum.getAndIncrement();
             boolean nodesInSamePartition = this.partitions.getOrDefault(sender, 0).equals(this.partitions.getOrDefault(recipient, 0));
             MessageEvent messageEvent = new MessageEvent(messageId, sender, recipient, payload);
             if (nodesInSamePartition) {
@@ -64,13 +68,19 @@ public class Transport {
                 messageEvent.setStatus(MessageEvent.MessageStatus.DROPPED);
                 log.info("Dropped: " + sender + "->" + recipient + ": " + messageEvent);
             }
-            messages.put(messageId, messageEvent);
+            events.put(messageId, messageEvent);
         }
     }
 
     public void deliverMessage(long messageId) throws Exception {
-        MessageEvent m = messages.get(messageId);
-        if (m == null || m.getStatus() != MessageEvent.MessageStatus.QUEUED) {
+        // check if event is a message
+        Event e = events.get(messageId);
+
+        if (!(e instanceof MessageEvent m)) {
+            throw new RuntimeException(String.format("Event %d is not a message", messageId));
+        }
+
+        if (m.getStatus() != MessageEvent.MessageStatus.QUEUED) {
             throw new RuntimeException("Message not found or not in QUEUED state");
         }
         m.setStatus(MessageEvent.MessageStatus.DELIVERED);
@@ -79,8 +89,14 @@ public class Transport {
     }
 
     public void dropMessage(long messageId) {
-        MessageEvent m = messages.get(messageId);
-        if (m == null || m.getStatus() != MessageEvent.MessageStatus.QUEUED) {
+        // check if event is a message
+        Event e = events.get(messageId);
+
+        if (!(e instanceof MessageEvent m)) {
+            throw new RuntimeException(String.format("Event %d is not a message", messageId));
+        }
+
+        if (m.getStatus() != MessageEvent.MessageStatus.QUEUED) {
             throw new RuntimeException("Message not found or not in QUEUED state");
         }
         m.setStatus(MessageEvent.MessageStatus.DROPPED);
@@ -98,5 +114,15 @@ public class Transport {
             }
         }
         log.info("Registered Message Mutators:" + this.mutators);
+    }
+
+    public void setTimeout(Replica replica, Runnable runnable, long timeout) {
+        Event e = new TimeoutEvent(
+                this.eventSeqNum.getAndIncrement(),
+                "TIMEOUT",
+                replica.getNodeId(),
+                timeout,
+                runnable);
+        this.events.put(e.getEventId(), e);
     }
 }

@@ -5,7 +5,11 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.fasterxml.jackson.databind.jsontype.impl.StdTypeResolverBuilder;
+import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import com.fasterxml.jackson.module.paramnames.ParameterNamesModule;
 import spark.ResponseTransformer;
 
 import java.io.IOException;
@@ -15,7 +19,11 @@ public class JsonResponseTransformer implements ResponseTransformer {
     @Override
     public String render(Object data) {
         try {
-            ObjectMapper mapper = new ObjectMapper();
+            ObjectMapper mapper = JsonMapper.builder()
+                    .addModule(new ParameterNamesModule())
+                    .addModule(new Jdk8Module())
+                    .addModule(new JavaTimeModule())
+                    .build();
             StdTypeResolverBuilder typer = new ObjectMapper.DefaultTypeResolverBuilder(ObjectMapper.DefaultTyping.NON_FINAL) {
                 {
                     init(JsonTypeInfo.Id.CLASS, null);
@@ -49,6 +57,7 @@ public class JsonResponseTransformer implements ResponseTransformer {
             mapper.writeValue(sw, data);
             return sw.toString();
         } catch (IOException e) {
+            System.out.println("Error in JsonResponseTransformer parsing data to JSON: " + e.getMessage());
             throw new RuntimeException("IOException from a StringWriter?");
         }
     }

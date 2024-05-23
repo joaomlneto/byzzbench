@@ -43,14 +43,14 @@ public class RestController {
     public void setupEndpoints() {
         get("/nodes", (req, res) -> scenarioExecutor.getNodes().keySet(), jsonTransformer);
         get("/node/:nodeId", (req, res) -> scenarioExecutor.getNodes().get(req.params(":nodeId")).getState(), jsonTransformer);
-        get("/message/:messageId", (req, res) -> scenarioExecutor.getTransport().getMessages().get(Long.parseLong(req.params(":messageId"))), jsonTransformer);
+        get("/message/:messageId", (req, res) -> scenarioExecutor.getTransport().getEvents().get(Long.parseLong(req.params(":messageId"))), jsonTransformer);
         get("/messages/queued", (req, res) -> scenarioExecutor.getTransport().getMessagesInState(MessageEvent.MessageStatus.QUEUED).stream().map(MessageEvent::getEventId).toArray(), jsonTransformer);
         get("/messages/dropped", (req, res) -> scenarioExecutor.getTransport().getMessagesInState(MessageEvent.MessageStatus.DROPPED).stream().map(MessageEvent::getEventId).toArray(), jsonTransformer);
         get("/messages/delivered", (req, res) -> scenarioExecutor.getTransport().getMessagesInState(MessageEvent.MessageStatus.DELIVERED).stream().map(MessageEvent::getEventId).toArray(), jsonTransformer);
         get("/mutators", (req, res) -> scenarioExecutor.getTransport().getMutators().keySet(), jsonTransformer);
         get("/mutators/:mutatorId", (req, res) -> scenarioExecutor.getTransport().getMutators().get(Long.parseLong(req.params(":mutatorId"))), jsonTransformer);
         get("/message/:messageId/mutators", (req, res) -> {
-            Serializable message = scenarioExecutor.getTransport().getMessages().get(Long.parseLong(req.params(":messageId")));
+            Serializable message = scenarioExecutor.getTransport().getEvents().get(Long.parseLong(req.params(":messageId")));
             //System.out.println("Message: " + message);
             return scenarioExecutor.getTransport().getMutators().entrySet().stream().filter(e -> e.getValue().getInputClasses().contains(message.getClass())).map(Map.Entry::getKey).toList();
         }, jsonTransformer);
@@ -59,7 +59,7 @@ public class RestController {
             return "OK";
         }, jsonTransformer);
         post("/message/:messageId/mutate/:mutatorId", (req, res) -> {
-            Serializable message = scenarioExecutor.getTransport().getMessages().get(Long.parseLong(req.params(":messageId")));
+            Serializable message = scenarioExecutor.getTransport().getEvents().get(Long.parseLong(req.params(":messageId")));
             MessageMutator mutator = scenarioExecutor.getTransport().getMutators().get(Long.parseLong(req.params(":mutatorId")));
             if (!mutator.getInputClasses().contains(message.getClass())) {
                 throw new RuntimeException("Mutator " + mutator.getName() + " does not support message type " + message.getClass().getName());

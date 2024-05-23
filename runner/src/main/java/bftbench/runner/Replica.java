@@ -86,4 +86,8 @@ public abstract class Replica<T extends Serializable> implements Serializable {
     public void commitOperation(T message) {
         this.commitLog.add(message);
     }
+
+    public void setTimeout(Runnable r, long timeout) {
+        this.transport.setTimeout(this, r, timeout);
+    }
 }
