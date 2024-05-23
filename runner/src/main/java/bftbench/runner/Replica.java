@@ -60,6 +60,10 @@ public abstract class Replica<T extends Serializable> implements Serializable {
         this.transport.multicast(this.nodeId, otherNodes, message);
     }
 
+    protected void broadcastMessageIncludingSelf(MessagePayload message) {
+        this.transport.multicast(this.nodeId, this.nodeIds, message);
+    }
+
     public byte[] digest(Serializable message) {
         return md.digest(message.toString().getBytes());
     }

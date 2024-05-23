@@ -41,16 +41,6 @@ public class NodeStorage implements Serializable {
         this.dag.commitBlock(this.replica.hash(block));
     }
 
-    public Optional<GenericQuorumCertificate> addVote(GenericVoteMessage message) {
-        if (message instanceof VoteMessage) {
-            return addVote((VoteMessage) message).map(qc -> qc);
-        } else if (message instanceof NewViewMessage) {
-            return addVote((NewViewMessage) message).map(qc -> qc);
-        } else {
-            throw new IllegalArgumentException("Unknown message type: " + message.getClass());
-        }
-    }
-
     // Adds a vote to the storage
     public Optional<QuorumCertificate> addVote(VoteMessage vote) {
         String digest = vote.getBlockHash();

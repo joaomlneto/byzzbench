@@ -29,7 +29,7 @@ public class FastHotStuffReplica extends Replica<Block> {
         createGenesisBlocks();
 
         if (this.getNodeId().equals(this.getLeader())) {
-            this.broadcastMessage(
+            this.broadcastMessageIncludingSelf(
                     new Block(highestQc,
                             this.round.get(),
                             this.getNodeId(),
@@ -73,12 +73,10 @@ public class FastHotStuffReplica extends Replica<Block> {
         this.storage.addBlock(b0);
         this.storage.addBlock(b1);
         this.storage.addBlock(b2);
-        //this.storage.commit(b0);
-        //this.storage.commit(b1); //??
-        //this.storage.commit(b2); //??
-        //this.commitOperation(b0);
-        //this.commitOperation(b1); //??
-        //this.commitOperation(b2); //??
+        // unsure if the following is required
+        //this.storage.addVote(qc0.getVotes().stream().findAny().get());
+        //this.storage.addVote(qc1.getVotes().stream().findAny().get());
+        //this.storage.addVote(qc2.getVotes().stream().findAny().get());
 
         this.highestQc = qc2;
         this.highestQcRound.set(2);
@@ -102,17 +100,22 @@ public class FastHotStuffReplica extends Replica<Block> {
         if (message instanceof VoteMessage vote) {
             Optional<QuorumCertificate> qc = this.storage.addVote(vote);
             if (qc.isPresent()) {
-                Block block = this.storage.getBlock(qc.get().getVotes().stream().findAny().get().getBlockHash());
-                this.broadcastMessage(block);
+                this.processBlock(this.storage.getBlock(vote.getBlockHash()));
+                //Block block = this.storage.getBlock(qc.get().getVotes().stream().findAny().get().getBlockHash());
+                Block block = new Block(qc.get(), this.round.get(), this.getNodeId(), String.format("%s%d", this.getNodeId(), this.round.get()));
+                this.broadcastMessageIncludingSelf(block);
             }
             return;
         }
 
         if (message instanceof NewViewMessage newView) {
-            Optional<AggregateQuorumCertificate> qc = this.storage.addVote(newView);
+            Optional<? extends GenericQuorumCertificate> qc = this.storage.addVote(newView);
             if (qc.isPresent()) {
+                this.processBlock(this.storage.getBlock(newView.getBlockHash()));
+                // FIXME: THIS IS PROBABLY WRONG.
+                // see: https://github.com/asonnino/twins-simulator/blob/master/fhs/node.py#L43
                 Block block = this.storage.getBlock(qc.get().getVotes().stream().findAny().get().getBlockHash());
-                this.broadcastMessage(block);
+                this.broadcastMessageIncludingSelf(block);
             }
             return;
         }
