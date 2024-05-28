@@ -1,0 +1,8 @@
+{
+  "name": "ByzzBench",
+  "buildCommand": "pnpm run kubb:generate && pnpm run build",
+  "installCommand": "pnpm install --store=node_modules/.pnpm-store",
+  "env": {
+    "ENABLE_EXPERIMENTAL_COREPACK": "1"
+  }
+}
