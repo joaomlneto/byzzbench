@@ -1,6 +1,6 @@
 "use client";
 
-import { useDropMessage } from "@/lib/bftbench-client/generated";
+import { useDropMessage } from "@/lib/byzzbench-client";
 import { ActionIcon } from "@mantine/core";
 import { showNotification } from "@mantine/notifications";
 import { IconSendOff } from "@tabler/icons-react";

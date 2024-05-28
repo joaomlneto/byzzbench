@@ -29,8 +29,6 @@ paths:
                     id: evee51z4aae45
                   type: string
       operationId: get-nodes
-      requestBody:
-        content: {}
       description: Return the list of Node IDs
   '/node/{nodeId}':
     parameters:

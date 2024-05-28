@@ -13,7 +13,7 @@ export default defineConfig(async () => {
       path: "./spec.json",
     },
     output: {
-      path: "./lib/bftbench-client/generated",
+      path: "./lib/byzzbench-client/generated",
     },
     plugins: [
       createSwagger({ validate: true }),
