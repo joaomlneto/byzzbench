@@ -2,8 +2,9 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/.idea/modules/runner/bftbench.runner.main.iml" filepath="$PROJECT_DIR$/.idea/modules/runner/bftbench.runner.main.iml" />
-      <module fileurl="file://$PROJECT_DIR$/.idea/modules/runner/bftbench.runner.test.iml" filepath="$PROJECT_DIR$/.idea/modules/runner/bftbench.runner.test.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/runner/byzzbench.runner.main.iml" filepath="$PROJECT_DIR$/.idea/modules/runner/byzzbench.runner.main.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/runner/byzzbench.runner.test.iml" filepath="$PROJECT_DIR$/.idea/modules/runner/byzzbench.runner.test.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/runner/git.byzzbench.runner.main.iml" filepath="$PROJECT_DIR$/.idea/modules/runner/git.byzzbench.runner.main.iml" />
     </modules>
   </component>
 </project>
