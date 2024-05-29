@@ -1,4 +1,4 @@
-# bftbench
+# ByzzBench
 
 BFT Protocol Benchmarking Suite
 
@@ -9,9 +9,9 @@ This is a Gradle monorepo that contains the following modules:
 
 ```
 TODO restructure project later into the following modules:
-- `bftbench-core`: The core benchmarking suite
-- `bftbench-webui`: A web interface for the benchmarking suite
-- `bftbench-protocols`: Implementations of various BFT protocols
+- `byzzbench-core`: The core benchmarking suite
+- `byzzbench-webui`: A web interface for the benchmarking suite
+- `byzzbench-protocols`: Implementations of various BFT protocols
 ```
 
 ## Prerequisites

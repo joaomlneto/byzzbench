@@ -3,7 +3,7 @@
   <component name="SonarLintProjectSettings">
     <option name="moduleMapping">
       <map>
-        <entry key="ByzzBench" value="byzzbench" />
+        <entry key="byzzbench" value="byzzbench" />
       </map>
     </option>
   </component>

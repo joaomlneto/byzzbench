@@ -3,7 +3,7 @@
  */
 
 plugins {
-    id("bftbench.java-library-conventions")
+    id("byzzbench.java-library-conventions")
 }
 
 dependencies {

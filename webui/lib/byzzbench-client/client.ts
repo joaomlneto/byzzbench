@@ -35,7 +35,7 @@ export type ResponseConfig<TData = unknown> = {
 };
 
 export const axiosInstance = axios.create({
-  baseURL: "http://localhost:4567",
+  baseURL: "http://localhost:8080",
   headers:
     typeof "{}" !== "undefined"
       ? (JSON.parse("{}") as AxiosHeaders)
