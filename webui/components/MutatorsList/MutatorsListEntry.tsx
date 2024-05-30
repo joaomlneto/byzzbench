@@ -19,9 +19,9 @@ export const MutatorsListEntry = ({ mutatorId }: { mutatorId: number }) => {
             {mutatorId}: {mutator.data.name}
           </Title>
           <Text lineClamp={1}>
-            {mutator.data.inputClasses
+            {/*mutator.data.inputClasses
               ?.map((s) => s.split(".").at(-1))
-              .join(", ")}
+              .join(", ")*/}
           </Text>
         </div>
       </Group>

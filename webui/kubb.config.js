@@ -6,16 +6,11 @@ import createSwaggerTS from "@kubb/swagger-ts";
 import createSwaggerZod from "@kubb/swagger-zod";
 import createSwaggerZodios from "@kubb/swagger-zodios";
 
-/*
-const specJson = fetch(
-  "http://localhost:8080/swagger/byzzbench-api-0.1.yml",
-).then((res) => res.json()); */
-
 export default defineConfig(async () => {
   return {
     root: ".",
     input: {
-      path: "http://localhost:8080/swagger/byzzbench-api-0.1.yml",
+      path: "http://localhost:8080/v3/api-docs",
       //data: specJson,
     },
     output: {
