@@ -11,4 +11,4 @@ plugins {
 }
 
 rootProject.name = "byzzbench"
-include("runner", "simulator", "utilities")
+include("simulator", "utilities")

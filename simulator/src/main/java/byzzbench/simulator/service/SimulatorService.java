@@ -1,7 +1,7 @@
 package byzzbench.simulator.service;
 
 import byzzbench.simulator.ScenarioExecutor;
-import byzzbench.simulator.protocols.pbft.PbftScenarioExecutor;
+import byzzbench.simulator.protocols.fasthotstuff.FastHotStuffScenarioExecutor;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
@@ -14,11 +14,10 @@ import java.io.Serializable;
 @Service
 @RequiredArgsConstructor
 public class SimulatorService {
-    private final ScenarioExecutor<? extends Serializable> scenarioExecutor = new PbftScenarioExecutor<>();
+    private final ScenarioExecutor<? extends Serializable> scenarioExecutor = new FastHotStuffScenarioExecutor();
 
     @EventListener(ApplicationReadyEvent.class)
     void onStartup() {
-        System.out.println("Starting simulator service...");
         this.scenarioExecutor.setup();
         this.scenarioExecutor.run();
     }

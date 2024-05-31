@@ -35,6 +35,16 @@ public class SimulatorController {
         return simulatorService.getScenarioExecutor().getNodes().get(nodeId);
     }
 
+    @GetMapping("/node/{nodeId}/mailbox")
+    public List<Long> getNodeMailbox(@PathVariable String nodeId) {
+        return simulatorService.getScenarioExecutor().getTransport()
+                .getEventsInState(Event.Status.QUEUED)
+                .stream()
+                .filter(e -> e.getRecipientId().equals(nodeId))
+                .map(MessageEvent::getEventId)
+                .toList();
+    }
+
     @GetMapping("/events")
     public List<Long> getEvents() {
         return simulatorService.getScenarioExecutor().getTransport().getEvents().keySet().stream().toList();
@@ -48,7 +58,7 @@ public class SimulatorController {
     @GetMapping("/messages/queued")
     public List<Long> getQueuedMessages() {
         return simulatorService.getScenarioExecutor().getTransport()
-                .getEventsInState(Event.EventStatus.QUEUED)
+                .getEventsInState(Event.Status.QUEUED)
                 .stream()
                 .map(MessageEvent::getEventId)
                 .toList();
@@ -57,7 +67,7 @@ public class SimulatorController {
     @GetMapping("/messages/dropped")
     public List<Long> getDroppedMessages() {
         return simulatorService.getScenarioExecutor().getTransport()
-                .getEventsInState(Event.EventStatus.DROPPED)
+                .getEventsInState(Event.Status.DROPPED)
                 .stream()
                 .map(MessageEvent::getEventId)
                 .toList();
@@ -66,7 +76,7 @@ public class SimulatorController {
     @GetMapping("/messages/delivered")
     public List<Long> getDeliveredMessages() {
         return simulatorService.getScenarioExecutor().getTransport()
-                .getEventsInState(Event.EventStatus.DELIVERED)
+                .getEventsInState(Event.Status.DELIVERED)
                 .stream()
                 .map(MessageEvent::getEventId)
                 .toList();
@@ -79,11 +89,11 @@ public class SimulatorController {
 
     @PostMapping("/message/{messageId}/deliver")
     public void deliverMessage(@PathVariable Long messageId) throws Exception {
-        simulatorService.getScenarioExecutor().getTransport().deliverMessage(messageId);
+        simulatorService.getScenarioExecutor().getTransport().deliverEvent(messageId);
     }
 
     @PostMapping("/message/{messageId}/drop")
-    public void dropMessage(@PathVariable Long messageId) throws Exception {
+    public void dropMessage(@PathVariable Long messageId) {
         simulatorService.getScenarioExecutor().getTransport().dropMessage(messageId);
     }
 

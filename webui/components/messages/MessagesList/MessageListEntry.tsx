@@ -11,17 +11,7 @@ export const MessageListEntry = ({ messageId }: { messageId: number }) => {
   const { data: message } = useGetMessage(messageId);
 
   //const payload = useMemo(() => message?.data.payload, [message?.data.payload]);
-  const payload = useMemo(
-    () => ({
-      // dummy
-      __className__: "com.byzzbench.core.messages.Message",
-      eventId: message?.data.eventId,
-      senderId: message?.data.senderId,
-      recipientId: message?.data.recipientId,
-      status: "TODO",
-    }),
-    [message?.data],
-  );
+  const payload = useMemo(() => message?.data, [message?.data]);
 
   const payloadWithoutClassname = useMemo(() => {
     if (!payload) {

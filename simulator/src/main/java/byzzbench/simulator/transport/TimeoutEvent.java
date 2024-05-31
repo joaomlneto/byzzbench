@@ -12,8 +12,8 @@ public class TimeoutEvent implements Event {
     private final long timeout; // in milliseconds
     private final Instant createdAt = Instant.now();
     private final transient Runnable task;
+    private Status status = Status.QUEUED;
     private transient Instant deliveredAt = null;
-    private EventStatus status;
 
     @Override
     public String getSenderId() {
@@ -26,7 +26,7 @@ public class TimeoutEvent implements Event {
     }
 
     @Override
-    public EventType getType() {
-        return EventType.TIMEOUT;
+    public Type getType() {
+        return Type.TIMEOUT;
     }
 }

@@ -1,5 +1,6 @@
 package byzzbench.simulator;
 
+import byzzbench.simulator.service.DigestService;
 import byzzbench.simulator.state.CommitLog;
 import byzzbench.simulator.transport.MessagePayload;
 import byzzbench.simulator.transport.Transport;
@@ -28,18 +29,13 @@ public abstract class Replica<T extends Serializable> implements Serializable {
     }
 
     @Getter
-    private final String type = this.getClass().getSimpleName();
-
-    @Getter
     private final transient CommitLog<T> commitLog;
-
     private final transient String nodeId;
-
     @JsonIgnore
     private final transient Set<String> nodeIds;
-
     @JsonIgnore
     private final transient Transport<T> transport;
+    DigestService digestService;
 
     protected Replica(String nodeId, Set<String> nodeIds, Transport<T> transport, CommitLog<T> commitLog) {
         this.nodeId = nodeId;
@@ -88,7 +84,11 @@ public abstract class Replica<T extends Serializable> implements Serializable {
         this.commitLog.add(message);
     }
 
-    public void setTimeout(Runnable r, long timeout) {
-        this.transport.setTimeout(this, r, timeout);
+    public long setTimeout(Runnable r, long timeout) {
+        return this.transport.setTimeout(this, r, timeout);
+    }
+
+    public void clearAllTimeouts() {
+        this.transport.clearReplicaTimeouts(this);
     }
 }

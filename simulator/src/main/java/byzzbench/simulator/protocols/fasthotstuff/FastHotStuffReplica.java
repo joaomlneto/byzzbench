@@ -44,6 +44,11 @@ public class FastHotStuffReplica extends Replica<Block> {
                             this.getNodeId(),
                             String.format("%s%d", this.getNodeId(), this.round.get())));
         }
+
+        System.out.println("GOING TO SET TIMEOUT");
+        this.setTimeout(() -> {
+            System.out.println("TIMEOUT!!!");
+        }, 1000);
     }
 
     private void createGenesisBlocks() {

@@ -4,7 +4,7 @@ BFT Protocol Benchmarking Suite
 
 This is a Gradle monorepo that contains the following modules:
 
-- `runner`: The core benchmarking suite. Currently also includes the protocol implementations.
+- `simulator`: The core benchmarking suite. Currently also includes the protocol implementations.
 - `webui`: A web interface for the benchmarking suite.
 
 ```

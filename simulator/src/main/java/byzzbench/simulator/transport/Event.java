@@ -16,16 +16,18 @@ public interface Event extends Serializable {
 
     Instant getDeliveredAt();
 
-    EventType getType();
+    Type getType();
 
-    Event.EventStatus getStatus();
+    Status getStatus();
 
-    enum EventType {
+    void setStatus(Status status);
+
+    enum Type {
         MESSAGE,
         TIMEOUT,
     }
 
-    enum EventStatus {
+    enum Status {
         QUEUED,
         DELIVERED,
         DROPPED

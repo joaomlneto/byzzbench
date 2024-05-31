@@ -52,7 +52,7 @@ public class Transport<T extends Serializable> {
         this.mutators.clear();
     }
 
-    public List<MessageEvent> getEventsInState(Event.EventStatus status) {
+    public List<MessageEvent> getEventsInState(Event.Status status) {
         return this.events.values().stream()
                 // filter only messages in the given state
                 .filter(MessageEvent.class::isInstance)
@@ -66,32 +66,38 @@ public class Transport<T extends Serializable> {
             boolean nodesInSamePartition = this.partitions.getOrDefault(sender, 0).equals(this.partitions.getOrDefault(recipient, 0));
             MessageEvent messageEvent = new MessageEvent(messageId, sender, recipient, payload);
             if (nodesInSamePartition) {
-                messageEvent.setStatus(Event.EventStatus.QUEUED);
+                messageEvent.setStatus(Event.Status.QUEUED);
                 log.info("Queued: " + sender + "->" + recipient + ": " + messageEvent);
             } else {
-                messageEvent.setStatus(Event.EventStatus.DROPPED);
+                messageEvent.setStatus(Event.Status.DROPPED);
                 log.info("Dropped: " + sender + "->" + recipient + ": " + messageEvent);
             }
-            System.out.println("EVENT REGISTERED!!! " + messageEvent);
             events.put(messageId, messageEvent);
-            System.out.println("EVENT REGISTERED!!! " + events);
         }
     }
 
-    public void deliverMessage(long messageId) throws Exception {
+    public void deliverEvent(long eventId) throws Exception {
         // check if event is a message
-        Event e = events.get(messageId);
+        Event e = events.get(eventId);
 
-        if (!(e instanceof MessageEvent m)) {
-            throw new RuntimeException(String.format("Event %d is not a message", messageId));
+        // check if null
+        if (e == null) {
+            throw new RuntimeException(String.format("Event %d not found", eventId));
         }
 
-        if (m.getStatus() != Event.EventStatus.QUEUED) {
-            throw new RuntimeException("Message not found or not in QUEUED state");
+        // check if it is in QUEUED state
+        if (e.getStatus() != Event.Status.QUEUED) {
+            throw new RuntimeException("Event not in QUEUED state");
         }
-        m.setStatus(Event.EventStatus.DELIVERED);
-        nodes.get(m.getRecipientId()).handleMessage(m.getSenderId(), m.getPayload());
-        log.info("Delivered: " + m.getSenderId() + "->" + m.getRecipientId() + ": " + m.getPayload());
+
+        e.setStatus(Event.Status.DELIVERED);
+        switch (e) {
+            case MessageEvent m -> nodes.get(m.getRecipientId()).handleMessage(m.getSenderId(), m.getPayload());
+            case TimeoutEvent t -> throw new RuntimeException("Timeout event not implemented");
+            default -> throw new RuntimeException("Unknown event type");
+        }
+
+        log.info("Delivered " + e.getEventId() + ": " + e.getSenderId() + "->" + e.getRecipientId());
     }
 
     public void dropMessage(long messageId) {
@@ -102,10 +108,10 @@ public class Transport<T extends Serializable> {
             throw new RuntimeException(String.format("Event %d is not a message", messageId));
         }
 
-        if (m.getStatus() != Event.EventStatus.QUEUED) {
+        if (m.getStatus() != Event.Status.QUEUED) {
             throw new RuntimeException("Message not found or not in QUEUED state");
         }
-        m.setStatus(Event.EventStatus.DROPPED);
+        m.setStatus(Event.Status.DROPPED);
         log.info("Dropped: " + m.getSenderId() + "->" + m.getRecipientId() + ": " + m.getPayload());
     }
 
@@ -122,7 +128,7 @@ public class Transport<T extends Serializable> {
         log.info("Registered Message Mutators:" + this.mutators);
     }
 
-    public void setTimeout(Replica replica, Runnable runnable, long timeout) {
+    public long setTimeout(Replica<T> replica, Runnable runnable, long timeout) {
         Event e = new TimeoutEvent(
                 this.eventSeqNum.getAndIncrement(),
                 "TIMEOUT",
@@ -130,5 +136,22 @@ public class Transport<T extends Serializable> {
                 timeout,
                 runnable);
         this.events.put(e.getEventId(), e);
+        log.info("Timeout set for " + replica.getNodeId() + " in " + timeout + "ms");
+        return e.getEventId();
+    }
+
+    public void clearReplicaTimeouts(Replica<T> replica) {
+        // get all event IDs for timeouts from this replica
+        List<Long> eventIds = this.events.values().stream()
+                .filter(e -> e instanceof TimeoutEvent t
+                        && t.getSenderId().equals(replica.getNodeId())
+                        && t.getStatus() == Event.Status.QUEUED)
+                .map(Event::getEventId)
+                .toList();
+
+        // remove all event IDs
+        for (Long eventId : eventIds) {
+            this.events.remove(eventId);
+        }
     }
 }

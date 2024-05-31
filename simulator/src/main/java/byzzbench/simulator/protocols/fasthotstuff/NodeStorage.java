@@ -65,7 +65,6 @@ public class NodeStorage implements Serializable {
     }
 
     public <K, V extends GenericVoteMessage> Optional<Set<V>> canMakeQc(Map<K, Set<V>> collection, K key, V value) {
-        System.out.println("Quorum size: " + this.replica.computeQuorumSize());
         boolean before = collection.containsKey(key) && collection.get(key).size() >= this.replica.computeQuorumSize();
         collection.computeIfAbsent(key, k -> new HashSet<>()).add(value);
         boolean after = collection.containsKey(key) && collection.get(key).size() >= this.replica.computeQuorumSize();

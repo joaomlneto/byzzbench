@@ -12,10 +12,10 @@ public class MessageEvent implements Event {
     private final MessagePayload payload;
     private final Instant createdAt = Instant.now();
     private transient Instant deliveredAt = null;
-    private EventStatus status;
+    private Status status = Status.QUEUED;
 
     @Override
-    public EventType getType() {
-        return EventType.MESSAGE;
+    public Type getType() {
+        return Type.MESSAGE;
     }
 }
