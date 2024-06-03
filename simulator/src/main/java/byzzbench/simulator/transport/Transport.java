@@ -52,11 +52,8 @@ public class Transport<T extends Serializable> {
         this.mutators.clear();
     }
 
-    public List<MessageEvent> getEventsInState(Event.Status status) {
+    public List<Event> getEventsInState(Event.Status status) {
         return this.events.values().stream()
-                // filter only messages in the given state
-                .filter(MessageEvent.class::isInstance)
-                .map(m -> (MessageEvent) m)
                 .filter(m -> m.getStatus() == status).toList();
     }
 

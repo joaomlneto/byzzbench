@@ -3,7 +3,6 @@ package byzzbench.simulator.controller;
 import byzzbench.simulator.Replica;
 import byzzbench.simulator.service.SimulatorService;
 import byzzbench.simulator.transport.Event;
-import byzzbench.simulator.transport.MessageEvent;
 import byzzbench.simulator.transport.MessageMutator;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -41,7 +40,7 @@ public class SimulatorController {
                 .getEventsInState(Event.Status.QUEUED)
                 .stream()
                 .filter(e -> e.getRecipientId().equals(nodeId))
-                .map(MessageEvent::getEventId)
+                .map(Event::getEventId)
                 .toList();
     }
 
@@ -55,46 +54,46 @@ public class SimulatorController {
         return simulatorService.getScenarioExecutor().getTransport().getEvents().get(eventId);
     }
 
-    @GetMapping("/messages/queued")
+    @GetMapping("/events/queued")
     public List<Long> getQueuedMessages() {
         return simulatorService.getScenarioExecutor().getTransport()
                 .getEventsInState(Event.Status.QUEUED)
                 .stream()
-                .map(MessageEvent::getEventId)
+                .map(Event::getEventId)
                 .toList();
     }
 
-    @GetMapping("/messages/dropped")
+    @GetMapping("/events/dropped")
     public List<Long> getDroppedMessages() {
         return simulatorService.getScenarioExecutor().getTransport()
                 .getEventsInState(Event.Status.DROPPED)
                 .stream()
-                .map(MessageEvent::getEventId)
+                .map(Event::getEventId)
                 .toList();
     }
 
-    @GetMapping("/messages/delivered")
+    @GetMapping("/events/delivered")
     public List<Long> getDeliveredMessages() {
         return simulatorService.getScenarioExecutor().getTransport()
                 .getEventsInState(Event.Status.DELIVERED)
                 .stream()
-                .map(MessageEvent::getEventId)
+                .map(Event::getEventId)
                 .toList();
     }
 
-    @GetMapping("/message/{messageId}")
-    public Event getMessage(@PathVariable Long messageId) {
-        return simulatorService.getScenarioExecutor().getTransport().getEvents().get(messageId);
+    @GetMapping("/event/{eventId}")
+    public Event getMessage(@PathVariable Long eventId) {
+        return simulatorService.getScenarioExecutor().getTransport().getEvents().get(eventId);
     }
 
-    @PostMapping("/message/{messageId}/deliver")
-    public void deliverMessage(@PathVariable Long messageId) throws Exception {
-        simulatorService.getScenarioExecutor().getTransport().deliverEvent(messageId);
+    @PostMapping("/event/{eventId}/deliver")
+    public void deliverMessage(@PathVariable Long eventId) throws Exception {
+        simulatorService.getScenarioExecutor().getTransport().deliverEvent(eventId);
     }
 
-    @PostMapping("/message/{messageId}/drop")
-    public void dropMessage(@PathVariable Long messageId) {
-        simulatorService.getScenarioExecutor().getTransport().dropMessage(messageId);
+    @PostMapping("/event/{eventId}/drop")
+    public void dropMessage(@PathVariable Long eventId) {
+        simulatorService.getScenarioExecutor().getTransport().dropMessage(eventId);
     }
 
     @GetMapping("/mutators")

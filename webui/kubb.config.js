@@ -10,8 +10,7 @@ export default defineConfig(async () => {
   return {
     root: ".",
     input: {
-      path: "http://localhost:8080/v3/api-docs",
-      //data: specJson,
+      path: "http://localhost:8080/spec",
     },
     output: {
       path: "./lib/byzzbench-client/generated",

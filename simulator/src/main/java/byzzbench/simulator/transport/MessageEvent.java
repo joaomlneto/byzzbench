@@ -13,9 +13,4 @@ public class MessageEvent implements Event {
     private final Instant createdAt = Instant.now();
     private transient Instant deliveredAt = null;
     private Status status = Status.QUEUED;
-
-    @Override
-    public Type getType() {
-        return Type.MESSAGE;
-    }
 }

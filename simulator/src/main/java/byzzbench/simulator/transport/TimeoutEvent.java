@@ -24,9 +24,4 @@ public class TimeoutEvent implements Event {
     public String getRecipientId() {
         return nodeId;
     }
-
-    @Override
-    public Type getType() {
-        return Type.TIMEOUT;
-    }
 }

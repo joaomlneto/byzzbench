@@ -8,7 +8,7 @@ import { Collapse, Container, Group, Text, Title } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
 import React, { useMemo } from "react";
 
-export const MessageListEntry = ({ messageId }: { messageId: number }) => {
+export const NodeMailboxEntry = ({ messageId }: { messageId: number }) => {
   const [opened, { toggle }] = useDisclosure(false);
   const { data: message } = useGetMessage(messageId);
 
@@ -40,8 +40,7 @@ export const MessageListEntry = ({ messageId }: { messageId: number }) => {
       >
         <Group wrap="nowrap">
           <Title order={4}>
-            {payload?.eventId} ({message.data.senderId} -{">"}{" "}
-            {payload?.recipientId})
+            {payload?.eventId} ({message.data.senderId})
           </Title>
           <Text lineClamp={1}>{payload?.type?.split(".").pop()}</Text>
         </Group>
