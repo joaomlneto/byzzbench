@@ -10,10 +10,13 @@ public class NewViewMessage implements MessagePayload, GenericVoteMessage {
     private final QuorumCertificate qc;
     private final long round;
     private final String author;
-    private final String blockHash;
 
     @Override
     public String getType() {
         return "NEW-VIEW";
+    }
+
+    public String getBlockHash() {
+        return qc.getVotes().stream().toList().get(0).getBlockHash();
     }
 }

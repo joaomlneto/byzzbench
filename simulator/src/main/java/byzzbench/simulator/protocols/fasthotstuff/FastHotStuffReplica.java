@@ -16,7 +16,7 @@ import java.util.concurrent.atomic.AtomicLong;
 
 @Log
 public class FastHotStuffReplica extends Replica<Block> {
-    // TODO: Timeout
+    public static int TIMEOUT_DELAY = 15000; // 15 seconds
 
     @JsonIgnore
     private final AtomicLong round = new AtomicLong(3);
@@ -34,7 +34,7 @@ public class FastHotStuffReplica extends Replica<Block> {
     private QuorumCertificate highestQc = new QuorumCertificate(null);
 
     public FastHotStuffReplica(String nodeId, Set<String> nodeIds, Transport transport) {
-        super(nodeId, nodeIds, transport, new TotalOrderCommitLog<Block>());
+        super(nodeId, nodeIds, transport, new TotalOrderCommitLog<>());
         createGenesisBlocks();
 
         if (this.getNodeId().equals(this.getLeader())) {
@@ -45,10 +45,8 @@ public class FastHotStuffReplica extends Replica<Block> {
                             String.format("%s%d", this.getNodeId(), this.round.get())));
         }
 
-        System.out.println("GOING TO SET TIMEOUT");
-        this.setTimeout(() -> {
-            System.out.println("TIMEOUT!!!");
-        }, 1000);
+        // create 15 second timeout
+        this.resetTimeout();
     }
 
     private void createGenesisBlocks() {
@@ -233,5 +231,20 @@ public class FastHotStuffReplica extends Replica<Block> {
 
     public String hash(Block block) {
         return Base64.getEncoder().encodeToString(this.digest(block));
+    }
+
+    public void handleTimeout() {
+        log.info("Timeout!");
+        this.round.incrementAndGet();
+        this.resetTimeout();
+        NewViewMessage vote = new NewViewMessage(this.highestQc, this.round.get(), this.getNodeId());
+        String nextLeader = this.getLeader();
+        this.sendMessage(vote, nextLeader);
+        log.info("Sending new view message to next leader: " + nextLeader);
+    }
+
+    public void resetTimeout() {
+        this.clearAllTimeouts();
+        this.setTimeout(this::handleTimeout, TIMEOUT_DELAY);
     }
 }

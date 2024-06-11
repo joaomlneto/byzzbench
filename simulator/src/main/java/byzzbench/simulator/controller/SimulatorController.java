@@ -5,10 +5,7 @@ import byzzbench.simulator.service.SimulatorService;
 import byzzbench.simulator.transport.Event;
 import byzzbench.simulator.transport.MessageMutator;
 import lombok.RequiredArgsConstructor;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.io.Serializable;
 import java.util.List;
@@ -35,10 +32,11 @@ public class SimulatorController {
     }
 
     @GetMapping("/node/{nodeId}/mailbox")
-    public List<Long> getNodeMailbox(@PathVariable String nodeId) {
+    public List<Long> getNodeMailbox(@PathVariable String nodeId, @RequestParam(required = false) String type) {
         return simulatorService.getScenarioExecutor().getTransport()
                 .getEventsInState(Event.Status.QUEUED)
                 .stream()
+                .filter(e -> type == null || e.getClass().getSimpleName().equals(type))
                 .filter(e -> e.getRecipientId().equals(nodeId))
                 .map(Event::getEventId)
                 .toList();

@@ -90,7 +90,7 @@ public class Transport<T extends Serializable> {
         e.setStatus(Event.Status.DELIVERED);
         switch (e) {
             case MessageEvent m -> nodes.get(m.getRecipientId()).handleMessage(m.getSenderId(), m.getPayload());
-            case TimeoutEvent t -> throw new RuntimeException("Timeout event not implemented");
+            case TimeoutEvent t -> t.getTask().run();
             default -> throw new RuntimeException("Unknown event type");
         }
 
