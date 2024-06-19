@@ -1,9 +1,9 @@
-package byzzbench.simulator.protocols.dummy;
+package byzzbench.simulator.protocols.pbft_java;
 
 import byzzbench.simulator.Replica;
 import byzzbench.simulator.ScenarioExecutor;
-import byzzbench.simulator.protocols.pbft_java.MessageLog;
 import byzzbench.simulator.protocols.pbft_java.message.RequestMessage;
+import byzzbench.simulator.protocols.pbft_java.mutator.PrePrepareMessageMutatorFactory;
 import byzzbench.simulator.transport.Transport;
 import lombok.extern.java.Log;
 
@@ -12,9 +12,10 @@ import java.util.Set;
 import java.util.TreeSet;
 
 @Log
-public class DummyScenarioExecutor<T extends Serializable> extends ScenarioExecutor<T> {
+public class PbftScenarioExecutor<T extends Serializable> extends ScenarioExecutor<T> {
+    private final int NUM_NODES = 4;
 
-    public DummyScenarioExecutor() throws Exception {
+    public PbftScenarioExecutor() {
         super(new Transport());
     }
 
@@ -22,16 +23,18 @@ public class DummyScenarioExecutor<T extends Serializable> extends ScenarioExecu
     public void setup() {
         try {
             Set<String> nodeIds = new TreeSet<>();
-            for (int i = 0; i < 4; i++) {
+            for (int i = 0; i < NUM_NODES; i++) {
                 nodeIds.add(Character.toString((char) ('A' + i)));
             }
 
             nodeIds.forEach(nodeId -> {
                 MessageLog messageLog = new MessageLog(100, 100, 200);
-                Replica replica = new DummyReplica<String, String>(nodeId, nodeIds, transport);
+                Replica replica = new PbftReplica<String, String>(nodeId, nodeIds, 1, 1000, messageLog, transport);
                 nodes.put(nodeId, replica);
                 transport.addNode(replica);
             });
+
+            transport.registerMessageMutators(new PrePrepareMessageMutatorFactory());
         } catch (Exception e) {
             throw new RuntimeException(e);
         }

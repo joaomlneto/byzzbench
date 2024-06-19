@@ -1,6 +1,6 @@
 package byzzbench.simulator.protocols.fasthotstuff.message;
 
-import byzzbench.simulator.protocols.pbft.message.CheckpointMessage;
+import byzzbench.simulator.protocols.pbft_java.message.CheckpointMessage;
 import byzzbench.simulator.transport.MessagePayload;
 import lombok.Data;
 import lombok.With;

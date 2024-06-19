@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.io.Serializable;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 
 @RestController
@@ -105,8 +106,14 @@ public class SimulatorController {
     }
 
     @PostMapping("/reset")
-    public void reset() {
+    public void reset() throws Exception {
         simulatorService.getScenarioExecutor().reset();
+    }
+
+    @PostMapping("/scheduler/next")
+    public Optional<Long> scheduleNext() throws Exception {
+        Optional<Event> event = simulatorService.getScenarioExecutor().getScheduler().scheduleNext();
+        return event.map(Event::getEventId);
     }
 
 

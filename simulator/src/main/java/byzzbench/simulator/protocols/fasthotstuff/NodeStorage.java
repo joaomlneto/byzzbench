@@ -44,9 +44,9 @@ public class NodeStorage implements Serializable {
     }
 
     // Adds a vote to the storage
-    public Optional<QuorumCertificate> addVote(VoteMessage vote) {
-        String digest = vote.getBlockHash();
-        Optional<Set<VoteMessage>> votes = canMakeQc(this.votes, digest, vote);
+    public Optional<QuorumCertificate> addVote(VoteMessage message) {
+        String digest = message.getBlockHash();
+        Optional<Set<VoteMessage>> votes = canMakeQc(this.votes, digest, message);
         if (votes.isPresent()) {
             return Optional.of(new QuorumCertificate(votes.get()));
         } else {
@@ -54,9 +54,9 @@ public class NodeStorage implements Serializable {
         }
     }
 
-    public Optional<AggregateQuorumCertificate> addVote(NewViewMessage newView) {
-        long round = newView.getRound();
-        Optional<Set<NewViewMessage>> newViewsQc = canMakeQc(this.newViews, round, newView);
+    public Optional<AggregateQuorumCertificate> addVote(NewViewMessage message) {
+        long round = message.getRound();
+        Optional<Set<NewViewMessage>> newViewsQc = canMakeQc(this.newViews, round, message);
         if (newViewsQc.isPresent()) {
             return Optional.of(new AggregateQuorumCertificate(newViewsQc.get()));
         } else {

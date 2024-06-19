@@ -1,5 +1,6 @@
 "use client";
 
+import { DoSchedulerActionIcon } from "@/components/DoSchedulerActionIcon";
 import {
   DeliveredMessagesList,
   DroppedMessagesList,
@@ -7,14 +8,17 @@ import {
 import { MutatorsList } from "@/components/MutatorsList";
 import { NodeList } from "@/components/NodeList";
 import { ResetActionIcon } from "@/components/ResetActionIcon";
-import { Container, Stack, Title } from "@mantine/core";
+import { Container, Group, Stack, Title } from "@mantine/core";
 import React from "react";
 
 export default function Home() {
   return (
     <Container fluid p="xl">
       <Stack gap="md">
-        <ResetActionIcon />
+        <Group gap="xs">
+          <ResetActionIcon />
+          <DoSchedulerActionIcon />
+        </Group>
         <Title order={3}>Nodes</Title>
         <NodeList />
         <br />

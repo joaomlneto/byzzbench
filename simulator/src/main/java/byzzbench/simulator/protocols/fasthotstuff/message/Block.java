@@ -8,7 +8,7 @@ import java.io.Serializable;
 
 @Data
 public class Block implements MessagePayload, PartialOrderLogEntry<String> {
-    private final QuorumCertificate qc;
+    private final GenericQuorumCertificate qc;
     private final long round;
     private final String author;
     private final Serializable payload;

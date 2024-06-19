@@ -1,30 +1,28 @@
 "use client";
 
-import { useReset } from "@/lib/byzzbench-client";
+import { useScheduleNext } from "@/lib/byzzbench-client";
 import { ActionIcon, Tooltip } from "@mantine/core";
 import { showNotification } from "@mantine/notifications";
-import { IconTrash } from "@tabler/icons-react";
+import { IconPlayerPlay } from "@tabler/icons-react";
 import { useQueryClient } from "@tanstack/react-query";
 import React from "react";
 
-export const ResetActionIcon = () => {
+export const DoSchedulerActionIcon = () => {
   const queryClient = useQueryClient();
-  const { mutate } = useReset();
+  const { mutate } = useScheduleNext();
 
   return (
-    <Tooltip label="Reset simulation">
+    <Tooltip label="Perform next scheduler action">
       <ActionIcon
         onClick={(e) => {
           e.preventDefault();
           mutate(null as never, {
             onSuccess: () => {
-              showNotification({
-                message: `Simulation reset`,
-              });
+              // do nothing
             },
             onError: () => {
               showNotification({
-                message: "Failed to reset simulation",
+                message: "Failed to schedule next action",
                 color: "red",
               });
             },
@@ -34,7 +32,7 @@ export const ResetActionIcon = () => {
           });
         }}
       >
-        <IconTrash />
+        <IconPlayerPlay />
       </ActionIcon>
     </Tooltip>
   );

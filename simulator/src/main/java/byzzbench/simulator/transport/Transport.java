@@ -133,7 +133,7 @@ public class Transport<T extends Serializable> {
                 timeout,
                 runnable);
         this.events.put(e.getEventId(), e);
-        log.info("Timeout set for " + replica.getNodeId() + " in " + timeout + "ms");
+        log.info("Timeout set for " + replica.getNodeId() + " in " + timeout + "ms: " + e);
         return e.getEventId();
     }
 

@@ -18,6 +18,7 @@ import java.util.Set;
 @Getter
 @ToString
 public abstract class Replica<T extends Serializable> implements Serializable {
+    @JsonIgnore
     static MessageDigest md;
 
     static {
@@ -30,12 +31,17 @@ public abstract class Replica<T extends Serializable> implements Serializable {
 
     @Getter
     private final transient CommitLog<T> commitLog;
+
     private final transient String nodeId;
+
     @JsonIgnore
     private final transient Set<String> nodeIds;
+
     @JsonIgnore
     private final transient Transport<T> transport;
-    DigestService digestService;
+
+    @JsonIgnore
+    private DigestService digestService;
 
     protected Replica(String nodeId, Set<String> nodeIds, Transport<T> transport, CommitLog<T> commitLog) {
         this.nodeId = nodeId;
@@ -77,6 +83,8 @@ public abstract class Replica<T extends Serializable> implements Serializable {
     public Serializable getState() {
         return this;
     }
+
+    public abstract void initialize();
 
     public abstract void handleMessage(String sender, MessagePayload message) throws Exception;
 

@@ -20,6 +20,11 @@ public class DummyReplica<O extends Serializable, R extends Serializable> extend
     }
 
     @Override
+    public void initialize() {
+        // nothing to do
+    }
+
+    @Override
     public void handleMessage(String sender, MessagePayload m) {
         //throw new RuntimeException("Unknown message type");
     }

@@ -33,7 +33,7 @@ public class BlockDirectedAcyclicGraph<K, B extends PartialOrderLogEntry<K>> imp
     public void commitBlock(K key) {
         // Check if the block is already committed
         if (committedBlocks.contains(key)) {
-            throw new IllegalArgumentException("Cannot commit block: Block already committed");
+            //throw new IllegalArgumentException("Cannot commit block: Block already committed");
         }
 
         // Check if the block is known

@@ -8,35 +8,34 @@ import byzzbench.simulator.transport.Transport;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.extern.java.Log;
 
-import java.util.Base64;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicLong;
 
 @Log
 public class FastHotStuffReplica extends Replica<Block> {
-    public static int TIMEOUT_DELAY = 15000; // 15 seconds
+    public static final int TIMEOUT_DELAY = 15000; // 15 seconds
 
-    @JsonIgnore
     private final AtomicLong round = new AtomicLong(3);
-    @JsonIgnore
     private final AtomicLong lastVotedRound = new AtomicLong(2);
-    @JsonIgnore
     private final AtomicLong preferredRound = new AtomicLong(1);
-    @JsonIgnore
     private final AtomicLong highestQcRound = new AtomicLong(2);
 
     @JsonIgnore
     private final NodeStorage storage = new NodeStorage(this);
 
     @JsonIgnore
-    private QuorumCertificate highestQc = new QuorumCertificate(null);
+    private GenericQuorumCertificate highestQc = new QuorumCertificate(new ArrayList<>());
 
-    public FastHotStuffReplica(String nodeId, Set<String> nodeIds, Transport transport) {
+    public FastHotStuffReplica(String nodeId, Set<String> nodeIds, Transport<Block> transport) {
         super(nodeId, nodeIds, transport, new TotalOrderCommitLog<>());
+    }
+
+    @Override
+    public void initialize() {
+        // create genesis blocks for the first 3 rounds
         createGenesisBlocks();
 
+        // leader broadcasts a block
         if (this.getNodeId().equals(this.getLeader())) {
             this.broadcastMessageIncludingSelf(
                     new Block(highestQc,
@@ -53,19 +52,19 @@ public class FastHotStuffReplica extends Replica<Block> {
         List<String> nodeIds = this.getNodeIds().stream().sorted().toList();
 
         // Genesis Block
-        Block b0 = new Block(null, 0, nodeIds.get(0), "Genesis Block");
+        Block b0 = new Block(null, 0, this.getLeader(0), "Genesis Block");
         QuorumCertificate qc0 = new QuorumCertificate(
                 nodeIds.stream()
                         .map(nodeId -> new VoteMessage(nodeId, hash(b0)))
                         .toList());
 
-        Block b1 = new Block(qc0, 1, nodeIds.get(1), "B1");
+        Block b1 = new Block(qc0, 1, this.getLeader(1), "B1");
         QuorumCertificate qc1 = new QuorumCertificate(
                 nodeIds.stream()
                         .map(nodeId -> new VoteMessage(nodeId, hash(b1)))
                         .toList());
 
-        Block b2 = new Block(qc1, 2, nodeIds.get(2), "B2");
+        Block b2 = new Block(qc1, 2, this.getLeader(2), "B2");
         QuorumCertificate qc2 = new QuorumCertificate(
                 nodeIds.stream()
                         .map(nodeId -> new VoteMessage(nodeId, hash(b2)))
@@ -81,14 +80,9 @@ public class FastHotStuffReplica extends Replica<Block> {
             log.severe(String.format("QC 2: %s", qc2));
         }
 
-        // TODO: Add blocks to storage of all replicas!!
         this.storage.addBlock(b0);
         this.storage.addBlock(b1);
         this.storage.addBlock(b2);
-        // unsure if the following is required
-        //this.storage.addVote(qc0.getVotes().stream().findAny().get());
-        //this.storage.addVote(qc1.getVotes().stream().findAny().get());
-        //this.storage.addVote(qc2.getVotes().stream().findAny().get());
 
         this.highestQc = qc2;
         this.highestQcRound.set(2);
@@ -113,7 +107,6 @@ public class FastHotStuffReplica extends Replica<Block> {
             Optional<QuorumCertificate> qc = this.storage.addVote(vote);
             if (qc.isPresent()) {
                 this.processBlock(this.storage.getBlock(vote.getBlockHash()));
-                //Block block = this.storage.getBlock(qc.get().getVotes().stream().findAny().get().getBlockHash());
                 Block block = new Block(qc.get(), this.round.get(), this.getNodeId(), String.format("%s%d", this.getNodeId(), this.round.get()));
                 this.broadcastMessageIncludingSelf(block);
             }
@@ -121,12 +114,13 @@ public class FastHotStuffReplica extends Replica<Block> {
         }
 
         if (message instanceof NewViewMessage newView) {
-            Optional<? extends GenericQuorumCertificate> qc = this.storage.addVote(newView);
+            Optional<AggregateQuorumCertificate> qc = this.storage.addVote(newView);
             if (qc.isPresent()) {
                 this.processBlock(this.storage.getBlock(newView.getBlockHash()));
                 // FIXME: THIS IS PROBABLY WRONG.
                 // see: https://github.com/asonnino/twins-simulator/blob/master/fhs/node.py#L43
-                Block block = this.storage.getBlock(qc.get().getVotes().stream().findAny().get().getBlockHash());
+                // XXX: Now this is probably right!
+                Block block = new Block(qc.get(), this.round.get(), this.getNodeId(), String.format("%s%d", this.getNodeId(), this.round.get()));
                 this.broadcastMessageIncludingSelf(block);
             }
             return;
@@ -136,7 +130,7 @@ public class FastHotStuffReplica extends Replica<Block> {
         log.warning(String.format("Received unknown message from %s: %s", sender, message));
     }
 
-    public void processQuorumCertificate(QuorumCertificate qc) {
+    public void processQuorumCertificate(GenericQuorumCertificate qc) {
         log.info(String.format("Received QC: %s", qc));
 
         // get block hash from qc
@@ -188,8 +182,7 @@ public class FastHotStuffReplica extends Replica<Block> {
             return;
         }
 
-        // TODO: Timeouts
-        // this.timeout = DELAY;
+        this.resetTimeout();
         this.lastVotedRound.set(block.getRound());
         this.round.set(Math.max(this.round.get(), block.getRound() + 1));
         VoteMessage vote = new VoteMessage(this.getNodeId(), this.hash(block));
@@ -199,13 +192,17 @@ public class FastHotStuffReplica extends Replica<Block> {
     }
 
     public String getLeader(long roundNumber) {
-        //return this.getNodeIds().stream().sorted().skip(roundNumber % this.getNodeIds().size()).findFirst().get();
         // sorted nodeIDS
         List<String> nodeIds = this.getNodeIds().stream().sorted().toList();
-        // num nodes
-        int n = nodeIds.size();
+
+        // XXX: This is a hack to make the leader selection deterministic to reproduce the FHS bug
+        List<Integer> bugOrder = List.of(0, 1, 0, 0, 1, 0, 2, 1, 1, 2, 2);
+        if (roundNumber < bugOrder.size()) {
+            return nodeIds.get(bugOrder.get((int) roundNumber));
+        }
+
         // get roundNumber-th node
-        return nodeIds.get((int) (roundNumber % n));
+        return nodeIds.get((int) (roundNumber % nodeIds.size()));
     }
 
     public String getLeader() {

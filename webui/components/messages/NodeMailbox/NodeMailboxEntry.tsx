@@ -4,7 +4,7 @@ import {
 } from "@/components/messages";
 import { NodeStateNavLink } from "@/components/NodeStateNavLink";
 import { useGetMessage } from "@/lib/byzzbench-client/generated";
-import { Collapse, Container, Group, Text, Title } from "@mantine/core";
+import { Badge, Collapse, Container, Group, Text } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
 import React, { useMemo } from "react";
 
@@ -38,11 +38,17 @@ export const NodeMailboxEntry = ({ messageId }: { messageId: number }) => {
           toggle();
         }}
       >
-        <Group wrap="nowrap">
-          <Title order={4}>
-            {payload?.eventId} ({message.data.senderId})
-          </Title>
-          <Text lineClamp={1}>{payload?.type?.split(".").pop()}</Text>
+        <Group wrap="nowrap" gap="xs">
+          <Text span c="dimmed">
+            {payload?.eventId}
+          </Text>
+          <Badge size="sm">{message.data.senderId}</Badge>
+          <Text lineClamp={1}>
+            {
+              // @ts-ignore
+              payload?.payload?.type ?? "TIMEOUT"
+            }
+          </Text>
         </Group>
         {payload?.status == "QUEUED" && (
           <Group gap="xs" wrap="nowrap">
