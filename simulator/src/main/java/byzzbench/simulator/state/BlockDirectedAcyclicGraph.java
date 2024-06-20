@@ -1,5 +1,6 @@
 package byzzbench.simulator.state;
 
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.java.Log;
 
@@ -18,6 +19,7 @@ import java.util.Set;
  */
 @RequiredArgsConstructor
 @Log
+@Getter
 public class BlockDirectedAcyclicGraph<K, B extends PartialOrderLogEntry<K>> implements Serializable {
     private final Map<K, B> knownBlocks = new HashMap<>();
     private final Set<K> committedBlocks = new HashSet<>();

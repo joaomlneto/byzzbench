@@ -5,13 +5,14 @@ import byzzbench.simulator.protocols.fasthotstuff.message.*;
 import byzzbench.simulator.state.TotalOrderCommitLog;
 import byzzbench.simulator.transport.MessagePayload;
 import byzzbench.simulator.transport.Transport;
-import com.fasterxml.jackson.annotation.JsonIgnore;
+import lombok.Getter;
 import lombok.extern.java.Log;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicLong;
 
 @Log
+@Getter
 public class FastHotStuffReplica extends Replica<Block> {
     public static final int TIMEOUT_DELAY = 15000; // 15 seconds
 
@@ -20,10 +21,8 @@ public class FastHotStuffReplica extends Replica<Block> {
     private final AtomicLong preferredRound = new AtomicLong(1);
     private final AtomicLong highestQcRound = new AtomicLong(2);
 
-    @JsonIgnore
     private final NodeStorage storage = new NodeStorage(this);
 
-    @JsonIgnore
     private GenericQuorumCertificate highestQc = new QuorumCertificate(new ArrayList<>());
 
     public FastHotStuffReplica(String nodeId, Set<String> nodeIds, Transport<Block> transport) {

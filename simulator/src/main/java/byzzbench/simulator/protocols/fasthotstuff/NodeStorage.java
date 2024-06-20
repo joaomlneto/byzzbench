@@ -3,15 +3,19 @@ package byzzbench.simulator.protocols.fasthotstuff;
 import byzzbench.simulator.protocols.fasthotstuff.message.*;
 import byzzbench.simulator.state.BlockDirectedAcyclicGraph;
 import byzzbench.simulator.state.TotalOrderCommitLog;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import lombok.Getter;
 
 import java.io.Serializable;
 import java.util.*;
 
+@Getter
 public class NodeStorage implements Serializable {
+
+    @JsonIgnore
     private final transient FastHotStuffReplica replica;
     private final Map<String, Set<VoteMessage>> votes = new HashMap<>();
     private final Map<Long, Set<NewViewMessage>> newViews = new HashMap<>();
-
     private final BlockDirectedAcyclicGraph<String, Block> dag;
 
     public NodeStorage(FastHotStuffReplica replica) {
