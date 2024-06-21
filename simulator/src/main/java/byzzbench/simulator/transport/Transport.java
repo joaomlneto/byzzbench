@@ -1,6 +1,8 @@
 package byzzbench.simulator.transport;
 
 import byzzbench.simulator.Replica;
+import byzzbench.simulator.faults.Fault;
+import byzzbench.simulator.faults.NetworkFault;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Getter;
 import lombok.Synchronized;
@@ -24,6 +26,10 @@ public class Transport<T extends Serializable> {
     @Getter(onMethod_ = {@Synchronized})
     @JsonIgnore
     private final Map<Long, MessageMutator> mutators = new TreeMap<>();
+
+    @Getter
+    // initialize with a NetworkFault fault
+    private final List<Fault> faults = new ArrayList<>(List.of(new NetworkFault(this)));
 
     /**
      * Map of node id to the partition ID that the node is in.
@@ -60,16 +66,13 @@ public class Transport<T extends Serializable> {
     public void multicast(String sender, Set<String> recipients, MessagePayload payload) {
         for (String recipient : recipients) {
             long messageId = this.eventSeqNum.getAndIncrement();
-            boolean nodesInSamePartition = this.partitions.getOrDefault(sender, 0).equals(this.partitions.getOrDefault(recipient, 0));
             MessageEvent messageEvent = new MessageEvent(messageId, sender, recipient, payload);
-            if (nodesInSamePartition) {
-                messageEvent.setStatus(Event.Status.QUEUED);
-                log.info("Queued: " + sender + "->" + recipient + ": " + messageEvent);
-            } else {
-                messageEvent.setStatus(Event.Status.DROPPED);
-                log.info("Dropped: " + sender + "->" + recipient + ": " + messageEvent);
-            }
             events.put(messageId, messageEvent);
+
+            // go through the faults
+            for (Fault fault : faults) {
+                fault.apply(messageEvent);
+            }
         }
     }
 
@@ -150,5 +153,9 @@ public class Transport<T extends Serializable> {
         for (Long eventId : eventIds) {
             this.events.remove(eventId);
         }
+    }
+
+    public void addFault(Fault fault) {
+        this.faults.add(fault);
     }
 }

@@ -6,6 +6,7 @@ import byzzbench.simulator.transport.Transport;
 import lombok.Getter;
 
 import java.io.Serializable;
+import java.util.HashMap;
 import java.util.Map;
 
 @Getter
@@ -14,7 +15,7 @@ public abstract class ScenarioExecutor<T extends Serializable> {
 
     protected final BaseScheduler<T> scheduler;
 
-    protected final Map<String, Replica<T>> nodes = new java.util.HashMap<>();
+    protected final Map<String, Replica<T>> nodes = new HashMap<>();
 
     public ScenarioExecutor(Transport<T> transport) {
         this.transport = transport;
@@ -22,7 +23,7 @@ public abstract class ScenarioExecutor<T extends Serializable> {
         this.setup();
     }
 
-    public void reset() throws Exception {
+    public void reset() {
         this.transport.reset();
         this.nodes.clear();
         this.setup();

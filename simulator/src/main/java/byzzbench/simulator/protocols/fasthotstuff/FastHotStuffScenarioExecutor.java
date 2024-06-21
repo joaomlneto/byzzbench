@@ -2,6 +2,7 @@ package byzzbench.simulator.protocols.fasthotstuff;
 
 import byzzbench.simulator.Replica;
 import byzzbench.simulator.ScenarioExecutor;
+import byzzbench.simulator.protocols.fasthotstuff.faults.FHSBugFaults;
 import byzzbench.simulator.protocols.fasthotstuff.message.Block;
 import byzzbench.simulator.transport.Transport;
 import lombok.extern.java.Log;
@@ -33,6 +34,10 @@ public class FastHotStuffScenarioExecutor extends ScenarioExecutor<Block> {
 
             log.info("Nodes: " + nodes);
 
+            (new FHSBugFaults().getFaults()).forEach(fault -> {
+                transport.addFault(fault);
+            });
+            
             //transport.registerMessageMutators(new PrePrepareMessageMutatorFactory());
         } catch (Exception e) {
             throw new RuntimeException(e);

@@ -2,6 +2,7 @@ package byzzbench.simulator.service;
 
 import byzzbench.simulator.ScenarioExecutor;
 import byzzbench.simulator.protocols.fasthotstuff.FastHotStuffScenarioExecutor;
+import byzzbench.simulator.protocols.pbft_java.PbftScenarioExecutor;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.java.Log;
@@ -16,18 +17,28 @@ import java.io.Serializable;
 @RequiredArgsConstructor
 @Log
 public class SimulatorService {
-    private final ScenarioExecutor<? extends Serializable> scenarioExecutor = new FastHotStuffScenarioExecutor();
+    private ScenarioExecutor<? extends Serializable> scenarioExecutor = new FastHotStuffScenarioExecutor();
 
     @EventListener(ApplicationReadyEvent.class)
     void onStartup() {
         log.info("Starting the simulator service");
-        try {
-            this.scenarioExecutor.setup();
-            this.scenarioExecutor.run();
-            this.scenarioExecutor.reset();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+        this.changeScenario("fasthotstuff");
         log.info("Simulator service started");
+    }
+
+    public void changeScenario(String id) {
+        switch (id) {
+            case "fasthotstuff":
+                this.scenarioExecutor = new FastHotStuffScenarioExecutor();
+                break;
+            case "pbft-java":
+                this.scenarioExecutor = new PbftScenarioExecutor<>();
+                break;
+            default:
+                throw new IllegalArgumentException("Unknown scenario id: " + id);
+        }
+        this.scenarioExecutor.setup();
+        this.scenarioExecutor.run();
+        this.scenarioExecutor.reset();
     }
 }
