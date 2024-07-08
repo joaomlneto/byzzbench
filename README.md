@@ -44,7 +44,7 @@ To build the benchmarking suite, run the following command:
 To run the benchmarking suite, run the following command:
 
 ```
-./gradlew run
+./gradlew bootRun
 ```
 
 ## Web Interface
