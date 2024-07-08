@@ -37,11 +37,10 @@ jobs:
 
       - name: Build container image with maven, and push to registry
         run: |
-          mvn -B -s settings.xml spring-boot:build-image -DskipTests=true -Dspring-boot.build-image.imageName=ghcr.io/joaomlneto/byzzbench:$IMAGE_TAG
-
+          mvn -B spring-boot:build-image -DskipTests=true -Dspring-boot.build-image.imageName=ghcr.io/joaomlneto/byzzbench:$IMAGE_TAG
+        #docker push ghcr.io/render-ninja/$IMAGE_NAME:$IMAGE_TAG
         env:
-          MAVEN_REPOSITORY_USERNAME: ${{ secrets.PACKAGES_ACCESS_USERNAME }}
-          MAVEN_REPOSITORY_PASSWORD: ${{ secrets.PACKAGES_ACCESS_TOKEN }}
+          MAVEN_REPOSITORY_USERNAME: ${{ github.actor }}
+          MAVEN_REPOSITORY_PASSWORD: ${{ secrets.GITHUB_TOKEN }}
           IMAGE_NAME: ${{ github.event.repository.name }}
           IMAGE_TAG: latest
-#docker push ghcr.io/render-ninja/$IMAGE_NAME:$IMAGE_TAG
