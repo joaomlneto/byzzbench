@@ -25,12 +25,9 @@ replay_pid*
 
 # Ignore Gradle project-specific cache directory
 .gradle
-#Don't ignore jar
-!/gradle/wrapper/gradle-wrapper.jar
 
 # Ignore Gradle build output directory
 build
-
 
 
 #######################
@@ -113,3 +110,10 @@ fabric.properties
 
 # Android studio 3.1+ serialized cache file
 .idea/caches/build_file_checksums.ser
+
+
+##########
+# Others #
+####################################################################################################
+#Don't ignore Gradle wrapper
+!/gradle/wrapper/gradle-wrapper.jar
