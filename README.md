@@ -7,13 +7,6 @@ This is a Gradle monorepo that contains the following modules:
 - `simulator`: The core benchmarking suite. Currently also includes the protocol implementations.
 - `webui`: A web interface for the benchmarking suite.
 
-```
-TODO restructure project later into the following modules:
-- `byzzbench-core`: The core benchmarking suite
-- `byzzbench-webui`: A web interface for the benchmarking suite
-- `byzzbench-protocols`: Implementations of various BFT protocols
-```
-
 ## Prerequisites
 
 For the benchmarking suite to work, you need to have the following installed on your system:
@@ -56,6 +49,10 @@ To run the web interface, run the following command:
 ```
 
 The UI should then be available at http://localhost:3000.
+
+## Documentation
+
+- [Implementing new BFT Protocols](docs/implementing-protocols.md)
 
 ## Simulator Structure
 
