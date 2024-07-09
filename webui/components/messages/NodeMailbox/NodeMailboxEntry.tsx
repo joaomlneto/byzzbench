@@ -1,7 +1,4 @@
-import {
-  DeliverMessageActionIcon,
-  DropMessageActionIcon,
-} from "@/components/messages";
+import { DeliverMessageActionIcon } from "@/components/messages";
 import { MutateMessageMenu } from "@/components/messages/MutateMessageMenu";
 import { NodeStateNavLink } from "@/components/NodeStateNavLink";
 import { useGetMessage } from "@/lib/byzzbench-client/generated";
@@ -54,7 +51,6 @@ export const NodeMailboxEntry = ({ messageId }: { messageId: number }) => {
         {payload?.status == "QUEUED" && (
           <Group gap="xs" wrap="nowrap">
             <DeliverMessageActionIcon messageId={messageId} />
-            <DropMessageActionIcon messageId={messageId} />
             <MutateMessageMenu messageId={messageId} />
           </Group>
         )}
