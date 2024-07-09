@@ -39,6 +39,6 @@ public class SimulatorService {
         }
         this.scenarioExecutor.setup();
         this.scenarioExecutor.run();
-        this.scenarioExecutor.reset();
+        //this.scenarioExecutor.reset();
     }
 }
