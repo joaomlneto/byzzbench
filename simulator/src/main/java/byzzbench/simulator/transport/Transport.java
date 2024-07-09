@@ -59,6 +59,7 @@ public class Transport<T extends Serializable> {
         this.nodes.clear();
         this.events.clear();
         this.mutators.clear();
+        this.schedule.clear();
     }
 
     public List<Event> getEventsInState(Event.Status status) {
