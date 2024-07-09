@@ -18,18 +18,21 @@ For the user interface to work, you need to have the following installed on your
 - Node.js
 - pnpm
 
-Installing everything on macOS:
+Installing everything on macOS using HomeBrew can be done with the following commands:
 
 ```
 brew install openjdk@17 node pnpm
 ```
 
+For other operating systems, please refer to the respective installation instructions.
+
 ## Building
 
-To build the benchmarking suite, run the following command:
+To install dependencies and build the benchmarking suite, run the following commands:
 
 ```
 ./gradlew build
+(cd webui && pnpm install)
 ```
 
 ## Running
@@ -45,10 +48,26 @@ To run the benchmarking suite, run the following command:
 To run the web interface, run the following command:
 
 ```
-(cd webui && pnpm install && pnpm run kubb:generate && pnpm run dev)
+(cd webui && pnpm run kubb:generate && pnpm run dev)
 ```
 
+> [!NOTE]
+> The simulator must be running for `kubb:generate` to succeed.
+
 The UI should then be available at http://localhost:3000.
+
+## Running Benchmarks
+
+We currently have the following protocols implemented:
+
+- [PBFT](simulator/src/main/java/byzzbench/simulator/protocols/pbft/PbftReplica.java): The original PBFT protocol, as
+  described in
+  the [PBFT paper](https://www.microsoft.com/en-us/research/publication/practical-byzantine-fault-tolerance/);
+- [PBFT-Java](simulator/src/main/java/byzzbench/simulator/protocols/pbft_java/PbftReplica.java): A buggy version of
+  PBFT,
+  from the [PBFT-Java repository](https://github.com/caojohnny/pbft-java);
+- [Fast-HotStuff](simulator/src/main/java/byzzbench/simulator/protocols/fasthotstuff/FastHotStuffReplica.java): A
+  failed attempt at improving HotStuff, as described in the [Fast-HotStuff paper](https://arxiv.org/abs/2010.11454);
 
 ## Documentation
 
