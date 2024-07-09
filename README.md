@@ -71,6 +71,8 @@ We currently have the following protocols implemented:
 
 ## Documentation
 
+See additional documentation in the [docs](docs) directory.
+
 - [Implementing new BFT Protocols](docs/implementing-protocols.md)
 
 ## Simulator Structure
