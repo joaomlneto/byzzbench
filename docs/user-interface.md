@@ -10,4 +10,4 @@ Under *Schedule*, we can see the events in the order they were delivered to thei
 
 The UI allows to introspect the state of each node and message:
 
-![UI Node Details](/Users/joaomlneto/git/byzzbench/docs/ui-node-details.png)
+![UI Node Details](ui-node-details.png)
