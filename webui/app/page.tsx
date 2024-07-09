@@ -22,7 +22,7 @@ export default function Home() {
         <Title order={3}>Nodes</Title>
         <NodeList />
         <br />
-        <Title order={3}>Delivered Messages</Title>
+        <Title order={3}>Schedule</Title>
         <DeliveredMessagesList />
         <br />
         <Title order={3}>Dropped Messages</Title>

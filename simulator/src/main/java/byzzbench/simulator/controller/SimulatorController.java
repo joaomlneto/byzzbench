@@ -80,6 +80,15 @@ public class SimulatorController {
                 .toList();
     }
 
+    @GetMapping("/schedule")
+    public List<Long> getSchedule() {
+        return simulatorService.getScenarioExecutor().getTransport()
+                .getSchedule()
+                .stream()
+                .map(Event::getEventId)
+                .toList();
+    }
+
     @GetMapping("/event/{eventId}")
     public Event getMessage(@PathVariable Long eventId) {
         return simulatorService.getScenarioExecutor().getTransport().getEvents().get(eventId);

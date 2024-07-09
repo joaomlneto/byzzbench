@@ -24,6 +24,9 @@ public class Transport<T extends Serializable> {
     private final Map<Long, Event> events = new TreeMap<>();
 
     @Getter(onMethod_ = {@Synchronized})
+    private final List<Event> schedule = new ArrayList<>();
+
+    @Getter(onMethod_ = {@Synchronized})
     @JsonIgnore
     private final Map<Long, MessageMutator> mutators = new TreeMap<>();
 
@@ -90,7 +93,10 @@ public class Transport<T extends Serializable> {
             throw new RuntimeException("Event not in QUEUED state");
         }
 
+        // deliver the event
+        this.schedule.add(e);
         e.setStatus(Event.Status.DELIVERED);
+
         switch (e) {
             case MessageEvent m -> nodes.get(m.getRecipientId()).handleMessage(m.getSenderId(), m.getPayload());
             case TimeoutEvent t -> t.getTask().run();
