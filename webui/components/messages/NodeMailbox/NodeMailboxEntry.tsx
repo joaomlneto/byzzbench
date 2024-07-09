@@ -2,6 +2,7 @@ import {
   DeliverMessageActionIcon,
   DropMessageActionIcon,
 } from "@/components/messages";
+import { MutateMessageMenu } from "@/components/messages/MutateMessageMenu";
 import { NodeStateNavLink } from "@/components/NodeStateNavLink";
 import { useGetMessage } from "@/lib/byzzbench-client/generated";
 import { Badge, Collapse, Container, Group, Text } from "@mantine/core";
@@ -54,6 +55,7 @@ export const NodeMailboxEntry = ({ messageId }: { messageId: number }) => {
           <Group gap="xs" wrap="nowrap">
             <DeliverMessageActionIcon messageId={messageId} />
             <DropMessageActionIcon messageId={messageId} />
+            <MutateMessageMenu messageId={messageId} />
           </Group>
         )}
       </Group>
