@@ -87,6 +87,8 @@ classDiagram
     class Event {
         -int eventId
     }
+    class Transport {
+    }
     class MessageEvent {
         -String senderId
         -String recipientId
@@ -111,16 +113,22 @@ classDiagram
     }
     class CommitLog {
         <<Abstract>>
+        addEntry()
     }
     class TotalOrderCommitLog {
+        addEntry()
     }
     class PartialOrderCommitLog {
+        addEntry()
     }
     Event <|-- MessageEvent
     Event <|-- TimeoutEvent
     MessageEvent -- MessageStatus
+    MessageEvent -- MessagePayload
+    CommitLog -- Replica
+    Transport o-- Event
+    Transport o-- Replica
+    Replica --> Event: emits, receives
     CommitLog <|-- TotalOrderCommitLog
     CommitLog <|-- PartialOrderCommitLog
-    CommitLog -- Replica
-
 ```
