@@ -60,19 +60,21 @@ The UI should then be available at http://localhost:3000.
 
 We currently have the following protocols implemented:
 
-- [PBFT](simulator/src/main/java/byzzbench/simulator/protocols/pbft/PbftReplica.java): The original PBFT protocol, as
+- ~~[PBFT](simulator/src/main/java/byzzbench/simulator/protocols/pbft/PbftReplica.java): The original PBFT protocol, as
   described in
-  the [PBFT paper](https://www.microsoft.com/en-us/research/publication/practical-byzantine-fault-tolerance/);
+  the [PBFT paper](https://www.microsoft.com/en-us/research/publication/practical-byzantine-fault-tolerance/);~~
 - [PBFT-Java](simulator/src/main/java/byzzbench/simulator/protocols/pbft_java/PbftReplica.java): A buggy version of
   PBFT,
   from the [PBFT-Java repository](https://github.com/caojohnny/pbft-java);
-- [Fast-HotStuff](simulator/src/main/java/byzzbench/simulator/protocols/fasthotstuff/FastHotStuffReplica.java): A
-  failed attempt at improving HotStuff, as described in the [Fast-HotStuff paper](https://arxiv.org/abs/2010.11454);
+- [Fast-HotStuff](simulator/src/main/java/byzzbench/simulator/protocols/fasthotstuff/FastHotStuffReplica.java): An
+  unsuccessful attempt at improving the design of HotStuff, as described in
+  the [Fast-HotStuff paper](https://arxiv.org/abs/2010.11454);
 
 ## Documentation
 
 See additional documentation in the [docs](docs) directory.
 
+- [User Interface](docs/user-interface.md)
 - [Implementing new BFT Protocols](docs/implementing-protocols.md)
 
 ## Simulator Structure
