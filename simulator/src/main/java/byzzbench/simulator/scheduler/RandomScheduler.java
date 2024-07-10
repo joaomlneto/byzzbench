@@ -31,8 +31,9 @@ public class RandomScheduler<T extends Serializable> extends BaseScheduler<T> {
                 .getEventsInState(Event.Status.QUEUED);
 
         // if there are no events, return empty
-        if (!queuedEvents.isEmpty()) {
-            return Optional.of(queuedEvents.get(random.nextInt() * queuedEvents.size()));
+        if (queuedEvents.isEmpty()) {
+            System.out.println("No events!");
+            return Optional.of(queuedEvents.get(random.nextInt(queuedEvents.size())));
         }
 
         double SCHEDULE_MESSAGE = DELIVER_MESSAGE_PROBABILITY + DROP_MESSAGE_PROBABILITY + MUTATE_MESSAGE_PROBABILITY;
@@ -49,7 +50,7 @@ public class RandomScheduler<T extends Serializable> extends BaseScheduler<T> {
                 return Optional.empty();
             }
 
-            Event timeout = queuedTimeouts.get(random.nextInt() * queuedTimeouts.size());
+            Event timeout = queuedTimeouts.get(random.nextInt(queuedTimeouts.size()));
             getTransport().deliverEvent(timeout.getEventId());
             return Optional.of(timeout);
         }
@@ -62,7 +63,7 @@ public class RandomScheduler<T extends Serializable> extends BaseScheduler<T> {
                     .filter(MessageEvent.class::isInstance)
                     .toList();
 
-            Event message = queuedMessages.get(random.nextInt() * queuedMessages.size());
+            Event message = queuedMessages.get(random.nextInt(queuedMessages.size()));
 
             // normalize DROP probability
             double DROP_MESSAGE_PROBABILITY = this.DROP_MESSAGE_PROBABILITY / SCHEDULE_MESSAGE;
@@ -84,7 +85,7 @@ public class RandomScheduler<T extends Serializable> extends BaseScheduler<T> {
                     return Optional.empty();
                 }
                 // FIXME: we should return a "decision" object, not just the event id we targeted!
-                getTransport().applyMutation(message.getEventId(), mutators.get(random.nextInt() * mutators.size()).getKey());
+                getTransport().applyMutation(message.getEventId(), mutators.get(random.nextInt(mutators.size())).getKey());
                 getTransport().deliverEvent(message.getEventId());
                 return Optional.of(message);
             }
