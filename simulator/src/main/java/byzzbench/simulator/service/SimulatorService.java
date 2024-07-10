@@ -37,7 +37,7 @@ public class SimulatorService {
             default:
                 throw new IllegalArgumentException("Unknown scenario id: " + id);
         }
-        
+        this.scenarioExecutor.setup();
         this.scenarioExecutor.run();
         //this.scenarioExecutor.reset();
     }
