@@ -13,5 +13,7 @@ Byzantine faults.
 
 ![Mutating a Message](mutate-message.png)
 
-In the future, schedules will be serialized by the framework, and the UI will include the functionality to reproduce
-them.
+## Additional replay capabilities
+
+In the future, schedules will be recorded and serialized by the framework, and the UI will include the functionality to
+reproduce them.
