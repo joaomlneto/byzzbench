@@ -74,8 +74,9 @@ We currently have the following protocols implemented:
 
 See additional documentation in the [docs](docs) directory.
 
-- [User Interface](docs/user-interface.md)
 - [Implementing new BFT Protocols](docs/implementing-protocols.md)
+- [Reproducing Schedules](docs/reproducing-schedules.md)
+- [User Interface](docs/user-interface.md)
 
 ## Simulator Structure
 
