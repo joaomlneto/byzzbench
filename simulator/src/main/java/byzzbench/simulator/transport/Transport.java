@@ -135,6 +135,52 @@ public class Transport<T extends Serializable> {
         log.info("Registered Message Mutators:" + this.mutators);
     }
 
+    public List<Map.Entry<Long, MessageMutator>> getEventMutators(long eventId) {
+        Event e = events.get(eventId);
+
+        List<Map.Entry<Long, MessageMutator>> messageMutators = mutators.entrySet()
+                .stream()
+                // filter mutators that can be applied to the event
+                .filter(entry -> entry.getValue().getInputClasses().contains(((MessageEvent) e).getPayload().getClass()))
+                .toList();
+
+        // return their keys
+        return messageMutators;
+    }
+
+    public void applyMutation(long eventId, long mutatorId) {
+        Event e = events.get(eventId);
+        MessageMutator mutator = mutators.get(mutatorId);
+
+        if (e.getStatus() != Event.Status.QUEUED) {
+            throw new RuntimeException("Message not found or not in QUEUED state");
+        }
+
+        if (mutator == null) {
+            throw new RuntimeException("Mutator not found");
+        }
+
+        // check if mutator can be applied to the event
+        if (!mutator.getInputClasses().contains(((MessageEvent) e).getPayload().getClass())) {
+            throw new RuntimeException("Mutator cannot be applied to the event");
+        }
+
+        // check it is a message event!
+        if (!(e instanceof MessageEvent m)) {
+            throw new RuntimeException(String.format("Event %d is not a message - cannot mutate it.", eventId));
+        }
+
+        Serializable newPayload = mutator.apply(m.getPayload());
+        // FIXME: the typecasting here to MessagePayload is very nasty
+        MessageEvent newMessage = new MessageEvent(
+                m.getEventId(),
+                m.getSenderId(),
+                m.getRecipientId(),
+                (MessagePayload) newPayload);
+        events.put(eventId, newMessage);
+        log.info("Mutated: " + m.getSenderId() + "->" + m.getRecipientId() + ": " + m.getPayload() + " -> " + newPayload);
+    }
+
     public long setTimeout(Replica<T> replica, Runnable runnable, long timeout) {
         Event e = new TimeoutEvent(
                 this.eventSeqNum.getAndIncrement(),

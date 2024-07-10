@@ -3,7 +3,6 @@ package byzzbench.simulator.controller;
 import byzzbench.simulator.Replica;
 import byzzbench.simulator.service.SimulatorService;
 import byzzbench.simulator.transport.Event;
-import byzzbench.simulator.transport.MessageEvent;
 import byzzbench.simulator.transport.MessageMutator;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
@@ -13,7 +12,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 @RestController
 @RequiredArgsConstructor
@@ -98,7 +96,12 @@ public class SimulatorController {
     }
 
     @GetMapping("/event/{eventId}/mutators")
-    public Set<Long> getMessageMutators(@PathVariable Long eventId) {
+    public List<Long> getMessageMutators(@PathVariable Long eventId) {
+        return simulatorService.getScenarioExecutor().getTransport().getEventMutators(eventId)
+                .stream()
+                .map(Map.Entry::getKey)
+                .toList();
+        /*
         Event e = simulatorService.getScenarioExecutor().getTransport().getEvents().get(eventId);
 
         // if it is not a message, return an empty set
@@ -115,7 +118,7 @@ public class SimulatorController {
                 .collect(Collectors.toSet());
 
         // return their keys
-        return messageMutators.stream().map(Map.Entry::getKey).collect(Collectors.toSet());
+        return messageMutators.stream().map(Map.Entry::getKey).collect(Collectors.toSet());*/
     }
 
     @PostMapping("/event/{eventId}/deliver")
