@@ -114,8 +114,6 @@ public class SimulatorController {
                 //.map(entry -> entry.getKey())
                 .collect(Collectors.toSet());
 
-        System.out.println("Message Mutators for " + e + ": " + messageMutators);
-
         // return their keys
         return messageMutators.stream().map(Map.Entry::getKey).collect(Collectors.toSet());
     }
