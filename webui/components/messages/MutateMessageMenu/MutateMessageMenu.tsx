@@ -7,7 +7,7 @@ import {
 } from "@/lib/byzzbench-client/generated";
 import { ActionIcon, Burger, Menu, rem } from "@mantine/core";
 import { showNotification } from "@mantine/notifications";
-import { IconSend, IconTrash } from "@tabler/icons-react";
+import { IconBugFilled, IconSend, IconTrash } from "@tabler/icons-react";
 import { useQueryClient } from "@tanstack/react-query";
 import React from "react";
 
@@ -30,6 +30,21 @@ export const MutateMessageMenu = ({ messageId }: MutateMessageMenuProps) => {
         {data?.data.map((mutator) => (
           <MutateMessageMenuEntry key={mutator} mutatorId={mutator} />
         ))}
+        <Menu.Item
+          color="red"
+          leftSection={
+            <IconBugFilled style={{ width: rem(14), height: rem(14) }} />
+          }
+          onClick={(e) => {
+            e.preventDefault();
+            showNotification({
+              color: "red",
+              message: "Not yet implemented!",
+            });
+          }}
+        >
+          Custom Mutation
+        </Menu.Item>
 
         <Menu.Divider />
 
