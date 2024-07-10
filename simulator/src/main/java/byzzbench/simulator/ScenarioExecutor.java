@@ -1,7 +1,7 @@
 package byzzbench.simulator;
 
 import byzzbench.simulator.scheduler.BaseScheduler;
-import byzzbench.simulator.scheduler.FifoScheduler;
+import byzzbench.simulator.scheduler.RandomScheduler;
 import byzzbench.simulator.transport.Transport;
 import lombok.Getter;
 
@@ -19,7 +19,7 @@ public abstract class ScenarioExecutor<T extends Serializable> {
 
     public ScenarioExecutor(Transport<T> transport) {
         this.transport = transport;
-        this.scheduler = new FifoScheduler<>(transport);
+        this.scheduler = new RandomScheduler<>(transport);
         this.setup();
     }
 
