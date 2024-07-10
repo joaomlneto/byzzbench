@@ -17,12 +17,12 @@ import java.io.Serializable;
 @RequiredArgsConstructor
 @Log
 public class SimulatorService {
-    private ScenarioExecutor<? extends Serializable> scenarioExecutor = new FastHotStuffScenarioExecutor();
+    private ScenarioExecutor<? extends Serializable> scenarioExecutor = new PbftScenarioExecutor<>();
 
     @EventListener(ApplicationReadyEvent.class)
     void onStartup() {
         log.info("Starting the simulator service");
-        this.changeScenario("fasthotstuff");
+        this.changeScenario("pbft-java");
         log.info("Simulator service started");
     }
 
@@ -37,7 +37,7 @@ public class SimulatorService {
             default:
                 throw new IllegalArgumentException("Unknown scenario id: " + id);
         }
-        this.scenarioExecutor.setup();
+        
         this.scenarioExecutor.run();
         //this.scenarioExecutor.reset();
     }
