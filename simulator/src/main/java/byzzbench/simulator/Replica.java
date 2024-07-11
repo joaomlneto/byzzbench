@@ -1,6 +1,5 @@
 package byzzbench.simulator;
 
-import byzzbench.simulator.service.DigestService;
 import byzzbench.simulator.state.CommitLog;
 import byzzbench.simulator.transport.MessagePayload;
 import byzzbench.simulator.transport.Transport;
@@ -14,6 +13,14 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Set;
 
+/**
+ * Superclass for all replicas in the system.
+ * <p>
+ * Each replica has a unique node ID, a set of known node IDs in the system, a reference to
+ * the {@link Transport} layer, and a {@link CommitLog}.
+ *
+ * @param <T> The type of the entries in the commit log of each {@link Replica}.
+ */
 @Log
 @Getter
 @ToString
@@ -39,9 +46,6 @@ public abstract class Replica<T extends Serializable> implements Serializable {
 
     @JsonIgnore
     private final transient Transport<T> transport;
-
-    @JsonIgnore
-    private DigestService digestService;
 
     protected Replica(String nodeId, Set<String> nodeIds, Transport<T> transport, CommitLog<T> commitLog) {
         this.nodeId = nodeId;

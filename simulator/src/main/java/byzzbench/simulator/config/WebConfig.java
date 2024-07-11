@@ -20,6 +20,12 @@ import org.springframework.web.servlet.config.annotation.CorsRegistry;
 import org.springframework.web.servlet.config.annotation.EnableWebMvc;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
+/**
+ * Configuration for the web server.
+ * Mostly used for enabling CORS and configuring the Jackson object mapper.
+ *
+ * @see <a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS">CORS</a>
+ */
 @Configuration
 @EnableWebMvc
 public class WebConfig implements WebMvcConfigurer {

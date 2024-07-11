@@ -12,6 +12,11 @@ import org.springframework.stereotype.Service;
 
 import java.io.Serializable;
 
+/**
+ * Service for running the simulator.
+ * <p>
+ * This service is responsible for running the simulator with the selected scenario.
+ */
 @Getter
 @Service
 @RequiredArgsConstructor

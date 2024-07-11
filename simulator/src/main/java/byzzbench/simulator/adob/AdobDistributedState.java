@@ -4,6 +4,11 @@ import byzzbench.simulator.Replica;
 
 import java.io.Serializable;
 
+/**
+ * The distributed state of the BFT consensus protocol for the current simulation.
+ *
+ * @see <a href="https://flint.cs.yale.edu/flint/publications/adob-tr.pdf">AdoB paper</a>
+ */
 public class AdobDistributedState {
     private AdobCache root;
 

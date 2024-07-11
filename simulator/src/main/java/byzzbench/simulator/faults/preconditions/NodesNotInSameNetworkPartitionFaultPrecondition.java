@@ -1,6 +1,6 @@
-package byzzbench.simulator.faults.triggers;
+package byzzbench.simulator.faults.preconditions;
 
-import byzzbench.simulator.faults.FaultTrigger;
+import byzzbench.simulator.faults.FaultPrecondition;
 import byzzbench.simulator.transport.MessageEvent;
 import byzzbench.simulator.transport.Transport;
 import lombok.RequiredArgsConstructor;
@@ -15,11 +15,11 @@ import java.util.Map;
  * @param <T>
  */
 @RequiredArgsConstructor
-public class NodesNotInSameNetworkPartitionFaultTrigger<T extends Serializable> implements FaultTrigger {
+public class NodesNotInSameNetworkPartitionFaultPrecondition<T extends Serializable> implements FaultPrecondition {
     private final Transport<T> transport;
 
     @Override
-    public boolean isTriggeredBy(MessageEvent message) {
+    public boolean isSatisfiedBy(MessageEvent message) {
         String sender = message.getSenderId();
         String recipient = message.getRecipientId();
         Map<String, Integer> partitions = transport.getPartitions();

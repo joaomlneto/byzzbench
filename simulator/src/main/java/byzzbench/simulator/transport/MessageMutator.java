@@ -8,6 +8,10 @@ import java.io.Serializable;
 import java.util.Collection;
 import java.util.function.Function;
 
+/**
+ * Abstract class for mutating {@link MessageEvent}.
+ * This class is used as a base to introduce arbitrary faults in the simulation.
+ */
 @Getter
 @RequiredArgsConstructor
 @ToString

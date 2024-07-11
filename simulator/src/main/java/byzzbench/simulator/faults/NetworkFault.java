@@ -1,7 +1,7 @@
 package byzzbench.simulator.faults;
 
 import byzzbench.simulator.faults.behaviors.DropMessageFaultBehavior;
-import byzzbench.simulator.faults.triggers.NodesNotInSameNetworkPartitionFaultTrigger;
+import byzzbench.simulator.faults.preconditions.NodesNotInSameNetworkPartitionFaultPrecondition;
 import byzzbench.simulator.transport.Transport;
 
 /**
@@ -11,7 +11,7 @@ import byzzbench.simulator.transport.Transport;
 public class NetworkFault extends Fault {
     public NetworkFault(Transport<?> transport) {
         super(
-                new NodesNotInSameNetworkPartitionFaultTrigger<>(transport),
+                new NodesNotInSameNetworkPartitionFaultPrecondition<>(transport),
                 new DropMessageFaultBehavior());
     }
 }

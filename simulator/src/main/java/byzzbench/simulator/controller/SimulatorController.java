@@ -13,6 +13,9 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
+/**
+ * REST API for interacting with the simulator.
+ */
 @RestController
 @RequiredArgsConstructor
 public class SimulatorController {

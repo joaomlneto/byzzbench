@@ -1,5 +1,7 @@
 package byzzbench.simulator.scheduler;
 
+import byzzbench.simulator.Replica;
+import byzzbench.simulator.state.CommitLog;
 import byzzbench.simulator.transport.*;
 
 import java.io.Serializable;
@@ -8,6 +10,12 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Random;
 
+
+/**
+ * A scheduler that randomly selects events to deliver, drop, mutate or timeout.
+ *
+ * @param <T> The type of the entries in the {@link CommitLog} of each {@link Replica}.
+ */
 public class RandomScheduler<T extends Serializable> extends BaseScheduler<T> {
     private final double DELIVER_MESSAGE_PROBABILITY = 0.97;
     private final double DROP_MESSAGE_PROBABILITY = 0.01;

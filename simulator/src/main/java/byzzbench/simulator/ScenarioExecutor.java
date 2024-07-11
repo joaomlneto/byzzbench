@@ -9,6 +9,11 @@ import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * Abstract class for running a scenario, which consists of a set of {@link Replica} and a {@link Transport} layer.
+ *
+ * @param <T> The type of the entries in the commit log of each {@link Replica}.
+ */
 @Getter
 public abstract class ScenarioExecutor<T extends Serializable> {
     protected final Transport<T> transport;

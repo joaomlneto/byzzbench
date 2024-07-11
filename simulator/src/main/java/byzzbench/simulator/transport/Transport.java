@@ -12,6 +12,14 @@ import java.io.Serializable;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicLong;
 
+/**
+ * Transport layer for the simulator.
+ * <p>
+ * This class is responsible for handling events (messages and timeouts).
+ * It also provides methods for sending messages, setting timeouts, and applying faults.
+ *
+ * @param <T> The type of the entries in the commit log of each {@link Replica}.
+ */
 @Log
 public class Transport<T extends Serializable> {
     private final AtomicLong eventSeqNum = new AtomicLong(1);
