@@ -7,5 +7,5 @@ import byzzbench.simulator.transport.MessageEvent;
  * The behavior of a fault is to mutate a {@link MessageEvent}.
  */
 public interface FaultBehavior {
-    void mutate(MessageEvent message);
+  void mutate(MessageEvent message);
 }
