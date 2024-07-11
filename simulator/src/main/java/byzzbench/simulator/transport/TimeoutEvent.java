@@ -1,27 +1,63 @@
 package byzzbench.simulator.transport;
 
+import java.time.Instant;
 import lombok.Data;
 
-import java.time.Instant;
-
+/**
+ * Event that represents a timeout.
+ *
+ * @see Event
+ */
 @Data
 public class TimeoutEvent implements Event {
-    private final long eventId;
-    private final String description;
-    private final String nodeId;
-    private final long timeout; // in milliseconds
-    private final Instant createdAt = Instant.now();
-    private final transient Runnable task;
-    private Status status = Status.QUEUED;
-    private transient Instant deliveredAt = null;
+  /**
+   * The unique identifier of the event.
+   */
+  private final long eventId;
 
-    @Override
-    public String getSenderId() {
-        return nodeId;
-    }
+  /**
+   * A human description of the event.
+   */
+  private final String description;
 
-    @Override
-    public String getRecipientId() {
-        return nodeId;
-    }
+  /**
+   * The unique identifier of the node that emitted (and shall receive) the
+   * event
+   */
+  private final String nodeId;
+
+  /**
+   * The timeout value in milliseconds.
+   */
+  private final long timeout; // in milliseconds
+
+  /**
+   * The physical time at which the Timeout was created.
+   */
+  private final Instant createdAt = Instant.now();
+
+  /**
+   * The task to be executed when the timeout expires.
+   */
+  private final transient Runnable task;
+
+  /**
+   * The status of the event.
+   */
+  private Status status = Status.QUEUED;
+
+  /**
+   * The physical time at which the Timeout was delivered.
+   */
+  private transient Instant deliveredAt = null;
+
+  @Override
+  public String getSenderId() {
+    return nodeId;
+  }
+
+  @Override
+  public String getRecipientId() {
+    return nodeId;
+  }
 }
