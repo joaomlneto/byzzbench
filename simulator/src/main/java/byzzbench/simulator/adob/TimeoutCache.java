@@ -1,13 +1,19 @@
 package byzzbench.simulator.adob;
 
-import lombok.Data;
+import lombok.Getter;
 
 import java.util.Set;
 
-@Data
-public class TimeoutCache implements AdobCache {
-    private final AdobCache parent;
+public class TimeoutCache extends AdobCache {
+    @Getter
     private final Set<String> voters;
+    
+    @Getter
     private final Set<String> supporters;
-    private final long timestamp;
+
+    public TimeoutCache(AdobCache parent, Set<String> voters, Set<String> supporters) {
+        super(parent);
+        this.voters = voters;
+        this.supporters = supporters;
+    }
 }

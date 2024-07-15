@@ -1,13 +1,15 @@
 package byzzbench.simulator.adob;
 
-import lombok.Data;
+import lombok.Getter;
 
 import java.util.Set;
 
-@Data
-public class CommitCache implements AdobCache {
-    private final AdobCache parent;
+@Getter
+public class CommitCache extends AdobCache {
     private final Set<String> voters;
-    private final long timestamp;
 
+    public CommitCache(AdobCache parent, Set<String> voters) {
+        super(parent);
+        this.voters = voters;
+    }
 }

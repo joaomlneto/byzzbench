@@ -1,13 +1,14 @@
 package byzzbench.simulator.adob;
 
-import lombok.Data;
-
 import java.util.Set;
 
-@Data
-public class ElectionCache implements AdobCache {
-    private final AdobCache parent;
+public class ElectionCache extends AdobCache {
     private final Set<String> voters;
     private final String leader;
-    private final long timestamp;
+
+    protected ElectionCache(AdobCache parent, Set<String> voters, String leader) {
+        super(parent);
+        this.voters = voters;
+        this.leader = leader;
+    }
 }

@@ -1,14 +1,20 @@
 package byzzbench.simulator.adob;
 
-import lombok.Data;
+import lombok.Getter;
 
 import java.io.Serializable;
 import java.util.Set;
 
-@Data
-public class MCache implements AdobCache {
-    private final AdobCache parent;
+public class MCache extends AdobCache {
+    @Getter
     private final Serializable method;
+
+    @Getter
     private final Set<String> voters;
-    private final long timestamp;
+
+    public MCache(AdobCache parent, Serializable method, Set<String> voters) {
+        super(parent);
+        this.method = method;
+        this.voters = voters;
+    }
 }
