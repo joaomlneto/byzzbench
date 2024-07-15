@@ -36,7 +36,6 @@ public class PbftReplica<O extends Serializable, R extends Serializable> extends
     private final Map<ReplicaRequestKey, LinearBackoff> timeouts = new ConcurrentHashMap<>();
 
     @Getter
-    @Setter
     private volatile long viewNumber = 1;
 
     @Getter
@@ -57,11 +56,20 @@ public class PbftReplica<O extends Serializable, R extends Serializable> extends
 
     @Override
     public void initialize() {
-        // nothing to do
+        System.out.println("Initializing replica " + this.getNodeId());
+        // notify the distributed state of the leader change
+        this.notifyObserversLeaderChange(this.getPrimaryId());
     }
 
     public Collection<ReplicaRequestKey> activeTimers() {
         return Collections.unmodifiableCollection(this.timeouts.keySet());
+    }
+
+    private void setViewNumber(long viewNumber) {
+        this.viewNumber = viewNumber;
+
+        // notify the distributed state of the leader change
+        this.notifyObserversLeaderChange(this.getPrimaryId());
     }
 
     public long checkTimeout(ReplicaRequestKey key) {
@@ -506,7 +514,7 @@ public class PbftReplica<O extends Serializable, R extends Serializable> extends
          * been waiting on
          */
         this.disgruntled = false;
-        this.viewNumber = newViewNumber;
+        this.setViewNumber(newViewNumber);
         this.timeouts.clear();
     }
 
@@ -650,6 +658,10 @@ public class PbftReplica<O extends Serializable, R extends Serializable> extends
 
     public Serializable compute(Serializable operation) {
         this.commitOperation(operation);
+
+        // TODO: AdoB - Notify the distributed state of the commit
+        this.notifyObserversLocalCommit(operation);
+
         return operation;
     }
 
