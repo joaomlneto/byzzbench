@@ -114,6 +114,7 @@ public class RandomScheduler<T extends Serializable> extends BaseScheduler<T> {
 
             // deliver the message, without changes
             getTransport().deliverEvent(message.getEventId());
+            return Optional.of(message);
         }
 
         return Optional.empty();
