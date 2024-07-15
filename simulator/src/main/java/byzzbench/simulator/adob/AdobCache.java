@@ -1,18 +1,18 @@
 package byzzbench.simulator.adob;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Getter;
 
 import java.io.Serializable;
 import java.util.List;
 
+@Getter
 public abstract class AdobCache implements Serializable {
-    @Getter
-    private transient final AdobCache parent;
+    @JsonIgnore
+    private final transient AdobCache parent;
 
-    @Getter
-    private List<AdobCache> children;
+    private final List<AdobCache> children = new java.util.ArrayList<>();
 
-    @Getter
     private long timestamp;
 
     protected AdobCache(AdobCache parent) {
@@ -21,6 +21,12 @@ public abstract class AdobCache implements Serializable {
 
     public void addChildren(AdobCache child) {
         this.children.add(child);
+    }
+
+    public abstract String getCacheType();
+
+    public String getId() {
+        return Integer.toHexString(System.identityHashCode(this));
     }
 
 }

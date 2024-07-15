@@ -17,4 +17,9 @@ public class MCache extends AdobCache {
         this.method = method;
         this.voters = voters;
     }
+
+    @Override
+    public String getCacheType() {
+        return "M";
+    }
 }

@@ -3,9 +3,11 @@ package byzzbench.simulator.adob;
 import byzzbench.simulator.Replica;
 import byzzbench.simulator.ReplicaObserver;
 import lombok.Getter;
+import lombok.Synchronized;
 import lombok.extern.java.Log;
 
 import java.io.Serializable;
+import java.util.List;
 import java.util.Set;
 
 /**
@@ -17,19 +19,14 @@ import java.util.Set;
  */
 @Log
 public class AdobDistributedState implements ReplicaObserver, Serializable {
-    @Getter
+    @Getter(onMethod_ = {@Synchronized})
     private final AdobCache root = new RootCache();
 
-    public CommitCache getLatestCommitCache() {
-        AdobCache cache = root;
-        while (cache instanceof CommitCache) {
-            cache = cache.getParent();
-        }
-        return (CommitCache) cache;
-    }
+    @Getter(onMethod_ = {@Synchronized})
+    private final List<AdobCache> caches = List.of(root);
 
     // TODO: Whenever a replica changes its leader, create or update the respective ECache
-    public void onLeaderChange(Replica r, String newLeaderId) {
+    public synchronized void onLeaderChange(Replica r, String newLeaderId) {
         System.out.printf("%s: leader changed to %s\n", r.getNodeId(), newLeaderId);
         // create ECache
         ElectionCache eCache = new ElectionCache(root, Set.of(r.getNodeId()), newLeaderId);
@@ -38,17 +35,29 @@ public class AdobDistributedState implements ReplicaObserver, Serializable {
     }
 
     // TODO: Whenever the leader does a local commit, create a new MCache
-    public void onLocalCommit(Replica r, Serializable operation) {
-        throw new RuntimeException("Not yet implemented");
+    public synchronized void onLocalCommit(Replica r, Serializable operation) {
+        System.out.printf("%s: local commit\n", r.getNodeId());
+        // create MCache
+        MCache mCache = new MCache(root, operation, Set.of(r.getNodeId()));
+
+        root.addChildren(mCache);
     }
 
     // TODO: Whenever a replica times out and triggers an election, create a TCache
-    public void onTimeout(Replica r) {
-        throw new RuntimeException("Not yet implemented");
+    public synchronized void onTimeout(Replica r) {
+        System.out.printf("%s: timeout\n", r.getNodeId());
+        // create TCache
+        TimeoutCache tCache = new TimeoutCache(root, Set.of(r.getNodeId()), Set.of(r.getNodeId()));
+
+        root.addChildren(tCache);
     }
 
     // TODO: Whenever the leader forms a quorum, create a new CCache
-    public void onQuorum(Replica r) {
-        throw new RuntimeException("Not yet implemented");
+    public synchronized void onQuorum(Replica r) {
+        System.out.printf("%s: quorum\n", r.getNodeId());
+        // create CCache
+        CommitCache cCache = new CommitCache(root, Set.of(r.getNodeId()));
+
+        root.addChildren(cCache);
     }
 }

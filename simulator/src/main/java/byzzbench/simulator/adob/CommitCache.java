@@ -12,4 +12,9 @@ public class CommitCache extends AdobCache {
         super(parent);
         this.voters = voters;
     }
+
+    @Override
+    public String getCacheType() {
+        return "Commit";
+    }
 }

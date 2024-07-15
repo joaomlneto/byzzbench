@@ -7,7 +7,7 @@ import java.util.Set;
 public class TimeoutCache extends AdobCache {
     @Getter
     private final Set<String> voters;
-    
+
     @Getter
     private final Set<String> supporters;
 
@@ -15,5 +15,10 @@ public class TimeoutCache extends AdobCache {
         super(parent);
         this.voters = voters;
         this.supporters = supporters;
+    }
+
+    @Override
+    public String getCacheType() {
+        return "Timeout";
     }
 }
