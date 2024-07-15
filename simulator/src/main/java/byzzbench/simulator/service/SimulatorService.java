@@ -22,8 +22,7 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 @Log
 public class SimulatorService {
-  private ScenarioExecutor<? extends Serializable> scenarioExecutor =
-      new PbftScenarioExecutor<>();
+    private ScenarioExecutor<? extends Serializable> scenarioExecutor;
 
   @EventListener(ApplicationReadyEvent.class)
   void onStartup() {
