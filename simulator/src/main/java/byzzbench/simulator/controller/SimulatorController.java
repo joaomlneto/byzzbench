@@ -9,10 +9,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.Serializable;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 
 /**
  * REST API for interacting with the simulator.
@@ -196,5 +193,15 @@ public class SimulatorController {
     public AdobCache getAdob() {
         System.out.println("Getting AdoB!");
         return simulatorService.getScenarioExecutor().getAdobOracle().getRoot();
+    }
+
+    @GetMapping("/adob/caches")
+    public Collection<AdobCache> getAllAdobCaches() {
+        return simulatorService.getScenarioExecutor().getAdobOracle().getCaches().values();
+    }
+
+    @GetMapping("/adob/caches/{cacheId}")
+    public AdobCache getAdobCache(@PathVariable Long cacheId) {
+        return simulatorService.getScenarioExecutor().getAdobOracle().getCaches().get(cacheId);
     }
 }
