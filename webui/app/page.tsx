@@ -1,5 +1,6 @@
 "use client";
 
+import AdoBStateDiagram from "@/components/adob/AdoBStateDiagram";
 import { DoSchedulerActionIcon } from "@/components/DoSchedulerActionIcon";
 import {
   DeliveredMessagesList,
@@ -30,6 +31,9 @@ export default function Home() {
         <br />
         <Title order={3}>Message Mutators</Title>
         <MutatorsList />
+        <br />
+        <Title order={3}>AdoB State</Title>
+        <AdoBStateDiagram />
       </Stack>
     </Container>
   );
