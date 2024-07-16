@@ -5,9 +5,17 @@ import lombok.Getter;
 
 import java.io.Serializable;
 import java.util.List;
+import java.util.Optional;
 
+/**
+ * The superclass for AdoB caches
+ *
+ * @see <a href="https://flint.cs.yale.edu/flint/publications/adob-tr.pdf">AdoB</a>
+ */
 @Getter
 public abstract class AdobCache implements Serializable {
+    private final long id;
+
     /**
      * The parent cache.
      */
@@ -17,6 +25,7 @@ public abstract class AdobCache implements Serializable {
     /**
      * The children cache.
      */
+    @JsonIgnore
     private final List<AdobCache> children = new java.util.ArrayList<>();
 
     /**
@@ -29,7 +38,8 @@ public abstract class AdobCache implements Serializable {
      *
      * @param parent The parent cache.
      */
-    protected AdobCache(AdobCache parent) {
+    protected AdobCache(long id, AdobCache parent) {
+        this.id = id;
         this.parent = parent;
     }
 
@@ -49,13 +59,10 @@ public abstract class AdobCache implements Serializable {
      */
     public abstract String getCacheType();
 
-    /**
-     * Get the unique identifier for this cache.
-     *
-     * @return The unique identifier.
-     */
-    public String getId() {
-        return Integer.toHexString(System.identityHashCode(this));
+    public Optional<Long> getParentId() {
+        return Optional.ofNullable(parent).map(AdobCache::getId);
     }
+
+    public abstract byte getCRank();
 
 }

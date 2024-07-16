@@ -5,8 +5,8 @@ package byzzbench.simulator.adob;
  * Not a real cache, but a placeholder for the root of the cache tree.
  */
 public class RootCache extends AdobCache {
-    protected RootCache() {
-        super(null);
+    protected RootCache(long id) {
+        super(id, null);
     }
 
     @Override

@@ -27,8 +27,8 @@ public class MethodCache extends AdobCache {
      */
     private final String initiator;
 
-    public MethodCache(AdobCache parent, Serializable method, String initialVoter) {
-        super(parent);
+    public MethodCache(long id, AdobCache parent, Serializable method, String initialVoter) {
+        super(id, parent);
         this.method = method;
         this.initiator = initialVoter;
         this.addVoter(initialVoter);
@@ -41,5 +41,10 @@ public class MethodCache extends AdobCache {
     @Override
     public String getCacheType() {
         return "M";
+    }
+
+    @Override
+    public byte getCRank() {
+        return 2;
     }
 }

@@ -22,8 +22,8 @@ public class CommitCache extends AdobCache {
      */
     private final String initiator;
 
-    public CommitCache(AdobCache parent, String initialVoter) {
-        super(parent);
+    public CommitCache(long id, AdobCache parent, String initialVoter) {
+        super(id, parent);
         this.initiator = initialVoter;
         this.addVoter(initialVoter);
     }
@@ -35,5 +35,10 @@ public class CommitCache extends AdobCache {
     @Override
     public String getCacheType() {
         return "Commit";
+    }
+
+    @Override
+    public byte getCRank() {
+        return 3;
     }
 }

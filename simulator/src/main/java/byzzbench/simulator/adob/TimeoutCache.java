@@ -16,8 +16,8 @@ public class TimeoutCache extends AdobCache {
     @Getter
     private final Set<String> supporters;
 
-    public TimeoutCache(AdobCache parent, Set<String> voters, Set<String> supporters) {
-        super(parent);
+    public TimeoutCache(long id, AdobCache parent, Set<String> voters, Set<String> supporters) {
+        super(id, parent);
         this.voters = voters;
         this.supporters = supporters;
     }
@@ -25,5 +25,10 @@ public class TimeoutCache extends AdobCache {
     @Override
     public String getCacheType() {
         return "Timeout";
+    }
+
+    @Override
+    public byte getCRank() {
+        return 4;
     }
 }

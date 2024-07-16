@@ -27,8 +27,8 @@ public class ElectionCache extends AdobCache {
      */
     private final String initiator;
 
-    protected ElectionCache(AdobCache parent, String initialVoter, String leader) {
-        super(parent);
+    protected ElectionCache(long id, AdobCache parent, String initialVoter, String leader) {
+        super(id, parent);
         this.initiator = initialVoter;
         this.addVoter(initialVoter);
         this.leader = leader;
@@ -41,5 +41,10 @@ public class ElectionCache extends AdobCache {
     @Override
     public String getCacheType() {
         return "Election";
+    }
+
+    @Override
+    public byte getCRank() {
+        return 1;
     }
 }

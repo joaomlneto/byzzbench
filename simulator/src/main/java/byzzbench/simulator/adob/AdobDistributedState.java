@@ -2,13 +2,16 @@ package byzzbench.simulator.adob;
 
 import byzzbench.simulator.Replica;
 import byzzbench.simulator.ReplicaObserver;
+import byzzbench.simulator.versioning.VectorClock;
 import lombok.Getter;
 import lombok.Synchronized;
 import lombok.extern.java.Log;
 
 import java.io.Serializable;
-import java.util.List;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * The distributed state of the BFT consensus protocol for the current
@@ -20,17 +23,26 @@ import java.util.Set;
 @Log
 public class AdobDistributedState implements ReplicaObserver, Serializable {
     @Getter(onMethod_ = {@Synchronized})
-    private final AdobCache root = new RootCache();
+    private final AdobCache root = new RootCache(0);
 
     @Getter(onMethod_ = {@Synchronized})
-    private final List<AdobCache> caches = List.of(root);
+    private final Map<Long, AdobCache> caches = new HashMap<>(Map.of(0L, root));
+    private final AtomicLong maxExistingCacheId = new AtomicLong();
+
+    private final Map<String, VectorClock> clocks = new HashMap<>();
+
+    private VectorClock getReplicaClock(Replica r) {
+        return clocks.computeIfAbsent(r.getNodeId(), k -> new VectorClock());
+    }
 
     // TODO: Whenever a replica changes its leader, create or update the respective ECache
     public synchronized void onLeaderChange(Replica r, String newLeaderId) {
         System.out.printf("%s: leader changed to %s\n", r.getNodeId(), newLeaderId);
         // create ECache
-        ElectionCache eCache = new ElectionCache(root, r.getNodeId(), newLeaderId);
+        long id = maxExistingCacheId.incrementAndGet();
+        ElectionCache eCache = new ElectionCache(id, root, r.getNodeId(), newLeaderId);
 
+        caches.put(id, eCache);
         root.addChildren(eCache);
     }
 
@@ -38,8 +50,10 @@ public class AdobDistributedState implements ReplicaObserver, Serializable {
     public synchronized void onLocalCommit(Replica r, Serializable operation) {
         System.out.printf("%s: local commit\n", r.getNodeId());
         // create MCache
-        MethodCache methodCache = new MethodCache(root, operation, r.getNodeId());
+        long id = maxExistingCacheId.incrementAndGet();
+        MethodCache methodCache = new MethodCache(id, root, operation, r.getNodeId());
 
+        caches.put(id, methodCache);
         root.addChildren(methodCache);
     }
 
@@ -47,8 +61,10 @@ public class AdobDistributedState implements ReplicaObserver, Serializable {
     public synchronized void onTimeout(Replica r) {
         System.out.printf("%s: timeout\n", r.getNodeId());
         // create TCache
-        TimeoutCache tCache = new TimeoutCache(root, Set.of(r.getNodeId()), Set.of(r.getNodeId()));
+        long id = maxExistingCacheId.incrementAndGet();
+        TimeoutCache tCache = new TimeoutCache(id, root, Set.of(r.getNodeId()), Set.of(r.getNodeId()));
 
+        caches.put(id, tCache);
         root.addChildren(tCache);
     }
 
@@ -56,8 +72,10 @@ public class AdobDistributedState implements ReplicaObserver, Serializable {
     public synchronized void onQuorum(Replica r) {
         System.out.printf("%s: quorum\n", r.getNodeId());
         // create CCache
-        CommitCache cCache = new CommitCache(root, r.getNodeId());
+        long id = maxExistingCacheId.incrementAndGet();
+        CommitCache cCache = new CommitCache(id, root, r.getNodeId());
 
+        caches.put(id, cCache);
         root.addChildren(cCache);
     }
 }
