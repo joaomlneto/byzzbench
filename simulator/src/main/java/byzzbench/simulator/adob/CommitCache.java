@@ -2,15 +2,34 @@ package byzzbench.simulator.adob;
 
 import lombok.Getter;
 
+import java.util.HashSet;
 import java.util.Set;
 
+/**
+ * AdoB cache representing a commit.
+ *
+ * @see <a href="https://flint.cs.yale.edu/flint/publications/adob-tr.pdf">AdoB</a>
+ */
 @Getter
 public class CommitCache extends AdobCache {
-    private final Set<String> voters;
+    /**
+     * The set of nodes that voted for this commit.
+     */
+    private final Set<String> voters = new HashSet<>();
 
-    public CommitCache(AdobCache parent, Set<String> voters) {
+    /**
+     * The node that initiated the commit.
+     */
+    private final String initiator;
+
+    public CommitCache(AdobCache parent, String initialVoter) {
         super(parent);
-        this.voters = voters;
+        this.initiator = initialVoter;
+        this.addVoter(initialVoter);
+    }
+
+    public void addVoter(String voter) {
+        voters.add(voter);
     }
 
     @Override

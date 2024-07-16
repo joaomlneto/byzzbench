@@ -4,6 +4,11 @@ import lombok.Getter;
 
 import java.util.Set;
 
+/**
+ * AdoB cache representing a timeout.
+ *
+ * @see <a href="https://flint.cs.yale.edu/flint/publications/adob-tr.pdf">AdoB</a>
+ */
 public class TimeoutCache extends AdobCache {
     @Getter
     private final Set<String> voters;

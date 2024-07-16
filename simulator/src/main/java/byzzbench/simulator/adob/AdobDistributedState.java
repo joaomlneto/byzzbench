@@ -29,7 +29,7 @@ public class AdobDistributedState implements ReplicaObserver, Serializable {
     public synchronized void onLeaderChange(Replica r, String newLeaderId) {
         System.out.printf("%s: leader changed to %s\n", r.getNodeId(), newLeaderId);
         // create ECache
-        ElectionCache eCache = new ElectionCache(root, Set.of(r.getNodeId()), newLeaderId);
+        ElectionCache eCache = new ElectionCache(root, r.getNodeId(), newLeaderId);
 
         root.addChildren(eCache);
     }
@@ -38,9 +38,9 @@ public class AdobDistributedState implements ReplicaObserver, Serializable {
     public synchronized void onLocalCommit(Replica r, Serializable operation) {
         System.out.printf("%s: local commit\n", r.getNodeId());
         // create MCache
-        MCache mCache = new MCache(root, operation, Set.of(r.getNodeId()));
+        MethodCache methodCache = new MethodCache(root, operation, r.getNodeId());
 
-        root.addChildren(mCache);
+        root.addChildren(methodCache);
     }
 
     // TODO: Whenever a replica times out and triggers an election, create a TCache
@@ -56,7 +56,7 @@ public class AdobDistributedState implements ReplicaObserver, Serializable {
     public synchronized void onQuorum(Replica r) {
         System.out.printf("%s: quorum\n", r.getNodeId());
         // create CCache
-        CommitCache cCache = new CommitCache(root, Set.of(r.getNodeId()));
+        CommitCache cCache = new CommitCache(root, r.getNodeId());
 
         root.addChildren(cCache);
     }
