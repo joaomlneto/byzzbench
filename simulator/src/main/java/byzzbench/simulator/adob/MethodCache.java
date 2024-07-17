@@ -40,7 +40,7 @@ public class MethodCache extends AdobCache {
 
     @Override
     public String getCacheType() {
-        return "M";
+        return "Method";
     }
 
     @Override
