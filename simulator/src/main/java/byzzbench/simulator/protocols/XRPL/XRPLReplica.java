@@ -231,7 +231,7 @@ public class XRPLReplica extends Replica<XRPLLedger> {
     }
 
     private void closeLedger() {
-        XRPLLedger ledger = new XRPLLedger(null, null, this.prevLedger.getSeq() + 1);
+        this.currWorkLedger = new XRPLLedger(null, null, this.prevLedger.getSeq() + 1);
         this.result = new XRPLConsensusResult(this.pendingTransactions);
         XRPLProposal prop = new XRPLProposal("prevLedgerId", 0, this.result.getTxList(), getNodeId(), 1); // TODO get hash of prev ledger and call to clock.now for params
         // TODO this.result.setRoundTime(clock.now());
