@@ -3,9 +3,15 @@ package byzzbench.simulator.protocols.XRPL.messages;
 import byzzbench.simulator.transport.MessagePayload;
 
 public class XRPLSubmitMessage implements MessagePayload {
-    //TODO decide how to represent transactions
+    private String tx;
+
+    @Override
     public String getType() {
         return "SUBMIT";
+    }
+
+    public String getTx() {
+        return tx;
     }
 
 }

@@ -1,18 +1,50 @@
 package byzzbench.simulator.protocols.XRPL;
 
-import java.io.Serializable;
-import java.util.Set;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
-public class XRPLProposal implements Serializable {
-    private Set<Integer> txSet;
+public class XRPLProposal {
+    private String prevLedgerId;
+    private int seq;
+    private List<String> txns;
+    private String nodeId;
+    private long createdTime;
 
-    public XRPLProposal(Set<Integer> txSet) {
-        this.txSet = txSet;
+    public XRPLProposal(String prevLedgerId_, int seq_, List<String> txns_, String nodeId_, long createdTime_) {
+        this.prevLedgerId = prevLedgerId_;
+        this.seq = seq_;
+        this.nodeId = nodeId_;
+        this.createdTime = createdTime_;
+        this.txns = new ArrayList<>();
+        for (String tx : txns_) {
+            this.txns.add(tx);
+        }
     }
 
-    public void addToTxSet(int txid) {
-        this.txSet.add(txid);
+    public boolean containsTx(String tx) {
+        return this.txns.contains(tx);
     }
 
-    
+    public String getPrevLedgerId() {
+        return prevLedgerId;
+    }
+    public int getSeq() {
+        return seq;
+    }
+    public List<String> getTxns() {
+        return txns;
+    }
+    public String getNodeId() {
+        return nodeId;
+    }
+    public long getCreatedTime() {
+        return createdTime;
+    }
+
+    public boolean isTxListEqual(List<String> txList) {
+        Collections.sort(this.txns);
+        Collections.sort(txList);
+        return txns.equals(txList);
+    }
 }

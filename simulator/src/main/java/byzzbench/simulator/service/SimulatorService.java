@@ -1,6 +1,7 @@
 package byzzbench.simulator.service;
 
 import byzzbench.simulator.ScenarioExecutor;
+import byzzbench.simulator.protocols.XRPL.XRPLScenarioExecutor;
 import byzzbench.simulator.protocols.fasthotstuff.FastHotStuffScenarioExecutor;
 import byzzbench.simulator.protocols.pbft_java.PbftScenarioExecutor;
 import java.io.Serializable;
@@ -23,12 +24,12 @@ import org.springframework.stereotype.Service;
 @Log
 public class SimulatorService {
   private ScenarioExecutor<? extends Serializable> scenarioExecutor =
-      new PbftScenarioExecutor<>();
+      new XRPLScenarioExecutor();
 
   @EventListener(ApplicationReadyEvent.class)
   void onStartup() {
     log.info("Starting the simulator service");
-    this.changeScenario("pbft-java");
+    this.changeScenario("xrpl");
     log.info("Simulator service started");
   }
 
@@ -39,6 +40,9 @@ public class SimulatorService {
       break;
     case "pbft-java":
       this.scenarioExecutor = new PbftScenarioExecutor<>();
+      break;
+    case "xrpl":
+      this.scenarioExecutor = new XRPLScenarioExecutor();
       break;
     default:
       throw new IllegalArgumentException("Unknown scenario id: " + id);

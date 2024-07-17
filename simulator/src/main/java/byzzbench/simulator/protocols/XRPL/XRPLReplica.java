@@ -1,12 +1,19 @@
 package byzzbench.simulator.protocols.XRPL;
 
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
+import java.util.TreeSet;
+
+import com.github.javaparser.utils.Log;
 
 import byzzbench.simulator.Replica;
 import byzzbench.simulator.protocols.XRPL.messages.XRPLProposeMessage;
 import byzzbench.simulator.protocols.XRPL.messages.XRPLSubmitMessage;
 import byzzbench.simulator.protocols.XRPL.messages.XRPLValidateMessage;
-import byzzbench.simulator.state.CommitLog;
 import byzzbench.simulator.state.TotalOrderCommitLog;
 import byzzbench.simulator.transport.MessagePayload;
 import byzzbench.simulator.transport.Transport;
@@ -14,29 +21,31 @@ import byzzbench.simulator.transport.Transport;
 public class XRPLReplica extends Replica<XRPLLedger> {
 
     private Set<String> ourUNL;  //The nodeIDs of nodes in our UNL, our "peers"
-    private Set<Integer> pendingTransactions; //Pending transactions in our pool, represented by their IDs.
+    private List<String> pendingTransactions; //Our candidate set
     private XRPLReplicaState state;
-    private Set<XRPLProposal> currPeerProposals;
+    private Map<String, XRPLProposal> currPeerProposals;
 
     private XRPLLedger currWorkLedger;
-    private XRPLLedger prevLedger;
-    private XRPLLedger validLedger;
+    private XRPLLedger prevLedger; //lastClosedLedger
+    private XRPLLedger validLedger; //last fully validated ledger
 
     private long openTime;
     private long prevRoundTime;
+    private double converge;
     
     private XRPLConsensusResult result;
 
+    private Map<String, XRPLLedger> validations; //map of last validated ledgers indexed on nodeId
+
     protected XRPLReplica(String nodeId, Set<String> nodeIds, Transport<XRPLLedger> transport, Set<String> UNL) {
         super(nodeId, nodeIds, transport, new TotalOrderCommitLog<>());
-        //TODO Auto-generated constructor stub
         this.ourUNL = UNL;
+        this.result = null;
     }
 
     @Override
     public void initialize() {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'initialize'");
+        //nothing to do
     }
 
     @Override
@@ -51,30 +60,55 @@ public class XRPLReplica extends Replica<XRPLLedger> {
             validateMessageHandler(valmsg);
             return;
         } else {
-            throw new Exception("Uknown message type");
+            throw new Exception("Unknown message type");
         }
 
     }
 
     private void submitMessageHandler(XRPLSubmitMessage msg) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'submitMessageHandler'");
+        try {
+            String tx = msg.getTx();
+            this.pendingTransactions.add(tx);
+        } catch (Exception e) {
+            Log.error("Couldn't handle submit message in node " + this.getNodeId() + ": " + e.getMessage());
+        }
     }
 
     private void validateMessageHandler(XRPLValidateMessage msg) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'validateMessageHandler'");
+        try {
+            if (msg.getLedger().getSeq() == this.currWorkLedger.getSeq() /*TODO && verify signature */) {
+                //TODO add msg.ledger to tree
+                this.validations.put(msg.getSenderNodeId(), msg.getLedger());
+                int valCount = 0;
+                for (String nodeId : ourUNL) {
+                    if (validations.get(nodeId).equals(msg.getLedger())) {
+                        valCount += 1;
+                    }
+                }
+                if (valCount >= 0.8 * this.ourUNL.size() && msg.getLedger().getSeq() > this.validLedger.getSeq()) {
+                    this.validLedger = new XRPLLedger(this.currWorkLedger);
+                    for (String tx : this.validLedger.transactions) {
+                        this.pendingTransactions.remove(tx);
+                    }
+                    //Exeucute txes
+
+                }
+            }
+        } catch (Exception e) {
+            Log.error("Couldn't handle validate message in node " + this.getNodeId() + ": " + e.getMessage());
+        }
     }
 
     private void proposeMessageHandler(XRPLProposeMessage msg) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'proposeMessageHandler'");
-    }
-
-    public void sendTransaction(int ID) {
-        if (this.state == XRPLReplicaState.OPEN) {
-            this.pendingTransactions.add(ID);
+        try {
+            XRPLProposal prop = msg.getProposal();
+            if (prop.getPrevLedgerId() == this.prevLedger.getId() && ourUNL.contains(msg.getSenderId())) {
+                this.currPeerProposals.put(msg.getSenderId(), prop);
+            }
+        } catch (Exception e) {
+            Log.error("Couldn't handle propose message in node " + this.getNodeId() + ": " + e.getMessage());
         }
+        
     }
 
     public void onHeartbeat() {
@@ -83,12 +117,12 @@ public class XRPLReplica extends Replica<XRPLLedger> {
             return;
         } 
 
-        //TODO now_ = now timestamp
+        //TODO now_ = now timestamp THINK HOW TO REPRESENT TIME CALLS
         
         XRPLLedger tempL = getPreferredLedger(this.validLedger);
         if (this.prevLedger != tempL) {
             this.prevLedger = tempL;
-            startConsensus(this.prevLedger);
+            startConsensus();
         }
 
         switch (this.state) {
@@ -101,14 +135,11 @@ public class XRPLReplica extends Replica<XRPLLedger> {
             case XRPLReplicaState.ESTABLISH:
                 //TODO result.roundTime = now - result.roundTime
                 // converge = result.roundTime / max(prevRoundTime, 5s)
-                //UpdateOurProposals()
+                UpdateOurProposals();
                 if (checkConsensus()) {
                     this.state = XRPLReplicaState.ACCEPT;
                     handleAccept();
                 }
-                break;
-        
-            case XRPLReplicaState.ACCEPT:
                 break;
             default:
                 break;
@@ -118,19 +149,128 @@ public class XRPLReplica extends Replica<XRPLLedger> {
         
     }
 
+    private void UpdateOurProposals() {
+        for (String nodeId : ourUNL) {
+            //TODO remove stale proposals
+            /*if (clock.now() - this.currPeerProposals.get(nodeId).time >= 20) {
+                this.currPeerProposals.put(nodeId, null);
+            } */
+        }
+        boolean hasResChanged = false;
+        for (DisputedTx dt : this.result.getDisputedTxs()) {
+            if (updateVote(dt)) {
+                hasResChanged = true;
+                dt.switchOurVote();
+                if (dt.getOurVote()) {
+                    this.result.addTx(dt.getTx());
+                } else {
+                    this.result.removeTx(dt.getTx());
+                }
+            }
+        }
+        if (hasResChanged) {
+            XRPLProposal prop = new XRPLProposal(this.prevLedger.getId(), this.result.getProposal().getSeq() + 1, this.result.getTxList(), this.getNodeId(), 1 /*TODO this should be now (or prev prop time) */);
+            this.result.setProposal(prop);
+            XRPLProposeMessage propmsg = new XRPLProposeMessage(prop);
+            this.broadcastMessage(propmsg);
+            this.result.resetDisputes();
+            for (String nodeId : this.ourUNL) {
+                if (currPeerProposals.get(nodeId) != null) {
+                    createDisputes(currPeerProposals.get(nodeId).getTxns());
+                }
+            }
+        }
+
+    }
+
+    private boolean updateVote(DisputedTx dt) {
+        double threshold;
+        if (this.converge < 0.5) {
+            threshold = 0.5;
+        } else if (this.converge < 0.85) {
+            threshold = 0.65;
+        } else if (this.converge < 2) {
+            threshold = 0.7;
+        } else {
+            threshold = 0.95;
+        }
+
+        boolean newVote = (dt.getYesVotes() + boolToInt(dt.getOurVote())) / (dt.getNoVotes() + dt.getYesVotes() + 1) > threshold;
+        return newVote != dt.getOurVote();
+    }
+
+    private int boolToInt(boolean b) {
+        if (b) {
+            return 1;
+        } else {
+            return 0;
+        }
+    }
+
     private void handleAccept() {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'handleAccept'");
+        XRPLLedger tmpL = this.prevLedger.applyTxes(this.result.getTxList());
+        this.validations.put(this.getNodeId(), this.prevLedger);
+        //TODO sign the ledger
+        XRPLValidateMessage val = new XRPLValidateMessage(this.getNodeId(), tmpL);
+        this.broadcastMessage(val);
+        this.prevRoundTime = this.result.getRoundTime();
+        this.startConsensus();
     }
 
     private boolean checkConsensus() {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'checkConsensus'");
+        int agree = 0;
+        int disagree = 0;
+
+        for ( Entry<String, XRPLProposal> entry : this.currPeerProposals.entrySet()) {
+            if (entry.getValue().isTxListEqual(this.pendingTransactions)) {
+                agree += 1;
+            } else if (entry != null) {
+                disagree += 1;
+            }
+        }
+        return (agree + 1) / (disagree + agree + 1) >= 0.8;
     }
 
     private void closeLedger() {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'closeLedger'");
+        XRPLLedger ledger = new XRPLLedger(null, null, this.prevLedger.getSeq() + 1);
+        this.result = new XRPLConsensusResult(this.pendingTransactions);
+        XRPLProposal prop = new XRPLProposal("prevLedgerId", 0, this.result.getTxList(), getNodeId(), 1); // TODO get hash of prev ledger and call to clock.now for params
+        // TODO this.result.setRoundTime(clock.now());
+        XRPLProposeMessage propmsg = new XRPLProposeMessage(prop);
+        this.broadcastMessage(propmsg);
+        for (String nodeId : this.ourUNL) {
+            if (currPeerProposals.get(nodeId) != null) {
+                createDisputes(currPeerProposals.get(nodeId).getTxns());
+            }
+        }
+    }
+
+    private void createDisputes(List<String> txns) {
+        Set<String> symmDiff = computeSymmetricDifference(this.result.getTxList(), txns);
+        for (String tx : symmDiff) {
+            DisputedTx dt = new DisputedTx(tx, this.result.containsTx(tx), 0, 0, new HashMap<>());
+            for (String nodeId : this.ourUNL) {
+                if (this.currPeerProposals.get(nodeId).containsTx(tx)) {
+                    dt.incrementYesVotes();
+                    dt.addEntryToVotesMap(nodeId, true);
+                } else {
+                    dt.incrementNoVotes();
+                    dt.addEntryToVotesMap(nodeId, false);
+                }
+            }
+            this.result.addDisputed(dt);
+        }
+    }
+
+    private Set<String> computeSymmetricDifference(List<String> list1, List<String> list2) {
+        Set<String> set1 = new HashSet<>(list1);
+        Set<String> set2 = new HashSet<>(list2);
+        Set<String> union = new HashSet<>(set1);
+        union.addAll(set2);
+        Set<String> intersection = new HashSet<>(set1);
+        intersection.retainAll(set2);
+        union.removeAll(intersection);
+        return union;
     }
 
     private XRPLLedger getPreferredLedger(XRPLLedger L) {
@@ -138,10 +278,13 @@ public class XRPLReplica extends Replica<XRPLLedger> {
         throw new UnsupportedOperationException("Unimplemented method 'getPreferredLedger'");
     }
 
-    public void startConsensus(XRPLLedger L) {
+    public void startConsensus() {
         this.state = XRPLReplicaState.OPEN;
+        this.result.reset();
+        this.converge = 0;
+        //TODO this.openTime = clock.now();
+        this.currPeerProposals = new HashMap<>();
     }
 
-    //TODO implement the data structures and algorithms in the analysis paper:
 
 }
