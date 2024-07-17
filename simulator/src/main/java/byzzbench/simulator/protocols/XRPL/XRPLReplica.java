@@ -6,7 +6,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
-import java.util.TreeSet;
 
 import com.github.javaparser.utils.Log;
 
@@ -150,12 +149,12 @@ public class XRPLReplica extends Replica<XRPLLedger> {
     }
 
     private void UpdateOurProposals() {
-        for (String nodeId : ourUNL) {
+        /* for (String nodeId : ourUNL) {
             //TODO remove stale proposals
-            /*if (clock.now() - this.currPeerProposals.get(nodeId).time >= 20) {
+            if (clock.now() - this.currPeerProposals.get(nodeId).time >= 20) {
                 this.currPeerProposals.put(nodeId, null);
-            } */
-        }
+            } 
+        } */
         boolean hasResChanged = false;
         for (DisputedTx dt : this.result.getDisputedTxs()) {
             if (updateVote(dt)) {
