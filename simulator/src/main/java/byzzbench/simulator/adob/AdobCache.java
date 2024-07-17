@@ -46,7 +46,7 @@ public abstract class AdobCache implements Serializable {
     /**
      * Add a child to the cache.
      *
-     * @param child
+     * @param child The child cache to append to the list of children.
      */
     public void addChildren(AdobCache child) {
         this.children.add(child);
@@ -63,6 +63,7 @@ public abstract class AdobCache implements Serializable {
         return Optional.ofNullable(parent).map(AdobCache::getId);
     }
 
+    @JsonIgnore
     public abstract byte getCRank();
 
 }
