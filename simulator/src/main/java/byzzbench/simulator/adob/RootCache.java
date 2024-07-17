@@ -13,4 +13,9 @@ public class RootCache extends AdobCache {
     public String getCacheType() {
         return "Root";
     }
+
+    @Override
+    public byte getCRank() {
+        throw new UnsupportedOperationException("Root cache does not have a rank.");
+    }
 }
