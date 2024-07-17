@@ -1,5 +1,5 @@
 import { useGetAllAdobCaches } from "@/lib/byzzbench-client";
-import React from "react";
+import React, { useMemo } from "react";
 import { GraphView } from "react-digraph";
 
 const GraphConfig = {
@@ -35,7 +35,7 @@ const GraphConfig = {
       ),
     },
     Election: {
-      typeText: "Election",
+      typeText: "Electionxxxx",
       shapeId: "#election",
       shape: (
         <symbol viewBox="0 0 100 100" id="election" key="0">
@@ -92,29 +92,28 @@ const GraphConfig = {
 export default function AdoBStateDiagram() {
   const { data } = useGetAllAdobCaches();
 
-  const nodes =
-    data?.data.map((cache) => ({
-      id: cache.id,
-      title: `${cache.cacheType}`,
-      type: cache.cacheType ?? "Election",
-    })) ?? [];
+  const nodes = useMemo(() => {
+    return (
+      data?.data.map((cache) => ({
+        id: cache.id,
+        title: `t=${cache.timestamp}`,
+        type: cache.cacheType ?? "Election",
+      })) ?? []
+    );
+  }, [data]);
 
   // compute edges from 'parent' relations
-  const edges =
-    data?.data
-      .filter((cache) => cache.parentId !== null)
-      .map((cache) => ({
-        source: cache.parentId,
-        target: cache.id,
-        type: "emptyEdge",
-      })) ?? [];
-
-  const edgesx = [
-    { source: "1", target: "2", type: "Custom" },
-    { source: "1", target: "3", type: "emptyEdge" },
-    { source: "3", target: "4", type: "emptyEdge" },
-    { source: "4", target: "5", type: "emptyEdge" },
-  ];
+  const edges = useMemo(() => {
+    return (
+      data?.data
+        .filter((cache) => cache.parentId !== null)
+        .map((cache) => ({
+          source: cache.parentId,
+          target: cache.id,
+          type: "emptyEdge",
+        })) ?? []
+    );
+  }, [data]);
 
   const NodeTypes = GraphConfig.NodeTypes;
   const NodeSubtypes = GraphConfig.NodeSubtypes;
@@ -126,12 +125,11 @@ export default function AdoBStateDiagram() {
         nodeKey={"id"}
         nodes={nodes}
         edges={edges}
-        //selected={selected}
         nodeTypes={NodeTypes}
         nodeSubtypes={NodeSubtypes}
         layoutEngineType="HorizontalTree"
         edgeTypes={EdgeTypes}
-        allowMultiselect={true} // true by default, set to false to disable multi select.
+        allowMultiselect={false}
       />
     </div>
   );
