@@ -1,6 +1,6 @@
 import { useGetAllAdobCaches } from "@/lib/byzzbench-client";
 import React, { useMemo } from "react";
-import { GraphView } from "react-digraph";
+import { GraphUtils, GraphView } from "react-digraph";
 
 const GraphConfig = {
   NodeTypes: {
@@ -35,7 +35,7 @@ const GraphConfig = {
       ),
     },
     Election: {
-      typeText: "Electionxxxx",
+      typeText: "Election",
       shapeId: "#election",
       shape: (
         <symbol viewBox="0 0 100 100" id="election" key="0">
@@ -98,6 +98,15 @@ export default function AdoBStateDiagram() {
         id: cache.id,
         title: `t=${cache.timestamp}`,
         type: cache.cacheType ?? "Election",
+        timestamp: cache.timestamp,
+        // @ts-ignore // FIXME: need to fix the type of cache
+        leader: cache.leader,
+        // @ts-ignore // FIXME: need to fix the type of cache
+        voters: cache.voters,
+        // @ts-ignore // FIXME: need to fix the type of cache
+        method: cache.method,
+        // @ts-ignore // FIXME: need to fix the type of cache
+        supporters: cache.supporters,
       })) ?? []
     );
   }, [data]);
@@ -130,6 +139,40 @@ export default function AdoBStateDiagram() {
         layoutEngineType="HorizontalTree"
         edgeTypes={EdgeTypes}
         allowMultiselect={false}
+        renderNodeText={(data) => {
+          const className = GraphUtils.classNames("node-text");
+          console.log(data);
+          return (
+            <text className={className} textAnchor="middle">
+              <tspan opacity="0.5">{data.type}</tspan>
+              {data.timestamp != null && (
+                <tspan x={0} dy={12} fontSize="10px">
+                  t = {data.timestamp}
+                </tspan>
+              )}
+              {data.leader != null && (
+                <tspan x={0} dy={12} fontSize="10px">
+                  leader = {data.leader}
+                </tspan>
+              )}
+              {data.voters != null && (
+                <tspan x={0} dy={12} fontSize="10px">
+                  voters = {data.voters.join(", ")}
+                </tspan>
+              )}
+              {data.supporters != null && (
+                <tspan x={0} dy={12} fontSize="10px">
+                  supporters = {data.supporters.join(", ")}
+                </tspan>
+              )}
+              {data.method != null && (
+                <tspan x={0} dy={16} fontSize="10px">
+                  method = {data.method}
+                </tspan>
+              )}
+            </text>
+          );
+        }}
       />
     </div>
   );
