@@ -31,51 +31,85 @@ public class AdobDistributedState implements ReplicaObserver, Serializable {
 
     private final Map<String, VectorClock> clocks = new HashMap<>();
 
+    private final Map<String, AdobCache> replicaLastCache = new HashMap<>();
+
+    private AdobCache getReplicaLastCache(Replica r) {
+        return replicaLastCache.getOrDefault(r.getNodeId(), root);
+    }
+
     private VectorClock getReplicaClock(Replica r) {
         return clocks.computeIfAbsent(r.getNodeId(), k -> new VectorClock());
     }
 
-    // TODO: Whenever a replica changes its leader, create or update the respective ECache
     public synchronized void onLeaderChange(Replica r, String newLeaderId) {
-        System.out.printf("%s: leader changed to %s\n", r.getNodeId(), newLeaderId);
-        // create ECache
-        long id = maxExistingCacheId.incrementAndGet();
-        ElectionCache eCache = new ElectionCache(id, root, r.getNodeId(), newLeaderId);
+        System.out.printf("%s: leader changed to %s%n", r.getNodeId(), newLeaderId);
 
-        caches.put(id, eCache);
-        root.addChildren(eCache);
+        ElectionCache cache = null;
+
+        // search for an ECache with the same leader ID
+        for (AdobCache c : getReplicaLastCache(r).getChildren()) {
+            if (c instanceof ElectionCache e && e.getLeader().equals(newLeaderId)) {
+                cache = e;
+                break;
+            }
+        }
+
+        // create ECache if it doesn't exist
+        if (cache == null) {
+            long id = maxExistingCacheId.incrementAndGet();
+            cache = new ElectionCache(id, getReplicaLastCache(r), r.getNodeId(), newLeaderId);
+            caches.put(id, cache);
+        }
+
+        cache.addVoter(r.getNodeId());
+        replicaLastCache.put(r.getNodeId(), cache);
     }
 
     // TODO: Whenever the leader does a local commit, create a new MCache
     public synchronized void onLocalCommit(Replica r, Serializable operation) {
-        System.out.printf("%s: local commit\n", r.getNodeId());
-        // create MCache
-        long id = maxExistingCacheId.incrementAndGet();
-        MethodCache methodCache = new MethodCache(id, root, operation, r.getNodeId());
+        System.out.printf("%s: local commit%n", r.getNodeId());
 
-        caches.put(id, methodCache);
-        root.addChildren(methodCache);
+        MethodCache cache = null;
+        // search for an ECache with the same leader ID
+        for (AdobCache c : getReplicaLastCache(r).getChildren()) {
+            if (c instanceof MethodCache m) {
+                Serializable a = m.getMethod();
+                System.out.printf("Comparing %s to %s - %s%n", a, operation, a.equals(operation));
+            }
+            if (c instanceof MethodCache m && m.getMethod().toString().equals(operation.toString())) {
+                cache = m;
+                break;
+            }
+        }
+
+        // create MCache
+        if (cache == null) {
+            long id = maxExistingCacheId.incrementAndGet();
+            cache = new MethodCache(id, getReplicaLastCache(r), operation, r.getNodeId());
+            caches.put(id, cache);
+        }
+
+        cache.addVoter(r.getNodeId());
+        replicaLastCache.put(r.getNodeId(), cache);
     }
 
     // TODO: Whenever a replica times out and triggers an election, create a TCache
     public synchronized void onTimeout(Replica r) {
-        System.out.printf("%s: timeout\n", r.getNodeId());
+        System.out.printf("%s: timeout%n", r.getNodeId());
         // create TCache
         long id = maxExistingCacheId.incrementAndGet();
         TimeoutCache tCache = new TimeoutCache(id, root, Set.of(r.getNodeId()), Set.of(r.getNodeId()));
 
         caches.put(id, tCache);
-        root.addChildren(tCache);
     }
 
     // TODO: Whenever the leader forms a quorum, create a new CCache
     public synchronized void onQuorum(Replica r) {
-        System.out.printf("%s: quorum\n", r.getNodeId());
+        System.out.printf("%s: quorum%n", r.getNodeId());
         // create CCache
         long id = maxExistingCacheId.incrementAndGet();
         CommitCache cCache = new CommitCache(id, root, r.getNodeId());
 
         caches.put(id, cCache);
-        root.addChildren(cCache);
     }
 }
