@@ -41,6 +41,9 @@ public abstract class AdobCache implements Serializable {
     protected AdobCache(long id, AdobCache parent) {
         this.id = id;
         this.parent = parent;
+        if (parent != null) {
+            parent.addChildren(this);
+        }
     }
 
     /**
