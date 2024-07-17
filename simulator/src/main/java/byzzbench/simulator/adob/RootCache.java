@@ -1,5 +1,7 @@
 package byzzbench.simulator.adob;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 /**
  * AdoB cache representing the root of the cache tree.
  * Not a real cache, but a placeholder for the root of the cache tree.
@@ -15,7 +17,9 @@ public class RootCache extends AdobCache {
     }
 
     @Override
+    @JsonIgnore
     public byte getCRank() {
-        throw new UnsupportedOperationException("Root cache does not have a rank.");
+        //throw new UnsupportedOperationException("Root cache does not have a rank.");
+        return -1;
     }
 }
