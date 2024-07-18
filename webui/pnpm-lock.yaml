@@ -74,6 +74,9 @@ importers:
       axios:
         specifier: ^1.7.2
         version: 1.7.2
+      clsx:
+        specifier: ^2.1.1
+        version: 2.1.1
       dayjs:
         specifier: ^1.11.11
         version: 1.11.11
