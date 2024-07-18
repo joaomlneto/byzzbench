@@ -8,6 +8,4 @@ public interface ReplicaObserver {
     void onLocalCommit(Replica r, Serializable operation);
 
     void onTimeout(Replica r);
-
-    void onQuorum(Replica r);
 }

@@ -111,6 +111,7 @@ public abstract class Replica<T extends Serializable> implements Serializable {
     }
 
     // Observer methods, for AdoB oracle
+    // TODO: implicitly call these methods when the replica changes state!!
 
     // add observer
     public void addObserver(ReplicaObserver observer) {
@@ -118,7 +119,6 @@ public abstract class Replica<T extends Serializable> implements Serializable {
     }
 
     public void notifyObserversLeaderChange(String newLeaderId) {
-        System.out.println("Notifying observers of leader change");
         this.observers.forEach(observer -> observer.onLeaderChange(this, newLeaderId));
     }
 
@@ -128,10 +128,6 @@ public abstract class Replica<T extends Serializable> implements Serializable {
 
     public void notifyObserversTimeout() {
         this.observers.forEach(observer -> observer.onTimeout(this));
-    }
-
-    public void notifyObserversQuorum() {
-        this.observers.forEach(observer -> observer.onQuorum(this));
     }
 
 }

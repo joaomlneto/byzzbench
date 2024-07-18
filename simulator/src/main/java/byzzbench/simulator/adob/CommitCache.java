@@ -2,6 +2,7 @@ package byzzbench.simulator.adob;
 
 import lombok.Getter;
 
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -17,19 +18,16 @@ public class CommitCache extends AdobCache {
      */
     private final Set<String> voters = new HashSet<>();
 
-    /**
-     * The node that initiated the commit.
-     */
-    private final String initiator;
-
-    public CommitCache(long id, AdobCache parent, String initialVoter) {
+    public CommitCache(long id, AdobCache parent) {
         super(id, parent);
-        this.initiator = initialVoter;
-        this.addVoter(initialVoter);
     }
 
     public void addVoter(String voter) {
         voters.add(voter);
+    }
+
+    public void addVoters(Collection<String> voters) {
+        this.voters.addAll(voters);
     }
 
     @Override

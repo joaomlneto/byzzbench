@@ -8,6 +8,7 @@ import lombok.Synchronized;
 import lombok.extern.java.Log;
 
 import java.io.Serializable;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
@@ -22,16 +23,38 @@ import java.util.concurrent.atomic.AtomicLong;
  */
 @Log
 public class AdobDistributedState implements ReplicaObserver, Serializable {
+    /**
+     * The root cache of the distributed state.
+     */
     @Getter(onMethod_ = {@Synchronized})
     private final AdobCache root = new RootCache(0);
 
+    /**
+     * The caches that have been created so far.
+     */
     @Getter(onMethod_ = {@Synchronized})
     private final Map<Long, AdobCache> caches = new HashMap<>(Map.of(0L, root));
+
+    /**
+     * The maximum cache ID that has been created so far.
+     */
     private final AtomicLong maxExistingCacheId = new AtomicLong();
 
+    /**
+     * The vector clocks of each replica.
+     */
     private final Map<String, VectorClock> clocks = new HashMap<>();
 
+    /**
+     * The last cache that each replica has created/supported.
+     */
     private final Map<String, AdobCache> replicaLastCache = new HashMap<>();
+
+    public AdobDistributedState(Collection<String> replicaIds) {
+        for (String id : replicaIds) {
+            replicaLastCache.put(id, root);
+        }
+    }
 
     private AdobCache getReplicaLastCache(Replica r) {
         return replicaLastCache.getOrDefault(r.getNodeId(), root);
@@ -41,35 +64,48 @@ public class AdobDistributedState implements ReplicaObserver, Serializable {
         return clocks.computeIfAbsent(r.getNodeId(), k -> new VectorClock());
     }
 
+    /**
+     * Whenever the leader changes, create (or support) an ECache.
+     *
+     * @param r           the ID of the replica that changed view
+     * @param newLeaderId the ID of the new leader
+     */
+    @Override
     public synchronized void onLeaderChange(Replica r, String newLeaderId) {
-        System.out.printf("%s: leader changed to %s%n", r.getNodeId(), newLeaderId);
+        log.info(String.format("%s: leader changed to %s%n", r.getNodeId(), newLeaderId));
 
-        ElectionCache cache = null;
+        ElectionCache electionCache = null;
 
         // search for an ECache with the same leader ID
         for (AdobCache c : getReplicaLastCache(r).getChildren()) {
             if (c instanceof ElectionCache e && e.getLeader().equals(newLeaderId)) {
-                cache = e;
+                electionCache = e;
                 break;
             }
         }
 
         // create ECache if it doesn't exist
-        if (cache == null) {
+        if (electionCache == null) {
             long id = maxExistingCacheId.incrementAndGet();
-            cache = new ElectionCache(id, getReplicaLastCache(r), r.getNodeId(), newLeaderId);
-            caches.put(id, cache);
+            electionCache = new ElectionCache(id, getReplicaLastCache(r), r.getNodeId(), newLeaderId);
+            caches.put(id, electionCache);
         }
 
-        cache.addVoter(r.getNodeId());
-        replicaLastCache.put(r.getNodeId(), cache);
+        electionCache.addVoter(r.getNodeId());
+        replicaLastCache.put(r.getNodeId(), electionCache);
     }
 
-    // TODO: Whenever the leader does a local commit, create a new MCache
+    /**
+     * Whenever a replica commits an operation, create (or support) an MCache.
+     *
+     * @param r         the replica that committed the operation
+     * @param operation the operation that was committed
+     */
+    @Override
     public synchronized void onLocalCommit(Replica r, Serializable operation) {
-        System.out.printf("%s: local commit%n", r.getNodeId());
+        log.info(String.format("%s: local commit%n", r.getNodeId()));
 
-        MethodCache cache = null;
+        MethodCache methodCache = null;
         // search for an ECache with the same leader ID
         for (AdobCache c : getReplicaLastCache(r).getChildren()) {
             if (c instanceof MethodCache m) {
@@ -77,39 +113,66 @@ public class AdobDistributedState implements ReplicaObserver, Serializable {
                 System.out.printf("Comparing %s to %s - %s%n", a, operation, a.equals(operation));
             }
             if (c instanceof MethodCache m && m.getMethod().toString().equals(operation.toString())) {
-                cache = m;
+                methodCache = m;
                 break;
             }
         }
 
         // create MCache
-        if (cache == null) {
+        if (methodCache == null) {
             long id = maxExistingCacheId.incrementAndGet();
-            cache = new MethodCache(id, getReplicaLastCache(r), operation, r.getNodeId());
-            caches.put(id, cache);
+            methodCache = new MethodCache(id, getReplicaLastCache(r), operation, r.getNodeId());
+            caches.put(id, methodCache);
         }
 
-        cache.addVoter(r.getNodeId());
-        replicaLastCache.put(r.getNodeId(), cache);
+        methodCache.addVoter(r.getNodeId());
+        replicaLastCache.put(r.getNodeId(), methodCache);
+
+        // check if a majority of the replicas have committed the operation
+        if (methodCache.getVoters().size() > replicaLastCache.size() / 2) {
+            createOrSupportCCache(methodCache);
+        }
+    }
+
+    /**
+     * Create or support a CCache for the given MCache.
+     *
+     * @param parent an MCache that has a majority of votes
+     */
+    private synchronized void createOrSupportCCache(MethodCache parent) {
+        // assert that the parent has enough votes
+        assert parent.getVoters().size() > replicaLastCache.size() / 2;
+
+        // if the MCache already has a CCache as a child, add the missing voter to the CCache
+        for (AdobCache c : parent.getChildren()) {
+            if (c instanceof CommitCache cCache) {
+                cCache.addVoters(parent.getVoters());
+                return;
+            }
+        }
+
+        log.info(String.format("%s: quorum%n", parent));
+        
+        // create CCache
+        long id = maxExistingCacheId.incrementAndGet();
+        CommitCache cCache = new CommitCache(id, parent);
+        caches.put(id, cCache);
+
+        // add voters to CCache and update replica's last cache
+        parent.getVoters().forEach(voter -> {
+            cCache.addVoter(voter);
+            replicaLastCache.put(voter, cCache);
+        });
     }
 
     // TODO: Whenever a replica times out and triggers an election, create a TCache
+    @Override
     public synchronized void onTimeout(Replica r) {
-        System.out.printf("%s: timeout%n", r.getNodeId());
+        log.info(String.format("%s: timeout%n", r.getNodeId()));
         // create TCache
         long id = maxExistingCacheId.incrementAndGet();
         TimeoutCache tCache = new TimeoutCache(id, root, Set.of(r.getNodeId()), Set.of(r.getNodeId()));
 
         caches.put(id, tCache);
-    }
-
-    // TODO: Whenever the leader forms a quorum, create a new CCache
-    public synchronized void onQuorum(Replica r) {
-        System.out.printf("%s: quorum%n", r.getNodeId());
-        // create CCache
-        long id = maxExistingCacheId.incrementAndGet();
-        CommitCache cCache = new CommitCache(id, root, r.getNodeId());
-
-        caches.put(id, cCache);
     }
 }

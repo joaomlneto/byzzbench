@@ -24,12 +24,13 @@ public abstract class ScenarioExecutor<T extends Serializable> {
 
     protected final Map<String, Replica<T>> nodes = new HashMap<>();
 
-    protected final AdobDistributedState adobOracle = new AdobDistributedState();
+    protected final AdobDistributedState adobOracle;
 
-    public ScenarioExecutor(Transport<T> transport) {
+    protected ScenarioExecutor(Transport<T> transport) {
         this.transport = transport;
         this.scheduler = new RandomScheduler<>(transport);
         this.setup();
+        this.adobOracle = new AdobDistributedState(this.nodes.keySet());
     }
 
     public void reset() {
