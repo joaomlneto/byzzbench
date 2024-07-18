@@ -1,6 +1,6 @@
 package byzzbench.simulator.protocols.pbft_java;
 
-import byzzbench.simulator.Replica;
+import byzzbench.simulator.LeaderBasedProtocolReplica;
 import byzzbench.simulator.protocols.pbft_java.message.*;
 import byzzbench.simulator.protocols.pbft_java.pojo.ReplicaRequestKey;
 import byzzbench.simulator.protocols.pbft_java.pojo.ReplicaTicketPhase;
@@ -19,24 +19,32 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 
 @Log
-public class PbftReplica<O extends Serializable, R extends Serializable> extends Replica<Serializable> {
+public class PbftReplica<O extends Serializable, R extends Serializable> extends LeaderBasedProtocolReplica<Serializable> {
 
     @Getter
     private final int tolerance;
 
     @Getter
     private final long timeout;
+
+    /**
+     * The current sequence number for the replica.
+     */
     private final AtomicLong seqCounter = new AtomicLong(1);
 
+    /**
+     * The log of received messages for the replica.
+     */
     @Getter
     @JsonIgnore
     private final MessageLog messageLog;
 
+    /**
+     * The set of timeouts for the replica?
+     * TODO: This should not be here!!
+     */
     @JsonIgnore
     private final Map<ReplicaRequestKey, LinearBackoff> timeouts = new ConcurrentHashMap<>();
-
-    @Getter
-    private volatile long viewNumber = 1;
 
     @Getter
     @Setter
@@ -57,19 +65,17 @@ public class PbftReplica<O extends Serializable, R extends Serializable> extends
     @Override
     public void initialize() {
         System.out.println("Initializing replica " + this.getNodeId());
-        // notify the distributed state of the leader change
-        this.notifyObserversLeaderChange(this.getPrimaryId());
+
+        this.setView(1);
+    }
+
+    private void setView(long viewNumber) {
+        String leaderId = this.computePrimaryId(viewNumber, this.getNodeIds().size());
+        this.setView(viewNumber, leaderId);
     }
 
     public Collection<ReplicaRequestKey> activeTimers() {
         return Collections.unmodifiableCollection(this.timeouts.keySet());
-    }
-
-    private void setViewNumber(long viewNumber) {
-        this.viewNumber = viewNumber;
-
-        // notify the distributed state of the leader change
-        this.notifyObserversLeaderChange(this.getPrimaryId());
     }
 
     public long checkTimeout(ReplicaRequestKey key) {
@@ -159,7 +165,7 @@ public class PbftReplica<O extends Serializable, R extends Serializable> extends
         }
 
         // Start the timer for this request per PBFT 4.4
-        this.timeouts.computeIfAbsent(key, k -> new LinearBackoff(this.viewNumber, this.timeout));
+        this.timeouts.computeIfAbsent(key, k -> new LinearBackoff(this.getViewNumber(), this.timeout));
 
         String primaryId = this.getPrimaryId();
 
@@ -183,7 +189,7 @@ public class PbftReplica<O extends Serializable, R extends Serializable> extends
             }
         }
 
-        long currentViewNumber = this.viewNumber;
+        long currentViewNumber = this.getViewNumber();
         long seqNumber = this.seqCounter.getAndIncrement();
 
         /*
@@ -249,7 +255,7 @@ public class PbftReplica<O extends Serializable, R extends Serializable> extends
             return false;
         }
 
-        long currentViewNumber = this.viewNumber;
+        long currentViewNumber = this.getViewNumber();
         long viewNumber = message.getViewNumber();
         if (currentViewNumber != viewNumber) {
             return false;
@@ -264,7 +270,7 @@ public class PbftReplica<O extends Serializable, R extends Serializable> extends
             return;
         }
 
-        long currentViewNumber = this.viewNumber;
+        long currentViewNumber = this.getViewNumber();
         byte[] digest = prePrepare.getDigest();
         RequestMessage request = prePrepare.getRequest();
         long seqNumber = prePrepare.getSequenceNumber();
@@ -514,7 +520,7 @@ public class PbftReplica<O extends Serializable, R extends Serializable> extends
          * been waiting on
          */
         this.disgruntled = false;
-        this.setViewNumber(newViewNumber);
+        this.setView(newViewNumber);
         this.timeouts.clear();
     }
 
@@ -529,7 +535,7 @@ public class PbftReplica<O extends Serializable, R extends Serializable> extends
          * and then secondly whether it should start the next view change
          * timer in accordance with PBFT 4.5.2.
          */
-        long curViewNumber = this.viewNumber;
+        long curViewNumber = this.getViewNumber();
         long newViewNumber = viewChange.getNewViewNumber();
         String newPrimaryId = this.computePrimaryId(newViewNumber, this.getNodeIds().size());
 
