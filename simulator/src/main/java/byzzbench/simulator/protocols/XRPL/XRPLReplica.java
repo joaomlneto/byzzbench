@@ -1,5 +1,6 @@
 package byzzbench.simulator.protocols.XRPL;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -37,10 +38,16 @@ public class XRPLReplica extends Replica<XRPLLedger> {
 
     private Map<String, XRPLLedger> validations; //map of last validated ledgers indexed on nodeId
 
-    protected XRPLReplica(String nodeId, Set<String> nodeIds, Transport<XRPLLedger> transport, Set<String> UNL) {
+    protected XRPLReplica(String nodeId, Set<String> nodeIds, Transport<XRPLLedger> transport, Set<String> UNL, XRPLLedger prevLedger_) {
         super(nodeId, nodeIds, transport, new TotalOrderCommitLog<>());
         this.ourUNL = UNL;
-        this.result = null;
+        this.result = new XRPLConsensusResult();
+        this.state = XRPLReplicaState.OPEN;
+        
+        //funky business
+        this.prevRoundTime = 0;
+        this.prevLedger = prevLedger_;
+        this.pendingTransactions = new ArrayList<>();
     }
 
     @Override
@@ -127,12 +134,13 @@ public class XRPLReplica extends Replica<XRPLLedger> {
 
         //TODO now_ = now timestamp THINK HOW TO REPRESENT TIME CALLS
         
-        XRPLLedger tempL = getPreferredLedger(this.validLedger);
+        /*  TODO XRPLLedger tempL = getPreferredLedger(this.validLedger);
         if (this.prevLedger != tempL) {
             this.prevLedger = tempL;
             startConsensus();
         }
-
+        */
+        startConsensus(); //remove this once above is uncommented
         switch (this.state) {
             case XRPLReplicaState.OPEN:
                 if (System.currentTimeMillis() - this.openTime >= (this.prevRoundTime / 2)) {
@@ -152,8 +160,11 @@ public class XRPLReplica extends Replica<XRPLLedger> {
             default:
                 break;
 
-            //TODO reset timer
+            
         }
+        //TODO reset timer 
+        Runnable r = new XRPLHeartbeatRunnable(this);
+        this.setTimeout(r, 5000);
         
     }
 

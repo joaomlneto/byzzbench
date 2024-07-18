@@ -1,16 +1,20 @@
 package byzzbench.simulator.protocols.XRPL;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
 
 import byzzbench.simulator.Replica;
 import byzzbench.simulator.ScenarioExecutor;
+import byzzbench.simulator.protocols.XRPL.messages.XRPLTxMessage;
 import byzzbench.simulator.transport.Transport;
 import lombok.extern.java.Log;
 
 @Log
 public class XRPLScenarioExecutor extends ScenarioExecutor<XRPLLedger>  {
-    private final int NUM_NODES = 5;
+    private final int NUM_NODES = 3;
+    private List<XRPLReplica> replica_list;
 
     public XRPLScenarioExecutor() {
         super(new Transport<>());
@@ -23,10 +27,12 @@ public class XRPLScenarioExecutor extends ScenarioExecutor<XRPLLedger>  {
             for (int i = 0; i < NUM_NODES; i++) {
                 nodeIds.add(Character.toString((char) ('A' + i)));
             }
-
+            this.replica_list = new ArrayList<>();
+            XRPLLedger genesis = new XRPLLedger("1", "0", 1);
             nodeIds.forEach(nodeId -> {
                 //XRPLMessageLog messageLog = new XRPLMessageLog();
-                Replica<XRPLLedger> replica = new XRPLReplica(nodeId, nodeIds, this.transport, nodeIds); //nodes trust all nodes currently
+                XRPLReplica replica = new XRPLReplica(nodeId, nodeIds, this.transport, nodeIds, genesis); //nodes trust all nodes currently
+                this.replica_list.add(replica);
                 nodes.put(nodeId, replica);
                 transport.addNode(replica);
             });
@@ -39,8 +45,33 @@ public class XRPLScenarioExecutor extends ScenarioExecutor<XRPLLedger>  {
 
     @Override
     public void run() {
-        // TODO Auto-generated method stub
-        //throw new UnsupportedOperationException("Unimplemented method 'run'");
+        try {
+            String tx1 = "0000";
+            String tx2 = "0001";
+            String tx3 = "0010";
+            String tx4 = "0011";
+
+            XRPLTxMessage txmsg1 = new XRPLTxMessage(tx1);
+            XRPLTxMessage txmsg2 = new XRPLTxMessage(tx2);
+            XRPLTxMessage txmsg3 = new XRPLTxMessage(tx3);
+            XRPLTxMessage txmsg4 = new XRPLTxMessage(tx4);
+
+            nodes.get("A").handleMessage("c", txmsg1);
+            nodes.get("A").handleMessage("c", txmsg2);
+            nodes.get("B").handleMessage("c", txmsg3);
+            nodes.get("C").handleMessage("c", txmsg4);
+            
+            for (XRPLReplica xrplReplica : replica_list) {
+                Runnable r = new XRPLHeartbeatRunnable(xrplReplica);
+                this.transport.setTimeout(xrplReplica, r, 5000);
+            }
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw new RuntimeException(e);
+        }
+        
+        
     }
 
 }
