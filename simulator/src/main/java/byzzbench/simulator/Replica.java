@@ -75,7 +75,7 @@ public abstract class Replica<T extends Serializable> implements Serializable {
      */
     protected void broadcastMessage(MessagePayload message) {
         Set<String> otherNodes = this.nodeIds.stream()
-                .filter(nodeId -> !nodeId.equals(this.nodeId))
+                .filter(otherNodeId -> !otherNodeId.equals(this.nodeId))
                 .collect(java.util.stream.Collectors.toSet());
         this.transport.multicast(this.nodeId, otherNodes, message);
     }
