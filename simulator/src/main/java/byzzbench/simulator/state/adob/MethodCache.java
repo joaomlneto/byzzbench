@@ -1,37 +1,37 @@
-package byzzbench.simulator.adob;
+package byzzbench.simulator.state.adob;
 
 import lombok.Getter;
 
+import java.io.Serializable;
 import java.util.HashSet;
 import java.util.Set;
 
+
 /**
- * AdoB cache representing a successful election.
+ * AdoB cache representing a local method invocation.
  *
  * @see <a href="https://flint.cs.yale.edu/flint/publications/adob-tr.pdf">AdoB</a>
  */
-@Getter
-public class ElectionCache extends AdobCache {
+public class MethodCache extends AdobCache {
+    @Getter
+    private final Serializable method;
+
     /**
      * The set of nodes that voted for this commit.
      */
+    @Getter
     private final Set<String> voters = new HashSet<>();
-
-    /**
-     * The node that was elected leader.
-     */
-    private final String leader;
 
     /**
      * The node that initiated the commit.
      */
     private final String initiator;
 
-    protected ElectionCache(long id, AdobCache parent, String initialVoter, String leader) {
+    public MethodCache(long id, AdobCache parent, Serializable method, String initialVoter) {
         super(id, parent);
+        this.method = method;
         this.initiator = initialVoter;
         this.addVoter(initialVoter);
-        this.leader = leader;
     }
 
     public void addVoter(String voter) {
@@ -40,11 +40,11 @@ public class ElectionCache extends AdobCache {
 
     @Override
     public String getCacheType() {
-        return "Election";
+        return "Method";
     }
 
     @Override
     public byte getCRank() {
-        return 1;
+        return 2;
     }
 }

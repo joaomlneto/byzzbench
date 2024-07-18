@@ -1,4 +1,4 @@
-package byzzbench.simulator.adob;
+package byzzbench.simulator.state.adob;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 

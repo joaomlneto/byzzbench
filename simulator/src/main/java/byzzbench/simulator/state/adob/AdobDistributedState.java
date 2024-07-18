@@ -1,4 +1,4 @@
-package byzzbench.simulator.adob;
+package byzzbench.simulator.state.adob;
 
 import byzzbench.simulator.Replica;
 import byzzbench.simulator.ReplicaObserver;
@@ -152,7 +152,7 @@ public class AdobDistributedState implements ReplicaObserver, Serializable {
         }
 
         log.info(String.format("%s: quorum%n", parent));
-        
+
         // create CCache
         long id = maxExistingCacheId.incrementAndGet();
         CommitCache cCache = new CommitCache(id, parent);
