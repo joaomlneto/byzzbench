@@ -1,8 +1,8 @@
 package byzzbench.simulator.controller;
 
 import byzzbench.simulator.Replica;
-import byzzbench.simulator.adob.AdobCache;
 import byzzbench.simulator.service.SimulatorService;
+import byzzbench.simulator.state.adob.AdobCache;
 import byzzbench.simulator.transport.Event;
 import byzzbench.simulator.transport.MessageMutator;
 import lombok.RequiredArgsConstructor;

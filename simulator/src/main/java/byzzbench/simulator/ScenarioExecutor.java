@@ -1,8 +1,8 @@
 package byzzbench.simulator;
 
-import byzzbench.simulator.adob.AdobDistributedState;
 import byzzbench.simulator.scheduler.BaseScheduler;
 import byzzbench.simulator.scheduler.RandomScheduler;
+import byzzbench.simulator.state.adob.AdobDistributedState;
 import byzzbench.simulator.transport.Transport;
 import lombok.Getter;
 
