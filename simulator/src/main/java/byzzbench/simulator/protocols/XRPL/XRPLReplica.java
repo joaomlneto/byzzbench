@@ -19,6 +19,7 @@ import byzzbench.simulator.state.TotalOrderCommitLog;
 import byzzbench.simulator.transport.MessagePayload;
 import byzzbench.simulator.transport.Transport;
 
+@lombok.extern.java.Log
 public class XRPLReplica extends Replica<XRPLLedger> {
 
     private Set<String> ourUNL;  //The nodeIDs of nodes in our UNL, our "peers"
@@ -42,7 +43,7 @@ public class XRPLReplica extends Replica<XRPLLedger> {
         super(nodeId, nodeIds, transport, new TotalOrderCommitLog<>());
         this.ourUNL = UNL;
         this.result = new XRPLConsensusResult();
-        this.state = XRPLReplicaState.OPEN;
+        this.state = null;  //set to open with first heartbeat
         
         //funky business
         this.prevRoundTime = 0;
@@ -140,7 +141,9 @@ public class XRPLReplica extends Replica<XRPLLedger> {
             startConsensus();
         }
         */
-        startConsensus(); //remove this once above is uncommented
+        if (this.state == null) {
+            startConsensus();
+        } //remove this once above is uncommented
         switch (this.state) {
             case XRPLReplicaState.OPEN:
                 if (System.currentTimeMillis() - this.openTime >= (this.prevRoundTime / 2)) {
@@ -228,6 +231,7 @@ public class XRPLReplica extends Replica<XRPLLedger> {
 
     private void handleAccept() {
         XRPLLedger tmpL = this.prevLedger.applyTxes(this.result.getTxList());
+        this.validations = new HashMap<>();
         this.validations.put(this.getNodeId(), this.prevLedger);
         //TODO sign the ledger
         XRPLValidateMessage val = new XRPLValidateMessage(this.getNodeId(), tmpL);
