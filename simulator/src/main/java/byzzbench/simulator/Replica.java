@@ -100,6 +100,7 @@ public abstract class Replica<T extends Serializable> implements Serializable {
 
     public void commitOperation(T message) {
         this.commitLog.add(message);
+        this.notifyObserversLocalCommit(message);
     }
 
     public long setTimeout(Runnable r, long timeout) {

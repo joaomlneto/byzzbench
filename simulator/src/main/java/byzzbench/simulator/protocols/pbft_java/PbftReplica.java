@@ -665,9 +665,6 @@ public class PbftReplica<O extends Serializable, R extends Serializable> extends
     public Serializable compute(Serializable operation) {
         this.commitOperation(operation);
 
-        // TODO: AdoB - Notify the distributed state of the commit
-        this.notifyObserversLocalCommit(operation);
-
         return operation;
     }
 
