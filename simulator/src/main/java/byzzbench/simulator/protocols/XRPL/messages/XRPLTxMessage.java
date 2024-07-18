@@ -2,20 +2,18 @@ package byzzbench.simulator.protocols.XRPL.messages;
 
 import byzzbench.simulator.transport.MessagePayload;
 
-public class XRPLSubmitMessage implements MessagePayload {
+public class XRPLTxMessage implements MessagePayload {
     private String tx;
 
-    public XRPLSubmitMessage(String tx_) {
+    public XRPLTxMessage(String tx_) {
         this.tx = tx_;
     }
-
     @Override
     public String getType() {
-        return "SUBMIT";
+        return "TX";
     }
 
     public String getTx() {
-        return tx;
+        return this.tx;
     }
-
 }

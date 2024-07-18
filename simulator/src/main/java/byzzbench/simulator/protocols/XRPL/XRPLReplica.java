@@ -12,6 +12,7 @@ import com.github.javaparser.utils.Log;
 import byzzbench.simulator.Replica;
 import byzzbench.simulator.protocols.XRPL.messages.XRPLProposeMessage;
 import byzzbench.simulator.protocols.XRPL.messages.XRPLSubmitMessage;
+import byzzbench.simulator.protocols.XRPL.messages.XRPLTxMessage;
 import byzzbench.simulator.protocols.XRPL.messages.XRPLValidateMessage;
 import byzzbench.simulator.state.TotalOrderCommitLog;
 import byzzbench.simulator.transport.MessagePayload;
@@ -58,10 +59,18 @@ public class XRPLReplica extends Replica<XRPLLedger> {
         } else if (message instanceof XRPLValidateMessage valmsg) {
             validateMessageHandler(valmsg);
             return;
+        } else if (message instanceof XRPLTxMessage txmsg) {
+            recvTxHandler(txmsg);
+            return;
         } else {
             throw new Exception("Unknown message type");
         }
 
+    }
+
+    private void recvTxHandler(XRPLTxMessage txmsg) {
+        XRPLSubmitMessage submsg = new XRPLSubmitMessage(txmsg.getTx());
+        this.broadcastMessageIncludingSelf(submsg);
     }
 
     private void submitMessageHandler(XRPLSubmitMessage msg) {
