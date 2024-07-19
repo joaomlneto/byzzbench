@@ -143,6 +143,9 @@ public class XRPLReplica extends Replica<XRPLLedger> {
         */
         if (this.state == null) {
             startConsensus();
+            Runnable r = new XRPLHeartbeatRunnable(this);
+            this.setTimeout(r, 5000);
+            return;
         } //remove this once above is uncommented
         switch (this.state) {
             case XRPLReplicaState.OPEN:
