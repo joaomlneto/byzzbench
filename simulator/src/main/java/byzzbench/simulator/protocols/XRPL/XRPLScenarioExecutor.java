@@ -5,7 +5,6 @@ import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
 
-import byzzbench.simulator.Replica;
 import byzzbench.simulator.ScenarioExecutor;
 import byzzbench.simulator.protocols.XRPL.messages.XRPLTxMessage;
 import byzzbench.simulator.transport.Transport;
@@ -14,6 +13,8 @@ import lombok.extern.java.Log;
 @Log
 public class XRPLScenarioExecutor extends ScenarioExecutor<XRPLLedger>  {
     private final int NUM_NODES = 3;
+    
+    
     private List<XRPLReplica> replica_list;
 
     public XRPLScenarioExecutor() {
