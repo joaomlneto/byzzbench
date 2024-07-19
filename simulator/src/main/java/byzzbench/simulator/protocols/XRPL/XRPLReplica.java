@@ -18,26 +18,27 @@ import byzzbench.simulator.protocols.XRPL.messages.XRPLValidateMessage;
 import byzzbench.simulator.state.TotalOrderCommitLog;
 import byzzbench.simulator.transport.MessagePayload;
 import byzzbench.simulator.transport.Transport;
+import lombok.Getter;
 
 @lombok.extern.java.Log
 public class XRPLReplica extends Replica<XRPLLedger> {
 
-    private Set<String> ourUNL;  //The nodeIDs of nodes in our UNL, our "peers"
-    private List<String> pendingTransactions; //Our candidate set
-    private XRPLReplicaState state;
-    private Map<String, XRPLProposal> currPeerProposals;
+    private @Getter Set<String> ourUNL;  //The nodeIDs of nodes in our UNL, our "peers"
+    private @Getter List<String> pendingTransactions; //Our candidate set
+    private @Getter XRPLReplicaState state;
+    private @Getter Map<String, XRPLProposal> currPeerProposals;
 
-    private XRPLLedger currWorkLedger;
-    private XRPLLedger prevLedger; //lastClosedLedger
-    private XRPLLedger validLedger; //last fully validated ledger
+    private @Getter XRPLLedger currWorkLedger;
+    private @Getter XRPLLedger prevLedger; //lastClosedLedger
+    private @Getter XRPLLedger validLedger; //last fully validated ledger
 
-    private long openTime;
-    private long prevRoundTime;
-    private double converge;
+    private @Getter long openTime;
+    private @Getter long prevRoundTime;
+    private @Getter double converge;
     
-    private XRPLConsensusResult result;
+    private @Getter XRPLConsensusResult result;
 
-    private Map<String, XRPLLedger> validations; //map of last validated ledgers indexed on nodeId
+    private @Getter Map<String, XRPLLedger> validations; //map of last validated ledgers indexed on nodeId
 
     protected XRPLReplica(String nodeId, Set<String> nodeIds, Transport<XRPLLedger> transport, Set<String> UNL, XRPLLedger prevLedger_) {
         super(nodeId, nodeIds, transport, new TotalOrderCommitLog<>());
@@ -262,6 +263,8 @@ public class XRPLReplica extends Replica<XRPLLedger> {
         this.result = new XRPLConsensusResult(this.pendingTransactions);
         XRPLProposal prop = new XRPLProposal("prevLedgerId", 0, this.result.getTxList(), getNodeId(), 1); // TODO get hash of prev ledger and call to clock.now for params
         // TODO this.result.setRoundTime(clock.now());
+        this.pendingTransactions.clear();
+
         XRPLProposeMessage propmsg = new XRPLProposeMessage(prop);
         this.broadcastMessage(propmsg);
         for (String nodeId : this.ourUNL) {
