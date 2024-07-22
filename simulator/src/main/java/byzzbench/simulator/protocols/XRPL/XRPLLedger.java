@@ -7,7 +7,6 @@ import java.util.List;
 
 import lombok.extern.java.Log;
 
-@Log
 public class XRPLLedger implements Serializable {
     private String Id;
     private String parentId;
