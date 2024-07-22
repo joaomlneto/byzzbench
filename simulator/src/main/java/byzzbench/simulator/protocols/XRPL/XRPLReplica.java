@@ -8,8 +8,6 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 
-import com.github.javaparser.utils.Log;
-
 import byzzbench.simulator.Replica;
 import byzzbench.simulator.protocols.XRPL.messages.XRPLProposeMessage;
 import byzzbench.simulator.protocols.XRPL.messages.XRPLSubmitMessage;
@@ -25,10 +23,10 @@ public class XRPLReplica extends Replica<XRPLLedger> {
 
     private @Getter Set<String> ourUNL;  //The nodeIDs of nodes in our UNL, our "peers"
     private @Getter List<String> pendingTransactions; //Our candidate set
-    private @Getter XRPLReplicaState state;
-    private @Getter Map<String, XRPLProposal> currPeerProposals;
+    private @Getter XRPLReplicaState state; //this isn't visible in UI at first!
+    private @Getter Map<String, XRPLProposal> currPeerProposals; //bu yok
 
-    private @Getter XRPLLedger currWorkLedger;
+    private @Getter XRPLLedger currWorkLedger; //this isn't visible in UI at first!
     private @Getter XRPLLedger prevLedger; //lastClosedLedger
     private @Getter XRPLLedger validLedger; //last fully validated ledger
 
@@ -36,7 +34,7 @@ public class XRPLReplica extends Replica<XRPLLedger> {
     private @Getter long prevRoundTime;
     private @Getter double converge;
     
-    private @Getter XRPLConsensusResult result;
+    private @Getter XRPLConsensusResult result; 
 
     private @Getter Map<String, XRPLLedger> validations; //map of last validated ledgers indexed on nodeId
 
@@ -50,6 +48,8 @@ public class XRPLReplica extends Replica<XRPLLedger> {
         this.prevRoundTime = 0;
         this.prevLedger = prevLedger_;
         this.pendingTransactions = new ArrayList<>();
+        this.validations = new HashMap<>();
+        this.validLedger = prevLedger_;
     }
 
     @Override
@@ -87,7 +87,7 @@ public class XRPLReplica extends Replica<XRPLLedger> {
             String tx = msg.getTx();
             this.pendingTransactions.add(tx);
         } catch (Exception e) {
-            Log.error("Couldn't handle submit message in node " + this.getNodeId() + ": " + e.getMessage());
+            log.info("Couldn't handle submit message in node " + this.getNodeId() + ": " + e.getMessage());
         }
     }
 
@@ -112,7 +112,7 @@ public class XRPLReplica extends Replica<XRPLLedger> {
                 }
             }
         } catch (Exception e) {
-            Log.error("Couldn't handle validate message in node " + this.getNodeId() + ": " + e.getMessage());
+            log.info("Couldn't handle validate message in node " + this.getNodeId() + ": " + e.getMessage());
         }
     }
 
@@ -123,7 +123,7 @@ public class XRPLReplica extends Replica<XRPLLedger> {
                 this.currPeerProposals.put(msg.getSenderId(), prop);
             }
         } catch (Exception e) {
-            Log.error("Couldn't handle propose message in node " + this.getNodeId() + ": " + e.getMessage());
+            log.info("Couldn't handle propose message in node " + this.getNodeId() + ": " + e.getMessage());
         }
         
     }
@@ -261,7 +261,7 @@ public class XRPLReplica extends Replica<XRPLLedger> {
     private void closeLedger() {
         this.currWorkLedger = new XRPLLedger(null, null, this.prevLedger.getSeq() + 1);
         this.result = new XRPLConsensusResult(this.pendingTransactions);
-        XRPLProposal prop = new XRPLProposal("prevLedgerId", 0, this.result.getTxList(), getNodeId(), 1); // TODO get hash of prev ledger and call to clock.now for params
+        XRPLProposal prop = new XRPLProposal(this.prevLedger.getId(), 0, this.result.getTxList(), getNodeId(), 1); // TODO get hash of prev ledger and call to clock.now for params
         // TODO this.result.setRoundTime(clock.now());
         this.pendingTransactions.clear();
 
