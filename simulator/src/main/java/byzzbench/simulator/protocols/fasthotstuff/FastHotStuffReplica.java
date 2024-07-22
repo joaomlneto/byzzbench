@@ -8,6 +8,7 @@ import byzzbench.simulator.transport.Transport;
 import lombok.Getter;
 import lombok.extern.java.Log;
 
+import java.io.Serializable;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -45,6 +46,11 @@ public class FastHotStuffReplica extends LeaderBasedProtocolReplica<Block> {
 
         // create 15 second timeout
         this.resetTimeout();
+    }
+
+    @Override
+    public void handleClientRequest(String clientId, Serializable request) throws Exception {
+        throw new UnsupportedOperationException("Client requests not supported in FastHotStuff");
     }
 
     private void createGenesisBlocks() {

@@ -28,17 +28,10 @@ public class FastHotStuffScenarioExecutor extends ScenarioExecutor<Block> {
 
             nodeIds.forEach(nodeId -> {
                 Replica<Block> replica = new FastHotStuffReplica(nodeId, nodeIds, transport);
-                nodes.put(nodeId, replica);
                 transport.addNode(replica);
             });
 
-            log.info("Nodes: " + nodes);
-
-            (new FHSBugFaults().getFaults()).forEach(fault -> {
-                transport.addFault(fault);
-            });
-            
-            //transport.registerMessageMutators(new PrePrepareMessageMutatorFactory());
+            transport.addFaults(new FHSBugFaults().getFaults());
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -46,5 +39,7 @@ public class FastHotStuffScenarioExecutor extends ScenarioExecutor<Block> {
 
     @Override
     public synchronized void run() {
+        // nothing to do at the moment
+        // TODO: genesis block creation logic should be moved here
     }
 }

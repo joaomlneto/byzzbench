@@ -24,18 +24,24 @@ public class SimulatorController {
         return "Running";
     }
 
-    @GetMapping("/nodes")
-    public List<String> getNodes() {
+    @GetMapping("/clients")
+    public Set<String> getClients() {
         return simulatorService.getScenarioExecutor()
-                .getNodes()
-                .keySet()
-                .stream()
-                .toList();
+                .getTransport()
+                .getClients()
+                .keySet();
+    }
+
+    @GetMapping("/nodes")
+    public Set<String> getNodes() {
+        return simulatorService.getScenarioExecutor()
+                .getTransport()
+                .getNodeIds();
     }
 
     @GetMapping("/node/{nodeId}")
     public Replica<? extends Serializable> getNode(@PathVariable String nodeId) {
-        return simulatorService.getScenarioExecutor().getNodes().get(nodeId);
+        return simulatorService.getScenarioExecutor().getTransport().getNode(nodeId);
     }
 
     @GetMapping("/node/{nodeId}/mailbox")

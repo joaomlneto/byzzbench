@@ -3,7 +3,6 @@ package byzzbench.simulator.protocols.dummy;
 import byzzbench.simulator.Replica;
 import byzzbench.simulator.ScenarioExecutor;
 import byzzbench.simulator.protocols.pbft_java.MessageLog;
-import byzzbench.simulator.protocols.pbft_java.message.RequestMessage;
 import byzzbench.simulator.transport.Transport;
 import lombok.extern.java.Log;
 
@@ -29,7 +28,6 @@ public class DummyScenarioExecutor<T extends Serializable> extends ScenarioExecu
             nodeIds.forEach(nodeId -> {
                 MessageLog messageLog = new MessageLog(100, 100, 200);
                 Replica replica = new DummyReplica<String, String>(nodeId, nodeIds, transport);
-                nodes.put(nodeId, replica);
                 transport.addNode(replica);
             });
         } catch (Exception e) {
@@ -40,8 +38,8 @@ public class DummyScenarioExecutor<T extends Serializable> extends ScenarioExecu
     @Override
     public synchronized void run() {
         try {
-            RequestMessage m = new RequestMessage("123", System.currentTimeMillis(), "c0");
-            nodes.get("A").handleMessage("c0", m);
+            //RequestMessage m = new RequestMessage("123", System.currentTimeMillis(), "c0");
+            //nodes.get("A").handleMessage("c0", m);
         } catch (Exception e) {
             e.printStackTrace();
             throw new RuntimeException(e);
