@@ -35,6 +35,7 @@ public abstract class ScenarioExecutor<T extends Serializable> {
     for (Replica<T> r : this.nodes.values()) {
       r.initialize();
     }
+    this.run();
   }
 
   public void addNode(Replica<T> replica) {
