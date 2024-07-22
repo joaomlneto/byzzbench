@@ -88,10 +88,6 @@ public abstract class Replica<T extends Serializable> implements Serializable {
         return md.digest(message.toString().getBytes());
     }
 
-    @JsonIgnore
-    public Serializable getState() {
-        return this;
-    }
 
     public abstract void initialize();
 

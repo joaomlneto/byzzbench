@@ -24,7 +24,7 @@ public class XRPLReplica extends Replica<XRPLLedger> {
     private @Getter Set<String> ourUNL;  //The nodeIDs of nodes in our UNL, our "peers"
     private @Getter List<String> pendingTransactions; //Our candidate set
     private @Getter XRPLReplicaState state; //this isn't visible in UI at first!
-    private @Getter Map<String, XRPLProposal> currPeerProposals; //bu yok
+    private @Getter Map<String, XRPLProposal> currPeerProposals; 
 
     private @Getter XRPLLedger currWorkLedger; //this isn't visible in UI at first!
     private @Getter XRPLLedger prevLedger; //lastClosedLedger
@@ -197,7 +197,7 @@ public class XRPLReplica extends Replica<XRPLLedger> {
         if (hasResChanged) {
             XRPLProposal prop = new XRPLProposal(this.prevLedger.getId(), this.result.getProposal().getSeq() + 1, this.result.getTxList(), this.getNodeId(), 1 /*TODO this should be now (or prev prop time) */);
             this.result.setProposal(prop);
-            XRPLProposeMessage propmsg = new XRPLProposeMessage(prop);
+            XRPLProposeMessage propmsg = new XRPLProposeMessage(prop, this.getNodeId());
             this.broadcastMessage(propmsg);
             this.result.resetDisputes();
             for (String nodeId : this.ourUNL) {
@@ -246,16 +246,19 @@ public class XRPLReplica extends Replica<XRPLLedger> {
 
     private boolean checkConsensus() {
         int agree = 0;
-        int disagree = 0;
+        int total = this.ourUNL.size();
+
+        if (!this.ourUNL.contains(this.getNodeId())) {
+            total += 1;
+        }
 
         for ( Entry<String, XRPLProposal> entry : this.currPeerProposals.entrySet()) {
             if (entry.getValue().isTxListEqual(this.pendingTransactions)) {
                 agree += 1;
-            } else if (entry != null) {
-                disagree += 1;
-            }
+            } 
         }
-        return (agree + 1) / (disagree + agree + 1) >= 0.8;
+        log.info("checking consensus: agree count: " + agree + ", total: " + total);
+        return (agree + 1) / total >= 0.8;
     }
 
     private void closeLedger() {
@@ -265,7 +268,7 @@ public class XRPLReplica extends Replica<XRPLLedger> {
         // TODO this.result.setRoundTime(clock.now());
         this.pendingTransactions.clear();
 
-        XRPLProposeMessage propmsg = new XRPLProposeMessage(prop);
+        XRPLProposeMessage propmsg = new XRPLProposeMessage(prop, this.getNodeId());
         this.broadcastMessage(propmsg);
         for (String nodeId : this.ourUNL) {
             if (currPeerProposals.get(nodeId) != null) {

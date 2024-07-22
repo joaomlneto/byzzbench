@@ -7,8 +7,9 @@ public class XRPLProposeMessage implements MessagePayload {
     private XRPLProposal prop;
     private String senderId;
 
-    public XRPLProposeMessage(XRPLProposal prop_) {
+    public XRPLProposeMessage(XRPLProposal prop_, String id) {
         this.prop = prop_;
+        this.senderId = id;
     }
 
     @Override
