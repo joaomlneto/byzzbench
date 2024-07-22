@@ -98,13 +98,18 @@ public class XRPLReplica extends Replica<XRPLLedger> {
                 this.validations.put(msg.getSenderNodeId(), msg.getLedger());
                 int valCount = 0;
                 for (String nodeId : ourUNL) {
-                    if (validations.get(nodeId).equals(msg.getLedger())) {
-                        valCount += 1;
+                    XRPLLedger ledger = validations.get(nodeId);
+                    if (ledger == null) {
+                    } else {
+                        if (ledger.equals(this.currWorkLedger)) {
+                            valCount += 1;
+                        }
                     }
                 }
-                if (valCount >= 0.8 * this.ourUNL.size() && msg.getLedger().getSeq() > this.validLedger.getSeq()) {
-                    this.validLedger = new XRPLLedger(this.currWorkLedger);
+                if (valCount >= (0.8 * this.ourUNL.size()) && (this.currWorkLedger.getSeq() > this.validLedger.getSeq())) {
+                    this.validLedger = this.currWorkLedger;
                     for (String tx : this.validLedger.transactions) {
+                        log.info("Node " + this.getNodeId() + " should not have tx " + tx + " anymore!");
                         this.pendingTransactions.remove(tx);
                     }
                     //Exeucute txes
@@ -234,11 +239,15 @@ public class XRPLReplica extends Replica<XRPLLedger> {
     }
 
     private void handleAccept() {
-        XRPLLedger tmpL = this.prevLedger.applyTxes(this.result.getTxList());
-        this.validations = new HashMap<>();
-        this.validations.put(this.getNodeId(), this.prevLedger);
+        XRPLLedger tmpL = new XRPLLedger(Integer.toString(Integer.parseInt(this.prevLedger.getId()) + 1), this.prevLedger.getId(), this.prevLedger.getSeq() + 1);
+        tmpL.applyTxes(pendingTransactions);
+        if (this.validations == null) {
+            this.validations = new HashMap<>();
+        }
+        this.validations.put(this.getNodeId(), tmpL);
         //TODO sign the ledger
         XRPLValidateMessage val = new XRPLValidateMessage(this.getNodeId(), tmpL);
+        this.prevLedger = tmpL;
         this.broadcastMessage(val);
         this.prevRoundTime = this.result.getRoundTime();
         this.startConsensus();
@@ -253,20 +262,21 @@ public class XRPLReplica extends Replica<XRPLLedger> {
         }
 
         for ( Entry<String, XRPLProposal> entry : this.currPeerProposals.entrySet()) {
-            if (entry.getValue().isTxListEqual(this.pendingTransactions)) {
+            if (entry.getValue().isTxListEqual(this.result.getTxList())) {
                 agree += 1;
             } 
         }
-        log.info("checking consensus: agree count: " + agree + ", total: " + total);
         return (agree + 1) / total >= 0.8;
     }
 
     private void closeLedger() {
-        this.currWorkLedger = new XRPLLedger(null, null, this.prevLedger.getSeq() + 1);
+        this.currWorkLedger = new XRPLLedger(Integer.toString(Integer.parseInt(this.prevLedger.getId()) + 1), this.prevLedger.getId(), this.prevLedger.getSeq() + 1);
+        this.currWorkLedger.applyTxes(this.pendingTransactions);
         this.result = new XRPLConsensusResult(this.pendingTransactions);
         XRPLProposal prop = new XRPLProposal(this.prevLedger.getId(), 0, this.result.getTxList(), getNodeId(), 1); // TODO get hash of prev ledger and call to clock.now for params
         // TODO this.result.setRoundTime(clock.now());
-        this.pendingTransactions.clear();
+        // this.pendingTransactions.clear();
+        this.result.setProposal(prop);
 
         XRPLProposeMessage propmsg = new XRPLProposeMessage(prop, this.getNodeId());
         this.broadcastMessage(propmsg);

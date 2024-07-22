@@ -52,10 +52,10 @@ public class XRPLScenarioExecutor extends ScenarioExecutor<XRPLLedger>  {
             XRPLTxMessage txmsg1 = new XRPLTxMessage(tx1);
 
             nodes.get("A").handleMessage("c", txmsg1);
-            
+
+            //The first heartbeat to initialize
             for (XRPLReplica xrplReplica : replica_list) {
-                Runnable r = new XRPLHeartbeatRunnable(xrplReplica);
-                this.transport.setTimeout(xrplReplica, r, 5000);
+                xrplReplica.onHeartbeat();
             }
 
         } catch (Exception e) {

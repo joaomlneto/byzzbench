@@ -2,8 +2,12 @@ package byzzbench.simulator.protocols.XRPL;
 
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
+import lombok.extern.java.Log;
+
+@Log
 public class XRPLLedger implements Serializable {
     private String Id;
     private String parentId;
@@ -39,12 +43,10 @@ public class XRPLLedger implements Serializable {
         return this.seq;
     }
 
-    public XRPLLedger applyTxes(List<String> txes) {
-        XRPLLedger ret = new XRPLLedger(this);
+    public void applyTxes(List<String> txes) {
         for (String tx : txes) {
-            ret.transactions.addLast(tx);            
+            this.transactions.addLast(tx);            
         }
-        return ret;
     }
 
     public List<String> getTransactions() {
@@ -52,6 +54,12 @@ public class XRPLLedger implements Serializable {
     }
 
     public boolean equals(XRPLLedger l) {
-        return this.Id == l.getId() && this.parentId == l.getParentId() && this.seq == l.getSeq() && this.transactions.equals(l.getTransactions());
+        return this.Id.equals(l.getId()) && this.parentId == l.getParentId() && this.seq == l.getSeq() && this.areTxesSame(l.getTransactions());
+    }
+
+    private boolean areTxesSame(List<String> transactions2) {
+        Collections.sort(transactions2);
+        Collections.sort(this.transactions);
+        return transactions2.equals(this.transactions);
     }
 }
