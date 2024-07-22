@@ -1,3 +1,4 @@
+import { MainLayout } from "@/layouts/MainLayout";
 import { TanstackQueryClientProvider } from "@/lib/TanstackQueryClientProvider";
 import { ColorSchemeScript, MantineProvider } from "@mantine/core";
 import { ModalsProvider } from "@mantine/modals";
@@ -30,7 +31,7 @@ export default function RootLayout({
           <Notifications />
           <ModalsProvider>
             <TanstackQueryClientProvider>
-              {children}
+              <MainLayout>{children}</MainLayout>
             </TanstackQueryClientProvider>
           </ModalsProvider>
         </MantineProvider>

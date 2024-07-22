@@ -5,9 +5,9 @@ import {
   useDropMessage,
   useGetMessageMutators,
 } from "@/lib/byzzbench-client/generated";
-import { ActionIcon, Burger, Menu, rem } from "@mantine/core";
+import { Burger, Menu, rem } from "@mantine/core";
 import { showNotification } from "@mantine/notifications";
-import { IconBugFilled, IconSend, IconTrash } from "@tabler/icons-react";
+import { IconBugFilled, IconTrash } from "@tabler/icons-react";
 import { useQueryClient } from "@tanstack/react-query";
 import React from "react";
 
@@ -78,32 +78,5 @@ export const MutateMessageMenu = ({ messageId }: MutateMessageMenuProps) => {
         </Menu.Item>
       </Menu.Dropdown>
     </Menu>
-  );
-
-  return (
-    <ActionIcon
-      onClick={(e) => {
-        e.preventDefault();
-        const mutate = (a: any, b: any) => {};
-        mutate(null as never, {
-          onSuccess: () => {
-            showNotification({
-              message: `Message ${messageId} delivered`,
-            });
-          },
-          onError: () => {
-            showNotification({
-              message: "Failed to deliver message",
-              color: "red",
-            });
-          },
-          onSettled: async () => {
-            await queryClient.invalidateQueries();
-          },
-        });
-      }}
-    >
-      <IconSend />
-    </ActionIcon>
   );
 };

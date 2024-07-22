@@ -4,13 +4,14 @@ import byzzbench.simulator.ScenarioExecutor;
 import byzzbench.simulator.protocols.XRPL.XRPLScenarioExecutor;
 import byzzbench.simulator.protocols.fasthotstuff.FastHotStuffScenarioExecutor;
 import byzzbench.simulator.protocols.pbft_java.PbftScenarioExecutor;
-import java.io.Serializable;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.java.Log;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Service;
+
+import java.io.Serializable;
 
 /**
  * Service for running the simulator.
