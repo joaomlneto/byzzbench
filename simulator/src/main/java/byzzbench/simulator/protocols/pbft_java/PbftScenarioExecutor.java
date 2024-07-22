@@ -31,7 +31,6 @@ public class PbftScenarioExecutor<T extends Serializable> extends ScenarioExecut
                 MessageLog messageLog = new MessageLog(100, 100, 200);
                 Replica replica = new PbftReplica<String, String>(nodeId, nodeIds, 1, 1000, messageLog, transport);
                 this.addNode(replica);
-                transport.addNode(replica);
             });
 
             transport.registerMessageMutators(new PrePrepareMessageMutatorFactory());

@@ -28,7 +28,7 @@ public class DummyScenarioExecutor<T extends Serializable> extends ScenarioExecu
             nodeIds.forEach(nodeId -> {
                 MessageLog messageLog = new MessageLog(100, 100, 200);
                 Replica replica = new DummyReplica<String, String>(nodeId, nodeIds, transport);
-                transport.addNode(replica);
+                this.addNode(replica);
             });
         } catch (Exception e) {
             throw new RuntimeException(e);

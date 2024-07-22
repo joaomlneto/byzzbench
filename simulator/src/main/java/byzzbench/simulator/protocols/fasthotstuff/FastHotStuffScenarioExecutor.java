@@ -28,7 +28,7 @@ public class FastHotStuffScenarioExecutor extends ScenarioExecutor<Block> {
 
             nodeIds.forEach(nodeId -> {
                 Replica<Block> replica = new FastHotStuffReplica(nodeId, nodeIds, transport);
-                transport.addNode(replica);
+                this.addNode(replica);
             });
 
             transport.addFaults(new FHSBugFaults().getFaults());
