@@ -1,5 +1,6 @@
 package byzzbench.simulator.controller;
 
+import byzzbench.simulator.Client;
 import byzzbench.simulator.Replica;
 import byzzbench.simulator.service.SimulatorService;
 import byzzbench.simulator.state.adob.AdobCache;
@@ -30,6 +31,11 @@ public class SimulatorController {
                 .getTransport()
                 .getClients()
                 .keySet();
+    }
+
+    @GetMapping("/client/{clientId}")
+    public Client<? extends Serializable> getClient(@PathVariable String clientId) {
+        return simulatorService.getScenarioExecutor().getTransport().getClients().get(clientId);
     }
 
     @GetMapping("/nodes")

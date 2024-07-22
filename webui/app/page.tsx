@@ -1,6 +1,7 @@
 "use client";
 
 import AdoBStateDiagram from "@/components/adob/AdoBStateDiagram";
+import { ClientList } from "@/components/ClientList";
 import {
   DeliveredMessagesList,
   DroppedMessagesList,
@@ -26,6 +27,12 @@ export default function Home() {
           value={selectedAccordionEntries}
           onChange={setSelectedAccordionEntries}
         >
+          <Accordion.Item key="clients" value="clients">
+            <Accordion.Control>Clients</Accordion.Control>
+            <Accordion.Panel>
+              <ClientList />
+            </Accordion.Panel>
+          </Accordion.Item>
           <Accordion.Item key="nodes" value="nodes">
             <Accordion.Control>Nodes</Accordion.Control>
             <Accordion.Panel>
