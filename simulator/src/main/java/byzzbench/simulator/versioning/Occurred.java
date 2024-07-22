@@ -1,5 +1,3 @@
 package byzzbench.simulator.versioning;
 
-public enum Occurred {
-    BEFORE, AFTER, CONCURRENTLY, EQUAL
-}
+public enum Occurred { BEFORE, AFTER, CONCURRENTLY, EQUAL }

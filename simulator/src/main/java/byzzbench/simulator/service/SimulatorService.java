@@ -3,14 +3,13 @@ package byzzbench.simulator.service;
 import byzzbench.simulator.ScenarioExecutor;
 import byzzbench.simulator.protocols.fasthotstuff.FastHotStuffScenarioExecutor;
 import byzzbench.simulator.protocols.pbft_java.PbftScenarioExecutor;
+import java.io.Serializable;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.java.Log;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Service;
-
-import java.io.Serializable;
 
 /**
  * Service for running the simulator.
@@ -23,28 +22,28 @@ import java.io.Serializable;
 @RequiredArgsConstructor
 @Log
 public class SimulatorService {
-    private ScenarioExecutor<? extends Serializable> scenarioExecutor;
+  private ScenarioExecutor<? extends Serializable> scenarioExecutor;
 
-    @EventListener(ApplicationReadyEvent.class)
-    void onStartup() {
-        log.info("Starting the simulator service");
-        this.changeScenario("pbft-java");
-        log.info("Simulator service started");
-    }
+  @EventListener(ApplicationReadyEvent.class)
+  void onStartup() {
+    log.info("Starting the simulator service");
+    this.changeScenario("pbft-java");
+    log.info("Simulator service started");
+  }
 
-    public void changeScenario(String id) {
-        switch (id) {
-            case "fasthotstuff":
-                this.scenarioExecutor = new FastHotStuffScenarioExecutor();
-                break;
-            case "pbft-java":
-                this.scenarioExecutor = new PbftScenarioExecutor<>();
-                break;
-            default:
-                throw new IllegalArgumentException("Unknown scenario id: " + id);
-        }
-        this.scenarioExecutor.setup();
-        this.scenarioExecutor.run();
-        //this.scenarioExecutor.reset();
+  public void changeScenario(String id) {
+    switch (id) {
+    case "fasthotstuff":
+      this.scenarioExecutor = new FastHotStuffScenarioExecutor();
+      break;
+    case "pbft-java":
+      this.scenarioExecutor = new PbftScenarioExecutor<>();
+      break;
+    default:
+      throw new IllegalArgumentException("Unknown scenario id: " + id);
     }
+    this.scenarioExecutor.setup();
+    this.scenarioExecutor.run();
+    // this.scenarioExecutor.reset();
+  }
 }
