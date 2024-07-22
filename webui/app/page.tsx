@@ -16,7 +16,7 @@ export default function Home() {
   const [selectedAccordionEntries, setSelectedAccordionEntries] =
     useLocalStorage<string[]>({
       key: "byzzbench/selectedAccordionEntries",
-      defaultValue: ["nodes", "schedule", "dropped_msgs"],
+      defaultValue: ["nodes", "schedule"],
     });
   return (
     <Container fluid p="xl">
