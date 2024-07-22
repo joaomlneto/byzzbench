@@ -2,6 +2,7 @@
 
 import { ColorSchemeToggle } from "@/components/ColorSchemeToggle";
 import { DoSchedulerActionIcon } from "@/components/DoSchedulerActionIcon";
+import { ForceSyncActionIcon } from "@/components/ForceSyncActionIcon";
 import { ResetActionIcon } from "@/components/ResetActionIcon";
 import { AppShell, Group, Text } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
@@ -18,6 +19,7 @@ export const MainLayout = ({ children }: PropsWithChildren) => {
           <Text fw={900}>ByzzBench</Text>
           <ResetActionIcon />
           <DoSchedulerActionIcon />
+          <ForceSyncActionIcon />
         </Group>
       </AppShell.Header>
 
