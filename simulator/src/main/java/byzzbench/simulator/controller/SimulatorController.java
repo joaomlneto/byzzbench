@@ -132,29 +132,6 @@ public class SimulatorController {
                 .stream()
                 .map(Map.Entry::getKey)
                 .toList();
-    /*
-    Event e =
-    simulatorService.getScenarioExecutor().getTransport().getEvents().get(eventId);
-
-    // if it is not a message, return an empty set
-    if (!(e instanceof MessageEvent)) {
-        return Set.of();
-    }
-
-    Set<Map.Entry<Long, MessageMutator>> messageMutators =
-    simulatorService.getScenarioExecutor().getTransport()
-            .getMutators().entrySet()
-            .stream()
-            // filter mutators that can be applied to the message
-            .filter(entry ->
-    entry.getValue().getInputClasses().contains(((MessageEvent)
-    e).getPayload().getClass()))
-            //.map(entry -> entry.getKey())
-            .collect(Collectors.toSet());
-
-    // return their keys
-    return
-    messageMutators.stream().map(Map.Entry::getKey).collect(Collectors.toSet());*/
     }
 
     @PostMapping("/event/{eventId}/deliver")
