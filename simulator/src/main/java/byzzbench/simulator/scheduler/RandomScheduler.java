@@ -66,12 +66,17 @@ public class RandomScheduler<T extends Serializable> extends BaseScheduler<T> {
             return Optional.of(timeout);
         }
 
-        // check if should target a message
+        // check if we should target a message
         if (random.nextDouble() < SCHEDULE_MESSAGE) {
             // select a random event of type message
             List<Event> queuedMessages = queuedEvents.stream()
                     .filter(MessageEvent.class::isInstance)
                     .toList();
+
+            // if there are no messages, return an empty action
+            if (queuedMessages.isEmpty()) {
+                return Optional.empty();
+            }
 
             Event message = queuedMessages.get(random.nextInt(queuedMessages.size()));
 
@@ -82,7 +87,7 @@ public class RandomScheduler<T extends Serializable> extends BaseScheduler<T> {
             double MUTATE_MESSAGE_PROBABILITY =
                     this.MUTATE_MESSAGE_PROBABILITY / SCHEDULE_MESSAGE;
 
-            // check if should drop it
+            // check if we should drop it
             if (random.nextDouble() < DROP_MESSAGE_PROBABILITY) {
                 // FIXME: we should return a "decision" object, not just the event id we
                 // targeted!
@@ -109,6 +114,7 @@ public class RandomScheduler<T extends Serializable> extends BaseScheduler<T> {
 
             // deliver the message, without changes
             getTransport().deliverEvent(message.getEventId());
+            return Optional.of(message);
         }
 
         return Optional.empty();

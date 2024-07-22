@@ -30,7 +30,7 @@ public class PbftScenarioExecutor<T extends Serializable> extends ScenarioExecut
             nodeIds.forEach(nodeId -> {
                 MessageLog messageLog = new MessageLog(100, 100, 200);
                 Replica replica = new PbftReplica<String, String>(nodeId, nodeIds, 1, 1000, messageLog, transport);
-                nodes.put(nodeId, replica);
+                this.addNode(replica);
                 transport.addNode(replica);
             });
 
@@ -42,6 +42,10 @@ public class PbftScenarioExecutor<T extends Serializable> extends ScenarioExecut
 
     @Override
     public synchronized void run() {
+        // for each of the nodes, call initialize
+        nodes.values().forEach(Replica::initialize);
+
+        // send a request message to node A
         try {
             RequestMessage m = new RequestMessage("123", System.currentTimeMillis(), "c0");
             nodes.get("A").handleMessage("c0", m);

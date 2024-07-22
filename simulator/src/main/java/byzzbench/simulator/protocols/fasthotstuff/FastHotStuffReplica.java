@@ -1,6 +1,6 @@
 package byzzbench.simulator.protocols.fasthotstuff;
 
-import byzzbench.simulator.Replica;
+import byzzbench.simulator.LeaderBasedProtocolReplica;
 import byzzbench.simulator.protocols.fasthotstuff.message.*;
 import byzzbench.simulator.state.TotalOrderCommitLog;
 import byzzbench.simulator.transport.MessagePayload;
@@ -13,16 +13,16 @@ import java.util.concurrent.atomic.AtomicLong;
 
 @Log
 @Getter
-public class FastHotStuffReplica extends Replica<Block> {
+public class FastHotStuffReplica extends LeaderBasedProtocolReplica<Block> {
     public static final int TIMEOUT_DELAY = 15000; // 15 seconds
 
     private final AtomicLong round = new AtomicLong(3);
     private final AtomicLong lastVotedRound = new AtomicLong(2);
     private final AtomicLong preferredRound = new AtomicLong(1);
     private final AtomicLong highestQcRound = new AtomicLong(2);
-
-    private final NodeStorage storage = new NodeStorage(this);
-
+    private final Map<String, Set<VoteMessage>> votes = new HashMap<>();
+    private final Map<Long, Set<NewViewMessage>> newViews = new HashMap<>();
+    private final Map<String, Block> knownBlocks = new HashMap<>();
     private GenericQuorumCertificate highestQc = new QuorumCertificate(new ArrayList<>());
 
     public FastHotStuffReplica(String nodeId, Set<String> nodeIds, Transport<Block> transport) {
@@ -79,9 +79,9 @@ public class FastHotStuffReplica extends Replica<Block> {
             log.severe(String.format("QC 2: %s", qc2));
         }
 
-        this.storage.addBlock(b0);
-        this.storage.addBlock(b1);
-        this.storage.addBlock(b2);
+        this.addBlock(b0);
+        this.addBlock(b1);
+        this.addBlock(b2);
 
         this.highestQc = qc2;
         this.highestQcRound.set(2);
@@ -96,16 +96,16 @@ public class FastHotStuffReplica extends Replica<Block> {
 
         // handle incoming blocks
         if (message instanceof Block block) {
-            this.storage.addBlock(block);
+            this.addBlock(block);
             this.processQuorumCertificate(block.getQc());
             this.processBlock(block);
             return;
         }
 
         if (message instanceof VoteMessage vote) {
-            Optional<QuorumCertificate> qc = this.storage.addVote(vote);
+            Optional<QuorumCertificate> qc = this.addVote(vote);
             if (qc.isPresent()) {
-                this.processBlock(this.storage.getBlock(vote.getBlockHash()));
+                this.processBlock(this.getBlock(vote.getBlockHash()));
                 Block block = new Block(qc.get(), this.round.get(), this.getNodeId(), String.format("%s%d", this.getNodeId(), this.round.get()));
                 this.broadcastMessageIncludingSelf(block);
             }
@@ -113,9 +113,9 @@ public class FastHotStuffReplica extends Replica<Block> {
         }
 
         if (message instanceof NewViewMessage newView) {
-            Optional<AggregateQuorumCertificate> qc = this.storage.addVote(newView);
+            Optional<AggregateQuorumCertificate> qc = this.addVote(newView);
             if (qc.isPresent()) {
-                this.processBlock(this.storage.getBlock(newView.getBlockHash()));
+                this.processBlock(this.getBlock(newView.getBlockHash()));
                 // FIXME: THIS IS PROBABLY WRONG.
                 // see: https://github.com/asonnino/twins-simulator/blob/master/fhs/node.py#L43
                 // XXX: Now this is probably right!
@@ -134,12 +134,12 @@ public class FastHotStuffReplica extends Replica<Block> {
 
         // get block hash from qc
         String blockHash = qc.getVotes().stream().findAny().get().getBlockHash();
-        Block block = this.storage.getBlock(blockHash);
+        Block block = this.getBlock(blockHash);
 
         // Get the 2 ancestors of the block
         // b0 <- b1 <- block
-        Block b1 = this.storage.getParentBlock(block);
-        Block b0 = this.storage.getParentBlock(b1);
+        Block b1 = this.getParentBlock(block);
+        Block b0 = this.getParentBlock(b1);
 
         // print the hashes of the three blocks: b0, b1 and block
         log.info(String.format("Block 0: %s", b0));
@@ -156,13 +156,13 @@ public class FastHotStuffReplica extends Replica<Block> {
         }
 
         // update the committed sequence
-        this.storage.commit(b0);
+        this.commit(b0);
         log.info(String.format("Committing block %s", b0));
     }
 
     public void processBlock(Block block) {
         // get parent block
-        Block prevBlock = this.storage.getParentBlock(block);
+        Block prevBlock = this.getParentBlock(block);
 
         // check if we can vote from the block
         // check if the block is from a valid author
@@ -242,5 +242,70 @@ public class FastHotStuffReplica extends Replica<Block> {
     public void resetTimeout() {
         this.clearAllTimeouts();
         this.setTimeout(this::handleTimeout, TIMEOUT_DELAY);
+    }
+
+
+    // Adds a block to the storage
+    public void addBlock(Block block) {
+        this.knownBlocks.put(this.hash(block), block);
+    }
+
+    // Returns the block with the given hash
+    public Block getBlock(String hash) {
+        return this.knownBlocks.get(hash);
+    }
+
+    // Returns the parent block of the given block
+    public Block getParentBlock(Block block) {
+        return this.getBlock(block.getParentHash());
+    }
+
+    // Commits a block
+    public void commit(Block block) {
+        System.out.println("COMITTING BLOCK: " + block);
+        // Check if the parent is known
+        if (block.getParentHash() != null && knownBlocks.get(block.getParentHash()) == null) {
+            throw new IllegalArgumentException("Cannot commit block: parent not found");
+        }
+
+        /*
+        // Check if the parent is committed
+        if (block.getParentHash() != null && !committedBlocks.contains(block.getParentHash())) {
+            throw new IllegalArgumentException("Cannot commit block: parent not committed");
+        }*/
+
+        this.commitOperation(block);
+    }
+
+    // Adds a vote to the storage
+    public Optional<QuorumCertificate> addVote(VoteMessage message) {
+        String digest = message.getBlockHash();
+        Optional<Set<VoteMessage>> votes = canMakeQc(this.votes, digest, message);
+        if (votes.isPresent()) {
+            return Optional.of(new QuorumCertificate(votes.get()));
+        } else {
+            return Optional.empty();
+        }
+    }
+
+    public Optional<AggregateQuorumCertificate> addVote(NewViewMessage message) {
+        long round = message.getRound();
+        Optional<Set<NewViewMessage>> newViewsQc = canMakeQc(this.newViews, round, message);
+        if (newViewsQc.isPresent()) {
+            return Optional.of(new AggregateQuorumCertificate(newViewsQc.get()));
+        } else {
+            return Optional.empty();
+        }
+    }
+
+    public <K, V extends GenericVoteMessage> Optional<Set<V>> canMakeQc(Map<K, Set<V>> collection, K key, V value) {
+        boolean before = collection.containsKey(key) && collection.get(key).size() >= this.computeQuorumSize();
+        collection.computeIfAbsent(key, k -> new HashSet<>()).add(value);
+        boolean after = collection.containsKey(key) && collection.get(key).size() >= this.computeQuorumSize();
+        if (after && !before) {
+            return Optional.of(collection.get(key));
+        } else {
+            return Optional.empty();
+        }
     }
 }
