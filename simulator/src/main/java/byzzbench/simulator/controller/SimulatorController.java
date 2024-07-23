@@ -1,18 +1,16 @@
 package byzzbench.simulator.controller;
 
+import byzzbench.simulator.Client;
 import byzzbench.simulator.Replica;
-import byzzbench.simulator.adob.AdobCache;
 import byzzbench.simulator.service.SimulatorService;
+import byzzbench.simulator.state.adob.AdobCache;
 import byzzbench.simulator.transport.Event;
 import byzzbench.simulator.transport.MessageMutator;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.Serializable;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 
 /**
  * REST API for interacting with the simulator.
@@ -27,18 +25,29 @@ public class SimulatorController {
         return "Running";
     }
 
-    @GetMapping("/nodes")
-    public List<String> getNodes() {
+    @GetMapping("/clients")
+    public Set<String> getClients() {
         return simulatorService.getScenarioExecutor()
-                .getNodes()
-                .keySet()
-                .stream()
-                .toList();
+                .getTransport()
+                .getClients()
+                .keySet();
+    }
+
+    @GetMapping("/client/{clientId}")
+    public Client<? extends Serializable> getClient(@PathVariable String clientId) {
+        return simulatorService.getScenarioExecutor().getTransport().getClients().get(clientId);
+    }
+
+    @GetMapping("/nodes")
+    public Set<String> getNodes() {
+        return simulatorService.getScenarioExecutor()
+                .getTransport()
+                .getNodeIds();
     }
 
     @GetMapping("/node/{nodeId}")
     public Replica<? extends Serializable> getNode(@PathVariable String nodeId) {
-        return simulatorService.getScenarioExecutor().getNodes().get(nodeId);
+        return simulatorService.getScenarioExecutor().getTransport().getNode(nodeId);
     }
 
     @GetMapping("/node/{nodeId}/mailbox")
@@ -129,29 +138,6 @@ public class SimulatorController {
                 .stream()
                 .map(Map.Entry::getKey)
                 .toList();
-    /*
-    Event e =
-    simulatorService.getScenarioExecutor().getTransport().getEvents().get(eventId);
-
-    // if it is not a message, return an empty set
-    if (!(e instanceof MessageEvent)) {
-        return Set.of();
-    }
-
-    Set<Map.Entry<Long, MessageMutator>> messageMutators =
-    simulatorService.getScenarioExecutor().getTransport()
-            .getMutators().entrySet()
-            .stream()
-            // filter mutators that can be applied to the message
-            .filter(entry ->
-    entry.getValue().getInputClasses().contains(((MessageEvent)
-    e).getPayload().getClass()))
-            //.map(entry -> entry.getKey())
-            .collect(Collectors.toSet());
-
-    // return their keys
-    return
-    messageMutators.stream().map(Map.Entry::getKey).collect(Collectors.toSet());*/
     }
 
     @PostMapping("/event/{eventId}/deliver")
@@ -196,5 +182,15 @@ public class SimulatorController {
     public AdobCache getAdob() {
         System.out.println("Getting AdoB!");
         return simulatorService.getScenarioExecutor().getAdobOracle().getRoot();
+    }
+
+    @GetMapping("/adob/caches")
+    public Collection<AdobCache> getAllAdobCaches() {
+        return simulatorService.getScenarioExecutor().getAdobOracle().getCaches().values();
+    }
+
+    @GetMapping("/adob/caches/{cacheId}")
+    public AdobCache getAdobCache(@PathVariable Long cacheId) {
+        return simulatorService.getScenarioExecutor().getAdobOracle().getCaches().get(cacheId);
     }
 }

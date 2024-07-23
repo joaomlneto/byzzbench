@@ -6,6 +6,7 @@ import {
   IconCylinder,
   IconFileDigit,
   IconList,
+  IconX,
 } from "@tabler/icons-react";
 import React from "react";
 
@@ -14,12 +15,15 @@ export type NodeStateNavLinkProps = NavLinkProps & {
 };
 
 export const NodeStateNavLink = ({ data, label }: NodeStateNavLinkProps) => {
-  if (data === null) {
-    return <Text c="dimmed">(null)</Text>;
-  }
-
-  if (data === undefined) {
-    return <Text c="dimmed">(undefined)</Text>;
+  if (data === null || data === undefined) {
+    return (
+      <NavLink
+        label={label}
+        leftSection={<IconX size={16} />}
+        //description={typeof data}
+        rightSection={data === null ? "null" : "undefined"}
+      />
+    );
   }
 
   if (typeof data === "boolean") {
