@@ -10,8 +10,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-import lombok.extern.java.Log;
-
 public class XRPLLedger implements Serializable {
     private String Id;
     private String parentId;
