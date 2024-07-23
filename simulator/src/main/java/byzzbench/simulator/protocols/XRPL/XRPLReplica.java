@@ -52,7 +52,7 @@ public class XRPLReplica extends Replica<XRPLLedger> {
         this.pendingTransactions = new ArrayList<>();
         this.validations = new HashMap<>();
         this.validLedger = prevLedger_;
-        this.tree = new XRPLLedgerTreeNode(prevLedger_.getId(), prevLedger_.getParentId());
+        this.tree = new XRPLLedgerTreeNode(prevLedger_);
     }
 
     @Override
@@ -97,7 +97,7 @@ public class XRPLReplica extends Replica<XRPLLedger> {
     private void validateMessageHandler(XRPLValidateMessage msg) {
         try {
             if (msg.getLedger().getSeq() == this.currWorkLedger.getSeq() /*TODO && verify signature */) {
-                XRPLLedgerTreeNode n = new XRPLLedgerTreeNode(msg.getLedger().getId(), msg.getLedger().getParentId());
+                XRPLLedgerTreeNode n = new XRPLLedgerTreeNode(msg.getLedger());
                 this.tree.addChild(n);
                 this.validations.put(msg.getSenderNodeId(), msg.getLedger());
                 int valCount = 0;
@@ -112,7 +112,6 @@ public class XRPLReplica extends Replica<XRPLLedger> {
                 if (valCount >= (0.8 * this.ourUNL.size()) && (this.currWorkLedger.getSeq() > this.validLedger.getSeq())) {
                     this.validLedger = this.currWorkLedger;
                     for (String tx : this.validLedger.transactions) {
-                        log.info("Node " + this.getNodeId() + " should not have tx " + tx + " anymore!");
                         this.pendingTransactions.remove(tx);
                     }
                     //Exeucute txes
@@ -139,23 +138,25 @@ public class XRPLReplica extends Replica<XRPLLedger> {
     public void onHeartbeat() {
         if (this.state == XRPLReplicaState.ACCEPT) {
             //Nothing to do if we are validating a ledger
+            Runnable r = new XRPLHeartbeatRunnable(this);
+            this.setTimeout(r, 5000);
             return;
         } 
 
         //TODO now_ = now timestamp THINK HOW TO REPRESENT TIME CALLS
         
-        /*  TODO XRPLLedger tempL = getPreferredLedger(this.validLedger);
-        if (this.prevLedger != tempL) {
+        XRPLLedger tempL = getPreferredLedger(this.validLedger);
+        if (!this.prevLedger.getId().equals(tempL.getId())) {
             this.prevLedger = tempL;
             startConsensus();
         }
-        */
+        
         if (this.state == null) {
             startConsensus();
             Runnable r = new XRPLHeartbeatRunnable(this);
             this.setTimeout(r, 5000);
             return;
-        } //remove this once above is uncommented
+        }
         switch (this.state) {
             case XRPLReplicaState.OPEN:
                 if (System.currentTimeMillis() - this.openTime >= (this.prevRoundTime / 2)) {
@@ -315,9 +316,104 @@ public class XRPLReplica extends Replica<XRPLLedger> {
         return union;
     }
 
+    private int tipSupport(String ledgerHash) {
+        int count = 0;
+        for (String nodeId : this.ourUNL) {
+            if (this.validations.get(nodeId) != null) {
+                if (this.validations.get(nodeId).getId().equals(ledgerHash)) {
+                    count += 1;
+                }
+            }
+        }
+        return count;
+    }
+
+    private XRPLLedgerTreeNode findInTree(String ledgerHash, XRPLLedgerTreeNode n) {
+        if (n.getLedger().getId().equals(ledgerHash)) {
+            return n;
+        } else {
+            for (XRPLLedgerTreeNode tmp : n.getChildren()) {
+                XRPLLedgerTreeNode tmp2 = findInTree(ledgerHash, tmp);
+                if ( tmp2 != null) return tmp2;
+            }
+            return null;
+        }
+    }
+
+    private int uncommitted(String ledgerHash) {
+        XRPLLedgerTreeNode node = findInTree(ledgerHash, tree);
+        int ret = 0;
+        for (String nodeId : ourUNL) {
+            if (this.validations.get(nodeId) != null) {
+                if (this.validations.get(nodeId).getSeq() < node.getLedger().getSeq()) {
+                    ret += 1;
+                }
+            }
+        }
+        return ret;
+    }
+
+    private int support(String ledgerHash) {
+        return supportHelper(findInTree(ledgerHash, tree));
+    }
+
+    private int supportHelper(XRPLLedgerTreeNode node) {
+        if (node.getChildren().isEmpty()) {
+            return tipSupport(node.getLedger().getId());
+        } else {
+            int ret = 0;
+            for (XRPLLedgerTreeNode childNode : node.getChildren()) {
+                ret += supportHelper(childNode);
+            }
+            return ret + tipSupport(node.getLedger().getId());
+        }
+    }
+
+    private XRPLLedgerTreeNode getMaxSupportedChild(XRPLLedgerTreeNode node) {
+        int max = Integer.MIN_VALUE;
+        XRPLLedgerTreeNode ret = null;
+        for (XRPLLedgerTreeNode child : node.getChildren()) {
+            int curr = support(child.getLedger().getId());
+            if ( curr > max) {
+                ret = child;
+                max = curr;
+            }
+        }
+        return ret;
+    }
+
+    private XRPLLedgerTreeNode getSecondMaxSupportedChild(XRPLLedgerTreeNode node) {
+        XRPLLedgerTreeNode actualMax = getMaxSupportedChild(node);
+        int max = Integer.MIN_VALUE;
+        XRPLLedgerTreeNode ret = null;
+        for (XRPLLedgerTreeNode child : node.getChildren()) {
+            if (!child.getLedger().getId().equals(actualMax.getLedger().getId())) {
+                int curr = support(child.getLedger().getId());
+                if ( curr > max) {
+                    ret = child;
+                    max = curr;
+                }
+            }
+        }
+        return ret;
+    }
+
     private XRPLLedger getPreferredLedger(XRPLLedger L) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'getPreferredLedger'");
+        XRPLLedgerTreeNode node = findInTree(L.getId(), tree);
+
+        if (node.getChildren().isEmpty()) {
+            return node.getLedger();
+        } else {
+            XRPLLedgerTreeNode mNode = getMaxSupportedChild(node);
+
+            if (uncommitted(mNode.getLedger().getId()) >= support(mNode.getLedger().getId())) {
+                return L;
+            } else if (support(getSecondMaxSupportedChild(mNode).getLedger().getId()) + uncommitted(mNode.getLedger().getId()) < support(mNode.getLedger().getId())) {
+                return getPreferredLedger(mNode.getLedger());
+            } else {
+                return L;
+            }
+        }
     }
 
     public void startConsensus() {

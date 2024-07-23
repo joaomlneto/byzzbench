@@ -4,19 +4,17 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class XRPLLedgerTreeNode {
-    private String Id;
-    private String parentId;
+    private XRPLLedger ledger;
     private List<XRPLLedgerTreeNode> children;
 
-    public XRPLLedgerTreeNode(String id_, String parentId_) {
-        this.Id = id_;
-        this.parentId = parentId_;
+    public XRPLLedgerTreeNode(XRPLLedger ledger_) {
+        this.ledger = ledger_;
         this.children = new ArrayList<>();
     }
 
     public void addChild(XRPLLedgerTreeNode n) {
         if (this.isNotChildOf(n)) {
-            if (n.getParentId().equals(this.Id)) {
+            if (n.getLedger().getParentId().equals(this.ledger.getId())) {
                 this.children.add(n);
             } else if (!this.children.isEmpty()){
                 for (XRPLLedgerTreeNode node : this.children) {
@@ -28,19 +26,15 @@ public class XRPLLedgerTreeNode {
 
     public boolean isNotChildOf(XRPLLedgerTreeNode n) {
         for (XRPLLedgerTreeNode xrplLedgerTreeNode : this.children) {
-            if (xrplLedgerTreeNode.getId().equals(n.getId())) {
+            if (xrplLedgerTreeNode.getLedger().getId().equals(n.getLedger().getId())) {
                 return false;
             }
         }
         return true;
     }
 
-    public String getId() {
-        return Id;
-    }
-
-    public String getParentId() {
-        return parentId;
+    public XRPLLedger getLedger() {
+        return ledger;
     }
 
     public List<XRPLLedgerTreeNode> getChildren() {

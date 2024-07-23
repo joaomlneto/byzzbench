@@ -10,9 +10,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-import lombok.extern.java.Log;
-
-@Log
 public class XRPLLedger implements Serializable {
     private String Id;
     private String parentId;
@@ -24,12 +21,7 @@ public class XRPLLedger implements Serializable {
         this.seq = seq_;
         this.transactions = new ArrayList<>();
         this.applyTxes(transactions);
-
-        log.info("Creating a ledger with parentId: " + parentID_ + " seq: " + seq_ + " txes: " + transactions);
-
         this.calculateSHA512_256();
-
-        log.info("the result hash is: " + this.getId());
     }
     /* 
     public XRPLLedger(XRPLLedger l) {
