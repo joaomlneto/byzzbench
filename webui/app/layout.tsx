@@ -1,3 +1,4 @@
+import { contextModals } from "@/components/modals";
 import { MainLayout } from "@/layouts/MainLayout";
 import { TanstackQueryClientProvider } from "@/lib/TanstackQueryClientProvider";
 import { ColorSchemeScript, MantineProvider } from "@mantine/core";
@@ -29,7 +30,10 @@ export default function RootLayout({
       <body>
         <MantineProvider>
           <Notifications />
-          <ModalsProvider>
+          <ModalsProvider
+            modals={contextModals}
+            modalProps={{ centered: true }}
+          >
             <TanstackQueryClientProvider>
               <MainLayout>{children}</MainLayout>
             </TanstackQueryClientProvider>

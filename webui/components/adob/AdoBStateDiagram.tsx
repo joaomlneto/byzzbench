@@ -141,7 +141,6 @@ export default function AdoBStateDiagram() {
         allowMultiselect={false}
         renderNodeText={(data) => {
           const className = GraphUtils.classNames("node-text");
-          console.log(data);
           return (
             <text className={className} textAnchor="middle">
               <tspan opacity="0.5">{data.type}</tspan>
