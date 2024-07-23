@@ -251,7 +251,7 @@ public class XRPLReplica extends Replica<XRPLLedger> {
     }
 
     private void handleAccept() {
-        XRPLLedger tmpL = new XRPLLedger(this.prevLedger.getId(), this.prevLedger.getSeq() + 1, getTxUnion(this.prevLedger.getTransactions(), this.pendingTransactions));
+        XRPLLedger tmpL = new XRPLLedger(this.prevLedger.getId(), this.prevLedger.getSeq() + 1, this.pendingTransactions);
         if (this.validations == null) {
             this.validations = new HashMap<>();
         }
