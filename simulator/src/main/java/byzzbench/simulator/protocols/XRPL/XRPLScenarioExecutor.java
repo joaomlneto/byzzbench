@@ -48,10 +48,13 @@ public class XRPLScenarioExecutor extends ScenarioExecutor<XRPLLedger>  {
     public void run() {
         try {
             String tx1 = "0000";
+            String tx2 = "0001";
 
             XRPLTxMessage txmsg1 = new XRPLTxMessage(tx1);
+            XRPLTxMessage txmsg2 = new XRPLTxMessage(tx2);
 
             nodes.get("A").handleMessage("c", txmsg1);
+            nodes.get("B").handleMessage("c1", txmsg2);
 
             //The first heartbeat to initialize
             for (XRPLReplica xrplReplica : replica_list) {

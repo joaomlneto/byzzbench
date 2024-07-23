@@ -99,8 +99,7 @@ public class XRPLReplica extends Replica<XRPLLedger> {
                 int valCount = 0;
                 for (String nodeId : ourUNL) {
                     XRPLLedger ledger = validations.get(nodeId);
-                    if (ledger == null) {
-                    } else {
+                    if (!(ledger == null)) {
                         if (ledger.equals(this.currWorkLedger)) {
                             valCount += 1;
                         }
@@ -124,7 +123,7 @@ public class XRPLReplica extends Replica<XRPLLedger> {
     private void proposeMessageHandler(XRPLProposeMessage msg) {
         try {
             XRPLProposal prop = msg.getProposal();
-            if (prop.getPrevLedgerId() == this.prevLedger.getId() && ourUNL.contains(msg.getSenderId())) {
+            if (prop.getPrevLedgerId().equals(this.prevLedger.getId()) && ourUNL.contains(msg.getSenderId())) {
                 this.currPeerProposals.put(msg.getSenderId(), prop);
             }
         } catch (Exception e) {

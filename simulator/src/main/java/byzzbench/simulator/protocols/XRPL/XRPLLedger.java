@@ -53,7 +53,7 @@ public class XRPLLedger implements Serializable {
     }
 
     public boolean equals(XRPLLedger l) {
-        return this.Id.equals(l.getId()) && this.parentId == l.getParentId() && this.seq == l.getSeq() && this.areTxesSame(l.getTransactions());
+        return this.Id.equals(l.getId()) && this.parentId.equals(l.getParentId()) && this.seq == l.getSeq() && this.areTxesSame(l.getTransactions());
     }
 
     private boolean areTxesSame(List<String> transactions2) {
