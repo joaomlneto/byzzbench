@@ -1,5 +1,8 @@
 package byzzbench.simulator.protocols.XRPL;
 
+import java.math.BigInteger;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -238,7 +241,7 @@ public class XRPLReplica extends Replica<XRPLLedger> {
     }
 
     private void handleAccept() {
-        XRPLLedger tmpL = new XRPLLedger(Integer.toString(Integer.parseInt(this.prevLedger.getId()) + 1), this.prevLedger.getId(), this.prevLedger.getSeq() + 1);
+        XRPLLedger tmpL = new XRPLLedger(this.prevLedger.getId(), this.prevLedger.getSeq() + 1, this.prevLedger.getTransactions());
         tmpL.applyTxes(pendingTransactions);
         if (this.validations == null) {
             this.validations = new HashMap<>();
@@ -269,8 +272,7 @@ public class XRPLReplica extends Replica<XRPLLedger> {
     }
 
     private void closeLedger() {
-        this.currWorkLedger = new XRPLLedger(Integer.toString(Integer.parseInt(this.prevLedger.getId()) + 1), this.prevLedger.getId(), this.prevLedger.getSeq() + 1);
-        this.currWorkLedger.applyTxes(this.pendingTransactions);
+        this.currWorkLedger = new XRPLLedger(this.prevLedger.getId(), this.prevLedger.getSeq() + 1, this.pendingTransactions);
         this.result = new XRPLConsensusResult(this.pendingTransactions);
         XRPLProposal prop = new XRPLProposal(this.prevLedger.getId(), 0, this.result.getTxList(), getNodeId(), 1); // TODO get hash of prev ledger and call to clock.now for params
         // TODO this.result.setRoundTime(clock.now());
@@ -326,6 +328,4 @@ public class XRPLReplica extends Replica<XRPLLedger> {
         //TODO this.openTime = clock.now();
         this.currPeerProposals = new HashMap<>();
     }
-
-
 }

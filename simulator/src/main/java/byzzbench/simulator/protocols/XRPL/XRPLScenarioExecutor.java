@@ -29,7 +29,7 @@ public class XRPLScenarioExecutor extends ScenarioExecutor<XRPLLedger>  {
                 nodeIds.add(Character.toString((char) ('A' + i)));
             }
             this.replica_list = new ArrayList<>();
-            XRPLLedger genesis = new XRPLLedger("1", "0", 1);
+            XRPLLedger genesis = new XRPLLedger( "0", 1, new ArrayList<>());
             nodeIds.forEach(nodeId -> {
                 //XRPLMessageLog messageLog = new XRPLMessageLog();
                 XRPLReplica replica = new XRPLReplica(nodeId, nodeIds, this.transport, nodeIds, genesis); //nodes trust all nodes currently
