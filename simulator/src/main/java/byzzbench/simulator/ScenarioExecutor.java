@@ -59,6 +59,7 @@ public abstract class ScenarioExecutor<T extends Serializable> {
         this.transport.reset();
         this.setupScenario();
         this.runScenario();
+        this.adobOracle.reset();
     }
 
     /**
