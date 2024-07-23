@@ -109,7 +109,7 @@ export default function AdoBStateDiagram() {
         supporters: cache.supporters,
       })) ?? []
     );
-  }, [data]);
+  }, [data?.data]);
 
   // compute edges from 'parent' relations
   const edges = useMemo(() => {
