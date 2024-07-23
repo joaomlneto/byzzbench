@@ -1,7 +1,9 @@
 import { SaveScheduleModal } from "./SaveScheduleModal";
+import { ScheduleDetailsModal } from "./ScheduleDetailsModal";
 
 const contextModals = {
   saveSchedule: SaveScheduleModal,
+  scheduleDetails: ScheduleDetailsModal,
 };
 
 declare module "@mantine/modals" {

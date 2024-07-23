@@ -1,5 +1,6 @@
 "use client";
 
+import { ScheduleDetails } from "@/components/ScheduleDetails";
 import { Action, useSavedSchedulesStore } from "@/hooks/useSavedSchedules";
 import { getMessage, getSchedule } from "@/lib/byzzbench-client";
 import { Button, JsonInput, Stack, TextInput } from "@mantine/core";
@@ -77,9 +78,9 @@ export function SaveScheduleModal({
             maxRows={20}
           />
         )}
-        {form.getValues().events.map((event) => (
-          <div>{event.label}</div>
-        ))}
+        <ScheduleDetails
+          schedule={{ name: "Schedule", actions: form.getValues().events }}
+        />
         <Button type="submit">Save</Button>
       </Stack>
     </form>
