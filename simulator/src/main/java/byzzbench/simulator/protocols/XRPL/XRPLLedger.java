@@ -10,6 +10,9 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+import lombok.extern.java.Log;
+
+@Log
 public class XRPLLedger implements Serializable {
     private String Id;
     private String parentId;
@@ -21,7 +24,12 @@ public class XRPLLedger implements Serializable {
         this.seq = seq_;
         this.transactions = new ArrayList<>();
         this.applyTxes(transactions);
+
+        log.info("Creating a ledger with parentId: " + parentID_ + " seq: " + seq_ + " txes: " + transactions);
+
         this.calculateSHA512_256();
+
+        log.info("the result hash is: " + this.getId());
     }
     /* 
     public XRPLLedger(XRPLLedger l) {
@@ -69,17 +77,25 @@ public class XRPLLedger implements Serializable {
     private byte[] getBytes() {
         try {
             // Convert parentId to bytes
-            byte[] parentIdBytes = parentId != null ? parentId.getBytes(StandardCharsets.UTF_8) : new byte[0];
+            byte[] parentIdBytes = this.parentId != null ? this.parentId.getBytes(StandardCharsets.UTF_8) : new byte[0];
 
             // Convert seq to bytes
             byte[] seqBytes = ByteBuffer.allocate(Integer.BYTES).putInt(seq).array();
 
-            // Convert transactions to bytes
+            // Calculate the required size for transactions
             int transactionsLength = transactions != null ? transactions.size() : 0;
-            ByteBuffer transactionsBuffer = ByteBuffer.allocate(Integer.BYTES);
-            transactionsBuffer.putInt(transactionsLength);
+            int transactionsSize = Integer.BYTES; // To store the length of the transactions list
             for (String transaction : transactions) {
                 byte[] transactionBytes = transaction != null ? transaction.getBytes(StandardCharsets.UTF_8) : new byte[0];
+                transactionsSize += Integer.BYTES; // For the length of each transaction
+                transactionsSize += transactionBytes.length; // For the transaction bytes
+            }
+
+            // Allocate ByteBuffer for transactions
+            ByteBuffer transactionsBuffer = ByteBuffer.allocate(transactionsSize);
+            transactionsBuffer.putInt(transactionsLength);
+            for (String transaction : transactions) {
+                byte[] transactionBytes = transaction.getBytes(StandardCharsets.UTF_8);
                 transactionsBuffer.putInt(transactionBytes.length);
                 transactionsBuffer.put(transactionBytes);
             }

@@ -38,6 +38,8 @@ public class XRPLReplica extends Replica<XRPLLedger> {
 
     private @Getter Map<String, XRPLLedger> validations; //map of last validated ledgers indexed on nodeId
 
+    private @Getter XRPLLedgerTreeNode tree;
+
     protected XRPLReplica(String nodeId, Set<String> nodeIds, Transport<XRPLLedger> transport, Set<String> UNL, XRPLLedger prevLedger_) {
         super(nodeId, nodeIds, transport, new TotalOrderCommitLog<>());
         this.ourUNL = UNL;
@@ -50,6 +52,7 @@ public class XRPLReplica extends Replica<XRPLLedger> {
         this.pendingTransactions = new ArrayList<>();
         this.validations = new HashMap<>();
         this.validLedger = prevLedger_;
+        this.tree = new XRPLLedgerTreeNode(prevLedger_.getId(), prevLedger_.getParentId());
     }
 
     @Override
@@ -94,7 +97,8 @@ public class XRPLReplica extends Replica<XRPLLedger> {
     private void validateMessageHandler(XRPLValidateMessage msg) {
         try {
             if (msg.getLedger().getSeq() == this.currWorkLedger.getSeq() /*TODO && verify signature */) {
-                //TODO add msg.ledger to tree
+                XRPLLedgerTreeNode n = new XRPLLedgerTreeNode(msg.getLedger().getId(), msg.getLedger().getParentId());
+                this.tree.addChild(n);
                 this.validations.put(msg.getSenderNodeId(), msg.getLedger());
                 int valCount = 0;
                 for (String nodeId : ourUNL) {
@@ -237,9 +241,17 @@ public class XRPLReplica extends Replica<XRPLLedger> {
         }
     }
 
+    private List<String> getTxUnion(List<String> l1, List<String> l2) {
+        for (String tx : l1) {
+            if (l2.indexOf(tx) == -1) {
+                l2.add(tx);
+            }
+        }
+        return l2;
+    }
+
     private void handleAccept() {
-        XRPLLedger tmpL = new XRPLLedger(this.prevLedger.getId(), this.prevLedger.getSeq() + 1, this.prevLedger.getTransactions());
-        tmpL.applyTxes(pendingTransactions);
+        XRPLLedger tmpL = new XRPLLedger(this.prevLedger.getId(), this.prevLedger.getSeq() + 1, getTxUnion(this.prevLedger.getTransactions(), this.pendingTransactions));
         if (this.validations == null) {
             this.validations = new HashMap<>();
         }
@@ -273,7 +285,6 @@ public class XRPLReplica extends Replica<XRPLLedger> {
         this.result = new XRPLConsensusResult(this.pendingTransactions);
         XRPLProposal prop = new XRPLProposal(this.prevLedger.getId(), 0, this.result.getTxList(), getNodeId(), 1); // TODO get hash of prev ledger and call to clock.now for params
         // TODO this.result.setRoundTime(clock.now());
-        // this.pendingTransactions.clear();
         this.result.setProposal(prop);
 
         XRPLProposeMessage propmsg = new XRPLProposeMessage(prop, this.getNodeId());
