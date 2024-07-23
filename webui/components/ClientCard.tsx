@@ -1,3 +1,5 @@
+"use client";
+
 import { NodeStateNavLink } from "@/components/NodeStateNavLink";
 import { useGetClient } from "@/lib/byzzbench-client";
 import { Container, JsonInput, Stack, Title } from "@mantine/core";

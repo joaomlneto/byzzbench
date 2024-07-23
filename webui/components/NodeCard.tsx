@@ -1,3 +1,5 @@
+"use client";
+
 import { NodeMailbox } from "@/components/messages/NodeMailbox";
 import { NodeStateNavLink } from "@/components/NodeStateNavLink";
 import { useGetNode } from "@/lib/byzzbench-client";
