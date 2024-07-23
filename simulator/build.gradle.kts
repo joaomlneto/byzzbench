@@ -61,3 +61,7 @@ dependencyManagement {
 tasks.withType<Test> {
     useJUnitPlatform()
 }
+
+openApi {
+    apiDocsUrl.set("http://localhost:8080/spec")
+}
