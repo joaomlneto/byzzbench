@@ -8,8 +8,8 @@ import {
 } from "@/components/messages";
 import { MutatorsList } from "@/components/MutatorsList";
 import { NodeList } from "@/components/NodeList";
-import { useSavedSchedulesStore } from "@/hooks/useSavedSchedules";
-import { Accordion, Container, JsonInput, Stack } from "@mantine/core";
+import { ScheduleList } from "@/components/ScheduleList";
+import { Accordion, Container, Stack } from "@mantine/core";
 import { useLocalStorage } from "@mantine/hooks";
 import React from "react";
 
@@ -20,18 +20,9 @@ export default function Home() {
       defaultValue: ["nodes", "schedule"],
     });
 
-  const schedules = useSavedSchedulesStore((x) => x.schedules);
-
   return (
     <Container fluid p="xl">
       <Stack gap="md">
-        <Container fluid>
-          <JsonInput
-            value={JSON.stringify(schedules, null, 2)}
-            autosize
-            maxRows={30}
-          />
-        </Container>
         <Accordion
           multiple
           variant="separated"
@@ -42,6 +33,12 @@ export default function Home() {
             <Accordion.Control>Clients</Accordion.Control>
             <Accordion.Panel>
               <ClientList />
+            </Accordion.Panel>
+          </Accordion.Item>
+          <Accordion.Item key="saved_schedules" value="saved_schedules">
+            <Accordion.Control>Saved Schedules</Accordion.Control>
+            <Accordion.Panel>
+              <ScheduleList />
             </Accordion.Panel>
           </Accordion.Item>
           <Accordion.Item key="nodes" value="nodes">

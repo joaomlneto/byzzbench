@@ -76,11 +76,13 @@ export function SaveScheduleModal({
             <Button type="submit">Save</Button>
           </Grid.Col>
         </Grid>
-        <JsonInput
-          value={JSON.stringify(form.getValues().events, null, 2)}
-          autosize
-          maxRows={20}
-        />
+        {false && (
+          <JsonInput
+            value={JSON.stringify(form.getValues().events, null, 2)}
+            autosize
+            maxRows={20}
+          />
+        )}
         {form.getValues().events.map((event) => (
           <div>{event.label}</div>
         ))}

@@ -16,7 +16,6 @@ export const SaveScheduleActionIcon = () => {
       <ActionIcon
         onClick={async (e) => {
           e.preventDefault();
-
           openContextModal({
             modal: "saveSchedule",
             title: <Title order={3}>Save Schedule</Title>,
