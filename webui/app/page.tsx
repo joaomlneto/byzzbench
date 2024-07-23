@@ -1,6 +1,5 @@
 "use client";
 
-import AdoBStateDiagram from "@/components/adob/AdoBStateDiagram";
 import { ClientList } from "@/components/ClientList";
 import {
   DeliveredMessagesList,
@@ -11,7 +10,18 @@ import { NodeList } from "@/components/NodeList";
 import { ScheduleList } from "@/components/ScheduleList";
 import { Accordion, Container, Stack } from "@mantine/core";
 import { useLocalStorage } from "@mantine/hooks";
+import dynamic from "next/dynamic";
 import React from "react";
+
+const AdoBStateDiagram = dynamic<{}>(
+  () =>
+    import("@/components/adob/AdoBStateDiagram").then(
+      (m) => m.AdoBStateDiagram,
+    ),
+  {
+    ssr: false,
+  },
+);
 
 export default function Home() {
   const [selectedAccordionEntries, setSelectedAccordionEntries] =
