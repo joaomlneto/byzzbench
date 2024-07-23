@@ -492,7 +492,8 @@ public class PbftReplica<O extends Serializable, R extends Serializable> extends
     }
 
     public void sendReply(String clientId, ReplyMessage reply) {
-        this.sendMessage(reply, clientId);
+        //this.sendMessage(reply, clientId);
+        this.sendReplyToClient(clientId, reply);
 
         // When prior requests are fulfilled, attempt to process the buffer
         // to ensure they are dispatched in a timely manner
