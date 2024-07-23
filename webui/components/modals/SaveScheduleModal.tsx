@@ -1,10 +1,10 @@
 "use client";
 
 import { Action, useSavedSchedulesStore } from "@/hooks/useSavedSchedules";
-import { getDeliveredMessages, getMessage } from "@/lib/byzzbench-client";
-import { Button, Grid, JsonInput, Stack, TextInput } from "@mantine/core";
+import { getMessage, getSchedule } from "@/lib/byzzbench-client";
+import { Button, JsonInput, Stack, TextInput } from "@mantine/core";
 import { useForm } from "@mantine/form";
-import { type ContextModalProps } from "@mantine/modals";
+import { type ContextModalProps, modals } from "@mantine/modals";
 import React, { useEffect } from "react";
 
 export function SaveScheduleModal({
@@ -35,7 +35,7 @@ export function SaveScheduleModal({
   useEffect(() => {
     const fetchData = async () => {
       // get event ids
-      const { data: eventIds } = await getDeliveredMessages();
+      const { data: eventIds } = await getSchedule();
 
       // get details for every event
       const events = await Promise.all(
@@ -65,17 +65,11 @@ export function SaveScheduleModal({
           name: values.name,
           actions: values.events,
         });
+        modals.closeAll();
       })}
     >
       <Stack gap="sm">
-        <Grid align="end">
-          <Grid.Col span="auto">
-            <TextInput label="Trace Name" {...form.getInputProps("name")} />
-          </Grid.Col>
-          <Grid.Col span="content">
-            <Button type="submit">Save</Button>
-          </Grid.Col>
-        </Grid>
+        <TextInput label="Trace Name" {...form.getInputProps("name")} />
         {false && (
           <JsonInput
             value={JSON.stringify(form.getValues().events, null, 2)}
