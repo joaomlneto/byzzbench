@@ -241,15 +241,6 @@ public class XRPLReplica extends Replica<XRPLLedger> {
         }
     }
 
-    private List<String> getTxUnion(List<String> l1, List<String> l2) {
-        for (String tx : l1) {
-            if (l2.indexOf(tx) == -1) {
-                l2.add(tx);
-            }
-        }
-        return l2;
-    }
-
     private void handleAccept() {
         XRPLLedger tmpL = new XRPLLedger(this.prevLedger.getId(), this.prevLedger.getSeq() + 1, this.pendingTransactions);
         if (this.validations == null) {
