@@ -2,6 +2,11 @@ package byzzbench.simulator.protocols.XRPL.messages;
 
 import byzzbench.simulator.transport.SignableMessage;
 
+/*
+ * Submit message as used in the gossip protocol.
+ * A node broadcasts a submit message to all nodes it 
+ * is connected once it recieves a transaction from a client.
+ */
 public class XRPLSubmitMessage extends SignableMessage {
     private String tx;
 

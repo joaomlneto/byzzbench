@@ -3,6 +3,11 @@ package byzzbench.simulator.protocols.XRPL.messages;
 import byzzbench.simulator.protocols.XRPL.XRPLLedger;
 import byzzbench.simulator.transport.SignableMessage;
 
+/*
+ * Validate messages are sent in the accept phase. This is
+ * when a node decides consensus has been reached for a proposal
+ * and announces that it validates the given ledger.
+ */
 public class XRPLValidateMessage extends SignableMessage {
     private String senderNodeId;
     //private signature sign;

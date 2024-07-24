@@ -101,6 +101,9 @@ public class XRPLReplica extends Replica<XRPLLedger> {
 
     }
 
+    /*
+     * Transmit the recieved transaction through the gossip layer
+     */
     private void recvTxHandler(XRPLTxMessage txmsg) {
         XRPLSubmitMessage submsg = new XRPLSubmitMessage(txmsg.getTx());
         this.broadcastMessageIncludingSelf(submsg);
@@ -121,6 +124,8 @@ public class XRPLReplica extends Replica<XRPLLedger> {
                 XRPLLedgerTreeNode n = new XRPLLedgerTreeNode(msg.getLedger());
                 this.tree.addChild(n);
                 this.validations.put(msg.getSenderNodeId(), msg.getLedger());
+
+                //count validations for the recieved ledger
                 int valCount = 0;
                 for (String nodeId : ourUNL) {
                     XRPLLedger ledger = validations.get(nodeId);
@@ -130,6 +135,8 @@ public class XRPLReplica extends Replica<XRPLLedger> {
                         }
                     }
                 }
+
+                //if enough nodes validated, we can update validLedger
                 if (valCount >= (0.8 * this.ourUNL.size()) && (this.currWorkLedger.getSeq() > this.validLedger.getSeq())) {
                     this.validLedger = this.currWorkLedger;
                     for (String tx : this.validLedger.transactions) {
@@ -147,6 +154,11 @@ public class XRPLReplica extends Replica<XRPLLedger> {
         }
     }
 
+    /*
+     * Update our peer's position in our storage, make sure
+     * the sequence number is not smaller than the one we already stored,
+     * and it is working on the correct previous ledger.
+     */
     private void proposeMessageHandler(XRPLProposeMessage msg) {
         try {
             XRPLProposal prop = msg.getProposal();
@@ -207,7 +219,6 @@ public class XRPLReplica extends Replica<XRPLLedger> {
 
             
         }
-        //TODO reset timer 
         Runnable r = new XRPLHeartbeatRunnable(this);
         this.setTimeout(r, 5000);
         
@@ -292,6 +303,9 @@ public class XRPLReplica extends Replica<XRPLLedger> {
         this.startConsensus();
     }
 
+    /*
+     * Have we reached agreement in proposals with enough of our peers
+     */
     private boolean checkConsensus() {
         int agree = 0;
         int total = this.ourUNL.size();
@@ -308,6 +322,9 @@ public class XRPLReplica extends Replica<XRPLLedger> {
         return (agree + 1) / total >= 0.8;
     }
 
+    /*
+     * "Close" the current working ledger, send a proposal to our peers.
+     */
     private void closeLedger() {
         this.currWorkLedger = new XRPLLedger(this.prevLedger.getId(), this.prevLedger.getSeq() + 1, this.pendingTransactions);
         this.result = new XRPLConsensusResult(this.pendingTransactions);
@@ -324,6 +341,10 @@ public class XRPLReplica extends Replica<XRPLLedger> {
         }
     }
 
+    /*
+     * Create disputes based on discrepencies on our proposal
+     * and our peers'.
+     */
     private void createDisputes(List<String> txns) {
         Set<String> symmDiff = computeSymmetricDifference(this.result.getTxList(), txns);
         for (String tx : symmDiff) {
@@ -354,6 +375,9 @@ public class XRPLReplica extends Replica<XRPLLedger> {
         return union;
     }
 
+    /*
+     * Number of validations issued for the given ledger
+     */
     private int tipSupport(String ledgerHash) {
         int count = 0;
         for (String nodeId : this.ourUNL) {
@@ -377,7 +401,11 @@ public class XRPLReplica extends Replica<XRPLLedger> {
             return null;
         }
     }
-
+    
+    /*
+     * Number of nodes that have not committed their validation 
+     * for this sequence numbered ledger.
+     */
     private int uncommitted(String ledgerHash) {
         XRPLLedgerTreeNode node = findInTree(ledgerHash, tree);
         int ret = 0;
@@ -391,6 +419,10 @@ public class XRPLReplica extends Replica<XRPLLedger> {
         return ret;
     }
 
+    /*
+     * The branch support for this ledger, i.e. the tip-support
+     * for this ledger and its descendants.
+     */
     private int support(String ledgerHash) {
         return supportHelper(findInTree(ledgerHash, tree));
     }

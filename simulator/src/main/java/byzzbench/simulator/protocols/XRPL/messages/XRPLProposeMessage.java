@@ -3,6 +3,14 @@ package byzzbench.simulator.protocols.XRPL.messages;
 import byzzbench.simulator.protocols.XRPL.XRPLProposal;
 import byzzbench.simulator.transport.SignableMessage;
 
+
+/*
+ * Node Proposal message sent in the establish phase.
+ * A node sends this message when it is trying to propose
+ * a ledger for the given sequence number, a node may update
+ * its proposal via other propose messages with subsequent 
+ * sequence numbers.
+ */
 public class XRPLProposeMessage extends SignableMessage {
     private XRPLProposal prop;
     private String senderId;
