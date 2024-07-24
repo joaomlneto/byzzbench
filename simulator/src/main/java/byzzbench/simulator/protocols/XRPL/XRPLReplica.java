@@ -112,10 +112,13 @@ public class XRPLReplica extends Replica<XRPLLedger> {
                 if (valCount >= (0.8 * this.ourUNL.size()) && (this.currWorkLedger.getSeq() > this.validLedger.getSeq())) {
                     this.validLedger = this.currWorkLedger;
                     for (String tx : this.validLedger.transactions) {
-                        this.pendingTransactions.remove(tx);
+                        for (String pendingtx : this.pendingTransactions) {
+                            if (pendingtx.equals(tx)) {
+                                this.pendingTransactions.remove(tx);
+                            }
+                        }
                     }
                     //Exeucute txes
-
                 }
             }
         } catch (Exception e) {
@@ -127,7 +130,11 @@ public class XRPLReplica extends Replica<XRPLLedger> {
         try {
             XRPLProposal prop = msg.getProposal();
             if (prop.getPrevLedgerId().equals(this.prevLedger.getId()) && ourUNL.contains(msg.getSenderId())) {
-                this.currPeerProposals.put(msg.getSenderId(), prop);
+                if (this.currPeerProposals.get(prop.getNodeId()) == null) {
+                    this.currPeerProposals.put(msg.getSenderId(), prop);
+                } else if (this.currPeerProposals.get(prop.getNodeId()).getSeq() < prop.getSeq()) {
+                    this.currPeerProposals.put(msg.getSenderId(), prop);
+                }
             }
         } catch (Exception e) {
             log.info("Couldn't handle propose message in node " + this.getNodeId() + ": " + e.getMessage());
@@ -147,6 +154,7 @@ public class XRPLReplica extends Replica<XRPLLedger> {
         
         XRPLLedger tempL = getPreferredLedger(this.validLedger);
         if (!this.prevLedger.getId().equals(tempL.getId())) {
+            log.info("found that the node: " + this.getNodeId() + " is not on the preferred ledger");
             this.prevLedger = tempL;
             startConsensus();
         }
@@ -191,6 +199,12 @@ public class XRPLReplica extends Replica<XRPLLedger> {
                 this.currPeerProposals.put(nodeId, null);
             } 
         } */
+        for (String nodeId : ourUNL) {
+            if (this.currPeerProposals.get(nodeId) != null) {
+                createDisputes(this.currPeerProposals.get(nodeId).getTxns());
+            }
+        }
+
         boolean hasResChanged = false;
         for (DisputedTx dt : this.result.getDisputedTxs()) {
             if (updateVote(dt)) {
@@ -208,6 +222,7 @@ public class XRPLReplica extends Replica<XRPLLedger> {
             this.result.setProposal(prop);
             XRPLProposeMessage propmsg = new XRPLProposeMessage(prop, this.getNodeId());
             this.broadcastMessage(propmsg);
+            this.currWorkLedger = new XRPLLedger(this.currWorkLedger.getParentId(), this.currWorkLedger.getSeq(), this.result.getTxList());
             this.result.resetDisputes();
             for (String nodeId : this.ourUNL) {
                 if (currPeerProposals.get(nodeId) != null) {
@@ -229,7 +244,6 @@ public class XRPLReplica extends Replica<XRPLLedger> {
         } else {
             threshold = 0.95;
         }
-
         boolean newVote = (dt.getYesVotes() + boolToInt(dt.getOurVote())) / (dt.getNoVotes() + dt.getYesVotes() + 1) > threshold;
         return newVote != dt.getOurVote();
     }
@@ -243,7 +257,7 @@ public class XRPLReplica extends Replica<XRPLLedger> {
     }
 
     private void handleAccept() {
-        XRPLLedger tmpL = new XRPLLedger(this.prevLedger.getId(), this.prevLedger.getSeq() + 1, this.pendingTransactions);
+        XRPLLedger tmpL = new XRPLLedger(this.prevLedger.getId(), this.prevLedger.getSeq() + 1, this.result.getTxList());
         if (this.validations == null) {
             this.validations = new HashMap<>();
         }
@@ -253,6 +267,7 @@ public class XRPLReplica extends Replica<XRPLLedger> {
         this.prevLedger = tmpL;
         this.broadcastMessage(val);
         this.prevRoundTime = this.result.getRoundTime();
+        this.validateMessageHandler(val);
         this.startConsensus();
     }
 
@@ -293,12 +308,14 @@ public class XRPLReplica extends Replica<XRPLLedger> {
         for (String tx : symmDiff) {
             DisputedTx dt = new DisputedTx(tx, this.result.containsTx(tx), 0, 0, new HashMap<>());
             for (String nodeId : this.ourUNL) {
-                if (this.currPeerProposals.get(nodeId).containsTx(tx)) {
-                    dt.incrementYesVotes();
-                    dt.addEntryToVotesMap(nodeId, true);
-                } else {
-                    dt.incrementNoVotes();
-                    dt.addEntryToVotesMap(nodeId, false);
+                if (this.currPeerProposals.get(nodeId) != null) {
+                    if (this.currPeerProposals.get(nodeId).containsTx(tx)) {
+                        dt.incrementYesVotes();
+                        dt.addEntryToVotesMap(nodeId, true);
+                    } else {
+                        dt.incrementNoVotes();
+                        dt.addEntryToVotesMap(nodeId, false);
+                    }
                 }
             }
             this.result.addDisputed(dt);
@@ -408,7 +425,7 @@ public class XRPLReplica extends Replica<XRPLLedger> {
 
             if (uncommitted(mNode.getLedger().getId()) >= support(mNode.getLedger().getId())) {
                 return L;
-            } else if (support(getSecondMaxSupportedChild(mNode).getLedger().getId()) + uncommitted(mNode.getLedger().getId()) < support(mNode.getLedger().getId())) {
+            } else if (getSecondMaxSupportedChild(node) != null && support(getSecondMaxSupportedChild(node).getLedger().getId()) + uncommitted(mNode.getLedger().getId()) < support(mNode.getLedger().getId())) {
                 return getPreferredLedger(mNode.getLedger());
             } else {
                 return L;
