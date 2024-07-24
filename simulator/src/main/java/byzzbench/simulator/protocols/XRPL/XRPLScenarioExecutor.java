@@ -37,7 +37,7 @@ public class XRPLScenarioExecutor extends ScenarioExecutor<XRPLLedger>  {
                 nodes.put(nodeId, replica);
                 transport.addNode(replica);
             });
-
+            transport.registerMessageMutators(new XRPLProposeMessageMutatorFactory());
             log.info("nodes: " + nodes);
         } catch (Exception e) {
             throw new RuntimeException(e);

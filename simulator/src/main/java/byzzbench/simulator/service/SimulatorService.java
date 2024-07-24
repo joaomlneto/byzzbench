@@ -24,8 +24,7 @@ import java.io.Serializable;
 @RequiredArgsConstructor
 @Log
 public class SimulatorService {
-  private ScenarioExecutor<? extends Serializable> scenarioExecutor =
-      new XRPLScenarioExecutor();
+  private ScenarioExecutor<? extends Serializable> scenarioExecutor;
 
   @EventListener(ApplicationReadyEvent.class)
   void onStartup() {

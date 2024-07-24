@@ -2,7 +2,9 @@ package byzzbench.simulator.protocols.XRPL.messages;
 
 import byzzbench.simulator.protocols.XRPL.XRPLProposal;
 import byzzbench.simulator.transport.MessagePayload;
+import lombok.With;
 
+@With
 public class XRPLProposeMessage implements MessagePayload {
     private XRPLProposal prop;
     private String senderId;
