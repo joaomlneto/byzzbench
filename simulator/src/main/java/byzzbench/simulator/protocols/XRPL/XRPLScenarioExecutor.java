@@ -46,6 +46,14 @@ public class XRPLScenarioExecutor extends ScenarioExecutor<XRPLLedger>  {
 
     @Override
     public void run() {
+        this.runScenario1();        
+    }
+    
+    /*
+     * Scenario with 2 client requests of 2 different
+     * transactions to 2 different nodes.
+     */
+    private void runScenario1() {
         try {
             String tx1 = "0000";
             String tx2 = "0001";
@@ -56,17 +64,36 @@ public class XRPLScenarioExecutor extends ScenarioExecutor<XRPLLedger>  {
             nodes.get("A").handleMessage("c", txmsg1);
             nodes.get("B").handleMessage("c1", txmsg2);
 
-            //The first heartbeat to initialize
-            for (XRPLReplica xrplReplica : replica_list) {
-                xrplReplica.onHeartbeat();
-            }
-
+            this.initializeHeartbeats();
         } catch (Exception e) {
             e.printStackTrace();
             throw new RuntimeException(e);
         }
-        
-        
+    }
+
+    /*
+     * Scenario of just 1 transaction
+     */
+    private void runScenario2() {
+        try {
+            String tx1 = "0000";
+
+            XRPLTxMessage txmsg1 = new XRPLTxMessage(tx1);
+
+            nodes.get("A").handleMessage("c", txmsg1);
+
+            this.initializeHeartbeats();
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw new RuntimeException(e);
+        }
+    }
+
+    private void initializeHeartbeats() {
+        //The first heartbeat to initialize
+        for (XRPLReplica xrplReplica : replica_list) {
+            xrplReplica.onHeartbeat();
+        }
     }
 
 }
