@@ -1,8 +1,8 @@
 package byzzbench.simulator.protocols.XRPL.messages;
 
-import byzzbench.simulator.transport.MessagePayload;
+import byzzbench.simulator.transport.SignableMessage;
 
-public class XRPLSubmitMessage implements MessagePayload {
+public class XRPLSubmitMessage extends SignableMessage {
     private String tx;
 
     public XRPLSubmitMessage(String tx_) {

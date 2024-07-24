@@ -1,9 +1,9 @@
 package byzzbench.simulator.protocols.XRPL.messages;
 
 import byzzbench.simulator.protocols.XRPL.XRPLProposal;
-import byzzbench.simulator.transport.MessagePayload;
+import byzzbench.simulator.transport.SignableMessage;
 
-public class XRPLProposeMessage implements MessagePayload {
+public class XRPLProposeMessage extends SignableMessage {
     private XRPLProposal prop;
     private String senderId;
 

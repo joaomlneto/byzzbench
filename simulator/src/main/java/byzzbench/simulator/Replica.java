@@ -2,6 +2,7 @@ package byzzbench.simulator;
 
 import byzzbench.simulator.state.CommitLog;
 import byzzbench.simulator.transport.MessagePayload;
+import byzzbench.simulator.transport.SignableMessage;
 import byzzbench.simulator.transport.Transport;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Getter;
@@ -60,12 +61,23 @@ public abstract class Replica<T extends Serializable> implements Serializable {
     }
 
     protected void sendMessage(MessagePayload message, String recipient) {
-        this.transport.sendMessage(this.nodeId, message, recipient);
+        if (message instanceof SignableMessage signableMessage) {
+            signableMessage.sign(this.nodeId);
+            this.transport.sendMessage(this.nodeId, signableMessage, recipient);
+        } else {
+            this.transport.sendMessage(this.nodeId, message, recipient);
+        }
+        
     }
 
     protected void multicastMessage(MessagePayload message,
                                     Set<String> recipients) {
-        this.transport.multicast(this.nodeId, recipients, message);
+        if (message instanceof SignableMessage signableMessage) {
+            signableMessage.sign(this.nodeId);
+            this.transport.multicast(this.nodeId, recipients, signableMessage);
+        } else {
+            this.transport.multicast(this.nodeId, recipients, message);
+        }
     }
 
     /**
@@ -77,11 +89,22 @@ public abstract class Replica<T extends Serializable> implements Serializable {
         Set<String> otherNodes = this.nodeIds.stream()
                 .filter(otherNodeId -> !otherNodeId.equals(this.nodeId))
                 .collect(java.util.stream.Collectors.toSet());
-        this.transport.multicast(this.nodeId, otherNodes, message);
+
+        if (message instanceof SignableMessage signableMessage) {
+            signableMessage.sign(this.nodeId);
+            this.transport.multicast(this.nodeId, otherNodes, signableMessage);
+        } else {
+            this.transport.multicast(this.nodeId, otherNodes, message);
+        }
     }
 
     protected void broadcastMessageIncludingSelf(MessagePayload message) {
-        this.transport.multicast(this.nodeId, this.nodeIds, message);
+        if (message instanceof SignableMessage signableMessage) {
+            signableMessage.sign(this.nodeId);
+            this.transport.multicast(this.nodeId, this.nodeIds, signableMessage);
+        } else {
+            this.transport.multicast(this.nodeId, this.nodeIds, message);
+        }
     }
 
     public byte[] digest(Serializable message) {
