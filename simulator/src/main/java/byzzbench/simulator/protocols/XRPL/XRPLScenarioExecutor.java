@@ -74,6 +74,7 @@ public class XRPLScenarioExecutor extends ScenarioExecutor<XRPLLedger>  {
     /*
      * Scenario of just 1 transaction
      */
+    @SuppressWarnings("unused")
     private void runScenario2() {
         try {
             String tx1 = "0000";

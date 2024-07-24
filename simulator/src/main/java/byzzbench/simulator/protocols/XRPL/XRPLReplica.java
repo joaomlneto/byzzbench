@@ -120,7 +120,7 @@ public class XRPLReplica extends Replica<XRPLLedger> {
 
     private void validateMessageHandler(XRPLValidateMessage msg) {
         try {
-            if (msg.getLedger().getSeq() == this.currWorkLedger.getSeq() /*TODO && verify signature */) {
+            if (msg.getLedger().getSeq() == this.currWorkLedger.getSeq() && msg.getLedger().isSignedBy(msg.getSenderNodeId())) {
                 XRPLLedgerTreeNode n = new XRPLLedgerTreeNode(msg.getLedger());
                 this.tree.addChild(n);
                 this.validations.put(msg.getSenderNodeId(), msg.getLedger());
@@ -293,8 +293,8 @@ public class XRPLReplica extends Replica<XRPLLedger> {
         if (this.validations == null) {
             this.validations = new HashMap<>();
         }
+        tmpL.signLedger(this.getNodeId());
         this.validations.put(this.getNodeId(), tmpL);
-        //TODO sign the ledger
         XRPLValidateMessage val = new XRPLValidateMessage(this.getNodeId(), tmpL);
         this.prevLedger = tmpL;
         this.broadcastMessage(val);
