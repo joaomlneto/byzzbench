@@ -1,5 +1,5 @@
 export interface FlowConfig {
-    imports?: () => void;
+    imports?: () => Promise<any>;
 }
 interface AppConfig {
     productionMode: boolean;
@@ -29,6 +29,7 @@ export interface NavigationParameters {
 }
 export interface PreventCommands {
     prevent: () => any;
+    continue?: () => any;
 }
 export interface PreventAndRedirectCommands extends PreventCommands {
     redirect: (route: string) => any;

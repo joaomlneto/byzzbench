@@ -1,12 +1,14 @@
 "use client";
 
 import AdoBStateDiagram from "@/components/adob/AdoBStateDiagram";
+import { ClientList } from "@/components/ClientList";
 import {
   DeliveredMessagesList,
   DroppedMessagesList,
 } from "@/components/messages";
 import { MutatorsList } from "@/components/MutatorsList";
 import { NodeList } from "@/components/NodeList";
+import { ScheduleList } from "@/components/ScheduleList";
 import { Accordion, Container, Stack } from "@mantine/core";
 import { useLocalStorage } from "@mantine/hooks";
 import React from "react";
@@ -15,8 +17,9 @@ export default function Home() {
   const [selectedAccordionEntries, setSelectedAccordionEntries] =
     useLocalStorage<string[]>({
       key: "byzzbench/selectedAccordionEntries",
-      defaultValue: ["nodes", "schedule", "dropped_msgs"],
+      defaultValue: ["nodes", "schedule"],
     });
+
   return (
     <Container fluid p="xl">
       <Stack gap="md">
@@ -26,6 +29,18 @@ export default function Home() {
           value={selectedAccordionEntries}
           onChange={setSelectedAccordionEntries}
         >
+          <Accordion.Item key="clients" value="clients">
+            <Accordion.Control>Clients</Accordion.Control>
+            <Accordion.Panel>
+              <ClientList />
+            </Accordion.Panel>
+          </Accordion.Item>
+          <Accordion.Item key="saved_schedules" value="saved_schedules">
+            <Accordion.Control>Saved Schedules</Accordion.Control>
+            <Accordion.Panel>
+              <ScheduleList />
+            </Accordion.Panel>
+          </Accordion.Item>
           <Accordion.Item key="nodes" value="nodes">
             <Accordion.Control>Nodes</Accordion.Control>
             <Accordion.Panel>

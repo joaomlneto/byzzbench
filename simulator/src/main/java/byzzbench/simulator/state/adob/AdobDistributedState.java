@@ -24,31 +24,27 @@ import java.util.concurrent.atomic.AtomicLong;
 @Log
 public class AdobDistributedState implements ReplicaObserver, Serializable {
     /**
+     * The maximum cache ID that has been created so far.
+     */
+    private final AtomicLong maxExistingCacheId = new AtomicLong();
+    /**
+     * The vector clocks of each replica.
+     */
+    private final Map<String, VectorClock> clocks = new HashMap<>();
+    /**
+     * The last cache that each replica has created/supported.
+     */
+    private final Map<String, AdobCache> replicaLastCache = new HashMap<>();
+    /**
      * The root cache of the distributed state.
      */
     @Getter(onMethod_ = {@Synchronized})
-    private final AdobCache root = new RootCache(0);
-
+    private AdobCache root = new RootCache(0);
     /**
      * The caches that have been created so far.
      */
     @Getter(onMethod_ = {@Synchronized})
     private final Map<Long, AdobCache> caches = new HashMap<>(Map.of(0L, root));
-
-    /**
-     * The maximum cache ID that has been created so far.
-     */
-    private final AtomicLong maxExistingCacheId = new AtomicLong();
-
-    /**
-     * The vector clocks of each replica.
-     */
-    private final Map<String, VectorClock> clocks = new HashMap<>();
-
-    /**
-     * The last cache that each replica has created/supported.
-     */
-    private final Map<String, AdobCache> replicaLastCache = new HashMap<>();
 
     public AdobDistributedState(Collection<String> replicaIds) {
         for (String id : replicaIds) {
@@ -174,5 +170,15 @@ public class AdobDistributedState implements ReplicaObserver, Serializable {
         TimeoutCache tCache = new TimeoutCache(id, root, Set.of(r.getNodeId()), Set.of(r.getNodeId()));
 
         caches.put(id, tCache);
+    }
+
+    public synchronized void reset() {
+        caches.clear();
+        replicaLastCache.clear();
+        maxExistingCacheId.set(0);
+        clocks.clear();
+
+        root = new RootCache(0);
+        caches.put(0L, root);
     }
 }

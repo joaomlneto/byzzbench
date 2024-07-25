@@ -16,6 +16,10 @@ public class XRPLLedger implements Serializable {
     private int seq;
     List<String> transactions;
 
+    //Fields to implement dummy signature and verification
+    private boolean isSigned = false;
+    private String signerId = null;
+
     public XRPLLedger(String parentID_, int seq_, List<String> transactions) {
         this.parentId = parentID_;
         this.seq = seq_;
@@ -23,17 +27,7 @@ public class XRPLLedger implements Serializable {
         this.applyTxes(transactions);
         this.calculateSHA512_256();
     }
-    /* 
-    public XRPLLedger(XRPLLedger l) {
-        this.Id = l.Id;
-        this.parentId = l.parentId;
-        this.seq = l.seq;
-        this.transactions = new ArrayList<>();
-        for (String tx : l.transactions) {
-            this.transactions.addLast(tx);            
-        }
-    }
-*/
+
     public String getId() {
         return this.Id;
     }
@@ -44,6 +38,21 @@ public class XRPLLedger implements Serializable {
 
     public int getSeq() {
         return this.seq;
+    }
+
+    /*
+     * Dummy method to sign ledger validation
+     */
+    public void signLedger(String signer) {
+        this.signerId = signer;
+        this.isSigned = true;
+    }
+    
+    /*
+     * Dummy method to check ledger signature
+     */
+    public boolean isSignedBy(String id) {
+        return this.isSigned && this.signerId.equals(id);
     }
 
     public void applyTxes(List<String> txes) {
