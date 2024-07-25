@@ -1,6 +1,8 @@
 package byzzbench.simulator.protocols.XRPL.messages;
 
 import byzzbench.simulator.protocols.XRPL.XRPLProposal;
+import byzzbench.simulator.transport.MessagePayload;
+import lombok.With;
 import byzzbench.simulator.transport.SignableMessage;
 
 
@@ -11,6 +13,8 @@ import byzzbench.simulator.transport.SignableMessage;
  * its proposal via other propose messages with subsequent 
  * sequence numbers.
  */
+
+@With
 public class XRPLProposeMessage extends SignableMessage {
     private XRPLProposal prop;
     private String senderId;
