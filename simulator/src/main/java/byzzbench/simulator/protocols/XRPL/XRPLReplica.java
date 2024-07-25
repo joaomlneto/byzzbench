@@ -1,5 +1,6 @@
 package byzzbench.simulator.protocols.XRPL;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -492,5 +493,12 @@ public class XRPLReplica extends Replica<XRPLLedger> {
         this.converge = 0;
         //TODO this.openTime = clock.now();
         this.currPeerProposals = new HashMap<>();
+    }
+
+    @Override
+    public void handleClientRequest(String clientId, Serializable request) throws Exception {
+        String tx = request.toString();
+        XRPLTxMessage txmsg = new XRPLTxMessage(tx, clientId);
+        this.handleMessage(clientId, txmsg);
     }
 }

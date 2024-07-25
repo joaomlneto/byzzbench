@@ -41,9 +41,11 @@ import { GridFlowSelectionColumn } from "./vaadin-grid-flow-selection-column.js"
           return grid.$connector.hasEnsureSubCacheQueue() || this.isLoadingOriginal();
         });
 
-        const rootPageCallbacks = {};
-        const treePageCallbacks = {};
-        const cache = {};
+        dataProviderController.getItemSubCache = tryCatchWrapper(function (item) {
+          return this.getItemContext(item)?.subCache;
+        });
+
+        let cache = {};
 
         /* parentRequestDelay - optimizes parent requests by batching several requests
          *  into one request. Delay in milliseconds. Disable by setting to 0.
@@ -89,7 +91,8 @@ import { GridFlowSelectionColumn } from "./vaadin-grid-flow-selection-column.js"
         grid.$connector.hasParentRequestQueue = tryCatchWrapper(() => parentRequestQueue.length > 0);
 
         grid.$connector.hasRootRequestQueue = tryCatchWrapper(() => {
-          return Object.keys(rootPageCallbacks).length > 0 || !!rootRequestDebouncer?.isActive();
+          const { pendingRequests } = dataProviderController.rootCache;
+          return Object.keys(pendingRequests).length > 0 || !!rootRequestDebouncer?.isActive();
         });
 
         grid.$connector.beforeEnsureFlatIndexHierarchy = tryCatchWrapper(function (flatIndex, item) {
@@ -326,28 +329,17 @@ import { GridFlowSelectionColumn } from "./vaadin-grid-flow-selection-column.js"
 
           if (params.parentItem) {
             let parentUniqueKey = grid.getItemId(params.parentItem);
-            if (!treePageCallbacks[parentUniqueKey]) {
-              treePageCallbacks[parentUniqueKey] = {};
-            }
 
-            const parentItemContext = dataProviderController.getItemContext(params.parentItem);
-            if (cache[parentUniqueKey]?.[page] && parentItemContext.subCache) {
-              // workaround: sometimes grid-element gives page index that overflows
-              page = Math.min(page, Math.floor(cache[parentUniqueKey].size / grid.pageSize));
-
+            const parentItemSubCache = dataProviderController.getItemSubCache(params.parentItem);
+            if (cache[parentUniqueKey]?.[page] && parentItemSubCache) {
               // Ensure grid isn't in loading state when the callback executes
               ensureSubCacheQueue = [];
               // Resolve the callback from cache
               callback(cache[parentUniqueKey][page], cache[parentUniqueKey].size);
             } else {
-              treePageCallbacks[parentUniqueKey][page] = callback;
-
               grid.$connector.debounceParentRequest(parentUniqueKey, page);
             }
           } else {
-            // workaround: sometimes grid-element gives page index that overflows
-            page = Math.min(page, Math.floor(grid.size / grid.pageSize));
-
             // size is controlled by the server (data communicator), so if the
             // size is zero, we know that there is no data to fetch.
             // This also prevents an empty grid getting stuck in a loading state.
@@ -363,8 +355,6 @@ import { GridFlowSelectionColumn } from "./vaadin-grid-flow-selection-column.js"
             if (cache[root]?.[page]) {
               callback(cache[root][page]);
             } else {
-              rootPageCallbacks[page] = callback;
-
               grid.$connector.debounceRootRequest(page);
             }
           }
@@ -403,6 +393,11 @@ import { GridFlowSelectionColumn } from "./vaadin-grid-flow-selection-column.js"
                     }
                   });
                 });
+
+                // Manually trigger a re-render of the sorter priority indicators
+                // in case some of the sorters were hidden while being updated above
+                // and therefore didn't notify the grid about their direction change.
+                grid.__applySorters();
               } finally {
                 sorterDirectionsSetFromServer = false;
               }
@@ -502,45 +497,23 @@ import { GridFlowSelectionColumn } from "./vaadin-grid-flow-selection-column.js"
          * @param parentKey the key of the parent item for the page
          * @returns an array of the updated items for the page, or undefined if no items were cached for the page
          */
-        const updateGridCache = function (page, parentKey) {
-          let items;
-          if ((parentKey || root) !== root) {
-            items = cache[parentKey][page];
-            const parentItem = createEmptyItemFromKey(parentKey);
-            const parentItemContext = dataProviderController.getItemContext(parentItem);
-            if (parentItemContext && parentItemContext.subCache) {
-              const callbacksForParentKey = treePageCallbacks[parentKey];
-              const callback = callbacksForParentKey && callbacksForParentKey[page];
-              _updateGridCache(page, items, callback, parentItemContext.subCache);
-            }
-          } else {
-            items = cache[root][page];
-            _updateGridCache(page, items, rootPageCallbacks[page], dataProviderController.rootCache);
-          }
-          return items;
-        };
+        const updateGridCache = function (page, parentKey = root) {
+          const items = cache[parentKey][page];
+          const parentItem = createEmptyItemFromKey(parentKey);
 
-        const _updateGridCache = function (page, items, callback, levelcache) {
+          let gridCache = parentKey === root
+            ? dataProviderController.rootCache
+            : dataProviderController.getItemSubCache(parentItem);
+
           // Force update unless there's a callback waiting
-          if (!callback) {
-            let rangeStart = page * grid.pageSize;
-            let rangeEnd = rangeStart + grid.pageSize;
-            if (!items) {
-              if (levelcache && levelcache.items) {
-                for (let idx = rangeStart; idx < rangeEnd; idx++) {
-                  delete levelcache.items[idx];
-                }
-              }
-            } else {
-              if (levelcache && levelcache.items) {
-                for (let idx = rangeStart; idx < rangeEnd; idx++) {
-                  if (levelcache.items[idx]) {
-                    levelcache.items[idx] = items[idx - rangeStart];
-                  }
-                }
-              }
-            }
+          if (gridCache && !gridCache.pendingRequests[page]) {
+            // Update the items in the grid cache or set an array of undefined items
+            // to remove the page from the grid cache if there are no corresponding items
+            // in the connector cache.
+            gridCache.setPage(page, items || Array.from({ length: grid.pageSize }));
           }
+
+          return items;
         };
 
         /**
@@ -755,17 +728,13 @@ import { GridFlowSelectionColumn } from "./vaadin-grid-flow-selection-column.js"
             grid.$connector.doDeselection(items.filter((item) => selectedKeys[item.key]));
             items.forEach((item) => grid.closeItemDetails(item));
             delete cache[pkey][page];
-            const updatedItems = updateGridCache(page, parentKey);
-            if (updatedItems) {
-              itemsUpdated(updatedItems);
-            }
+            updateGridCache(page, parentKey);
             updateGridItemsInDomBasedOnCache(items);
           }
           let cacheToClear = dataProviderController.rootCache;
           if (parentKey) {
             const parentItem = createEmptyItemFromKey(pkey);
-            const parentItemContext = dataProviderController.getItemContext(parentItem);
-            cacheToClear = parentItemContext.subCache;
+            cacheToClear = dataProviderController.getItemSubCache(parentItem);
           }
           const endIndex = index + updatedPageCount * grid.pageSize;
           for (let itemIndex = index; itemIndex < endIndex; itemIndex++) {
@@ -777,9 +746,9 @@ import { GridFlowSelectionColumn } from "./vaadin-grid-flow-selection-column.js"
 
         grid.$connector.reset = tryCatchWrapper(function () {
           grid.size = 0;
-          deleteObjectContents(cache);
-          deleteObjectContents(dataProviderController.rootCache.items);
-          deleteObjectContents(lastRequestedRanges);
+          cache = {};
+          dataProviderController.rootCache.items = [];
+          lastRequestedRanges = {};
           if (ensureSubCacheDebouncer) {
             ensureSubCacheDebouncer.cancel();
           }
@@ -795,8 +764,6 @@ import { GridFlowSelectionColumn } from "./vaadin-grid-flow-selection-column.js"
           parentRequestQueue = [];
           updateAllGridRowsInDomBasedOnCache();
         });
-
-        const deleteObjectContents = (obj) => Object.keys(obj).forEach((key) => delete obj[key]);
 
         grid.$connector.updateSize = (newSize) => (grid.size = newSize);
 
@@ -821,12 +788,12 @@ import { GridFlowSelectionColumn } from "./vaadin-grid-flow-selection-column.js"
         });
 
         grid.$connector.removeFromQueue = tryCatchWrapper(function (item) {
-          let itemId = grid.getItemId(item);
-          // The treePageCallbacks for the itemId are about to be discarded ->
+          // The page callbacks for the given item are about to be discarded ->
           // Resolve the callbacks with an empty array to not leave grid in loading state
-          Object.values(treePageCallbacks[itemId] || {}).forEach((callback) => callback([]));
+          const itemSubCache = dataProviderController.getItemSubCache(item);
+          Object.values(itemSubCache?.pendingRequests || {}).forEach((callback) => callback([]));
 
-          delete treePageCallbacks[itemId];
+          const itemId = grid.getItemId(item);
           ensureSubCacheQueue = ensureSubCacheQueue.filter((item) => item.itemkey !== itemId);
           parentRequestQueue = parentRequestQueue.filter((item) => item.parentKey !== itemId);
         });
@@ -843,90 +810,68 @@ import { GridFlowSelectionColumn } from "./vaadin-grid-flow-selection-column.js"
             cache[parentKey][0] = [];
           }
 
-          // If grid has outstanding requests for this parent, then resolve them
-          // and let grid update the flat size and re-render.
-          let outstandingRequests = Object.getOwnPropertyNames(treePageCallbacks[parentKey] || {});
-          for (let i = 0; i < outstandingRequests.length; i++) {
-            let page = outstandingRequests[i];
+          const parentItem = createEmptyItemFromKey(parentKey);
+          const parentItemSubCache = dataProviderController.getItemSubCache(parentItem);
+          if (parentItemSubCache) {
+            // If grid has pending requests for this parent, then resolve them
+            // and let grid update the flat size and re-render.
+            const { pendingRequests } = parentItemSubCache;
+            Object.entries(pendingRequests).forEach(([page, callback]) => {
+              let lastRequestedRange = lastRequestedRanges[parentKey] || [0, 0];
 
-            let lastRequestedRange = lastRequestedRanges[parentKey] || [0, 0];
+              if (
+                (cache[parentKey] && cache[parentKey][page]) ||
+                page < lastRequestedRange[0] ||
+                page > lastRequestedRange[1]
+              ) {
+                let items = cache[parentKey][page] || new Array(levelSize);
+                callback(items, levelSize);
+              } else if (callback && levelSize === 0) {
+                // The parent item has 0 child items => resolve the callback with an empty array
+                callback([], levelSize);
+              }
+            });
 
-            const callback = treePageCallbacks[parentKey][page];
-            if (
-              (cache[parentKey] && cache[parentKey][page]) ||
-              page < lastRequestedRange[0] ||
-              page > lastRequestedRange[1]
-            ) {
-              delete treePageCallbacks[parentKey][page];
-              let items = cache[parentKey][page] || new Array(levelSize);
-              callback(items, levelSize);
-            } else if (callback && levelSize === 0) {
-              // The parent item has 0 child items => resolve the callback with an empty array
-              delete treePageCallbacks[parentKey][page];
-              callback([], levelSize);
+            // If size has changed, and there are no pending requests, then
+            // manually update the size of the grid cache and update the effective
+            // size, effectively re-rendering the grid. This is necessary when
+            // individual items are refreshed on the server, in which case there
+            // is no loading request from the grid itself. In that case, if
+            // children were added or removed, the grid will not be aware of it
+            // unless we manually update the size.
+            if (hasSizeChanged && Object.keys(pendingRequests).length === 0) {
+              parentItemSubCache.size = levelSize;
+              updateGridFlatSize();
             }
-          }
-
-          // If size has changed, and there are no outstanding requests, then
-          // manually update the size of the grid cache and update the effective
-          // size, effectively re-rendering the grid. This is necessary when
-          // individual items are refreshed on the server, in which case there
-          // is no loading request from the grid itself. In that case, if
-          // children were added or removed, the grid will not be aware of it
-          // unless we manually update the size.
-          if (hasSizeChanged && outstandingRequests.length === 0) {
-            const parentItem = createEmptyItemFromKey(parentKey);
-            const parentItemContext = dataProviderController.getItemContext(parentItem);
-            if (parentItemContext && parentItemContext.subCache) {
-              parentItemContext.subCache.size = levelSize;
-            }
-            updateGridFlatSize();
           }
 
           // Let server know we're done
           grid.$server.confirmParentUpdate(id, parentKey);
-
-          if (!grid.loading) {
-            grid.__confirmParentUpdateDebouncer = Debouncer.debounce(
-              grid.__confirmParentUpdateDebouncer,
-              animationFrame,
-              () => grid.__updateVisibleRows()
-            );
-          }
         });
 
         grid.$connector.confirm = tryCatchWrapper(function (id) {
-          // We're done applying changes from this batch, resolve outstanding
+          // We're done applying changes from this batch, resolve pending
           // callbacks
-          let outstandingRequests = Object.getOwnPropertyNames(rootPageCallbacks);
-          for (let i = 0; i < outstandingRequests.length; i++) {
-            let page = outstandingRequests[i];
-            let lastRequestedRange = lastRequestedRanges[root] || [0, 0];
-
+          const { pendingRequests } = dataProviderController.rootCache;
+          Object.entries(pendingRequests).forEach(([page, callback]) => {
+            const lastRequestedRange = lastRequestedRanges[root] || [0, 0];
             const lastAvailablePage = grid.size ? Math.ceil(grid.size / grid.pageSize) - 1 : 0;
             // It's possible that the lastRequestedRange includes a page that's beyond lastAvailablePage if the grid's size got reduced during an ongoing data request
             const lastRequestedRangeEnd = Math.min(lastRequestedRange[1], lastAvailablePage);
             // Resolve if we have data or if we don't expect to get data
-            const callback = rootPageCallbacks[page];
-            if (cache[root]?.[page] || page < lastRequestedRange[0] || +page > lastRequestedRangeEnd) {
-              delete rootPageCallbacks[page];
-
-              if (cache[root][page]) {
-                // Cached data is available, resolve the callback
-                callback(cache[root][page]);
-              } else {
-                // No cached data, resolve the callback with an empty array
-                callback(new Array(grid.pageSize));
-                // Request grid for content update
-                grid.requestContentUpdate();
-              }
-
+            if (cache[root]?.[page]) {
+              // Cached data is available, resolve the callback
+              callback(cache[root][page]);
+            } else if (page < lastRequestedRange[0] || +page > lastRequestedRangeEnd) {
+              // No cached data, resolve the callback with an empty array
+              callback(new Array(grid.pageSize));
+              // Request grid for content update
+              grid.requestContentUpdate();
             } else if (callback && grid.size === 0) {
               // The grid has 0 items => resolve the callback with an empty array
-              delete rootPageCallbacks[page];
               callback([]);
             }
-          }
+          });
 
           // Sanitize last requested range for the root level
           sanitizeLastRequestedRange();
@@ -944,7 +889,8 @@ import { GridFlowSelectionColumn } from "./vaadin-grid-flow-selection-column.js"
               delete cache[parentKey];
             }
           }
-          deleteObjectContents(lastRequestedRanges);
+
+          lastRequestedRanges = {};
 
           dataProviderController.rootCache.removeSubCaches();
 
@@ -1028,6 +974,14 @@ import { GridFlowSelectionColumn } from "./vaadin-grid-flow-selection-column.js"
             }
           });
         });
+
+        // This method is overridden to prevent the grid web component from
+        // automatically excluding columns from sorting when they get hidden.
+        // In Flow, it's the developer's responsibility to remove the column
+        // from the backend sort order when the column gets hidden.
+        grid._getActiveSorters = function() {
+          return this._sorters.filter((sorter) => sorter.direction);
+        }
 
         grid.__applySorters = () => {
           const sorters = grid._mapSorters();
@@ -1176,9 +1130,14 @@ import { GridFlowSelectionColumn } from "./vaadin-grid-flow-selection-column.js"
             return;
           }
 
-          const target = event.target;
+          const path = event.composedPath();
+          const idx = path.findIndex((node) => node.localName === 'td' || node.localName === 'th');
+          const content = path.slice(0, idx);
 
-          if (isFocusable(target) || target instanceof HTMLLabelElement) {
+          // Do not fire item click event if cell content contains focusable elements.
+          // Use this instead of event.target to detect cases like icon inside button.
+          // See https://github.com/vaadin/flow-components/issues/4065
+          if (content.some((node) => isFocusable(node) || node instanceof HTMLLabelElement)) {
             return;
           }
 
