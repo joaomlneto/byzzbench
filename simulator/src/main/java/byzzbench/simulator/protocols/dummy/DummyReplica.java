@@ -25,6 +25,11 @@ public class DummyReplica<O extends Serializable, R extends Serializable> extend
     }
 
     @Override
+    public void handleClientRequest(String clientId, Serializable request) throws Exception {
+        // do nothing
+    }
+
+    @Override
     public void handleMessage(String sender, MessagePayload m) {
         //throw new RuntimeException("Unknown message type");
     }

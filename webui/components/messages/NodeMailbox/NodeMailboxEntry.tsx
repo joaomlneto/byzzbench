@@ -44,7 +44,7 @@ export const NodeMailboxEntry = ({ messageId }: { messageId: number }) => {
           <Text lineClamp={1}>
             {
               // @ts-ignore
-              payload?.payload?.type ?? "TIMEOUT"
+              payload?.payload?.type ?? payload?.type ?? "???"
             }
           </Text>
         </Group>
