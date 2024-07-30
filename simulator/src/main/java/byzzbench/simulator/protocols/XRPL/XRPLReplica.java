@@ -1,7 +1,9 @@
 package byzzbench.simulator.protocols.XRPL;
 
 import java.io.Serializable;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Deque;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -27,6 +29,7 @@ public class XRPLReplica extends Replica<XRPLLedger> {
     private @Getter List<String> pendingTransactions; //Our candidate set
     private @Getter XRPLReplicaState state; //this isn't visible in UI at first!
     private @Getter Map<String, XRPLProposal> currPeerProposals; 
+    private @Getter Map<String, Deque<XRPLProposal>> recentPeerPositions; //List of recent proposals made by peers, used for playback
 
     private @Getter XRPLLedger currWorkLedger; //this isn't visible in UI at first!
     private @Getter XRPLLedger prevLedger; //lastClosedLedger
@@ -55,6 +58,11 @@ public class XRPLReplica extends Replica<XRPLLedger> {
         this.validations = new HashMap<>();
         this.validLedger = prevLedger_;
         this.tree = new XRPLLedgerTreeNode(prevLedger_);
+
+        this.recentPeerPositions = new HashMap<>();
+        for (String nodeIdString : this.ourUNL) {
+            this.recentPeerPositions.put(nodeIdString, new ArrayDeque<>());
+        }
     }
 
     @Override
@@ -163,6 +171,11 @@ public class XRPLReplica extends Replica<XRPLLedger> {
     private void proposeMessageHandler(XRPLProposeMessage msg) {
         try {
             XRPLProposal prop = msg.getProposal();
+            Deque<XRPLProposal> props = this.recentPeerPositions.get(prop.getNodeId());
+            if (props.size() >= 10) {
+                props.removeFirst();
+            }
+            props.addLast(prop);
             if (prop.getPrevLedgerId().equals(this.prevLedger.getId()) && ourUNL.contains(msg.getSenderId())) {
                 if (this.currPeerProposals.get(prop.getNodeId()) == null) {
                     this.currPeerProposals.put(msg.getSenderId(), prop);
@@ -493,6 +506,23 @@ public class XRPLReplica extends Replica<XRPLLedger> {
         this.converge = 0;
         //TODO this.openTime = clock.now();
         this.currPeerProposals = new HashMap<>();
+        this.playbackProposals();
+    }
+
+    private void playbackProposals() {
+        for (Entry<String, Deque<XRPLProposal>> propEntry : recentPeerPositions.entrySet()) {
+            for (XRPLProposal proposal : propEntry.getValue()) {
+                if (proposal.getPrevLedgerId().equals(this.prevLedger.getId())) {
+                    if (ourUNL.contains(propEntry.getKey())) {
+                        if (this.currPeerProposals.get(proposal.getNodeId()) == null) {
+                            this.currPeerProposals.put(proposal.getNodeId(), proposal);
+                        } else if (this.currPeerProposals.get(proposal.getNodeId()).getSeq() < proposal.getSeq()) {
+                            this.currPeerProposals.put(proposal.getNodeId(), proposal);
+                        }
+                    }
+                }
+            }
+        }
     }
 
     @Override
