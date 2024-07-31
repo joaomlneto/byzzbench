@@ -171,6 +171,9 @@ public class XRPLReplica extends Replica<XRPLLedger> {
         try {
             XRPLProposal prop = msg.getProposal();
             Deque<XRPLProposal> props = this.recentPeerPositions.get(prop.getNodeId());
+            if (props == null) {
+                throw new RuntimeException("node not in our UNL");
+            }
             if (props.size() >= 10) {
                 props.removeFirst();
             }
@@ -183,7 +186,7 @@ public class XRPLReplica extends Replica<XRPLLedger> {
                 }
             }
         } catch (Exception e) {
-            log.info("Couldn't handle propose message in node " + this.getNodeId() + ": " + e.getMessage());
+            log.info("Error handling propose message in node " + this.getNodeId() + ": " + e.getMessage());
         }
         
     }
