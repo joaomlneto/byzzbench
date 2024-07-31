@@ -18,7 +18,7 @@ import byzzbench.simulator.protocols.XRPL.messages.XRPLTxMessage;
 import byzzbench.simulator.protocols.XRPL.messages.XRPLValidateMessage;
 import byzzbench.simulator.state.TotalOrderCommitLog;
 import byzzbench.simulator.transport.MessagePayload;
-import byzzbench.simulator.transport.SignableMessage;
+import byzzbench.simulator.transport.SignedMessagePayload;
 import byzzbench.simulator.transport.Transport;
 import lombok.Getter;
 
@@ -51,7 +51,6 @@ public class XRPLReplica extends Replica<XRPLLedger> {
         this.result = new XRPLConsensusResult();
         this.state = null;  //set to open with first heartbeat
         
-        //funky business
         this.prevRoundTime = 0;
         this.prevLedger = prevLedger_;
         this.pendingTransactions = new ArrayList<>();
@@ -72,7 +71,7 @@ public class XRPLReplica extends Replica<XRPLLedger> {
 
     @Override
     public void handleMessage(String sender, MessagePayload message) throws Exception {
-        if (message instanceof SignableMessage signableMessage) {
+        if (message instanceof SignedMessagePayload signableMessage) {
             if (signableMessage.isSignedBy(sender)) {
                 if (signableMessage instanceof XRPLProposeMessage propmsg) {
                     proposeMessageHandler(propmsg);

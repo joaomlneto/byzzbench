@@ -3,7 +3,7 @@ package byzzbench.simulator;
 import byzzbench.simulator.state.CommitLog;
 import byzzbench.simulator.transport.ClientReplyPayload;
 import byzzbench.simulator.transport.MessagePayload;
-import byzzbench.simulator.transport.SignableMessage;
+import byzzbench.simulator.transport.SignedMessagePayload;
 import byzzbench.simulator.transport.Transport;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Getter;
@@ -94,7 +94,7 @@ public abstract class Replica<T extends Serializable> implements Serializable {
      * @param recipient the recipient of the message
      */
     protected void sendMessage(MessagePayload message, String recipient) {
-        if (message instanceof SignableMessage signableMessage) {
+        if (message instanceof SignedMessagePayload signableMessage) {
             signableMessage.sign(this.nodeId);
             this.transport.sendMessage(this.nodeId, signableMessage, recipient);
         } else {
@@ -111,7 +111,7 @@ public abstract class Replica<T extends Serializable> implements Serializable {
      */
     protected void multicastMessage(MessagePayload message,
                                     Set<String> recipients) {
-        if (message instanceof SignableMessage signableMessage) {
+        if (message instanceof SignedMessagePayload signableMessage) {
             signableMessage.sign(this.nodeId);
             this.transport.multicast(this.nodeId, recipients, signableMessage);
         } else {
@@ -129,7 +129,7 @@ public abstract class Replica<T extends Serializable> implements Serializable {
                 .filter(otherNodeId -> !otherNodeId.equals(this.nodeId))
                 .collect(java.util.stream.Collectors.toSet());
 
-        if (message instanceof SignableMessage signableMessage) {
+        if (message instanceof SignedMessagePayload signableMessage) {
             signableMessage.sign(this.nodeId);
             this.transport.multicast(this.nodeId, otherNodes, signableMessage);
         } else {
@@ -143,7 +143,7 @@ public abstract class Replica<T extends Serializable> implements Serializable {
      * @param message the message to broadcast
      */
     protected void broadcastMessageIncludingSelf(MessagePayload message) {
-        if (message instanceof SignableMessage signableMessage) {
+        if (message instanceof SignedMessagePayload signableMessage) {
             signableMessage.sign(this.nodeId);
             this.transport.multicast(this.nodeId, this.nodeIds, signableMessage);
         } else {

@@ -1,6 +1,6 @@
 package byzzbench.simulator.transport;
 
-public abstract class SignableMessage implements MessagePayload {
+public abstract class SignedMessagePayload implements MessagePayload {
     /*
      * Super-class for messages that can be signed and validated
      * Currently the signatures don't implement any cryptography and
