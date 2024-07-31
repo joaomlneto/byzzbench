@@ -10,8 +10,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Random;
 
-import javax.swing.text.html.Option;
-
 /**
  * A scheduler that randomly selects events to deliver, drop, mutate or timeout.
  *
