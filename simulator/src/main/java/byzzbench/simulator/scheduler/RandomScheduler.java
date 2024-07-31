@@ -10,6 +10,8 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Random;
 
+import javax.swing.text.html.Option;
+
 /**
  * A scheduler that randomly selects events to deliver, drop, mutate or timeout.
  *
@@ -17,10 +19,9 @@ import java.util.Random;
  *            Replica}.
  */
 public class RandomScheduler<T extends Serializable> extends BaseScheduler<T> {
-    private final double DELIVER_MESSAGE_PROBABILITY = 0.97;
-    private final double DROP_MESSAGE_PROBABILITY = 0.01;
-    private final double MUTATE_MESSAGE_PROBABILITY = 0.01;
-    private final double TIMEOUT_EVENT_PROBABILITY = 0.01;
+    private final double DELIVER_MESSAGE_PROBABILITY = 0.9;
+    private final double DROP_MESSAGE_PROBABILITY = 0.08;
+    private final double MUTATE_MESSAGE_PROBABILITY = 0.02;
     Random random = new Random();
 
     public RandomScheduler(Transport<T> transport) {
@@ -28,10 +29,8 @@ public class RandomScheduler<T extends Serializable> extends BaseScheduler<T> {
         assert DELIVER_MESSAGE_PROBABILITY >= 0 && DELIVER_MESSAGE_PROBABILITY <= 1;
         assert DROP_MESSAGE_PROBABILITY >= 0 && DROP_MESSAGE_PROBABILITY <= 1;
         assert MUTATE_MESSAGE_PROBABILITY >= 0 && MUTATE_MESSAGE_PROBABILITY <= 1;
-        assert TIMEOUT_EVENT_PROBABILITY >= 0 && TIMEOUT_EVENT_PROBABILITY <= 1;
         assert DROP_MESSAGE_PROBABILITY + MUTATE_MESSAGE_PROBABILITY +
-                DELIVER_MESSAGE_PROBABILITY + TIMEOUT_EVENT_PROBABILITY ==
-                1;
+                DELIVER_MESSAGE_PROBABILITY == 1;
     }
 
     @Override
@@ -46,12 +45,23 @@ public class RandomScheduler<T extends Serializable> extends BaseScheduler<T> {
             return Optional.empty();
         }
 
-        double SCHEDULE_MESSAGE = DELIVER_MESSAGE_PROBABILITY +
-                DROP_MESSAGE_PROBABILITY +
-                MUTATE_MESSAGE_PROBABILITY;
+        int eventCount = queuedEvents.size();
+        int timeoutEventCount = (int) queuedEvents.stream().filter(TimeoutEvent.class::isInstance).count();
+        int clientRequestEventCount = (int) queuedEvents.stream().filter(ClientRequestEvent.class::isInstance).count();
+        int clientReplyEventCount = (int) queuedEvents.stream().filter(ClientReplyEvent.class::isInstance).count();
+        int messageEventCount = eventCount - (timeoutEventCount + clientReplyEventCount + clientRequestEventCount);
+
+        double timeoutEventProb = (double) timeoutEventCount / eventCount;
+        double clientRequestEventProb = (double) clientRequestEventCount / eventCount;
+        double clientReplyEventProb = (double) clientReplyEventCount / eventCount;
+        double messageEventProb = (double) messageEventCount / eventCount;
+
+        assert timeoutEventProb + clientRequestEventProb + clientReplyEventProb + messageEventProb == 1.0;
+
+        double dieRoll = random.nextDouble();
 
         // check if we should schedule a timeout
-        if (random.nextDouble() < TIMEOUT_EVENT_PROBABILITY) {
+        if (dieRoll < timeoutEventProb) {
             // select a random event of type timeout
             List<Event> queuedTimeouts = queuedEvents.stream()
                     .filter(TimeoutEvent.class::isInstance)
@@ -63,11 +73,12 @@ public class RandomScheduler<T extends Serializable> extends BaseScheduler<T> {
 
             Event timeout = queuedTimeouts.get(random.nextInt(queuedTimeouts.size()));
             getTransport().deliverEvent(timeout.getEventId());
+
             return Optional.of(timeout);
         }
 
         // check if we should target a message
-        if (random.nextDouble() < SCHEDULE_MESSAGE) {
+        if (dieRoll < timeoutEventProb + messageEventProb) {
             // select a random event of type message
             List<Event> queuedMessages = queuedEvents.stream()
                     .filter(MessageEvent.class::isInstance)
@@ -79,13 +90,6 @@ public class RandomScheduler<T extends Serializable> extends BaseScheduler<T> {
             }
 
             Event message = queuedMessages.get(random.nextInt(queuedMessages.size()));
-
-            // normalize DROP probability
-            double DROP_MESSAGE_PROBABILITY =
-                    this.DROP_MESSAGE_PROBABILITY / SCHEDULE_MESSAGE;
-            // normalize MUTATE probability
-            double MUTATE_MESSAGE_PROBABILITY =
-                    this.MUTATE_MESSAGE_PROBABILITY / SCHEDULE_MESSAGE;
 
             // check if we should drop it
             if (random.nextDouble() < DROP_MESSAGE_PROBABILITY) {
@@ -116,6 +120,34 @@ public class RandomScheduler<T extends Serializable> extends BaseScheduler<T> {
             getTransport().deliverEvent(message.getEventId());
             return Optional.of(message);
         }
+
+        if (dieRoll < timeoutEventProb + messageEventProb + clientRequestEventProb) {
+            List<Event> queuedClientRequests = queuedEvents.stream().filter(ClientRequestEvent.class::isInstance).toList();
+
+            if (queuedClientRequests.isEmpty()) {
+                return Optional.empty();
+            }
+
+            Event request = queuedClientRequests.get(random.nextInt(clientRequestEventCount));
+
+            getTransport().deliverEvent(request.getEventId());
+            return Optional.of(request);
+        }
+
+        if (dieRoll < timeoutEventProb + messageEventProb + clientRequestEventProb + clientReplyEventProb) {
+            List<Event> queuedClientReplies = queuedEvents.stream().filter(ClientReplyEvent.class::isInstance).toList();
+
+            if (queuedClientReplies.isEmpty()) {
+                return Optional.empty();
+            }
+
+            Event reply = queuedClientReplies.get(random.nextInt(clientReplyEventCount));
+
+            getTransport().deliverEvent(reply.getEventId());
+            return Optional.of(reply);
+        }
+
+
 
         return Optional.empty();
     }
