@@ -27,11 +27,11 @@ public class XRPLReplica extends Replica<XRPLLedger> {
 
     private @Getter Set<String> ourUNL;  //The nodeIDs of nodes in our UNL, our "peers"
     private @Getter List<String> pendingTransactions; //Our candidate set
-    private @Getter XRPLReplicaState state; //this isn't visible in UI at first!
+    private @Getter XRPLReplicaState state;
     private @Getter Map<String, XRPLProposal> currPeerProposals; 
     private @Getter Map<String, Deque<XRPLProposal>> recentPeerPositions; //List of recent proposals made by peers, used for playback
 
-    private @Getter XRPLLedger currWorkLedger; //this isn't visible in UI at first!
+    private @Getter XRPLLedger currWorkLedger;
     private @Getter XRPLLedger prevLedger; //lastClosedLedger
     private @Getter XRPLLedger validLedger; //last fully validated ledger
 
