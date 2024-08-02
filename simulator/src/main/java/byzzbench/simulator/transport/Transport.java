@@ -162,6 +162,7 @@ public class Transport<T extends Serializable> {
 
     public void reset() {
         this.eventSeqNum.set(1);
+        this.mutatorSeqNum.set(1);
         this.nodes.clear();
         this.events.clear();
         this.mutators.clear();
