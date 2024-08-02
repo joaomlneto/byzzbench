@@ -4,6 +4,7 @@
   "type": "module",
   "private": true,
   "scripts": {
+    "clean": "rm -rf node_modules && rm -rf lib/byzzbench-client/generated",
     "dev": "next dev",
     "build": "next build",
     "kubb:generate": "kubb",

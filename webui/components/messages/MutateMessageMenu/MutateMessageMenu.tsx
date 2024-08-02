@@ -28,7 +28,11 @@ export const MutateMessageMenu = ({ messageId }: MutateMessageMenuProps) => {
       <Menu.Dropdown>
         <Menu.Label>Mutate and Deliver</Menu.Label>
         {data?.data.map((mutator) => (
-          <MutateMessageMenuEntry key={mutator} mutatorId={mutator} />
+          <MutateMessageMenuEntry
+            key={mutator}
+            messageId={messageId}
+            mutatorId={mutator}
+          />
         ))}
         <Menu.Item
           color="red"

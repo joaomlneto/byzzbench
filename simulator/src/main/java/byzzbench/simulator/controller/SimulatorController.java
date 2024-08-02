@@ -20,11 +20,19 @@ import java.util.*;
 public class SimulatorController {
     private final SimulatorService simulatorService;
 
+    /**
+     * Get the status of the simulator.
+     * @return The status of the simulator.
+     */
     @GetMapping("/status")
     public String getStatus() {
         return "Running";
     }
 
+    /**
+     * Get the list of available client IDs in the current scenario.
+     * @return The list of client IDs.
+     */
     @GetMapping("/clients")
     public Set<String> getClients() {
         return simulatorService.getScenarioExecutor()
@@ -33,6 +41,11 @@ public class SimulatorController {
                 .keySet();
     }
 
+    /**
+     * Get the client with the given ID.
+     * @param clientId The ID of the client to get.
+     * @return The client with the given ID.
+     */
     @GetMapping("/client/{clientId}")
     public Client<? extends Serializable> getClient(@PathVariable String clientId) {
         return simulatorService.getScenarioExecutor().getTransport().getClients().get(clientId);
@@ -150,6 +163,16 @@ public class SimulatorController {
         simulatorService.getScenarioExecutor().getTransport().dropMessage(eventId);
     }
 
+    /**
+     * Mutate a message using a mutator.
+     * @param eventId The ID of the message to mutate.
+     * @param mutatorId The ID of the mutator to apply.
+     */
+    @PostMapping("/event/{eventId}/mutate/{mutatorId}")
+    public void mutateMessage(@PathVariable Long eventId, @PathVariable Long mutatorId) {
+        simulatorService.getScenarioExecutor().getTransport().applyMutation(eventId, mutatorId);
+    }
+
     @GetMapping("/mutators")
     public Set<Long> getMutators() {
         return simulatorService.getScenarioExecutor()
@@ -171,8 +194,17 @@ public class SimulatorController {
         simulatorService.getScenarioExecutor().reset();
     }
 
+    /**
+     * Schedule N actions, according to the scheduler policy.
+     * @param numActions The number of events to schedule.
+     * @return The event ID of the next scheduled event.
+     * @throws Exception If the scheduler fails to schedule the next event.
+     */
     @PostMapping("/scheduler/next")
-    public Optional<Long> scheduleNext() throws Exception {
+    public Optional<Long> scheduleNext(@RequestParam(required = false, defaultValue = "1") Integer numActions) throws Exception {
+        for (int i = 0; i < numActions; i++) {
+            simulatorService.getScenarioExecutor().getScheduler().scheduleNext();
+        }
         Optional<Event> event =
                 simulatorService.getScenarioExecutor().getScheduler().scheduleNext();
         return event.map(Event::getEventId);
@@ -180,7 +212,6 @@ public class SimulatorController {
 
     @GetMapping("/adob")
     public AdobCache getAdob() {
-        System.out.println("Getting AdoB!");
         return simulatorService.getScenarioExecutor().getAdobOracle().getRoot();
     }
 

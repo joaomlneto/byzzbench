@@ -1,20 +1,21 @@
 package byzzbench.simulator.faults;
 
 import byzzbench.simulator.transport.MessageEvent;
-import java.util.List;
 import lombok.RequiredArgsConstructor;
+
+import java.util.List;
 
 @RequiredArgsConstructor
 public class FaultPreconditionConjunction implements FaultPrecondition {
-  private final List<FaultPrecondition> triggers;
+  private final List<FaultPrecondition> preconditions;
 
-  public FaultPreconditionConjunction(FaultPrecondition... triggers) {
-    this.triggers = List.of(triggers);
+  public FaultPreconditionConjunction(FaultPrecondition... preconditions) {
+    this.preconditions = List.of(preconditions);
   }
 
   @Override
   public boolean isSatisfiedBy(MessageEvent message) {
-    return triggers.stream().allMatch(
-        trigger -> trigger.isSatisfiedBy(message));
+    return preconditions.stream().allMatch(
+        precondition -> precondition.isSatisfiedBy(message));
   }
 }
