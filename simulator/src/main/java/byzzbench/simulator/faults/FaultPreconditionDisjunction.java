@@ -1,9 +1,8 @@
 package byzzbench.simulator.faults;
 
 import byzzbench.simulator.transport.MessageEvent;
-import lombok.RequiredArgsConstructor;
-
 import java.util.List;
+import lombok.RequiredArgsConstructor;
 
 @RequiredArgsConstructor
 public class FaultPreconditionDisjunction implements FaultPrecondition {
