@@ -23,7 +23,12 @@ public class XRPLScenarioExecutor extends ScenarioExecutor<XRPLLedger>  {
 
     @Override
     public void setup() {
-        setupForScenario3();
+        setupDefault();
+    }
+
+    @Override
+    public void run() {
+        this.runScenario1();        
     }
 
     /*
@@ -83,11 +88,6 @@ public class XRPLScenarioExecutor extends ScenarioExecutor<XRPLLedger>  {
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
-    }
-
-    @Override
-    public void run() {
-        this.runScenario3();        
     }
     
     /*
