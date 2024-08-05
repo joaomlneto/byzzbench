@@ -1,10 +1,11 @@
 package byzzbench.simulator.protocols.fasthotstuff.message;
 
-import byzzbench.simulator.transport.MessagePayload;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.With;
 
 @Data
+@EqualsAndHashCode(callSuper = true)
 @With
 public class VoteMessage extends GenericVoteMessage {
     private final String author;
