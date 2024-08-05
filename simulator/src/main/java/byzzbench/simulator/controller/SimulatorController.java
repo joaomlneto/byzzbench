@@ -10,7 +10,10 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.Serializable;
-import java.util.*;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * REST API for interacting with the simulator.
@@ -197,17 +200,13 @@ public class SimulatorController {
     /**
      * Schedule N actions, according to the scheduler policy.
      * @param numActions The number of events to schedule.
-     * @return The event ID of the next scheduled event.
      * @throws Exception If the scheduler fails to schedule the next event.
      */
     @PostMapping("/scheduler/next")
-    public Optional<Long> scheduleNext(@RequestParam(required = false, defaultValue = "1") Integer numActions) throws Exception {
+    public void scheduleNext(@RequestParam(required = false, defaultValue = "1") Integer numActions) throws Exception {
         for (int i = 0; i < numActions; i++) {
             simulatorService.getScenarioExecutor().getScheduler().scheduleNext();
         }
-        Optional<Event> event =
-                simulatorService.getScenarioExecutor().getScheduler().scheduleNext();
-        return event.map(Event::getEventId);
     }
 
     @GetMapping("/adob")
