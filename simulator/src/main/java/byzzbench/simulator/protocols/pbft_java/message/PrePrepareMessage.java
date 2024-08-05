@@ -6,7 +6,7 @@ import lombok.With;
 
 @Data
 @With
-public class PrePrepareMessage implements MessagePayload, IPhaseMessage {
+public class PrePrepareMessage extends IPhaseMessage {
     private final long viewNumber;
     private final long sequenceNumber;
     private final byte[] digest;

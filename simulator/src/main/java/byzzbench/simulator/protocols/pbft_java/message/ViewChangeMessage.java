@@ -9,7 +9,7 @@ import java.util.Map;
 
 @Data
 @With
-public class ViewChangeMessage implements MessagePayload {
+public class ViewChangeMessage extends MessagePayload {
     private final long newViewNumber;
     private final long lastSeqNumber;
     private final Collection<CheckpointMessage> checkpointProofs;

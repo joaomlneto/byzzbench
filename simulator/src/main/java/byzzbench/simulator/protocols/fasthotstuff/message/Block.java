@@ -7,7 +7,7 @@ import lombok.Data;
 import java.io.Serializable;
 
 @Data
-public class Block implements MessagePayload, PartialOrderLogEntry<String> {
+public class Block extends MessagePayload implements PartialOrderLogEntry<String> {
     private final GenericQuorumCertificate qc;
     private final long round;
     private final String author;

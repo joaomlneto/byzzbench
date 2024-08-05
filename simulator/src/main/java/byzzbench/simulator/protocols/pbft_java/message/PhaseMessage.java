@@ -6,7 +6,7 @@ import lombok.With;
 
 @Data
 @With
-public class PhaseMessage implements MessagePayload, IPhaseMessage {
+public class PhaseMessage extends IPhaseMessage {
     private final long viewNumber;
     private final long sequenceNumber;
     private final byte[] digest;

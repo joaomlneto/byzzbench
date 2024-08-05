@@ -8,7 +8,7 @@ import java.io.Serializable;
 
 @Data
 @With
-public class RequestMessage implements MessagePayload {
+public class RequestMessage extends MessagePayload {
     private final Serializable operation;
     private final long timestamp;
     private final String clientId;

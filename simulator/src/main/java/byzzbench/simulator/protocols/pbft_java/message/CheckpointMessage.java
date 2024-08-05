@@ -6,7 +6,7 @@ import lombok.With;
 
 @Data
 @With
-public class CheckpointMessage implements MessagePayload {
+public class CheckpointMessage extends MessagePayload {
     private final long lastSeqNumber;
     private final byte[] digest;
     private final String replicaId;
