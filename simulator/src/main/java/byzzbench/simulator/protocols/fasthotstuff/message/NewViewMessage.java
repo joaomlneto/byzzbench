@@ -1,12 +1,13 @@
 package byzzbench.simulator.protocols.fasthotstuff.message;
 
-import byzzbench.simulator.transport.MessagePayload;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.With;
 
 @Data
+@EqualsAndHashCode(callSuper = true)
 @With
-public class NewViewMessage implements MessagePayload, GenericVoteMessage {
+public class NewViewMessage extends GenericVoteMessage {
     private final GenericQuorumCertificate qc;
     private final long round;
     private final String author;
