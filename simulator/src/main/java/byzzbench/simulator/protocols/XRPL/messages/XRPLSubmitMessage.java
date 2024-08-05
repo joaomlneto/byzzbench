@@ -1,6 +1,6 @@
 package byzzbench.simulator.protocols.XRPL.messages;
 
-import byzzbench.simulator.transport.SignedMessagePayload;
+import byzzbench.simulator.transport.MessagePayload;
 import lombok.With;
 
 /*
@@ -9,7 +9,7 @@ import lombok.With;
  * is connected once it recieves a transaction from a client.
  */
 @With
-public class XRPLSubmitMessage extends SignedMessagePayload {
+public class XRPLSubmitMessage extends MessagePayload {
     private String tx;
 
     public XRPLSubmitMessage(String tx_) {
