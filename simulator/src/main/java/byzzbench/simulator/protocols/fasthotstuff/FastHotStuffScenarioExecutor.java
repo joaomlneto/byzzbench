@@ -6,16 +6,18 @@ import byzzbench.simulator.protocols.fasthotstuff.faults.FHSBugFaults;
 import byzzbench.simulator.protocols.fasthotstuff.message.Block;
 import byzzbench.simulator.transport.Transport;
 import lombok.extern.java.Log;
+import org.springframework.stereotype.Component;
 
 import java.util.Set;
 import java.util.TreeSet;
 
+@Component
 @Log
 public class FastHotStuffScenarioExecutor extends ScenarioExecutor<Block> {
     private final int NUM_NODES = 4;
 
     public FastHotStuffScenarioExecutor() {
-        super(new Transport());
+        super("fasthotstuff", new Transport());
     }
 
     @Override

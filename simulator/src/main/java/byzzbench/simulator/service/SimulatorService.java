@@ -34,19 +34,7 @@ public class SimulatorService {
   }
 
   public void changeScenario(String id) {
-    switch (id) {
-    case "fasthotstuff":
-      this.scenarioExecutor = new FastHotStuffScenarioExecutor();
-      break;
-    case "pbft-java":
-      this.scenarioExecutor = new PbftScenarioExecutor<>();
-      break;
-    case "xrpl":
-      this.scenarioExecutor = new XRPLScenarioExecutor();
-      break;
-    default:
-      throw new IllegalArgumentException("Unknown scenario id: " + id);
-    }
+    this.scenarioExecutor = this.scenarioFactoryService.getScenario(id);
     this.scenarioExecutor.setupScenario();
     this.scenarioExecutor.runScenario();
     // this.scenarioExecutor.reset();

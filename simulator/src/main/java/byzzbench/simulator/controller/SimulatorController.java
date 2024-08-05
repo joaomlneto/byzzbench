@@ -2,6 +2,8 @@ package byzzbench.simulator.controller;
 
 import byzzbench.simulator.Client;
 import byzzbench.simulator.Replica;
+import byzzbench.simulator.service.ScenarioFactoryService;
+import byzzbench.simulator.service.SchedulerFactoryService;
 import byzzbench.simulator.service.SimulatorService;
 import byzzbench.simulator.state.adob.AdobCache;
 import byzzbench.simulator.transport.Event;
@@ -22,6 +24,8 @@ import java.util.Set;
 @RequiredArgsConstructor
 public class SimulatorController {
     private final SimulatorService simulatorService;
+    private final ScenarioFactoryService scenarioFactoryService;
+    private final SchedulerFactoryService schedulerFactoryService;
 
     /**
      * Get the status of the simulator.
@@ -222,5 +226,15 @@ public class SimulatorController {
     @GetMapping("/adob/caches/{cacheId}")
     public AdobCache getAdobCache(@PathVariable Long cacheId) {
         return simulatorService.getScenarioExecutor().getAdobOracle().getCaches().get(cacheId);
+    }
+
+    @GetMapping("/scenarios")
+    public List<String> getScenarios() {
+        return scenarioFactoryService.getScenarioIds();
+    }
+
+    @GetMapping("/schedulers")
+    public List<String> getSchedulers() {
+        return schedulerFactoryService.getSchedulerIds();
     }
 }

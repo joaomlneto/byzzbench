@@ -1,21 +1,23 @@
 package byzzbench.simulator.protocols.XRPL;
 
+import byzzbench.simulator.ScenarioExecutor;
+import byzzbench.simulator.transport.Transport;
+import org.springframework.stereotype.Component;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
 
-import byzzbench.simulator.ScenarioExecutor;
-import byzzbench.simulator.transport.Transport;
-
+@Component
 public class XRPLScenarioExecutor extends ScenarioExecutor<XRPLLedger>  {
     private final int NUM_NODES = 3;
-    
-    
+
+
     private List<XRPLReplica> replica_list;
 
     public XRPLScenarioExecutor() {
-        super(new Transport<>());
+        super("xrpl", new Transport<>());
         this.setNumClients(1);
     }
 
@@ -42,9 +44,9 @@ public class XRPLScenarioExecutor extends ScenarioExecutor<XRPLLedger>  {
 
     @Override
     public void run() {
-        this.runScenario1();        
+        this.runScenario1();
     }
-    
+
     /*
      * Scenario with 2 client requests of 2 different
      * transactions to 2 different nodes.

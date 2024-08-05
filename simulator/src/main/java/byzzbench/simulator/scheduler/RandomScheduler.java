@@ -23,7 +23,7 @@ public class RandomScheduler<T extends Serializable> extends BaseScheduler<T> {
     Random random = new Random();
 
     public RandomScheduler(Transport<T> transport) {
-        super(transport);
+        super("Random", transport);
         assert DELIVER_MESSAGE_PROBABILITY >= 0 && DELIVER_MESSAGE_PROBABILITY <= 1;
         assert DROP_MESSAGE_PROBABILITY >= 0 && DROP_MESSAGE_PROBABILITY <= 1;
         assert MUTATE_MESSAGE_PROBABILITY >= 0 && MUTATE_MESSAGE_PROBABILITY <= 1;

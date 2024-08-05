@@ -21,17 +21,18 @@ public abstract class ScenarioExecutor<T extends Serializable> {
      * The transport layer for the scenario.
      */
     protected final Transport<T> transport;
-
     /**
      * The scheduler for the scenario.
      */
     protected final BaseScheduler<T> scheduler;
-
     /**
      * The AdoB oracle for the scenario, which keeps track of the distributed state.
      */
     protected final AdobDistributedState adobOracle;
-
+    /**
+     * A unique identifier for the scenario.
+     */
+    private final String id;
     /**
      * The number of "regular" clients in the scenario.
      */
@@ -43,7 +44,8 @@ public abstract class ScenarioExecutor<T extends Serializable> {
      *
      * @param transport The transport layer for the scenario.
      */
-    protected ScenarioExecutor(Transport<T> transport) {
+    protected ScenarioExecutor(String id, Transport<T> transport) {
+        this.id = id;
         this.transport = transport;
         this.scheduler = new RandomScheduler<>(transport);
         this.setup();
