@@ -6,7 +6,7 @@ import lombok.With;
 
 @Data
 @With
-public class NewViewMessage implements MessagePayload, GenericVoteMessage {
+public class NewViewMessage extends GenericVoteMessage {
     private final GenericQuorumCertificate qc;
     private final long round;
     private final String author;

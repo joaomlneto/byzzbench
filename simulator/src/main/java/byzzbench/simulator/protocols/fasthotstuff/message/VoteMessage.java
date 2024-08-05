@@ -6,7 +6,7 @@ import lombok.With;
 
 @Data
 @With
-public class VoteMessage implements MessagePayload, GenericVoteMessage {
+public class VoteMessage extends GenericVoteMessage {
     private final String author;
     private final String blockHash;
 

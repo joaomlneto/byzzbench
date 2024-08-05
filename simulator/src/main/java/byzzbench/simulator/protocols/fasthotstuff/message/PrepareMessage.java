@@ -9,7 +9,7 @@ import java.util.Collection;
 
 @Data
 @With
-public class PrepareMessage implements MessagePayload {
+public class PrepareMessage extends MessagePayload {
     private final String replicaId;
     private final long round;
     private final Collection<CheckpointMessage> quorumCertificate;
