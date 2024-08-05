@@ -4,6 +4,7 @@ import byzzbench.simulator.Replica;
 import byzzbench.simulator.ScenarioExecutor;
 import byzzbench.simulator.protocols.fasthotstuff.faults.FHSBugFaults;
 import byzzbench.simulator.protocols.fasthotstuff.message.Block;
+import byzzbench.simulator.service.SchedulesService;
 import byzzbench.simulator.transport.Transport;
 import lombok.extern.java.Log;
 import org.springframework.stereotype.Component;
@@ -16,8 +17,8 @@ import java.util.TreeSet;
 public class FastHotStuffScenarioExecutor extends ScenarioExecutor<Block> {
     private final int NUM_NODES = 4;
 
-    public FastHotStuffScenarioExecutor() {
-        super("fasthotstuff", new Transport());
+    public FastHotStuffScenarioExecutor(SchedulesService schedulesService) {
+        super("fasthotstuff", new Transport(schedulesService));
     }
 
     @Override

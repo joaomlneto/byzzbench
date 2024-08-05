@@ -1,6 +1,7 @@
 package byzzbench.simulator.protocols.XRPL;
 
 import byzzbench.simulator.ScenarioExecutor;
+import byzzbench.simulator.service.SchedulesService;
 import byzzbench.simulator.transport.Transport;
 import org.springframework.stereotype.Component;
 
@@ -16,8 +17,8 @@ public class XRPLScenarioExecutor extends ScenarioExecutor<XRPLLedger>  {
 
     private List<XRPLReplica> replica_list;
 
-    public XRPLScenarioExecutor() {
-        super("xrpl", new Transport<>());
+    public XRPLScenarioExecutor(SchedulesService schedulesService) {
+        super("xrpl", new Transport<>(schedulesService));
         this.setNumClients(1);
     }
 

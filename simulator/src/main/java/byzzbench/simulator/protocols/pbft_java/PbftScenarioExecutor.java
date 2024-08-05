@@ -3,6 +3,7 @@ package byzzbench.simulator.protocols.pbft_java;
 import byzzbench.simulator.Replica;
 import byzzbench.simulator.ScenarioExecutor;
 import byzzbench.simulator.protocols.pbft_java.mutator.PrePrepareMessageMutatorFactory;
+import byzzbench.simulator.service.SchedulesService;
 import byzzbench.simulator.transport.Transport;
 import lombok.extern.java.Log;
 import org.springframework.stereotype.Component;
@@ -16,8 +17,8 @@ import java.util.TreeSet;
 public class PbftScenarioExecutor<T extends Serializable> extends ScenarioExecutor<T> {
     private final int NUM_NODES = 4;
 
-    public PbftScenarioExecutor() {
-        super("pbft-java", new Transport());
+    public PbftScenarioExecutor(SchedulesService schedulesService) {
+        super("pbft-java", new Transport(schedulesService));
         this.setNumClients(1);
     }
 

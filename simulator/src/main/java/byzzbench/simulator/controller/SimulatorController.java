@@ -4,10 +4,12 @@ import byzzbench.simulator.Client;
 import byzzbench.simulator.Replica;
 import byzzbench.simulator.service.ScenarioFactoryService;
 import byzzbench.simulator.service.SchedulerFactoryService;
+import byzzbench.simulator.service.SchedulesService;
 import byzzbench.simulator.service.SimulatorService;
 import byzzbench.simulator.state.adob.AdobCache;
 import byzzbench.simulator.transport.Event;
 import byzzbench.simulator.transport.MessageMutator;
+import byzzbench.simulator.transport.Schedule;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
@@ -23,6 +25,7 @@ import java.util.Set;
 @RestController
 @RequiredArgsConstructor
 public class SimulatorController {
+    private final SchedulesService schedulesService;
     private final SimulatorService simulatorService;
     private final ScenarioFactoryService scenarioFactoryService;
     private final SchedulerFactoryService schedulerFactoryService;
@@ -132,6 +135,10 @@ public class SimulatorController {
                 .toList();
     }
 
+    /**
+     * Get the current schedule of the simulator.
+     * @return The list of delivered event IDs in order.
+     */
     @GetMapping("/schedule")
     public List<Long> getSchedule() {
         return simulatorService.getScenarioExecutor()
@@ -236,5 +243,15 @@ public class SimulatorController {
     @GetMapping("/schedulers")
     public List<String> getSchedulers() {
         return schedulerFactoryService.getSchedulerIds();
+    }
+
+    @GetMapping("/saved-schedules")
+    public int getNumSavedSchedules() {
+        return schedulesService.getSchedules().size();
+    }
+
+    @GetMapping("/saved-schedules/{scheduleId}")
+    public Schedule getSavedSchedule(@PathVariable int scheduleId) {
+        return schedulesService.getSchedules().get(scheduleId);
     }
 }

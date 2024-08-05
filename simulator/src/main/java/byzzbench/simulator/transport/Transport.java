@@ -4,8 +4,10 @@ import byzzbench.simulator.Client;
 import byzzbench.simulator.Replica;
 import byzzbench.simulator.faults.Fault;
 import byzzbench.simulator.faults.NetworkFault;
+import byzzbench.simulator.service.SchedulesService;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 import lombok.Synchronized;
 import lombok.extern.java.Log;
 
@@ -23,7 +25,13 @@ import java.util.concurrent.atomic.AtomicLong;
  * @param <T> The type of the entries in the commit log of each {@link Replica}.
  */
 @Log
+@RequiredArgsConstructor
 public class Transport<T extends Serializable> {
+    /**
+     * The service for storing and managing schedules.
+     */
+    private final SchedulesService schedulesService;
+
     /**
      * The sequence number for events.
      */
@@ -67,6 +75,14 @@ public class Transport<T extends Serializable> {
     @Getter(onMethod_ = {@Synchronized})
     @JsonIgnore
     private final Map<Long, MessageMutator> mutators = new TreeMap<>();
+
+    /**
+     * Map of event ID to the list of mutations applied to the event during
+     * the simulation.
+     */
+    @Getter(onMethod_ = {@Synchronized})
+    @JsonIgnore
+    private final Map<Long, List<Long>> appliedMutations = new HashMap<>();
 
     @Getter
     // initialize with a NetworkFault fault
@@ -161,11 +177,17 @@ public class Transport<T extends Serializable> {
     }
 
     public void reset() {
+        this.schedulesService
+                .addSchedule(Schedule.builder()
+                        .eventIds(this.schedule.stream().map(Event::getEventId).toList())
+                        .eventMutations(this.appliedMutations)
+                .build());
         this.eventSeqNum.set(1);
         this.mutatorSeqNum.set(1);
         this.nodes.clear();
         this.events.clear();
         this.mutators.clear();
+        this.appliedMutations.clear();
         this.schedule.clear();
         this.nodes.values().forEach(Replica::initialize);
     }

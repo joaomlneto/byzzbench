@@ -1,9 +1,6 @@
 package byzzbench.simulator.service;
 
 import byzzbench.simulator.ScenarioExecutor;
-import byzzbench.simulator.protocols.XRPL.XRPLScenarioExecutor;
-import byzzbench.simulator.protocols.fasthotstuff.FastHotStuffScenarioExecutor;
-import byzzbench.simulator.protocols.pbft_java.PbftScenarioExecutor;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.java.Log;
@@ -24,6 +21,8 @@ import java.io.Serializable;
 @RequiredArgsConstructor
 @Log
 public class SimulatorService {
+  private final SchedulesService schedulesService;
+  private final ScenarioFactoryService scenarioFactoryService;
   private ScenarioExecutor<? extends Serializable> scenarioExecutor;
 
   @EventListener(ApplicationReadyEvent.class)
