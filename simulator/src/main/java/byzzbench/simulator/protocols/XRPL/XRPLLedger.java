@@ -10,6 +10,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+
 public class XRPLLedger implements Serializable {
     private String Id;
     private String parentId;
@@ -38,6 +39,11 @@ public class XRPLLedger implements Serializable {
 
     public int getSeq() {
         return this.seq;
+    }
+
+    public XRPLLedger withTransactions(List<String> newTxns) {
+        XRPLLedger res = new XRPLLedger(this.parentId, this.seq, newTxns);
+        return res;
     }
 
     /*

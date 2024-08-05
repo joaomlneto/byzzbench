@@ -235,6 +235,7 @@ public class XRPLReplica extends Replica<XRPLLedger> {
         boolean hasResChanged = false;
         for (DisputedTx dt : this.result.getDisputedTxs()) {
             if (updateVote(dt)) {
+                log.info("we decided to update our vote on tx: " + dt.getTx());
                 hasResChanged = true;
                 dt.switchOurVote();
                 if (dt.getOurVote()) {
@@ -343,19 +344,22 @@ public class XRPLReplica extends Replica<XRPLLedger> {
     private void createDisputes(List<String> txns) {
         Set<String> symmDiff = computeSymmetricDifference(this.result.getTxList(), txns);
         for (String tx : symmDiff) {
-            DisputedTx dt = new DisputedTx(tx, this.result.containsTx(tx), 0, 0, new HashMap<>());
-            for (String nodeId : this.ourUNL) {
-                if (this.currPeerProposals.get(nodeId) != null) {
-                    if (this.currPeerProposals.get(nodeId).containsTx(tx)) {
-                        dt.incrementYesVotes();
-                        dt.addEntryToVotesMap(nodeId, true);
-                    } else {
-                        dt.incrementNoVotes();
-                        dt.addEntryToVotesMap(nodeId, false);
+            if (!this.result.disputesContain(tx)) {
+                DisputedTx dt = new DisputedTx(tx, this.result.containsTx(tx), 0, 0, new HashMap<>());
+                for (String nodeId : this.ourUNL) {
+                    if (this.currPeerProposals.get(nodeId) != null) {
+                        if (this.currPeerProposals.get(nodeId).containsTx(tx)) {
+                            dt.incrementYesVotes();
+                            dt.addEntryToVotesMap(nodeId, true);
+                        } else {
+                            dt.incrementNoVotes();
+                            dt.addEntryToVotesMap(nodeId, false);
+                        }
                     }
                 }
+                this.result.addDisputed(dt);
             }
-            this.result.addDisputed(dt);
+            
         }
     }
 
