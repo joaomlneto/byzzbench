@@ -2,30 +2,29 @@ package byzzbench.simulator.protocols.fasthotstuff.message;
 
 import byzzbench.simulator.state.PartialOrderLogEntry;
 import byzzbench.simulator.transport.MessagePayload;
+import java.io.Serializable;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
-import java.io.Serializable;
-
 @Data
 @EqualsAndHashCode(callSuper = true)
-public class Block extends MessagePayload implements PartialOrderLogEntry<String> {
-    private final GenericQuorumCertificate qc;
-    private final long round;
-    private final String author;
-    private final Serializable payload;
+public class Block
+    extends MessagePayload implements PartialOrderLogEntry<String> {
+  private final GenericQuorumCertificate qc;
+  private final long round;
+  private final String author;
+  private final Serializable payload;
 
-    @Override
-    public String getType() {
-        return "BLOCK";
+  @Override
+  public String getType() {
+    return "BLOCK";
+  }
+
+  @Override
+  public String getParentHash() {
+    if (qc == null || qc.getVotes().isEmpty()) {
+      return null;
     }
-
-
-    @Override
-    public String getParentHash() {
-        if (qc == null || qc.getVotes().isEmpty()) {
-            return null;
-        }
-        return qc.getVotes().stream().findAny().get().getBlockHash();
-    }
+    return qc.getVotes().stream().findAny().get().getBlockHash();
+  }
 }

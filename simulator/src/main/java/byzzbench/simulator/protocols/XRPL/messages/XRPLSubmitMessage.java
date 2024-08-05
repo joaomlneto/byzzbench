@@ -5,24 +5,19 @@ import lombok.With;
 
 /*
  * Submit message as used in the gossip protocol.
- * A node broadcasts a submit message to all nodes it 
+ * A node broadcasts a submit message to all nodes it
  * is connected once it recieves a transaction from a client.
  */
 @With
 public class XRPLSubmitMessage extends MessagePayload {
-    private String tx;
+  private String tx;
 
-    public XRPLSubmitMessage(String tx_) {
-        this.tx = tx_;
-    }
+  public XRPLSubmitMessage(String tx_) { this.tx = tx_; }
 
-    @Override
-    public String getType() {
-        return "SUBMIT";
-    }
+  @Override
+  public String getType() {
+    return "SUBMIT";
+  }
 
-    public String getTx() {
-        return tx;
-    }
-
+  public String getTx() { return tx; }
 }

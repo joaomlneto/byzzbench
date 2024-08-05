@@ -9,12 +9,12 @@ import lombok.With;
 @EqualsAndHashCode(callSuper = true)
 @With
 public class CheckpointMessage extends MessagePayload {
-    private final long lastSeqNumber;
-    private final byte[] digest;
-    private final String replicaId;
+  private final long lastSeqNumber;
+  private final byte[] digest;
+  private final String replicaId;
 
-    @Override
-    public String getType() {
-        return "CHECKPOINT";
-    }
+  @Override
+  public String getType() {
+    return "CHECKPOINT";
+  }
 }

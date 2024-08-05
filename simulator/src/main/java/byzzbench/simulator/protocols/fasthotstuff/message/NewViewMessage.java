@@ -8,16 +8,16 @@ import lombok.With;
 @EqualsAndHashCode(callSuper = true)
 @With
 public class NewViewMessage extends GenericVoteMessage {
-    private final GenericQuorumCertificate qc;
-    private final long round;
-    private final String author;
+  private final GenericQuorumCertificate qc;
+  private final long round;
+  private final String author;
 
-    @Override
-    public String getType() {
-        return "NEW-VIEW";
-    }
+  @Override
+  public String getType() {
+    return "NEW-VIEW";
+  }
 
-    public String getBlockHash() {
-        return qc.getVotes().stream().toList().get(0).getBlockHash();
-    }
+  public String getBlockHash() {
+    return qc.getVotes().stream().toList().get(0).getBlockHash();
+  }
 }

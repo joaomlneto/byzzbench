@@ -8,11 +8,11 @@ import lombok.With;
 @EqualsAndHashCode(callSuper = true)
 @With
 public class VoteMessage extends GenericVoteMessage {
-    private final String author;
-    private final String blockHash;
+  private final String author;
+  private final String blockHash;
 
-    @Override
-    public String getType() {
-        return "VOTE";
-    }
+  @Override
+  public String getType() {
+    return "VOTE";
+  }
 }

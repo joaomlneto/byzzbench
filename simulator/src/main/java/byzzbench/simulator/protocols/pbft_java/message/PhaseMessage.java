@@ -8,12 +8,12 @@ import lombok.With;
 @EqualsAndHashCode(callSuper = true)
 @With
 public class PhaseMessage extends IPhaseMessage {
-    private final long viewNumber;
-    private final long sequenceNumber;
-    private final byte[] digest;
+  private final long viewNumber;
+  private final long sequenceNumber;
+  private final byte[] digest;
 
-    @Override
-    public String getType() {
-        return "PHASE";
-    }
+  @Override
+  public String getType() {
+    return "PHASE";
+  }
 }
