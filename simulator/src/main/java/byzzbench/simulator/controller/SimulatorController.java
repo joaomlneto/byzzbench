@@ -18,6 +18,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.IntStream;
 
 /**
  * REST API for interacting with the simulator.
@@ -246,12 +247,29 @@ public class SimulatorController {
     }
 
     @GetMapping("/saved-schedules")
-    public int getNumSavedSchedules() {
-        return schedulesService.getSchedules().size();
+    public List<Integer> getNumSavedSchedules() {
+        return IntStream.range(0, schedulesService.getSchedules().size())
+                .boxed()
+                .toList();
     }
 
     @GetMapping("/saved-schedules/{scheduleId}")
     public Schedule getSavedSchedule(@PathVariable int scheduleId) {
         return schedulesService.getSchedules().get(scheduleId);
+    }
+
+    // endpoint to run the current scenario N times
+    // parameters: numRuns, eventsPerRun
+    // returns: list of schedules
+    @PostMapping("/start")
+    public void start(@RequestParam int eventsPerRun) {
+        System.out.println("Starting simulator with " + eventsPerRun + " events per run");
+        simulatorService.start(eventsPerRun);
+    }
+
+    @PostMapping("/stop")
+    public void stop() {
+        System.out.println("Stopping simulator");
+        simulatorService.stop();
     }
 }
