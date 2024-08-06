@@ -8,6 +8,7 @@ import java.util.TreeSet;
 import byzzbench.simulator.ScenarioExecutor;
 import byzzbench.simulator.protocols.XRPL.mutators.XRPLProposeMessageMutatorFactory;
 import byzzbench.simulator.protocols.XRPL.mutators.XRPLSubmitMessageMutatorFactory;
+import byzzbench.simulator.protocols.XRPL.mutators.XRPLValidateMessageMutatorFactory;
 import byzzbench.simulator.transport.Transport;
 
 public class XRPLScenarioExecutor extends ScenarioExecutor<XRPLLedger>  {
@@ -24,6 +25,9 @@ public class XRPLScenarioExecutor extends ScenarioExecutor<XRPLLedger>  {
     @Override
     public void setup() {
         setupForScenario3();
+        transport.registerMessageMutators(new XRPLProposeMessageMutatorFactory());
+        transport.registerMessageMutators(new XRPLSubmitMessageMutatorFactory());
+        transport.registerMessageMutators(new XRPLValidateMessageMutatorFactory());
     }
 
     @Override
@@ -49,8 +53,6 @@ public class XRPLScenarioExecutor extends ScenarioExecutor<XRPLLedger>  {
                 this.replica_list.add(replica);
                 transport.addNode(replica);
             });
-            transport.registerMessageMutators(new XRPLProposeMessageMutatorFactory());
-            transport.registerMessageMutators(new XRPLSubmitMessageMutatorFactory());
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -72,7 +74,7 @@ public class XRPLScenarioExecutor extends ScenarioExecutor<XRPLLedger>  {
             XRPLReplica replica2 = new XRPLReplica("B", nodeIds, this.transport, unl1, genesis);
             XRPLReplica replica3 = new XRPLReplica("C", nodeIds, this.transport, unl1, genesis);
 
-            XRPLReplica replica4 = new XRPLReplica("D", nodeIds, this.transport, nodeIds, genesis);
+            XRPLReplica replica4 = new XRPLReplica("D", nodeIds, this.transport, Set.of("D"), genesis);
 
             XRPLReplica replica5 = new XRPLReplica("E", nodeIds, this.transport, unl2, genesis);
             XRPLReplica replica6 = new XRPLReplica("F", nodeIds, this.transport, unl2, genesis);
@@ -83,8 +85,6 @@ public class XRPLScenarioExecutor extends ScenarioExecutor<XRPLLedger>  {
             replica_list.forEach(r -> {
                 transport.addNode(r);
             });
-            transport.registerMessageMutators(new XRPLProposeMessageMutatorFactory());
-            transport.registerMessageMutators(new XRPLSubmitMessageMutatorFactory());
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
