@@ -235,7 +235,6 @@ public class XRPLReplica extends Replica<XRPLLedger> {
         boolean hasResChanged = false;
         for (DisputedTx dt : this.result.getDisputedTxs()) {
             if (updateVote(dt)) {
-                log.info("we decided to update our vote on tx: " + dt.getTx());
                 hasResChanged = true;
                 dt.switchOurVote();
                 if (dt.getOurVote()) {
@@ -272,7 +271,7 @@ public class XRPLReplica extends Replica<XRPLLedger> {
         } else {
             threshold = 0.95;
         }
-        boolean newVote = (dt.getYesVotes() + boolToInt(dt.getOurVote())) / (dt.getNoVotes() + dt.getYesVotes() + 1) > threshold;
+        boolean newVote = (double) (dt.getYesVotes() + boolToInt(dt.getOurVote())) / (dt.getNoVotes() + dt.getYesVotes() + 1) > threshold;
         return newVote != dt.getOurVote();
     }
 
@@ -315,7 +314,7 @@ public class XRPLReplica extends Replica<XRPLLedger> {
                 agree += 1;
             } 
         }
-        return (agree + 1) / total >= 0.8;
+        return (double) (agree + 1) / total >= 0.8;
     }
 
     /*
