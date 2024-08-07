@@ -76,14 +76,6 @@ public class Transport<T extends Serializable> {
     @JsonIgnore
     private final Map<Long, MessageMutator> mutators = new TreeMap<>();
 
-    /**
-     * Map of event ID to the list of mutations applied to the event during
-     * the simulation.
-     */
-    @Getter(onMethod_ = {@Synchronized})
-    @JsonIgnore
-    private final Map<Long, List<Long>> appliedMutations = new HashMap<>();
-
     @Getter
     // initialize with a NetworkFault fault
     private final List<Fault> faults =
@@ -180,14 +172,12 @@ public class Transport<T extends Serializable> {
         this.schedulesService
                 .addSchedule(Schedule.builder()
                         .eventIds(this.schedule.stream().map(Event::getEventId).toList())
-                        .eventMutations(this.appliedMutations)
                 .build());
         this.eventSeqNum.set(1);
         this.mutatorSeqNum.set(1);
         this.nodes.clear();
         this.events.clear();
         this.mutators.clear();
-        this.appliedMutations.clear();
         this.schedule.clear();
         this.nodes.values().forEach(Replica::initialize);
     }
@@ -214,7 +204,7 @@ public class Transport<T extends Serializable> {
         }
     }
 
-    public void deliverEvent(long eventId) throws Exception {
+    public synchronized void deliverEvent(long eventId) throws Exception {
         // check if event is a message
         Event e = events.get(eventId);
 
@@ -299,7 +289,7 @@ public class Transport<T extends Serializable> {
         return messageMutators;
     }
 
-    public void applyMutation(long eventId, long mutatorId) {
+    public synchronized void applyMutation(long eventId, long mutatorId) {
         Event e = events.get(eventId);
         MessageMutator mutator = mutators.get(mutatorId);
 
