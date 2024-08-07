@@ -241,6 +241,16 @@ public class SimulatorController {
         return scenarioFactoryService.getScenarioIds();
     }
 
+    @PostMapping("/change-scenario")
+    public void changeScenario(@RequestParam String scenarioId) {
+        simulatorService.changeScenario(scenarioId);
+    }
+
+    @GetMapping("/current-scenario-id")
+    public String getCurrentScenarioId() {
+        return simulatorService.getScenarioExecutor().getId();
+    }
+
     @GetMapping("/schedulers")
     public List<String> getSchedulers() {
         return schedulerFactoryService.getSchedulerIds();
@@ -269,7 +279,16 @@ public class SimulatorController {
 
     @PostMapping("/stop")
     public void stop() {
+        if (!simulatorService.getMode().equals(SimulatorService.SimulatorServiceMode.RUNNING)) {
+            throw new IllegalStateException("Simulator is not running");
+        }
         System.out.println("Stopping simulator");
         simulatorService.stop();
     }
+
+    @GetMapping("/simulator/mode")
+    public SimulatorService.SimulatorServiceMode getMode() {
+        return simulatorService.getMode();
+    }
+
 }
