@@ -2,8 +2,8 @@ package byzzbench.simulator.protocols.fasthotstuff.message;
 
 import byzzbench.simulator.transport.MessagePayload;
 
-public interface GenericVoteMessage extends MessagePayload {
-    String getBlockHash();
+public abstract class GenericVoteMessage extends MessagePayload {
+    public abstract String getBlockHash();
 
-    String getAuthor();
+    public abstract String getAuthor();
 }
