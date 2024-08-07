@@ -11,7 +11,7 @@ public class RoundFaultPrecondition implements FaultPrecondition {
 
   @Override
   public boolean isSatisfiedBy(MessageEvent message) {
-    return message.getPayload() instanceof RoundMessagePayload roundMessage
-            && roundMessage.getRound() == round;
+    return message.getPayload() instanceof RoundMessagePayload roundMessage &&
+        roundMessage.getRound() == round;
   }
 }
