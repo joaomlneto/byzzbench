@@ -7,7 +7,7 @@ import byzzbench.simulator.transport.MessagePayload;
  * transaction to be submitted. Transactions are
  * represented by dummy String values.
  */
-public class XRPLTxMessage implements MessagePayload {
+public class XRPLTxMessage extends MessagePayload {
     private String tx;
     private String senderId;
 

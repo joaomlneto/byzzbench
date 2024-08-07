@@ -3,7 +3,6 @@ package byzzbench.simulator.protocols.XRPL.messages;
 import byzzbench.simulator.protocols.XRPL.XRPLProposal;
 import byzzbench.simulator.transport.MessagePayload;
 import lombok.With;
-import byzzbench.simulator.transport.SignedMessagePayload;
 
 
 /*
@@ -15,7 +14,7 @@ import byzzbench.simulator.transport.SignedMessagePayload;
  */
 
 @With
-public class XRPLProposeMessage extends SignedMessagePayload {
+public class XRPLProposeMessage extends MessagePayload {
     private XRPLProposal prop;
     private String senderId;
 

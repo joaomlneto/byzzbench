@@ -1,6 +1,7 @@
-package byzzbench.simulator.protocols.XRPL;
+package byzzbench.simulator.protocols.XRPL.mutators;
 
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.List;
 
 import byzzbench.simulator.protocols.XRPL.messages.XRPLProposeMessage;
@@ -27,6 +28,19 @@ public class XRPLProposeMessageMutatorFactory extends MessageMutatorFactory {
                 public Serializable apply(Serializable serializable) {
                     if (serializable instanceof XRPLProposeMessage message) {
                         return message.withProp(message.getProposal().withSeq(message.getProposal().getSeq() - 1));
+                    }
+                    throw invalidMessageTypeException;
+                }
+            },
+            new MessageMutator("Mutate Tx", List.of(XRPLProposeMessage.class)) {
+                @Override
+                public Serializable apply(Serializable serializable) {
+                    if (serializable instanceof XRPLProposeMessage message) {
+                        List<String> newTxns = new ArrayList<>(); 
+                        message.getProposal().getTxns().forEach(tx -> {
+                            newTxns.add(tx + "01");
+                        });
+                        return message.withProp(message.getProposal().withTxns(newTxns));
                     }
                     throw invalidMessageTypeException;
                 }
