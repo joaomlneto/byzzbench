@@ -30,12 +30,12 @@ public class SimulatorService {
     private boolean shouldStop = false;
     private ScenarioExecutor<? extends Serializable> scenarioExecutor;
 
-  @EventListener(ApplicationReadyEvent.class)
-  void onStartup() {
-    log.info("Starting the simulator service");
-    this.changeScenario("xrpl");
-    log.info("Simulator service started");
-  }
+    @EventListener(ApplicationReadyEvent.class)
+    void onStartup() {
+        log.info("Starting the simulator service");
+        this.changeScenario("xrpl");
+        log.info("Simulator service started");
+    }
 
 
     /**
@@ -43,12 +43,12 @@ public class SimulatorService {
      *
      * @param id The ID of the scenario to change to.
      */
-  public void changeScenario(String id) {
-    this.scenarioExecutor = this.scenarioFactoryService.getScenario(id);
-    this.scenarioExecutor.setupScenario();
-    this.scenarioExecutor.runScenario();
-    // this.scenarioExecutor.reset();
-  }
+    public void changeScenario(String id) {
+        this.scenarioExecutor = this.scenarioFactoryService.getScenario(id);
+        this.scenarioExecutor.setupScenario();
+        this.scenarioExecutor.runScenario();
+        // this.scenarioExecutor.reset();
+    }
 
     /**
      * Stops the simulator.
@@ -104,7 +104,6 @@ public class SimulatorService {
     }
 
     public enum SimulatorServiceMode {
-        STOPPED,
-        RUNNING
+        STOPPED, RUNNING
     }
 }
