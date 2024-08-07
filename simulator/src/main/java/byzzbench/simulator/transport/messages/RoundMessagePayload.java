@@ -5,6 +5,6 @@ import byzzbench.simulator.transport.MessagePayload;
 /**
  * Interface for {@link MessagePayload} that include a round number.
  */
-public interface RoundMessage {
-  long getRound();
+public abstract class RoundMessagePayload extends MessagePayload {
+  public abstract long getRound();
 }

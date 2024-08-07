@@ -17,9 +17,9 @@ import java.util.Random;
  *            Replica}.
  */
 public class RandomScheduler<T extends Serializable> extends BaseScheduler<T> {
-    private final double DELIVER_MESSAGE_PROBABILITY = 0.9;
+    private final double DELIVER_MESSAGE_PROBABILITY = 0.92;
     private final double DROP_MESSAGE_PROBABILITY = 0.08;
-    private final double MUTATE_MESSAGE_PROBABILITY = 0.02;
+    private final double MUTATE_MESSAGE_PROBABILITY = 0.00;
     Random random = new Random();
 
     public RandomScheduler(Transport<T> transport) {
@@ -32,7 +32,7 @@ public class RandomScheduler<T extends Serializable> extends BaseScheduler<T> {
     }
 
     @Override
-    public Optional<Event> scheduleNext() throws Exception {
+    public synchronized Optional<Event> scheduleNext() throws Exception {
         // Get a random event
         List<Event> queuedEvents =
                 getTransport().getEventsInState(Event.Status.QUEUED);
