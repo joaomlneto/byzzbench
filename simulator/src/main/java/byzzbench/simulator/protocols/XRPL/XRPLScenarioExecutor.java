@@ -1,8 +1,10 @@
 package byzzbench.simulator.protocols.XRPL;
 
 import byzzbench.simulator.ScenarioExecutor;
+import byzzbench.simulator.TerminationCondition;
 import byzzbench.simulator.protocols.XRPL.mutators.XRPLProposeMessageMutatorFactory;
 import byzzbench.simulator.protocols.XRPL.mutators.XRPLSubmitMessageMutatorFactory;
+import byzzbench.simulator.protocols.XRPL.mutators.XRPLValidateMessageMutatorFactory;
 import byzzbench.simulator.service.SchedulesService;
 import byzzbench.simulator.transport.Transport;
 import org.springframework.stereotype.Component;
@@ -18,6 +20,7 @@ public class XRPLScenarioExecutor extends ScenarioExecutor<XRPLLedger>  {
 
 
     private List<XRPLReplica> replica_list;
+    private XRPLTerminationCondition terminationCondition;
 
     public XRPLScenarioExecutor(SchedulesService schedulesService) {
         super("xrpl", new Transport<>(schedulesService));
@@ -26,10 +29,11 @@ public class XRPLScenarioExecutor extends ScenarioExecutor<XRPLLedger>  {
 
     @Override
     public void setup() {
-        setupForScenario3();
+        setupDefault();
         transport.registerMessageMutators(new XRPLProposeMessageMutatorFactory());
         transport.registerMessageMutators(new XRPLSubmitMessageMutatorFactory());
         transport.registerMessageMutators(new XRPLValidateMessageMutatorFactory());
+        this.terminationCondition = new XRPLTerminationCondition(replica_list);
     }
 
     @Override
@@ -144,6 +148,11 @@ public class XRPLScenarioExecutor extends ScenarioExecutor<XRPLLedger>  {
         for (XRPLReplica xrplReplica : replica_list) {
             xrplReplica.onHeartbeat();
         }
+    }
+
+    @Override
+    public TerminationCondition getTerminationCondition() {
+        return this.terminationCondition;
     }
 
 }

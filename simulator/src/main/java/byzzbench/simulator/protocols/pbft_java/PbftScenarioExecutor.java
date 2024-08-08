@@ -2,6 +2,7 @@ package byzzbench.simulator.protocols.pbft_java;
 
 import byzzbench.simulator.Replica;
 import byzzbench.simulator.ScenarioExecutor;
+import byzzbench.simulator.TerminationCondition;
 import byzzbench.simulator.protocols.pbft_java.mutator.PrePrepareMessageMutatorFactory;
 import byzzbench.simulator.service.SchedulesService;
 import byzzbench.simulator.transport.Transport;
@@ -51,5 +52,11 @@ public class PbftScenarioExecutor<T extends Serializable> extends ScenarioExecut
             e.printStackTrace();
             throw new RuntimeException(e);
         }
+    }
+
+    @Override
+    public TerminationCondition getTerminationCondition() {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'getTerminationCondition'");
     }
 }

@@ -2,6 +2,7 @@ package byzzbench.simulator.protocols.dummy;
 
 import byzzbench.simulator.Replica;
 import byzzbench.simulator.ScenarioExecutor;
+import byzzbench.simulator.TerminationCondition;
 import byzzbench.simulator.protocols.pbft_java.MessageLog;
 import byzzbench.simulator.service.SchedulesService;
 import byzzbench.simulator.transport.Transport;
@@ -47,5 +48,11 @@ public class DummyScenarioExecutor<T extends Serializable> extends ScenarioExecu
             e.printStackTrace();
             throw new RuntimeException(e);
         }
+    }
+
+    @Override
+    public TerminationCondition getTerminationCondition() {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'getTerminationCondition'");
     }
 }

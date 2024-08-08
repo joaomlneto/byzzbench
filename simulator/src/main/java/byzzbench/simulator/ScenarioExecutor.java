@@ -86,6 +86,7 @@ public abstract class ScenarioExecutor<T extends Serializable> {
      * Logic to set up the scenario - must be implemented by subclasses.
      */
     protected abstract void setup();
+    public abstract TerminationCondition getTerminationCondition();
 
     public final void runScenario() {
         this.run();

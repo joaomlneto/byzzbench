@@ -2,6 +2,7 @@ package byzzbench.simulator.protocols.fasthotstuff;
 
 import byzzbench.simulator.Replica;
 import byzzbench.simulator.ScenarioExecutor;
+import byzzbench.simulator.TerminationCondition;
 import byzzbench.simulator.protocols.fasthotstuff.faults.FHSBugFaults;
 import byzzbench.simulator.protocols.fasthotstuff.message.Block;
 import byzzbench.simulator.service.SchedulesService;
@@ -44,5 +45,11 @@ public class FastHotStuffScenarioExecutor extends ScenarioExecutor<Block> {
     public synchronized void run() {
         // nothing to do at the moment
         // TODO: genesis block creation logic should be moved here
+    }
+
+    @Override
+    public TerminationCondition getTerminationCondition() {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'getTerminationCondition'");
     }
 }

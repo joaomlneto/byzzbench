@@ -1,6 +1,9 @@
 package byzzbench.simulator.service;
 
 import byzzbench.simulator.ScenarioExecutor;
+import byzzbench.simulator.TerminationCondition;
+import byzzbench.simulator.protocols.XRPL.XRPLTerminationCondition;
+import byzzbench.simulator.transport.Event;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.java.Log;
@@ -23,12 +26,14 @@ import java.util.concurrent.Executors;
 @RequiredArgsConstructor
 @Log
 public class SimulatorService {
+    private final int MAX_EVENTS_FOR_RUN = 5000;
     private final SchedulesService schedulesService;
     private final ScenarioFactoryService scenarioFactoryService;
     private final ExecutorService executor = Executors.newFixedThreadPool(1);
     private SimulatorServiceMode mode = SimulatorServiceMode.STOPPED;
     private boolean shouldStop = false;
     private ScenarioExecutor<? extends Serializable> scenarioExecutor;
+    private TerminationCondition terminationCondition;
 
     @EventListener(ApplicationReadyEvent.class)
     void onStartup() {
@@ -45,6 +50,7 @@ public class SimulatorService {
      */
     public void changeScenario(String id) {
         this.scenarioExecutor = this.scenarioFactoryService.getScenario(id);
+        this.terminationCondition = this.scenarioExecutor.getTerminationCondition();
         this.scenarioExecutor.setupScenario();
         this.scenarioExecutor.runScenario();
         // this.scenarioExecutor.reset();
@@ -78,19 +84,31 @@ public class SimulatorService {
             this.mode = SimulatorServiceMode.RUNNING;
             // reset the scenario to ensure that the scenario is in a clean state
             this.changeScenario(this.scenarioExecutor.getId());
-
+            this.terminationCondition = this.scenarioExecutor.getTerminationCondition();
             try {
                 // run the scenario until the stop flag is set
                 while (!this.shouldStop) {
+                    int num_events = 0;
                     int scenarioId = this.schedulesService.getSchedules().size() + 1;
                     System.out.println("Running scenario #" + scenarioId);
                     this.scenarioExecutor.runScenario();
 
-                    // run the scenario for the given number of events
-                    for (int i = 0; i < numActionsPerRun; i++) {
-                        System.out.println("Running action #" + i + "/" + numActionsPerRun);
+                    
+                    boolean flag = true;
+                    while (flag) {
                         this.scenarioExecutor.getScheduler().scheduleNext();
+                        num_events += 1;
+                        if ((num_events % 50 == 0 && this.terminationCondition.shouldTerminate()) || num_events > MAX_EVENTS_FOR_RUN) {
+                            flag = false;
+                        }
                     }
+                    
+                    // run the scenario for the given number of events
+                   /*  for (int i = 1; i < numActionsPerRun; i++) {
+                        System.out.println("Running action " + i + "/" + numActionsPerRun);
+                        this.scenarioExecutor.getScheduler().scheduleNext();
+                    } */
+                   
 
                     System.out.println("Scenario #" + scenarioId + " completed");
                     this.scenarioExecutor.reset();
