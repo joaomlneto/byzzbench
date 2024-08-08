@@ -23,13 +23,10 @@ public class XRPLTerminationCondition extends TerminationCondition {
         int needed_count = (int) (networkSize * 0.8);
         int count = 0;
         for (XRPLReplica xrplReplica : replicas) {
-            log.info("seq: " + xrplReplica.getValidLedger().getSeq());
             if (xrplReplica.getValidLedger().getSeq() - initialSeq >= DESIRED_BLOCK_COUNT) {
-                log.info("satisfies term cond");
                 count += 1;
             }
         }    
-        log.info("count: " + count);
         return count >= needed_count;
     }
 
