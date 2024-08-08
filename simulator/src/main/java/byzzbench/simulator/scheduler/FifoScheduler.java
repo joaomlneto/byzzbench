@@ -20,7 +20,7 @@ public class FifoScheduler<T extends Serializable> extends BaseScheduler<T> {
   public FifoScheduler(Transport<T> transport) { super("FIFO", transport); }
 
   @Override
-  public Optional<Event> scheduleNext() throws Exception {
+  public Optional<EventDecision> scheduleNext() throws Exception {
     // Get the next event
     Optional<Event> event =
         getTransport()
@@ -31,7 +31,8 @@ public class FifoScheduler<T extends Serializable> extends BaseScheduler<T> {
 
     if (event.isPresent()) {
       this.getTransport().deliverEvent(event.get().getEventId());
-      return event;
+      EventDecision decision = new EventDecision(EventDecision.DecisionType.DELIVERED, event.get().getEventId());
+      return Optional.of(decision);
     } else {
       return Optional.empty();
     }

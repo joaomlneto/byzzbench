@@ -17,18 +17,24 @@ import java.util.Random;
  *            Replica}.
  */
 public class RandomScheduler<T extends Serializable> extends BaseScheduler<T> {
-    private final double DELIVER_MESSAGE_PROBABILITY = 1.00;
-    private final double DROP_MESSAGE_PROBABILITY = 0.00;
-    private final double MUTATE_MESSAGE_PROBABILITY = 0.00;
+    private double DELIVER_MESSAGE_PROBABILITY = 0.095;
+    private double DROP_MESSAGE_PROBABILITY = 0.005;
+    private double MUTATE_MESSAGE_PROBABILITY = 0.00;
+    private final int MAX_DROPPED_MESSAGES = 10;
+    private int dropped_msg_count = 0;
     Random random = new Random();
 
-    public RandomScheduler(Transport<T> transport) {
-        super("Random", transport);
+    private void assert_probabilities() {
         assert DELIVER_MESSAGE_PROBABILITY >= 0 && DELIVER_MESSAGE_PROBABILITY <= 1;
         assert DROP_MESSAGE_PROBABILITY >= 0 && DROP_MESSAGE_PROBABILITY <= 1;
         assert MUTATE_MESSAGE_PROBABILITY >= 0 && MUTATE_MESSAGE_PROBABILITY <= 1;
         assert DROP_MESSAGE_PROBABILITY + MUTATE_MESSAGE_PROBABILITY +
                 DELIVER_MESSAGE_PROBABILITY == 1;
+    }
+
+    public RandomScheduler(Transport<T> transport) {
+        super("Random", transport);
+        assert_probabilities();
     }
 
     @Override
@@ -95,6 +101,12 @@ public class RandomScheduler<T extends Serializable> extends BaseScheduler<T> {
                 
                 getTransport().dropMessage(message.getEventId());
                 EventDecision decision = new EventDecision(EventDecision.DecisionType.DROPPED, message.getEventId());
+                this.dropped_msg_count += 1;    
+                if (this.dropped_msg_count >= MAX_DROPPED_MESSAGES) {
+                    this.DELIVER_MESSAGE_PROBABILITY += this.DROP_MESSAGE_PROBABILITY;
+                    this.DROP_MESSAGE_PROBABILITY = 0;
+                    assert_probabilities();
+                }            
                 return Optional.of(decision);
             }
 

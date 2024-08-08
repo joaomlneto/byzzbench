@@ -93,7 +93,6 @@ public class SimulatorService {
                     System.out.println("Running scenario #" + scenarioId);
                     this.scenarioExecutor.runScenario();
 
-                    
                     boolean flag = true;
                     while (flag) {
                         this.scenarioExecutor.getScheduler().scheduleNext();
