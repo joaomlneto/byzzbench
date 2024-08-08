@@ -1,24 +1,26 @@
 package byzzbench.simulator.protocols.XRPL;
 
+import byzzbench.simulator.ScenarioExecutor;
+import byzzbench.simulator.protocols.XRPL.mutators.XRPLProposeMessageMutatorFactory;
+import byzzbench.simulator.protocols.XRPL.mutators.XRPLSubmitMessageMutatorFactory;
+import byzzbench.simulator.service.SchedulesService;
+import byzzbench.simulator.transport.Transport;
+import org.springframework.stereotype.Component;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
 
-import byzzbench.simulator.ScenarioExecutor;
-import byzzbench.simulator.protocols.XRPL.mutators.XRPLProposeMessageMutatorFactory;
-import byzzbench.simulator.protocols.XRPL.mutators.XRPLSubmitMessageMutatorFactory;
-import byzzbench.simulator.protocols.XRPL.mutators.XRPLValidateMessageMutatorFactory;
-import byzzbench.simulator.transport.Transport;
-
+@Component
 public class XRPLScenarioExecutor extends ScenarioExecutor<XRPLLedger>  {
     private final int NUM_NODES = 3;
-    
-    
+
+
     private List<XRPLReplica> replica_list;
 
-    public XRPLScenarioExecutor() {
-        super(new Transport<>());
+    public XRPLScenarioExecutor(SchedulesService schedulesService) {
+        super("xrpl", new Transport<>(schedulesService));
         this.setNumClients(1);
     }
 
@@ -32,7 +34,7 @@ public class XRPLScenarioExecutor extends ScenarioExecutor<XRPLLedger>  {
 
     @Override
     public void run() {
-        this.runScenario3();        
+        this.runScenario1();
     }
 
     /*
@@ -89,7 +91,7 @@ public class XRPLScenarioExecutor extends ScenarioExecutor<XRPLLedger>  {
             throw new RuntimeException(e);
         }
     }
-    
+
     /*
      * Scenario with 2 client requests of 2 different
      * transactions to 2 different nodes.
@@ -123,7 +125,7 @@ public class XRPLScenarioExecutor extends ScenarioExecutor<XRPLLedger>  {
     }
 
     /*
-     * The scenario of agreement violation presented in 
+     * The scenario of agreement violation presented in
      * the analysis paper.
      */
     @SuppressWarnings("unused")

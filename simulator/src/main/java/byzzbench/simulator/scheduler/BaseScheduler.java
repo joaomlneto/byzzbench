@@ -4,11 +4,12 @@ import byzzbench.simulator.Replica;
 import byzzbench.simulator.state.CommitLog;
 import byzzbench.simulator.transport.Event;
 import byzzbench.simulator.transport.Transport;
-import java.io.Serializable;
-import java.util.Optional;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+
+import java.io.Serializable;
+import java.util.Optional;
 
 /**
  * Abstract base class for a scheduler.
@@ -18,6 +19,7 @@ import lombok.RequiredArgsConstructor;
  */
 @RequiredArgsConstructor
 public abstract class BaseScheduler<T extends Serializable> {
+  @Getter private final String id;
   @Getter(AccessLevel.PROTECTED) private final Transport<T> transport;
 
   public abstract Optional<Event> scheduleNext() throws Exception;

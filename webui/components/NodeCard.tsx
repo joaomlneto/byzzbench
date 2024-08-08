@@ -12,7 +12,11 @@ export const NodeCard = ({ nodeId }: NodeCardProps) => {
   const { data } = useGetNode(nodeId);
 
   return (
-    <Container fluid style={{ border: "1px solid black" }} p="md">
+    <Container
+      fluid
+      style={{ border: "1px solid black", minWidth: 400 }}
+      p="md"
+    >
       <Stack gap="xs">
         {false && (
           <JsonInput value={JSON.stringify(data?.data, null, 2)} autosize />

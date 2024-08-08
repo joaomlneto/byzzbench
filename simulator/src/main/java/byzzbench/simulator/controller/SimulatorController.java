@@ -2,10 +2,14 @@ package byzzbench.simulator.controller;
 
 import byzzbench.simulator.Client;
 import byzzbench.simulator.Replica;
+import byzzbench.simulator.service.ScenarioFactoryService;
+import byzzbench.simulator.service.SchedulerFactoryService;
+import byzzbench.simulator.service.SchedulesService;
 import byzzbench.simulator.service.SimulatorService;
 import byzzbench.simulator.state.adob.AdobCache;
 import byzzbench.simulator.transport.Event;
 import byzzbench.simulator.transport.MessageMutator;
+import byzzbench.simulator.transport.Schedule;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
@@ -14,6 +18,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.IntStream;
 
 /**
  * REST API for interacting with the simulator.
@@ -21,7 +26,10 @@ import java.util.Set;
 @RestController
 @RequiredArgsConstructor
 public class SimulatorController {
+    private final SchedulesService schedulesService;
     private final SimulatorService simulatorService;
+    private final ScenarioFactoryService scenarioFactoryService;
+    private final SchedulerFactoryService schedulerFactoryService;
 
     /**
      * Get the status of the simulator.
@@ -128,6 +136,10 @@ public class SimulatorController {
                 .toList();
     }
 
+    /**
+     * Get the current schedule of the simulator.
+     * @return The list of delivered event IDs in order.
+     */
     @GetMapping("/schedule")
     public List<Long> getSchedule() {
         return simulatorService.getScenarioExecutor()
@@ -223,4 +235,60 @@ public class SimulatorController {
     public AdobCache getAdobCache(@PathVariable Long cacheId) {
         return simulatorService.getScenarioExecutor().getAdobOracle().getCaches().get(cacheId);
     }
+
+    @GetMapping("/scenarios")
+    public List<String> getScenarios() {
+        return scenarioFactoryService.getScenarioIds();
+    }
+
+    @PostMapping("/change-scenario")
+    public void changeScenario(@RequestParam String scenarioId) {
+        simulatorService.changeScenario(scenarioId);
+    }
+
+    @GetMapping("/current-scenario-id")
+    public String getCurrentScenarioId() {
+        return simulatorService.getScenarioExecutor().getId();
+    }
+
+    @GetMapping("/schedulers")
+    public List<String> getSchedulers() {
+        return schedulerFactoryService.getSchedulerIds();
+    }
+
+    @GetMapping("/saved-schedules")
+    public List<Integer> getNumSavedSchedules() {
+        return IntStream.range(0, schedulesService.getSchedules().size())
+                .boxed()
+                .toList();
+    }
+
+    @GetMapping("/saved-schedules/{scheduleId}")
+    public Schedule getSavedSchedule(@PathVariable int scheduleId) {
+        return schedulesService.getSchedules().get(scheduleId);
+    }
+
+    // endpoint to run the current scenario N times
+    // parameters: numRuns, eventsPerRun
+    // returns: list of schedules
+    @PostMapping("/start")
+    public void start(@RequestParam int eventsPerRun) {
+        System.out.println("Starting simulator with " + eventsPerRun + " events per run");
+        simulatorService.start(eventsPerRun);
+    }
+
+    @PostMapping("/stop")
+    public void stop() {
+        if (!simulatorService.getMode().equals(SimulatorService.SimulatorServiceMode.RUNNING)) {
+            throw new IllegalStateException("Simulator is not running");
+        }
+        System.out.println("Stopping simulator");
+        simulatorService.stop();
+    }
+
+    @GetMapping("/simulator/mode")
+    public SimulatorService.SimulatorServiceMode getMode() {
+        return simulatorService.getMode();
+    }
+
 }
