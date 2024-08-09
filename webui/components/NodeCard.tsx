@@ -1,3 +1,5 @@
+"use client";
+
 import { NodeMailbox } from "@/components/messages/NodeMailbox";
 import { NodeStateNavLink } from "@/components/NodeStateNavLink";
 import { useGetNode } from "@/lib/byzzbench-client";
@@ -14,7 +16,7 @@ export const NodeCard = ({ nodeId }: NodeCardProps) => {
   return (
     <Container
       fluid
-      style={{ border: "1px solid black", minWidth: 400 }}
+      style={{ border: "1px solid black", minWidth: 400, maxWidth: 600 }}
       p="md"
     >
       <Stack gap="xs">

@@ -1,3 +1,5 @@
+"use client";
+
 import { DeliverMessageActionIcon } from "@/components/messages";
 import { MutateMessageMenu } from "@/components/messages/MutateMessageMenu";
 import { NodeStateNavLink } from "@/components/NodeStateNavLink";

@@ -1,3 +1,5 @@
+"use client";
+
 import { NavLink, NavLinkProps, Text, Tooltip } from "@mantine/core";
 import {
   Icon123,

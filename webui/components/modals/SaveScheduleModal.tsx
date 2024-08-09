@@ -56,7 +56,7 @@ export function SaveScheduleModal({
     };
 
     void fetchData();
-  }, []);
+  }, [form]);
 
   return (
     <form

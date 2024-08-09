@@ -12,7 +12,7 @@ import React from "react";
 
 type MutateMessageMenuEntryProps = {
   messageId: number;
-  mutatorId: number;
+  mutatorId: string;
 };
 
 export const MutateMessageMenuEntry = ({
