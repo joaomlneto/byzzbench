@@ -3,6 +3,7 @@ package byzzbench.simulator.protocols.dummy;
 import byzzbench.simulator.Replica;
 import byzzbench.simulator.ScenarioExecutor;
 import byzzbench.simulator.protocols.pbft_java.MessageLog;
+import byzzbench.simulator.service.MessageMutatorService;
 import byzzbench.simulator.service.SchedulesService;
 import byzzbench.simulator.transport.Transport;
 import lombok.extern.java.Log;
@@ -16,8 +17,8 @@ import java.util.TreeSet;
 @Log
 public class DummyScenarioExecutor<T extends Serializable> extends ScenarioExecutor<T> {
 
-    public DummyScenarioExecutor(SchedulesService schedulesService) throws Exception {
-        super("dummy", new Transport(schedulesService));
+    public DummyScenarioExecutor(MessageMutatorService messageMutatorService, SchedulesService schedulesService) throws Exception {
+        super("dummy", messageMutatorService, new Transport(messageMutatorService, schedulesService));
     }
 
     @Override

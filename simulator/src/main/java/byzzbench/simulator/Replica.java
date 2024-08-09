@@ -95,7 +95,7 @@ public abstract class Replica<T extends Serializable> implements Serializable {
     protected void sendMessage(MessagePayload message, String recipient) {
         message.sign(this.nodeId);
         this.transport.sendMessage(this.nodeId, message, recipient);
-        
+
     }
 
     /**
@@ -108,7 +108,7 @@ public abstract class Replica<T extends Serializable> implements Serializable {
                                     Set<String> recipients) {
         message.sign(this.nodeId);
         this.transport.multicast(this.nodeId, recipients, message);
-      
+
     }
 
     /**
@@ -150,7 +150,6 @@ public abstract class Replica<T extends Serializable> implements Serializable {
      * created. Subclasses should override this method to perform any
      * initialization that is required.
      */
-
     public abstract void initialize();
 
     /**
@@ -162,6 +161,11 @@ public abstract class Replica<T extends Serializable> implements Serializable {
      */
     public abstract void handleClientRequest(String clientId, Serializable request) throws Exception;
 
+    /**
+     * Send a reply to a client.
+     * @param clientId the ID of the client
+     * @param reply the reply payload
+     */
     public void sendReplyToClient(String clientId, Serializable reply) {
         ClientReplyPayload response = new ClientReplyPayload(clientId, reply);
         this.transport.sendClientResponse(this.nodeId, response, clientId);

@@ -2,6 +2,7 @@ package byzzbench.simulator;
 
 import byzzbench.simulator.scheduler.BaseScheduler;
 import byzzbench.simulator.scheduler.RandomScheduler;
+import byzzbench.simulator.service.MessageMutatorService;
 import byzzbench.simulator.state.adob.AdobDistributedState;
 import byzzbench.simulator.transport.Transport;
 import lombok.Getter;
@@ -44,10 +45,10 @@ public abstract class ScenarioExecutor<T extends Serializable> {
      *
      * @param transport The transport layer for the scenario.
      */
-    protected ScenarioExecutor(String id, Transport<T> transport) {
+    protected ScenarioExecutor(String id, MessageMutatorService messageMutatorService, Transport<T> transport) {
         this.id = id;
         this.transport = transport;
-        this.scheduler = new RandomScheduler<>(transport);
+        this.scheduler = new RandomScheduler<>(messageMutatorService, transport);
         this.setup();
 
         // AdoB must be initialized after the setup method is called
@@ -60,8 +61,8 @@ public abstract class ScenarioExecutor<T extends Serializable> {
     public void reset() {
         this.transport.reset();
         this.setupScenario();
-        this.runScenario();
         this.adobOracle.reset();
+        this.runScenario();
     }
 
     /**
@@ -79,6 +80,7 @@ public abstract class ScenarioExecutor<T extends Serializable> {
      */
     public final void setupScenario() {
         this.transport.createClients(this.numClients);
+        this.transport.getNodes().values().forEach(Replica::initialize);
         this.setup();
     }
 
@@ -87,9 +89,11 @@ public abstract class ScenarioExecutor<T extends Serializable> {
      */
     protected abstract void setup();
 
+    /**
+     * Runs the scenario by calling the run method and initializing all nodes.
+     */
     public final void runScenario() {
         this.run();
-        this.transport.getNodes().values().forEach(Replica::initialize);
     }
 
     /**

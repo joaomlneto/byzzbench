@@ -1,8 +1,7 @@
 package byzzbench.simulator.protocols.XRPL;
 
 import byzzbench.simulator.ScenarioExecutor;
-import byzzbench.simulator.protocols.XRPL.mutators.XRPLProposeMessageMutatorFactory;
-import byzzbench.simulator.protocols.XRPL.mutators.XRPLSubmitMessageMutatorFactory;
+import byzzbench.simulator.service.MessageMutatorService;
 import byzzbench.simulator.service.SchedulesService;
 import byzzbench.simulator.transport.Transport;
 import org.springframework.stereotype.Component;
@@ -19,8 +18,8 @@ public class XRPLScenarioExecutor extends ScenarioExecutor<XRPLLedger>  {
 
     private List<XRPLReplica> replica_list;
 
-    public XRPLScenarioExecutor(SchedulesService schedulesService) {
-        super("xrpl", new Transport<>(schedulesService));
+    public XRPLScenarioExecutor(MessageMutatorService messageMutatorService, SchedulesService schedulesService) {
+        super("xrpl", messageMutatorService, new Transport<>(messageMutatorService, schedulesService));
         this.setNumClients(1);
     }
 
@@ -52,8 +51,8 @@ public class XRPLScenarioExecutor extends ScenarioExecutor<XRPLLedger>  {
                 this.replica_list.add(replica);
                 transport.addNode(replica);
             });
-            transport.registerMessageMutators(new XRPLProposeMessageMutatorFactory());
-            transport.registerMessageMutators(new XRPLSubmitMessageMutatorFactory());
+            //transport.registerMessageMutators(new XRPLProposeMessageMutatorFactory());
+            //transport.registerMessageMutators(new XRPLSubmitMessageMutatorFactory());
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -86,8 +85,8 @@ public class XRPLScenarioExecutor extends ScenarioExecutor<XRPLLedger>  {
             replica_list.forEach(r -> {
                 transport.addNode(r);
             });
-            transport.registerMessageMutators(new XRPLProposeMessageMutatorFactory());
-            transport.registerMessageMutators(new XRPLSubmitMessageMutatorFactory());
+            //transport.registerMessageMutators(new XRPLProposeMessageMutatorFactory());
+            //transport.registerMessageMutators(new XRPLSubmitMessageMutatorFactory());
         } catch (Exception e) {
             throw new RuntimeException(e);
         }

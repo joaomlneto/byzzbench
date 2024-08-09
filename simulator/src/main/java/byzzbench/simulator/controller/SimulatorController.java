@@ -2,10 +2,7 @@ package byzzbench.simulator.controller;
 
 import byzzbench.simulator.Client;
 import byzzbench.simulator.Replica;
-import byzzbench.simulator.service.ScenarioFactoryService;
-import byzzbench.simulator.service.SchedulerFactoryService;
-import byzzbench.simulator.service.SchedulesService;
-import byzzbench.simulator.service.SimulatorService;
+import byzzbench.simulator.service.*;
 import byzzbench.simulator.state.adob.AdobCache;
 import byzzbench.simulator.transport.Event;
 import byzzbench.simulator.transport.MessageMutator;
@@ -16,7 +13,6 @@ import org.springframework.web.bind.annotation.*;
 import java.io.Serializable;
 import java.util.Collection;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.stream.IntStream;
 
@@ -26,6 +22,7 @@ import java.util.stream.IntStream;
 @RestController
 @RequiredArgsConstructor
 public class SimulatorController {
+    private final MessageMutatorService messageMutatorService;
     private final SchedulesService schedulesService;
     private final SimulatorService simulatorService;
     private final ScenarioFactoryService scenarioFactoryService;
@@ -145,6 +142,7 @@ public class SimulatorController {
         return simulatorService.getScenarioExecutor()
                 .getTransport()
                 .getSchedule()
+                .getEvents()
                 .stream()
                 .map(Event::getEventId)
                 .toList();
@@ -159,12 +157,20 @@ public class SimulatorController {
     }
 
     @GetMapping("/event/{eventId}/mutators")
-    public List<Long> getMessageMutators(@PathVariable Long eventId) {
-        return simulatorService.getScenarioExecutor()
+    public List<String> getMessageMutators(@PathVariable Long eventId) {
+        Event e = simulatorService.getScenarioExecutor()
                 .getTransport()
-                .getEventMutators(eventId)
+                .getEvents()
+                .get(eventId);
+
+        // if the event is not found, throw an exception
+        if (e == null) {
+            throw new IllegalArgumentException("Event not found: " + eventId);
+        }
+
+        return messageMutatorService.getMutatorsForEvent(e)
                 .stream()
-                .map(Map.Entry::getKey)
+                .map(MessageMutator::getId)
                 .toList();
     }
 
@@ -184,24 +190,21 @@ public class SimulatorController {
      * @param mutatorId The ID of the mutator to apply.
      */
     @PostMapping("/event/{eventId}/mutate/{mutatorId}")
-    public void mutateMessage(@PathVariable Long eventId, @PathVariable Long mutatorId) {
+    public void mutateMessage(@PathVariable Long eventId, @PathVariable String mutatorId) {
         simulatorService.getScenarioExecutor().getTransport().applyMutation(eventId, mutatorId);
     }
 
     @GetMapping("/mutators")
-    public Set<Long> getMutators() {
-        return simulatorService.getScenarioExecutor()
-                .getTransport()
-                .getMutators()
+    public Set<String> getMutators() {
+        return messageMutatorService
+                .getMutatorsMap()
                 .keySet();
     }
 
     @GetMapping("/mutators/{mutatorId}")
-    public MessageMutator getMutator(@PathVariable Long mutatorId) {
-        return simulatorService.getScenarioExecutor()
-                .getTransport()
-                .getMutators()
-                .get(mutatorId);
+    public MessageMutator getMutator(@PathVariable String mutatorId) {
+        return messageMutatorService
+                .getMutator(mutatorId);
     }
 
     @PostMapping("/reset")

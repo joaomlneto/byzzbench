@@ -11,8 +11,22 @@ import java.util.List;
 public class SchedulesService {
     private final List<Schedule> schedules = Collections.synchronizedList(new ArrayList<>());
 
-    public void addSchedule(Schedule schedule) {
+    /**
+     * Add a new empty schedule
+     * @return the new schedule
+     */
+    public Schedule addSchedule() {
+        return this.addSchedule(new Schedule());
+    }
+
+    /**
+     * Add an existing schedule to the list of schedules
+     * @param schedule the schedule to add
+     * @return the schedule
+     */
+    public Schedule addSchedule(Schedule schedule) {
         schedules.add(schedule);
+        return schedule;
     }
 
     public List<Schedule> getSchedules() {

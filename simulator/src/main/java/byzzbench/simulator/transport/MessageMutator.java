@@ -1,11 +1,13 @@
 package byzzbench.simulator.transport;
 
-import java.io.Serializable;
-import java.util.Collection;
-import java.util.function.Function;
 import lombok.Getter;
+import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.ToString;
+
+import java.io.Serializable;
+import java.util.Collection;
+import java.util.function.UnaryOperator;
 
 /**
  * Abstract class for mutating {@link MessageEvent}.
@@ -15,7 +17,9 @@ import lombok.ToString;
 @RequiredArgsConstructor
 @ToString
 public abstract class MessageMutator
-    implements Serializable, Function<Serializable, Serializable> {
+    implements Serializable, UnaryOperator<Serializable> {
+  @NonNull
+  private final String id;
   private final String name;
 
   private final Collection<Class<? extends Serializable>> inputClasses;

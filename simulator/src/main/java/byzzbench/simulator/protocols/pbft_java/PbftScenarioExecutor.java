@@ -2,7 +2,7 @@ package byzzbench.simulator.protocols.pbft_java;
 
 import byzzbench.simulator.Replica;
 import byzzbench.simulator.ScenarioExecutor;
-import byzzbench.simulator.protocols.pbft_java.mutator.PrePrepareMessageMutatorFactory;
+import byzzbench.simulator.service.MessageMutatorService;
 import byzzbench.simulator.service.SchedulesService;
 import byzzbench.simulator.transport.Transport;
 import lombok.extern.java.Log;
@@ -17,8 +17,8 @@ import java.util.TreeSet;
 public class PbftScenarioExecutor<T extends Serializable> extends ScenarioExecutor<T> {
     private final int NUM_NODES = 4;
 
-    public PbftScenarioExecutor(SchedulesService schedulesService) {
-        super("pbft-java", new Transport(schedulesService));
+    public PbftScenarioExecutor(MessageMutatorService messageMutatorService, SchedulesService schedulesService) {
+        super("pbft-java", messageMutatorService, new Transport(messageMutatorService, schedulesService));
         this.setNumClients(1);
     }
 
@@ -35,8 +35,6 @@ public class PbftScenarioExecutor<T extends Serializable> extends ScenarioExecut
                 Replica replica = new PbftReplica<String, String>(nodeId, nodeIds, 1, 1000, messageLog, transport);
                 this.addNode(replica);
             });
-
-            transport.registerMessageMutators(new PrePrepareMessageMutatorFactory());
         } catch (Exception e) {
             throw new RuntimeException(e);
         }

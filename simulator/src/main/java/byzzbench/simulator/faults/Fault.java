@@ -12,11 +12,11 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class Fault {
   private final FaultPrecondition precondition;
-  private final FaultBehavior behavior;
+  private final FaultBehavior<MessageEvent> behavior;
 
   public void apply(MessageEvent message) {
     if (precondition.isSatisfiedBy(message)) {
-      behavior.mutate(message);
+      behavior.accept(message);
     }
   }
 }

@@ -2,12 +2,10 @@ package byzzbench.simulator.transport;
 
 import byzzbench.simulator.Client;
 import byzzbench.simulator.Replica;
-import byzzbench.simulator.faults.Fault;
-import byzzbench.simulator.faults.NetworkFault;
+import byzzbench.simulator.service.MessageMutatorService;
 import byzzbench.simulator.service.SchedulesService;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Getter;
-import lombok.RequiredArgsConstructor;
 import lombok.Synchronized;
 import lombok.extern.java.Log;
 
@@ -25,8 +23,11 @@ import java.util.concurrent.atomic.AtomicLong;
  * @param <T> The type of the entries in the commit log of each {@link Replica}.
  */
 @Log
-@RequiredArgsConstructor
 public class Transport<T extends Serializable> {
+    /**
+     * The service for storing and managing schedules.
+     */
+    private final MessageMutatorService messageMutatorService;
     /**
      * The service for storing and managing schedules.
      */
@@ -36,11 +37,6 @@ public class Transport<T extends Serializable> {
      * The sequence number for events.
      */
     private final AtomicLong eventSeqNum = new AtomicLong(1);
-
-    /**
-     * The sequence number for mutators.
-     */
-    private final AtomicLong mutatorSeqNum = new AtomicLong(1);
 
     /**
      * Map of node id to the {@link Replica} object.
@@ -64,24 +60,6 @@ public class Transport<T extends Serializable> {
     private final Map<Long, Event> events = new TreeMap<>();
 
     /**
-     * The schedule of events in order of delivery.
-     */
-    @Getter(onMethod_ = {@Synchronized})
-    private final List<Event> schedule = new ArrayList<>();
-
-    /**
-     * Map of mutator ID to the {@link MessageMutator} object.
-     */
-    @Getter(onMethod_ = {@Synchronized})
-    @JsonIgnore
-    private final Map<Long, MessageMutator> mutators = new TreeMap<>();
-
-    @Getter
-    // initialize with a NetworkFault fault
-    private final List<Fault> faults =
-            new ArrayList<>(List.of(new NetworkFault(this)));
-
-    /**
      * Map of node id to the partition ID that the node is in.
      * Two nodes on different partitions cannot communicate.
      * Nodes without partition IDs are in the same "null" partition and can
@@ -89,6 +67,18 @@ public class Transport<T extends Serializable> {
      */
     @Getter(onMethod_ = {@Synchronized})
     private final Map<String, Integer> partitions = new HashMap<>();
+
+    /**
+     * The schedule of events in order of delivery.
+     */
+    @Getter(onMethod_ = {@Synchronized})
+    private Schedule schedule;
+
+    public Transport (MessageMutatorService messageMutatorService, SchedulesService schedulesService) {
+        this.messageMutatorService = messageMutatorService;
+        this.schedulesService = schedulesService;
+        this.schedule = this.schedulesService.addSchedule();
+    }
 
     /**
      * Registers a new node in the system.
@@ -121,18 +111,11 @@ public class Transport<T extends Serializable> {
     }
 
     /**
-     * Removes a node from the system.
-     *
-     * @param replicaId
+     * Sends a request from a client to a replica.
+     * @param sender The ID of the client sending the request
+     * @param operation The operation to send
+     * @param recipient The ID of the replica receiving the request
      */
-    public void removeNode(String replicaId) {
-        nodes.remove(replicaId);
-    }
-
-    public void removeNode(Replica<T> replica) {
-        nodes.remove(replica.getNodeId());
-    }
-
     public void sendClientRequest(String sender, Serializable operation, String recipient) {
         // assert that the sender exists
         if (!clients.containsKey(sender)) {
@@ -148,6 +131,12 @@ public class Transport<T extends Serializable> {
         events.put(eventId, event);
     }
 
+    /**
+     * Sends a response from a replica to a client.
+     * @param sender The ID of the replica sending the response
+     * @param response The response to send
+     * @param recipient The ID of the client receiving the response
+     */
     public void sendClientResponse(String sender, Serializable response, String recipient) {
         // assert that the sender exists
         if (!nodes.containsKey(sender)) {
@@ -163,23 +152,26 @@ public class Transport<T extends Serializable> {
         events.put(eventId, event);
     }
 
+    /**
+     * Sends a message between two replicas.
+     * @param sender The ID of the replica sending the message
+     * @param message The payload of the message to send
+     * @param recipient The ID of the replica receiving the message
+     */
     public void sendMessage(String sender, MessagePayload message,
                             String recipient) {
         this.multicast(sender, Set.of(recipient), message);
     }
 
+    /**
+     * Resets the transport layer.
+     */
     public void reset() {
-        this.schedulesService
-                .addSchedule(Schedule.builder()
-                        .eventIds(this.schedule.stream().map(Event::getEventId).toList())
-                .build());
         this.eventSeqNum.set(1);
-        this.mutatorSeqNum.set(1);
         this.nodes.clear();
         this.events.clear();
-        this.mutators.clear();
-        this.schedule.clear();
         this.nodes.values().forEach(Replica::initialize);
+        this.schedule = schedulesService.addSchedule();
     }
 
     public List<Event> getEventsInState(Event.Status status) {
@@ -197,10 +189,7 @@ public class Transport<T extends Serializable> {
                     new MessageEvent(messageId, sender, recipient, payload);
             events.put(messageId, messageEvent);
 
-            // go through the faults
-            for (Fault fault : faults) {
-                fault.apply(messageEvent);
-            }
+            // TODO: check connectivity between sender and recipient
         }
     }
 
@@ -219,7 +208,7 @@ public class Transport<T extends Serializable> {
         }
 
         // deliver the event
-        this.schedule.add(e);
+        this.schedule.appendEvent(e);
         e.setStatus(Event.Status.DELIVERED);
 
         switch (e) {
@@ -231,6 +220,31 @@ public class Transport<T extends Serializable> {
         }
 
         log.info("Delivered " + e.getEventId() + ": " + e.getSenderId() + "->" + e.getRecipientId());
+    }
+
+    public synchronized void injectFault(FaultInjectionEvent fault) {
+        // check if event is a message
+        Event e = events.get(fault.getEventId());
+
+        // if event is null, throw an exception
+        if (e == null) {
+            throw new RuntimeException(String.format("Event %d not found", fault.getEventId()));
+        }
+
+        // check if it is a message event
+        if (!(e instanceof MessageEvent m)) {
+            throw new RuntimeException(String.format("Event %d is not a message - cannot inject fault.", fault.getEventId()));
+        }
+
+        // if the event has already been delivered, throw an exception
+        if (e.getStatus() != Event.Status.QUEUED) {
+            throw new RuntimeException("Event not in QUEUED state");
+        }
+
+        // apply fault
+        fault.getFaultBehavior().accept(m);
+        fault.setStatus(Event.Status.DELIVERED);
+        log.info("Injected fault: " + fault);
     }
 
     public void dropMessage(long messageId) {
@@ -248,50 +262,9 @@ public class Transport<T extends Serializable> {
         log.info("Dropped: " + m.getSenderId() + "->" + m.getRecipientId() + ": " + m.getPayload());
     }
 
-    public void registerMessageMutator(Class<? extends Serializable> messageClass, MessageMutator mutator) {
-        this.mutators.put(mutatorSeqNum.getAndIncrement(), mutator);
-    }
-
-    public void registerMessageMutators(MessageMutatorFactory factory) {
-        for (MessageMutator mutator : factory.mutators()) {
-            for (Class<? extends Serializable> clazz :
-                    mutator.getInputClasses()) {
-                this.registerMessageMutator(clazz, mutator);
-            }
-        }
-        log.info("Registered Message Mutators:" + this.mutators);
-    }
-
-    public List<Map.Entry<Long, MessageMutator>> getEventMutators(
-            long eventId) {
+    public synchronized void applyMutation(long eventId, String mutatorId) {
         Event e = events.get(eventId);
-
-        // if event is null, throw an exception
-        if (e == null) {
-            throw new RuntimeException(String.format("Event %d not found", eventId));
-        }
-
-        // if it is not a MessageEvent, return an empty list
-        if (!(e instanceof MessageEvent messageEvent)) {
-            return List.of();
-        }
-
-        List<Map.Entry<Long, MessageMutator>> messageMutators =
-                mutators.entrySet()
-                        .stream()
-                        // filter mutators that can be applied to the event
-                        .filter(entry
-                                -> entry.getValue().getInputClasses().contains(
-                                messageEvent.getPayload().getClass()))
-                        .toList();
-
-        // return their keys
-        return messageMutators;
-    }
-
-    public synchronized void applyMutation(long eventId, long mutatorId) {
-        Event e = events.get(eventId);
-        MessageMutator mutator = mutators.get(mutatorId);
+        MessageMutator mutator = this.messageMutatorService.getMutator(mutatorId);
 
         if (e.getStatus() != Event.Status.QUEUED) {
             throw new RuntimeException(
@@ -321,6 +294,15 @@ public class Transport<T extends Serializable> {
                 m.getEventId(), m.getSenderId(), m.getRecipientId(),
                 (MessagePayload) newPayload);
         events.put(eventId, newMessage);
+
+        // create a new event for the mutation
+        Event mutateMessageEvent = new MutateMessageEvent(
+                this.eventSeqNum.getAndIncrement(), m.getSenderId(),
+                m.getRecipientId(), new MutateMessageEventPayload(
+                        eventId, mutatorId));
+        events.put(mutateMessageEvent.getEventId(), mutateMessageEvent);
+        this.schedule.appendEvent(mutateMessageEvent);
+
         log.info("Mutated: " + m.getSenderId() + "->" +
                 m.getRecipientId() + ": " + m.getPayload() + " -> " +
                 newPayload);
@@ -354,14 +336,6 @@ public class Transport<T extends Serializable> {
         for (Long eventId : eventIds) {
             this.events.remove(eventId);
         }
-    }
-
-    public void addFault(Fault fault) {
-        this.faults.add(fault);
-    }
-
-    public void addFaults(List<Fault> faults) {
-        this.faults.addAll(faults);
     }
 
     public Set<String> getNodeIds() {
