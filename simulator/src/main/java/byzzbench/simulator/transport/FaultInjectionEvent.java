@@ -1,6 +1,6 @@
 package byzzbench.simulator.transport;
 
-import byzzbench.simulator.faults.FaultBehavior;
+import byzzbench.simulator.faults.Fault;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
@@ -11,7 +11,7 @@ import java.time.Instant;
 public abstract class FaultInjectionEvent implements Event {
     private final long eventId;
     private final Instant createdAt = Instant.now();
-    private final FaultBehavior faultBehavior;
+    private final Fault faultBehavior;
     private Status status = Status.DELIVERED; // Default status is DELIVERED
 
     @Override

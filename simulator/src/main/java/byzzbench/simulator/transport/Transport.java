@@ -2,6 +2,10 @@ package byzzbench.simulator.transport;
 
 import byzzbench.simulator.Client;
 import byzzbench.simulator.Replica;
+import byzzbench.simulator.ScenarioExecutor;
+import byzzbench.simulator.Schedule;
+import byzzbench.simulator.faults.FaultInput;
+import byzzbench.simulator.faults.MessageMutationFault;
 import byzzbench.simulator.service.MessageMutatorService;
 import byzzbench.simulator.service.SchedulesService;
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -24,10 +28,13 @@ import java.util.concurrent.atomic.AtomicLong;
  */
 @Log
 public class Transport<T extends Serializable> {
+    private final ScenarioExecutor<T> scenario;
+
     /**
      * The service for storing and managing schedules.
      */
     private final MessageMutatorService messageMutatorService;
+
     /**
      * The service for storing and managing schedules.
      */
@@ -60,13 +67,9 @@ public class Transport<T extends Serializable> {
     private final Map<Long, Event> events = new TreeMap<>();
 
     /**
-     * Map of node id to the partition ID that the node is in.
-     * Two nodes on different partitions cannot communicate.
-     * Nodes without partition IDs are in the same "null" partition and can
-     * communicate with each other.
+     * The router for managing partitions.
      */
-    @Getter(onMethod_ = {@Synchronized})
-    private final Map<String, Integer> partitions = new HashMap<>();
+    private final Router router = new Router();
 
     /**
      * The schedule of events in order of delivery.
@@ -74,7 +77,8 @@ public class Transport<T extends Serializable> {
     @Getter(onMethod_ = {@Synchronized})
     private Schedule schedule;
 
-    public Transport (MessageMutatorService messageMutatorService, SchedulesService schedulesService) {
+    public Transport (ScenarioExecutor<T> scenario, MessageMutatorService messageMutatorService, SchedulesService schedulesService) {
+        this.scenario = scenario;
         this.messageMutatorService = messageMutatorService;
         this.schedulesService = schedulesService;
         this.schedule = this.schedulesService.addSchedule();
@@ -174,6 +178,11 @@ public class Transport<T extends Serializable> {
         this.schedule = schedulesService.addSchedule();
     }
 
+    /**
+     * Gets all events in a given state.
+     * @param status The state to filter by
+     * @return A list of events in the given state
+     */
     public List<Event> getEventsInState(Event.Status status) {
         return this.events.values()
                 .stream()
@@ -181,6 +190,12 @@ public class Transport<T extends Serializable> {
                 .toList();
     }
 
+    /**
+     * Multicasts a message to a set of recipients.
+     * @param sender The ID of the sender
+     * @param recipients The set of recipient IDs
+     * @param payload The payload of the message
+     */
     public void multicast(String sender, Set<String> recipients,
                           MessagePayload payload) {
         for (String recipient : recipients) {
@@ -188,13 +203,10 @@ public class Transport<T extends Serializable> {
             MessageEvent messageEvent =
                     new MessageEvent(messageId, sender, recipient, payload);
             events.put(messageId, messageEvent);
-
-            // TODO: check connectivity between sender and recipient
         }
     }
 
     public synchronized void deliverEvent(long eventId) throws Exception {
-        // check if event is a message
         Event e = events.get(eventId);
 
         // check if null
@@ -207,46 +219,42 @@ public class Transport<T extends Serializable> {
             throw new RuntimeException("Event not in QUEUED state");
         }
 
+        // if it is a MessageEvent and there is no connectivity between the nodes, drop it
+        if (e instanceof MessageEvent m && !router.haveConnectivity(m.getSenderId(), m.getRecipientId())) {
+            log.info("Dropped: " + m.getSenderId() + "->" + m.getRecipientId() + ": " + m.getPayload());
+            m.setStatus(Event.Status.DROPPED);
+            return;
+        }
+
         // deliver the event
         this.schedule.appendEvent(e);
         e.setStatus(Event.Status.DELIVERED);
 
         switch (e) {
-            case ClientRequestEvent c ->
-                    nodes.get(c.getRecipientId()).handleClientRequest(c.getSenderId(), c.getPayload());
-            case MessageEvent m -> nodes.get(m.getRecipientId()).handleMessage(m.getSenderId(), m.getPayload());
-            case TimeoutEvent t -> t.getTask().run();
-            default -> throw new RuntimeException("Unknown event type");
+            case ClientRequestEvent c -> {
+                nodes.get(c.getRecipientId()).handleClientRequest(c.getSenderId(), c.getPayload());
+            }
+            case ClientReplyEvent c -> {
+                clients.get(c.getRecipientId()).handleReply(c.getSenderId(), c.getPayload());
+            }
+            case MessageEvent m -> {
+                nodes.get(m.getRecipientId()).handleMessage(m.getSenderId(), m.getPayload());
+            }
+            case TimeoutEvent t -> {
+                t.getTask().run();
+            }
+            default -> {
+                throw new RuntimeException("Unknown event type");
+            }
         }
 
         log.info("Delivered " + e.getEventId() + ": " + e.getSenderId() + "->" + e.getRecipientId());
     }
 
-    public synchronized void injectFault(FaultInjectionEvent fault) {
-        // check if event is a message
-        Event e = events.get(fault.getEventId());
-
-        // if event is null, throw an exception
-        if (e == null) {
-            throw new RuntimeException(String.format("Event %d not found", fault.getEventId()));
-        }
-
-        // check if it is a message event
-        if (!(e instanceof MessageEvent m)) {
-            throw new RuntimeException(String.format("Event %d is not a message - cannot inject fault.", fault.getEventId()));
-        }
-
-        // if the event has already been delivered, throw an exception
-        if (e.getStatus() != Event.Status.QUEUED) {
-            throw new RuntimeException("Event not in QUEUED state");
-        }
-
-        // apply fault
-        fault.getFaultBehavior().accept(m);
-        fault.setStatus(Event.Status.DELIVERED);
-        log.info("Injected fault: " + fault);
-    }
-
+    /**
+     * Drops a message from the network.
+     * @param messageId The ID of the message to drop.
+     */
     public void dropMessage(long messageId) {
         // check if event is a message
         Event e = events.get(messageId);
@@ -262,24 +270,32 @@ public class Transport<T extends Serializable> {
         log.info("Dropped: " + m.getSenderId() + "->" + m.getRecipientId() + ": " + m.getPayload());
     }
 
+    /**
+     * Gets an event by ID.
+     * @param eventId The ID of the event to get.
+     * @return The event with the given ID.
+     */
+    public Event getEvent(long eventId) {
+        return events.get(eventId);
+    }
+
     public synchronized void applyMutation(long eventId, String mutatorId) {
         Event e = events.get(eventId);
-        MessageMutator mutator = this.messageMutatorService.getMutator(mutatorId);
+        MessageMutationFault mutator = this.messageMutatorService.getMutator(mutatorId);
 
-        if (e.getStatus() != Event.Status.QUEUED) {
-            throw new RuntimeException(
-                    "Message not found or not in QUEUED state");
+        // check if event does not exist
+        if (e == null) {
+            throw new RuntimeException(String.format("Event %d not found", eventId));
         }
 
+        // check if mutator does not exist
         if (mutator == null) {
             throw new RuntimeException("Mutator not found");
         }
 
-        // check if mutator can be applied to the event
-        if (!mutator.getInputClasses().contains(
-                ((MessageEvent) e).getPayload().getClass())) {
-            throw new RuntimeException(
-                    "Mutator cannot be applied to the event");
+        // check if event is not in QUEUED state
+        if (e.getStatus() != Event.Status.QUEUED) {
+            throw new RuntimeException("Message not found or not in QUEUED state");
         }
 
         // check it is a message event!
@@ -288,12 +304,15 @@ public class Transport<T extends Serializable> {
                     "Event %d is not a message - cannot mutate it.", eventId));
         }
 
-        Serializable newPayload = mutator.apply(m.getPayload());
-        // FIXME: the typecasting here to MessagePayload is very nasty
-        MessageEvent newMessage = new MessageEvent(
-                m.getEventId(), m.getSenderId(), m.getRecipientId(),
-                (MessagePayload) newPayload);
-        events.put(eventId, newMessage);
+        // check if mutator can be applied to the event
+        if (!mutator.canMutate(m.getPayload())) {
+            throw new RuntimeException(
+                    String.format("Mutator %s cannot be applied to event %d", mutatorId, eventId)
+            );
+        }
+
+        // apply the mutation
+        mutator.accept(new FaultInput<T>(this.scenario, m));
 
         // create a new event for the mutation
         Event mutateMessageEvent = new MutateMessageEvent(
@@ -301,11 +320,12 @@ public class Transport<T extends Serializable> {
                 m.getRecipientId(), new MutateMessageEventPayload(
                         eventId, mutatorId));
         events.put(mutateMessageEvent.getEventId(), mutateMessageEvent);
+
+        // append the event to the schedule
+        mutateMessageEvent.setStatus(Event.Status.DELIVERED);
         this.schedule.appendEvent(mutateMessageEvent);
 
-        log.info("Mutated: " + m.getSenderId() + "->" +
-                m.getRecipientId() + ": " + m.getPayload() + " -> " +
-                newPayload);
+        log.info("Mutated: " + m);
     }
 
     public long setTimeout(Replica<T> replica, Runnable runnable,

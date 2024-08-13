@@ -1,11 +1,15 @@
 package byzzbench.simulator.service;
 
 import byzzbench.simulator.faults.FaultBehavior;
-import byzzbench.simulator.transport.Event;
+import byzzbench.simulator.faults.MessageMutationFault;
 import org.springframework.stereotype.Service;
 
+import java.io.Serializable;
 import java.util.*;
 
+/**
+ * Registry of fault behaviors.
+ */
 @Service
 public class FaultsFactoryService {
     /**
@@ -16,7 +20,7 @@ public class FaultsFactoryService {
     /**
      * Map of fault behaviors by input class.
      */
-    Map<Class<? extends Event>, Set<FaultBehavior<?>>> faultBehaviorsByInputClass = new HashMap<>();
+    Map<Class<? extends Serializable>, Set<FaultBehavior<?>>> faultBehaviorsByInputClass = new HashMap<>();
 
     public FaultsFactoryService(List<? extends FaultBehavior<?>> faultBehaviors) {
         // add fault behaviors to the map
@@ -27,13 +31,17 @@ public class FaultsFactoryService {
             this.faultBehaviors.put(faultBehavior.getId(), faultBehavior);
         }
 
-        // populate fault behaviors by input class
-        for (FaultBehavior<?> faultBehavior : faultBehaviors) {
-            for (Class<? extends Event> inputClass : faultBehavior.getInputClasses()) {
-                faultBehaviorsByInputClass
-                        .computeIfAbsent(inputClass, k -> new HashSet<>())
-                        .add(faultBehavior);
-            }
-        }
+        // populate message mutators (fault behaviors specifically applied to events) by input class
+        faultBehaviors
+                .stream()
+                .filter(faultBehavior -> faultBehavior instanceof MessageMutationFault<?>)
+                .map(faultBehavior -> (MessageMutationFault<?>) faultBehavior)
+                .forEach(faultBehavior -> {
+                    for (Class<? extends Serializable> inputClass : faultBehavior.getInputClasses()) {
+                        faultBehaviorsByInputClass
+                                .computeIfAbsent(inputClass, k -> new HashSet<>())
+                                .add(faultBehavior);
+                    }
+                });
     }
 }

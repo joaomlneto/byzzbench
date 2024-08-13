@@ -2,11 +2,11 @@ package byzzbench.simulator.controller;
 
 import byzzbench.simulator.Client;
 import byzzbench.simulator.Replica;
+import byzzbench.simulator.Schedule;
+import byzzbench.simulator.faults.MessageMutationFault;
 import byzzbench.simulator.service.*;
 import byzzbench.simulator.state.adob.AdobCache;
 import byzzbench.simulator.transport.Event;
-import byzzbench.simulator.transport.MessageMutator;
-import byzzbench.simulator.transport.Schedule;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
@@ -170,7 +170,7 @@ public class SimulatorController {
 
         return messageMutatorService.getMutatorsForEvent(e)
                 .stream()
-                .map(MessageMutator::getId)
+                .map(MessageMutationFault::getId)
                 .toList();
     }
 
@@ -202,7 +202,7 @@ public class SimulatorController {
     }
 
     @GetMapping("/mutators/{mutatorId}")
-    public MessageMutator getMutator(@PathVariable String mutatorId) {
+    public MessageMutationFault getMutator(@PathVariable String mutatorId) {
         return messageMutatorService
                 .getMutator(mutatorId);
     }

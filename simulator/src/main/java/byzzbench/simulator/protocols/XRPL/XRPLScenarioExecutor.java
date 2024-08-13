@@ -3,7 +3,6 @@ package byzzbench.simulator.protocols.XRPL;
 import byzzbench.simulator.ScenarioExecutor;
 import byzzbench.simulator.service.MessageMutatorService;
 import byzzbench.simulator.service.SchedulesService;
-import byzzbench.simulator.transport.Transport;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
@@ -19,7 +18,7 @@ public class XRPLScenarioExecutor extends ScenarioExecutor<XRPLLedger>  {
     private List<XRPLReplica> replica_list;
 
     public XRPLScenarioExecutor(MessageMutatorService messageMutatorService, SchedulesService schedulesService) {
-        super("xrpl", messageMutatorService, new Transport<>(messageMutatorService, schedulesService));
+        super("xrpl", messageMutatorService, schedulesService);
         this.setNumClients(1);
     }
 

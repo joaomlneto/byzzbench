@@ -1,6 +1,7 @@
 package byzzbench.simulator.scheduler;
 
 import byzzbench.simulator.Replica;
+import byzzbench.simulator.faults.MessageMutationFault;
 import byzzbench.simulator.service.MessageMutatorService;
 import byzzbench.simulator.state.CommitLog;
 import byzzbench.simulator.transport.*;
@@ -102,7 +103,7 @@ public class RandomScheduler<T extends Serializable> extends BaseScheduler<T> {
                 if (!(message instanceof MessageEvent me)) {
                     throw new IllegalArgumentException("Invalid message type");
                 }
-                List<MessageMutator> mutators =
+                List<MessageMutationFault<?>> mutators =
                         this.getMessageMutatorService().getMutatorsForEvent(me);
                 if (mutators.isEmpty()) {
                     // no mutators, return nothing

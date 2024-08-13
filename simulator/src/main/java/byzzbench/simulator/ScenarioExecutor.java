@@ -3,6 +3,7 @@ package byzzbench.simulator;
 import byzzbench.simulator.scheduler.BaseScheduler;
 import byzzbench.simulator.scheduler.RandomScheduler;
 import byzzbench.simulator.service.MessageMutatorService;
+import byzzbench.simulator.service.SchedulesService;
 import byzzbench.simulator.state.adob.AdobDistributedState;
 import byzzbench.simulator.transport.Transport;
 import lombok.Getter;
@@ -41,13 +42,15 @@ public abstract class ScenarioExecutor<T extends Serializable> {
     private int numClients = 0;
 
     /**
-     * Creates a new scenario executor with the given transport layer.
+     * Creates a new scenario executor
      *
-     * @param transport The transport layer for the scenario.
+     * @param id The unique identifier for the scenario.
+     * @param messageMutatorService The service for mutating messages.
+     * @param schedulesService The service for storing and managing schedules.
      */
-    protected ScenarioExecutor(String id, MessageMutatorService messageMutatorService, Transport<T> transport) {
+    protected ScenarioExecutor(String id, MessageMutatorService messageMutatorService, SchedulesService schedulesService) {
         this.id = id;
-        this.transport = transport;
+        this.transport = new Transport<>(this, messageMutatorService, schedulesService);
         this.scheduler = new RandomScheduler<>(messageMutatorService, transport);
         this.setup();
 

@@ -1,5 +1,6 @@
-package byzzbench.simulator.transport;
+package byzzbench.simulator;
 
+import byzzbench.simulator.transport.Event;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 

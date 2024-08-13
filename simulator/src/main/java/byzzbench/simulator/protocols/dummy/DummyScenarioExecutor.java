@@ -5,7 +5,6 @@ import byzzbench.simulator.ScenarioExecutor;
 import byzzbench.simulator.protocols.pbft_java.MessageLog;
 import byzzbench.simulator.service.MessageMutatorService;
 import byzzbench.simulator.service.SchedulesService;
-import byzzbench.simulator.transport.Transport;
 import lombok.extern.java.Log;
 import org.springframework.stereotype.Component;
 
@@ -18,7 +17,7 @@ import java.util.TreeSet;
 public class DummyScenarioExecutor<T extends Serializable> extends ScenarioExecutor<T> {
 
     public DummyScenarioExecutor(MessageMutatorService messageMutatorService, SchedulesService schedulesService) throws Exception {
-        super("dummy", messageMutatorService, new Transport(messageMutatorService, schedulesService));
+        super("dummy", messageMutatorService, schedulesService);
     }
 
     @Override

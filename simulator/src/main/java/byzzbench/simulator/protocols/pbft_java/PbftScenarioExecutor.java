@@ -4,7 +4,6 @@ import byzzbench.simulator.Replica;
 import byzzbench.simulator.ScenarioExecutor;
 import byzzbench.simulator.service.MessageMutatorService;
 import byzzbench.simulator.service.SchedulesService;
-import byzzbench.simulator.transport.Transport;
 import lombok.extern.java.Log;
 import org.springframework.stereotype.Component;
 
@@ -18,7 +17,7 @@ public class PbftScenarioExecutor<T extends Serializable> extends ScenarioExecut
     private final int NUM_NODES = 4;
 
     public PbftScenarioExecutor(MessageMutatorService messageMutatorService, SchedulesService schedulesService) {
-        super("pbft-java", messageMutatorService, new Transport(messageMutatorService, schedulesService));
+        super("pbft-java", messageMutatorService, schedulesService);
         this.setNumClients(1);
     }
 
