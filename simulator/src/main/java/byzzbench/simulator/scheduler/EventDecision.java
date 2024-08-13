@@ -17,7 +17,7 @@ public class EventDecision {
         return eventId;
     }
 
-    enum DecisionType {
+    public enum DecisionType {
         DELIVERED,
         DROPPED,
         MUTATED

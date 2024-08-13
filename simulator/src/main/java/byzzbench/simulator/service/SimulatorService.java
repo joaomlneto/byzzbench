@@ -2,6 +2,7 @@ package byzzbench.simulator.service;
 
 import byzzbench.simulator.ScenarioExecutor;
 import byzzbench.simulator.TerminationCondition;
+import byzzbench.simulator.scheduler.EventDecision;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.java.Log;
@@ -10,6 +11,7 @@ import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Service;
 
 import java.io.Serializable;
+import java.util.Optional;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -25,6 +27,8 @@ import java.util.concurrent.Executors;
 @Log
 public class SimulatorService {
     private final int MAX_EVENTS_FOR_RUN = SimulatorConfig.MAX_EVENTS_FOR_RUN;
+    private final int MAX_DROPPED_MESSAGES = SimulatorConfig.MAX_DROPPED_MESSAGES;
+    private int droppedMessageCount;
     private final SchedulesService schedulesService;
     private final ScenarioFactoryService scenarioFactoryService;
     private final ExecutorService executor = Executors.newFixedThreadPool(1);
@@ -51,6 +55,7 @@ public class SimulatorService {
         this.terminationCondition = this.scenarioExecutor.getTerminationCondition();
         this.scenarioExecutor.setupScenario();
         this.scenarioExecutor.runScenario();
+        this.droppedMessageCount = 0;
         // this.scenarioExecutor.reset();
     }
 
@@ -87,13 +92,14 @@ public class SimulatorService {
                 // run the scenario until the stop flag is set
                 while (!this.shouldStop) {
                     int num_events = 0;
+                    this.droppedMessageCount = 0;
                     int scenarioId = this.schedulesService.getSchedules().size() + 1;
                     System.out.println("Running scenario #" + scenarioId);
 
                     boolean flag = true;
                     while (flag) {
-                        this.scenarioExecutor.getScheduler().scheduleNext();
-                        num_events += 1;
+                        this.invokeScheduleNext();
+                        
                         if ((num_events % 50 == 0 && this.terminationCondition.shouldTerminate())) {
                             log.info("Termination condition has been satisfied for this run, terminating. . .");
                             flag = false;
@@ -103,6 +109,7 @@ public class SimulatorService {
                             log.info("Reached max # of actions for this run, terminating. . .");
                             flag = false;
                         }
+                        num_events += 1;
                     }
                     
                     // run the scenario for the given number of events
@@ -124,5 +131,21 @@ public class SimulatorService {
 
     public enum SimulatorServiceMode {
         STOPPED, RUNNING
+    }
+
+    public void invokeScheduleNext() throws Exception {
+        Optional<EventDecision> decisionOptional = this.scenarioExecutor.getScheduler().scheduleNext();
+        if (decisionOptional.isPresent()) { 
+            EventDecision decision = decisionOptional.get();
+            if (decision.getDecision() == EventDecision.DecisionType.DROPPED) {
+                this.droppedMessageCount += 1;
+            }
+
+            if (this.droppedMessageCount >= MAX_DROPPED_MESSAGES) {
+                this.scenarioExecutor.getScheduler().stopDropMessages();
+            }
+        } else {
+            log.info("Couldn't schedule action");
+        }
     }
 }

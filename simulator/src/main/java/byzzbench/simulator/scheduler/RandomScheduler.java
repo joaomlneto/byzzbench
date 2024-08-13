@@ -1,7 +1,6 @@
 package byzzbench.simulator.scheduler;
 
 import byzzbench.simulator.Replica;
-import byzzbench.simulator.service.SimulatorConfig;
 import byzzbench.simulator.state.CommitLog;
 import byzzbench.simulator.transport.*;
 
@@ -18,11 +17,9 @@ import java.util.Random;
  *            Replica}.
  */
 public class RandomScheduler<T extends Serializable> extends BaseScheduler<T> {
-    private double DELIVER_MESSAGE_PROBABILITY = 0.095;
-    private double DROP_MESSAGE_PROBABILITY = 0.005;
+    private double DELIVER_MESSAGE_PROBABILITY = 0.09;
+    private double DROP_MESSAGE_PROBABILITY = 0.01;
     private double MUTATE_MESSAGE_PROBABILITY = 0.00;
-    private final int MAX_DROPPED_MESSAGES = SimulatorConfig.MAX_DROPPED_MESSAGES;
-    private int dropped_msg_count = 0;
     Random random = new Random();
 
     private void assert_probabilities() {
@@ -102,13 +99,7 @@ public class RandomScheduler<T extends Serializable> extends BaseScheduler<T> {
                 
                 getTransport().dropMessage(message.getEventId());
                 EventDecision decision = new EventDecision(EventDecision.DecisionType.DROPPED, message.getEventId());
-                this.dropped_msg_count += 1;    
-                if (this.dropped_msg_count >= MAX_DROPPED_MESSAGES) {
-                    System.out.println("Will not drop messages after this point");
-                    this.DELIVER_MESSAGE_PROBABILITY += this.DROP_MESSAGE_PROBABILITY;
-                    this.DROP_MESSAGE_PROBABILITY = 0;
-                    assert_probabilities();
-                }            
+                          
                 return Optional.of(decision);
             }
 
@@ -169,5 +160,14 @@ public class RandomScheduler<T extends Serializable> extends BaseScheduler<T> {
 
 
         return Optional.empty();
+    }
+
+    @Override
+    public void stopDropMessages() {
+        System.out.println("Will not drop messages after this point");
+        this.drop_messages = false;
+        this.DELIVER_MESSAGE_PROBABILITY += this.DROP_MESSAGE_PROBABILITY;
+        this.DROP_MESSAGE_PROBABILITY = 0;
+        assert_probabilities();
     }
 }

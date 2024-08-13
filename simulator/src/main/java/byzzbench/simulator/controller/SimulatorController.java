@@ -217,7 +217,7 @@ public class SimulatorController {
     @PostMapping("/scheduler/next")
     public void scheduleNext(@RequestParam(required = false, defaultValue = "1") Integer numActions) throws Exception {
         for (int i = 0; i < numActions; i++) {
-            simulatorService.getScenarioExecutor().getScheduler().scheduleNext();
+            simulatorService.invokeScheduleNext();
         }
     }
 

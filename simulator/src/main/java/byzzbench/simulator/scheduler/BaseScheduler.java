@@ -18,8 +18,11 @@ import java.util.Optional;
  */
 @RequiredArgsConstructor
 public abstract class BaseScheduler<T extends Serializable> {
+  protected boolean drop_messages = true;
+
   @Getter private final String id;
   @Getter(AccessLevel.PROTECTED) private final Transport<T> transport;
 
   public abstract Optional<EventDecision> scheduleNext() throws Exception;
+  public abstract void stopDropMessages();
 }
