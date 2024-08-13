@@ -2,8 +2,6 @@ package byzzbench.simulator.service;
 
 import byzzbench.simulator.ScenarioExecutor;
 import byzzbench.simulator.TerminationCondition;
-import byzzbench.simulator.protocols.XRPL.XRPLTerminationCondition;
-import byzzbench.simulator.transport.Event;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.java.Log;
@@ -26,7 +24,7 @@ import java.util.concurrent.Executors;
 @RequiredArgsConstructor
 @Log
 public class SimulatorService {
-    private final int MAX_EVENTS_FOR_RUN = 5000;
+    private final int MAX_EVENTS_FOR_RUN = 1000;
     private final SchedulesService schedulesService;
     private final ScenarioFactoryService scenarioFactoryService;
     private final ExecutorService executor = Executors.newFixedThreadPool(1);
@@ -91,13 +89,18 @@ public class SimulatorService {
                     int num_events = 0;
                     int scenarioId = this.schedulesService.getSchedules().size() + 1;
                     System.out.println("Running scenario #" + scenarioId);
-                    this.scenarioExecutor.runScenario();
 
                     boolean flag = true;
                     while (flag) {
                         this.scenarioExecutor.getScheduler().scheduleNext();
                         num_events += 1;
-                        if ((num_events % 50 == 0 && this.terminationCondition.shouldTerminate()) || num_events > MAX_EVENTS_FOR_RUN) {
+                        if ((num_events % 50 == 0 && this.terminationCondition.shouldTerminate())) {
+                            log.info("Termination condition has been satisfied for this run, terminating. . .");
+                            flag = false;
+                        }
+
+                        if (num_events > MAX_EVENTS_FOR_RUN) {
+                            log.info("Reached max # of actions for this run, terminating. . .");
                             flag = false;
                         }
                     }
@@ -108,8 +111,7 @@ public class SimulatorService {
                         this.scenarioExecutor.getScheduler().scheduleNext();
                     } */
                    
-
-                    System.out.println("Scenario #" + scenarioId + " completed");
+                    log.info(this.schedulesService.getSchedules().get(0).toString());
                     this.scenarioExecutor.reset();
                 }
             } catch (Exception e) {
