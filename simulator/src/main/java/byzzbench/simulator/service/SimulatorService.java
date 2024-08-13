@@ -24,11 +24,11 @@ import java.util.concurrent.Executors;
 @RequiredArgsConstructor
 @Log
 public class SimulatorService {
-    private final int MAX_EVENTS_FOR_RUN = 1000;
+    private final int MAX_EVENTS_FOR_RUN = SimulatorConfig.MAX_EVENTS_FOR_RUN;
     private final SchedulesService schedulesService;
     private final ScenarioFactoryService scenarioFactoryService;
     private final ExecutorService executor = Executors.newFixedThreadPool(1);
-    private SimulatorServiceMode mode = SimulatorServiceMode.STOPPED;
+    private volatile SimulatorServiceMode mode = SimulatorServiceMode.STOPPED;
     private boolean shouldStop = false;
     private ScenarioExecutor<? extends Serializable> scenarioExecutor;
     private TerminationCondition terminationCondition;
@@ -111,7 +111,7 @@ public class SimulatorService {
                         this.scenarioExecutor.getScheduler().scheduleNext();
                     } */
                    
-                    log.info(this.schedulesService.getSchedules().get(0).toString());
+                    log.info(this.schedulesService.getSchedules().get(scenarioId).toString());
                     this.scenarioExecutor.reset();
                 }
             } catch (Exception e) {
