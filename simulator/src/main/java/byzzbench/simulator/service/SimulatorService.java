@@ -32,7 +32,7 @@ public class SimulatorService {
     private final SchedulesService schedulesService;
     private final ScenarioFactoryService scenarioFactoryService;
     private final ExecutorService executor = Executors.newFixedThreadPool(1);
-    private volatile SimulatorServiceMode mode = SimulatorServiceMode.STOPPED;
+    private SimulatorServiceMode mode = SimulatorServiceMode.STOPPED;
     private boolean shouldStop = false;
     private ScenarioExecutor<? extends Serializable> scenarioExecutor;
     private TerminationCondition terminationCondition;
@@ -40,7 +40,7 @@ public class SimulatorService {
     @EventListener(ApplicationReadyEvent.class)
     void onStartup() {
         log.info("Starting the simulator service");
-        this.changeScenario("xrpl");
+        this.changeScenario("pbft-java");
         log.info("Simulator service started");
     }
 
@@ -99,7 +99,8 @@ public class SimulatorService {
                     boolean flag = true;
                     while (flag) {
                         this.invokeScheduleNext();
-                        
+                        num_events += 1;
+
                         if ((num_events % 50 == 0 && this.terminationCondition.shouldTerminate())) {
                             log.info("Termination condition has been satisfied for this run, terminating. . .");
                             flag = false;
@@ -109,7 +110,6 @@ public class SimulatorService {
                             log.info("Reached max # of actions for this run, terminating. . .");
                             flag = false;
                         }
-                        num_events += 1;
                     }
                     
                     // run the scenario for the given number of events
@@ -141,7 +141,7 @@ public class SimulatorService {
                 this.droppedMessageCount += 1;
             }
 
-            if (this.droppedMessageCount >= MAX_DROPPED_MESSAGES) {
+            if (this.scenarioExecutor.getScheduler().isDropMessages() && this.droppedMessageCount >= MAX_DROPPED_MESSAGES ) {
                 this.scenarioExecutor.getScheduler().stopDropMessages();
             }
         } else {

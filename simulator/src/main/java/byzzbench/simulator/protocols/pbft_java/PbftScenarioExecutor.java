@@ -17,10 +17,12 @@ import java.util.TreeSet;
 @Log
 public class PbftScenarioExecutor<T extends Serializable> extends ScenarioExecutor<T> {
     private final int NUM_NODES = 4;
+    private PbftTerminationCondition terminationCondition;
 
     public PbftScenarioExecutor(SchedulesService schedulesService) {
         super("pbft-java", new Transport(schedulesService));
         this.setNumClients(1);
+        this.terminationCondition = new PbftTerminationCondition();
     }
 
     @Override
@@ -56,7 +58,6 @@ public class PbftScenarioExecutor<T extends Serializable> extends ScenarioExecut
 
     @Override
     public TerminationCondition getTerminationCondition() {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'getTerminationCondition'");
+        return this.terminationCondition;
     }
 }

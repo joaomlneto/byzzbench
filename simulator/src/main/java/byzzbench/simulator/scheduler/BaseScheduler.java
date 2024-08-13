@@ -18,7 +18,7 @@ import java.util.Optional;
  */
 @RequiredArgsConstructor
 public abstract class BaseScheduler<T extends Serializable> {
-  protected boolean drop_messages = true;
+  @Getter protected boolean dropMessages = true;
 
   @Getter private final String id;
   @Getter(AccessLevel.PROTECTED) private final Transport<T> transport;

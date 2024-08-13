@@ -165,7 +165,7 @@ public class RandomScheduler<T extends Serializable> extends BaseScheduler<T> {
     @Override
     public void stopDropMessages() {
         System.out.println("Will not drop messages after this point");
-        this.drop_messages = false;
+        this.dropMessages = false;
         this.DELIVER_MESSAGE_PROBABILITY += this.DROP_MESSAGE_PROBABILITY;
         this.DROP_MESSAGE_PROBABILITY = 0;
         assert_probabilities();
