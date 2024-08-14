@@ -7,7 +7,7 @@ import lombok.extern.java.Log;
 
 @Log
 public class XRPLTerminationCondition extends TerminationCondition {
-    private final int DESIRED_BLOCK_COUNT = 1;
+    private final int DESIRED_BLOCK_COUNT = 2;
     private List<XRPLReplica> replicas;
     private int initialSeq;
     private int networkSize;

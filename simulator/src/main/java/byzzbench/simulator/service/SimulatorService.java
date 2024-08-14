@@ -90,6 +90,9 @@ public class SimulatorService {
             // reset the scenario to ensure that the scenario is in a clean state
             this.changeScenario(this.scenarioExecutor.getId());
             this.terminationCondition = this.scenarioExecutor.getTerminationCondition();
+            
+            int numTerm = 0;
+            int numMaxedOut = 0;
             try {
                 // run the scenario until the stop flag is set
                 while (!this.shouldStop) {
@@ -106,11 +109,13 @@ public class SimulatorService {
                         if ((num_events % 50 == 0 && this.terminationCondition.shouldTerminate())) {
                             log.info("Termination condition has been satisfied for this run, terminating. . .");
                             flag = false;
+                            numTerm += 1;
                         }
 
                         if (num_events > MAX_EVENTS_FOR_RUN) {
                             log.info("Reached max # of actions for this run, terminating. . .");
                             flag = false;
+                            numMaxedOut += 1;
                         }
                     }
                     
@@ -119,14 +124,17 @@ public class SimulatorService {
                         System.out.println("Running action " + i + "/" + numActionsPerRun);
                         this.scenarioExecutor.getScheduler().scheduleNext();
                     } */
-                   
-                    log.info("executed schedule: " + convertEventListToString(this.scenarioExecutor.getTransport().getSchedule()) );
                     this.scenarioExecutor.reset();
+                    this.droppedMessageCount = 0;
+                    this.scenarioExecutor.getScheduler().resetParameters();
                 }
             } catch (Exception e) {
                 throw new RuntimeException(e);
             } finally {
                 this.mode = SimulatorServiceMode.STOPPED;
+                
+                log.info("number of runs terminated by condition: " + numTerm);
+                log.info("number of runs terminated by max actions: " + numMaxedOut);
             }
         });
     }
@@ -151,6 +159,8 @@ public class SimulatorService {
         }
     }
 
+
+    @SuppressWarnings("unused")
     private String convertEventListToString(List<Event> l) {
         String res = "schedule: \n ";
         for (Event event : l) {
