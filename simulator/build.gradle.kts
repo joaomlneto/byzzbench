@@ -3,7 +3,6 @@ plugins {
     id("org.springframework.boot") version "3.3.2"
     id("io.spring.dependency-management") version "1.1.6"
     id("org.graalvm.buildtools.native") version "0.10.2"
-    id("com.vaadin") version "24.4.7"
     id("com.github.psxpaul.execfork") version "0.2.2"
     id("org.springdoc.openapi-gradle-plugin") version "1.9.0"
 }
@@ -29,7 +28,6 @@ extra["vaadinVersion"] = "24.4.7"
 
 dependencies {
     implementation("org.springframework.boot:spring-boot-starter-web")
-    implementation("com.vaadin:vaadin-spring-boot-starter")
     compileOnly("org.projectlombok:lombok")
     developmentOnly("org.springframework.boot:spring-boot-devtools")
     annotationProcessor("org.springframework.boot:spring-boot-configuration-processor")
