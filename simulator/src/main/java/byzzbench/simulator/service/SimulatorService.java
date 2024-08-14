@@ -3,6 +3,7 @@ package byzzbench.simulator.service;
 import byzzbench.simulator.ScenarioExecutor;
 import byzzbench.simulator.TerminationCondition;
 import byzzbench.simulator.scheduler.EventDecision;
+import byzzbench.simulator.transport.Event;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.java.Log;
@@ -11,6 +12,7 @@ import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Service;
 
 import java.io.Serializable;
+import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -40,7 +42,7 @@ public class SimulatorService {
     @EventListener(ApplicationReadyEvent.class)
     void onStartup() {
         log.info("Starting the simulator service");
-        this.changeScenario("pbft-java");
+        this.changeScenario("xrpl");
         log.info("Simulator service started");
     }
 
@@ -118,7 +120,7 @@ public class SimulatorService {
                         this.scenarioExecutor.getScheduler().scheduleNext();
                     } */
                    
-                    log.info(this.schedulesService.getSchedules().get(scenarioId).toString());
+                    log.info("executed schedule: " + convertEventListToString(this.scenarioExecutor.getTransport().getSchedule()) );
                     this.scenarioExecutor.reset();
                 }
             } catch (Exception e) {
@@ -147,5 +149,13 @@ public class SimulatorService {
         } else {
             log.info("Couldn't schedule action");
         }
+    }
+
+    private String convertEventListToString(List<Event> l) {
+        String res = "schedule: \n ";
+        for (Event event : l) {
+            res += "eid: "+ event.getEventId() + " " + event.getSenderId() + " -> " + event.getRecipientId() + ", ";
+        }
+        return res;
     }
 }
