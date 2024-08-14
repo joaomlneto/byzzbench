@@ -40,7 +40,11 @@ public class FifoScheduler<T extends Serializable> extends BaseScheduler<T> {
 
   @Override
   public void stopDropMessages() {
-    // TODO Auto-generated method stub
-    throw new UnsupportedOperationException("Unimplemented method 'stopDropMessages'");
+    this.dropMessages = false;
+  }
+
+  @Override
+  public void resetParameters() {
+    this.dropMessages = true;
   }
 }

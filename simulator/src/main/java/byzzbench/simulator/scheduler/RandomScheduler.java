@@ -17,9 +17,9 @@ import java.util.Random;
  *            Replica}.
  */
 public class RandomScheduler<T extends Serializable> extends BaseScheduler<T> {
-    private double DELIVER_MESSAGE_PROBABILITY = 0.09;
-    private double DROP_MESSAGE_PROBABILITY = 0.01;
-    private double MUTATE_MESSAGE_PROBABILITY = 0.00;
+    private double DELIVER_MESSAGE_PROBABILITY = RandomSchedulerConfig.DELIVER_MESSAGE_PROBABILITY;
+    private double DROP_MESSAGE_PROBABILITY = RandomSchedulerConfig.DROP_MESSAGE_PROBABILITY;
+    private double MUTATE_MESSAGE_PROBABILITY = RandomSchedulerConfig.MUTATE_MESSAGE_PROBABILITY;
     Random random = new Random();
 
     private void assert_probabilities() {
@@ -169,5 +169,13 @@ public class RandomScheduler<T extends Serializable> extends BaseScheduler<T> {
         this.DELIVER_MESSAGE_PROBABILITY += this.DROP_MESSAGE_PROBABILITY;
         this.DROP_MESSAGE_PROBABILITY = 0;
         assert_probabilities();
+    }
+
+    @Override
+    public void resetParameters() {
+        this.dropMessages = true;
+        DELIVER_MESSAGE_PROBABILITY = RandomSchedulerConfig.DELIVER_MESSAGE_PROBABILITY;
+        DROP_MESSAGE_PROBABILITY = RandomSchedulerConfig.DROP_MESSAGE_PROBABILITY;
+        MUTATE_MESSAGE_PROBABILITY = RandomSchedulerConfig.MUTATE_MESSAGE_PROBABILITY;
     }
 }
