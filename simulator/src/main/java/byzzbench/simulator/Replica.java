@@ -1,7 +1,6 @@
 package byzzbench.simulator;
 
 import byzzbench.simulator.state.CommitLog;
-import byzzbench.simulator.transport.ClientReplyPayload;
 import byzzbench.simulator.transport.MessagePayload;
 import byzzbench.simulator.transport.Transport;
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -167,8 +166,7 @@ public abstract class Replica<T extends Serializable> implements Serializable {
      * @param reply the reply payload
      */
     public void sendReplyToClient(String clientId, Serializable reply) {
-        ClientReplyPayload response = new ClientReplyPayload(clientId, reply);
-        this.transport.sendClientResponse(this.nodeId, response, clientId);
+        this.transport.sendClientResponse(this.nodeId, reply, clientId);
     }
 
     /**
@@ -228,6 +226,8 @@ public abstract class Replica<T extends Serializable> implements Serializable {
      * @param newLeaderId the new leader ID
      */
     public void notifyObserversLeaderChange(String newLeaderId) {
+        System.out.println("Notifying observers of leader change: " + newLeaderId);
+        System.out.println("Observers: " + this.observers);
         this.observers.forEach(observer -> observer.onLeaderChange(this, newLeaderId));
     }
 

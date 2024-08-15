@@ -1,5 +1,7 @@
 package byzzbench.simulator.transport;
 
+import lombok.Getter;
+
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -23,6 +25,7 @@ public class Router {
      * Nodes without partition IDs are in partition 0 and can
      * communicate with each other.
      */
+    @Getter
     private final Map<String, Integer> partitions = new HashMap<>();
 
     /**
@@ -77,6 +80,14 @@ public class Router {
      */
     public boolean haveConnectivity(String nodeId1, String nodeId2) {
         return this.getNodePartition(nodeId1) == this.getNodePartition(nodeId2);
+    }
+
+    /**
+     * Checks if there are any active partitions.
+     * @return True if there are active partitions, false otherwise.
+     */
+    public boolean hasActivePartitions() {
+        return !this.partitions.isEmpty();
     }
 
     /**

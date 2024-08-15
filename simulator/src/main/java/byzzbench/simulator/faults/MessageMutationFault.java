@@ -1,5 +1,6 @@
 package byzzbench.simulator.faults;
 
+import byzzbench.simulator.transport.Event;
 import byzzbench.simulator.transport.MessageEvent;
 import lombok.Getter;
 import lombok.NonNull;
@@ -8,6 +9,7 @@ import lombok.ToString;
 
 import java.io.Serializable;
 import java.util.Collection;
+import java.util.Optional;
 
 /**
  * Abstract class for mutating {@link MessageEvent}.
@@ -38,15 +40,17 @@ public abstract class MessageMutationFault<T extends Serializable> implements Fa
     }
 
     /**
-     * Checks if the message can be mutated by this mutator
-     * @param message the message to check
+     * Checks if the event can be mutated by this mutator
+     * @param ctx The context of the fault
      * @return True if the message can be mutated by this mutator, false otherwise
      */
     @Override
-    public final boolean test(FaultInput<T> message) {
-        return message.getEvent()
-                .stream()
-                .anyMatch(event -> event instanceof MessageEvent msgEvent && canMutateClass(msgEvent.getPayload().getClass()));
+    public final boolean test(FaultInput<T> ctx) {
+        Optional<Event> event = ctx.getEvent();
+        return event.isPresent()
+                && event.get() instanceof MessageEvent messageEvent
+                && canMutate(messageEvent);
+
     }
 
 }

@@ -34,6 +34,7 @@ public class RandomScheduler<T extends Serializable> extends BaseScheduler<T> {
 
     @Override
     public synchronized Optional<Event> scheduleNext() throws Exception {
+
         // Get a random event
         List<Event> queuedEvents =
                 getTransport().getEventsInState(Event.Status.QUEUED);
@@ -94,7 +95,7 @@ public class RandomScheduler<T extends Serializable> extends BaseScheduler<T> {
             if (random.nextDouble() < DROP_MESSAGE_PROBABILITY) {
                 // FIXME: we should return a "decision" object, not just the event id we
                 // targeted!
-                getTransport().dropMessage(message.getEventId());
+                getTransport().dropEvent(message.getEventId());
                 return Optional.of(message);
             }
 
@@ -113,7 +114,7 @@ public class RandomScheduler<T extends Serializable> extends BaseScheduler<T> {
                 // targeted!
                 getTransport().applyMutation(
                         message.getEventId(),
-                        mutators.get(random.nextInt(mutators.size())).getId());
+                        mutators.get(random.nextInt(mutators.size())));
                 getTransport().deliverEvent(message.getEventId());
                 return Optional.of(message);
             }

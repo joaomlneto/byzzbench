@@ -37,7 +37,6 @@ public class SimulatorService {
         log.info("Simulator service started");
     }
 
-
     /**
      * Changes the scenario to the scenario with the given ID.
      *
@@ -45,9 +44,9 @@ public class SimulatorService {
      */
     public void changeScenario(String id) {
         this.scenarioExecutor = this.scenarioFactoryService.getScenario(id);
-        this.scenarioExecutor.setupScenario();
-        this.scenarioExecutor.runScenario();
-        // this.scenarioExecutor.reset();
+        //this.scenarioExecutor.setupScenario();
+        //this.scenarioExecutor.runScenario();
+        this.scenarioExecutor.reset();
     }
 
     /**
@@ -94,6 +93,7 @@ public class SimulatorService {
 
                     System.out.println("Scenario #" + scenarioId + " completed");
                     this.scenarioExecutor.reset();
+
                 }
             } catch (Exception e) {
                 throw new RuntimeException(e);

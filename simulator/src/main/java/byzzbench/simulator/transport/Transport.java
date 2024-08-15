@@ -3,14 +3,17 @@ package byzzbench.simulator.transport;
 import byzzbench.simulator.Client;
 import byzzbench.simulator.Replica;
 import byzzbench.simulator.ScenarioExecutor;
-import byzzbench.simulator.Schedule;
+import byzzbench.simulator.faults.Fault;
 import byzzbench.simulator.faults.FaultInput;
-import byzzbench.simulator.faults.MessageMutationFault;
+import byzzbench.simulator.faults.HealNodeNetworkFault;
+import byzzbench.simulator.faults.IsolateProcessNetworkFault;
+import byzzbench.simulator.schedule.Schedule;
 import byzzbench.simulator.service.MessageMutatorService;
 import byzzbench.simulator.service.SchedulesService;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Getter;
 import lombok.Synchronized;
+import lombok.ToString;
 import lombok.extern.java.Log;
 
 import java.io.Serializable;
@@ -27,6 +30,7 @@ import java.util.concurrent.atomic.AtomicLong;
  * @param <T> The type of the entries in the commit log of each {@link Replica}.
  */
 @Log
+@ToString
 public class Transport<T extends Serializable> {
     private final ScenarioExecutor<T> scenario;
 
@@ -52,6 +56,10 @@ public class Transport<T extends Serializable> {
     @JsonIgnore
     private final Map<String, Replica<T>> nodes = new HashMap<>();
 
+    @Getter(onMethod_ = {@Synchronized})
+    @JsonIgnore
+    private final Map<String, Fault<T>> networkFaults = new HashMap<>();
+
     /**
      * Map of client id to the {@link Client} object.
      */
@@ -69,6 +77,7 @@ public class Transport<T extends Serializable> {
     /**
      * The router for managing partitions.
      */
+    @Getter(onMethod_ = {@Synchronized})
     private final Router router = new Router();
 
     /**
@@ -89,8 +98,16 @@ public class Transport<T extends Serializable> {
      *
      * @param replica The node to add.
      */
-    public void addNode(Replica<T> replica) {
+    public synchronized void addNode(Replica<T> replica) {
         nodes.put(replica.getNodeId(), replica);
+
+        // for each node, add a IsolateNodeFault and a HealNodeFault
+        this.addNetworkFault(new IsolateProcessNetworkFault<>(replica.getNodeId()));
+        this.addNetworkFault(new HealNodeNetworkFault<>(replica.getNodeId()));
+    }
+
+    public void addNetworkFault(Fault<T> fault) {
+        this.networkFaults.put(fault.getId(), fault);
     }
 
     /**
@@ -98,7 +115,7 @@ public class Transport<T extends Serializable> {
      *
      * @param client The client to add.
      */
-    public void addClient(Client<T> client) {
+    public synchronized void addClient(Client<T> client) {
         clients.put(client.getClientId(), client);
     }
 
@@ -107,7 +124,7 @@ public class Transport<T extends Serializable> {
      *
      * @param numClients The number of clients to create.
      */
-    public void createClients(int numClients) {
+    public synchronized void createClients(int numClients) {
         for (int i = 0; i < numClients; i++) {
             Client<T> client = new Client<>(String.format("C%d", i), this);
             this.addClient(client);
@@ -120,14 +137,14 @@ public class Transport<T extends Serializable> {
      * @param operation The operation to send
      * @param recipient The ID of the replica receiving the request
      */
-    public void sendClientRequest(String sender, Serializable operation, String recipient) {
+    public synchronized void sendClientRequest(String sender, Serializable operation, String recipient) {
         // assert that the sender exists
         if (!clients.containsKey(sender)) {
-            throw new RuntimeException("Client not found: " + sender);
+            throw new IllegalArgumentException("Client not found: " + sender);
         }
 
         if (!nodes.containsKey(recipient)) {
-            throw new RuntimeException("Replica not found: " + recipient);
+            throw new IllegalArgumentException("Replica not found: " + recipient);
         }
 
         long eventId = this.eventSeqNum.getAndIncrement();
@@ -141,14 +158,14 @@ public class Transport<T extends Serializable> {
      * @param response The response to send
      * @param recipient The ID of the client receiving the response
      */
-    public void sendClientResponse(String sender, Serializable response, String recipient) {
+    public synchronized void sendClientResponse(String sender, Serializable response, String recipient) {
         // assert that the sender exists
         if (!nodes.containsKey(sender)) {
-            throw new RuntimeException("Replica not found: " + sender);
+            throw new IllegalArgumentException("Replica not found: " + sender);
         }
 
         if (!clients.containsKey(recipient)) {
-            throw new RuntimeException("Client not found: " + recipient);
+            throw new IllegalArgumentException("Client not found: " + recipient);
         }
 
         long eventId = this.eventSeqNum.getAndIncrement();
@@ -162,7 +179,7 @@ public class Transport<T extends Serializable> {
      * @param message The payload of the message to send
      * @param recipient The ID of the replica receiving the message
      */
-    public void sendMessage(String sender, MessagePayload message,
+    public synchronized void sendMessage(String sender, MessagePayload message,
                             String recipient) {
         this.multicast(sender, Set.of(recipient), message);
     }
@@ -170,9 +187,11 @@ public class Transport<T extends Serializable> {
     /**
      * Resets the transport layer.
      */
-    public void reset() {
+    public synchronized void reset() {
         this.eventSeqNum.set(1);
         this.nodes.clear();
+        this.networkFaults.clear();
+        this.router.resetPartitions();
         this.events.clear();
         this.nodes.values().forEach(Replica::initialize);
         this.schedule = schedulesService.addSchedule();
@@ -183,7 +202,7 @@ public class Transport<T extends Serializable> {
      * @param status The state to filter by
      * @return A list of events in the given state
      */
-    public List<Event> getEventsInState(Event.Status status) {
+    public synchronized List<Event> getEventsInState(Event.Status status) {
         return this.events.values()
                 .stream()
                 .filter(m -> m.getStatus() == status)
@@ -196,13 +215,18 @@ public class Transport<T extends Serializable> {
      * @param recipients The set of recipient IDs
      * @param payload The payload of the message
      */
-    public void multicast(String sender, Set<String> recipients,
+    public synchronized void multicast(String sender, Set<String> recipients,
                           MessagePayload payload) {
         for (String recipient : recipients) {
             long messageId = this.eventSeqNum.getAndIncrement();
             MessageEvent messageEvent =
                     new MessageEvent(messageId, sender, recipient, payload);
             events.put(messageId, messageEvent);
+
+            // if they don't have connectivity, drop it directly
+            if (!router.haveConnectivity(sender, recipient)) {
+                this.dropEvent(messageId);
+            }
         }
     }
 
@@ -211,12 +235,12 @@ public class Transport<T extends Serializable> {
 
         // check if null
         if (e == null) {
-            throw new RuntimeException(String.format("Event %d not found", eventId));
+            throw new IllegalArgumentException(String.format("Event %d not found", eventId));
         }
 
         // check if it is in QUEUED state
         if (e.getStatus() != Event.Status.QUEUED) {
-            throw new RuntimeException("Event not in QUEUED state");
+            throw new IllegalArgumentException("Event not in QUEUED state");
         }
 
         // if it is a MessageEvent and there is no connectivity between the nodes, drop it
@@ -244,7 +268,7 @@ public class Transport<T extends Serializable> {
                 t.getTask().run();
             }
             default -> {
-                throw new RuntimeException("Unknown event type");
+                throw new IllegalArgumentException("Unknown event type");
             }
         }
 
@@ -253,21 +277,17 @@ public class Transport<T extends Serializable> {
 
     /**
      * Drops a message from the network.
-     * @param messageId The ID of the message to drop.
+     * @param eventId The ID of the message to drop.
      */
-    public void dropMessage(long messageId) {
+    public synchronized void dropEvent(long eventId) {
         // check if event is a message
-        Event e = events.get(messageId);
+        Event e = events.get(eventId);
 
-        if (!(e instanceof MessageEvent m)) {
-            throw new RuntimeException(String.format("Event %d is not a message", messageId));
+        if (e.getStatus() != Event.Status.QUEUED) {
+            throw new IllegalArgumentException("Event not found or not in QUEUED state");
         }
-
-        if (m.getStatus() != Event.Status.QUEUED) {
-            throw new RuntimeException("Message not found or not in QUEUED state");
-        }
-        m.setStatus(Event.Status.DROPPED);
-        log.info("Dropped: " + m.getSenderId() + "->" + m.getRecipientId() + ": " + m.getPayload());
+        e.setStatus(Event.Status.DROPPED);
+        log.info("Dropped: " + e.getSenderId() + "->" + e.getRecipientId());
     }
 
     /**
@@ -275,50 +295,57 @@ public class Transport<T extends Serializable> {
      * @param eventId The ID of the event to get.
      * @return The event with the given ID.
      */
-    public Event getEvent(long eventId) {
+    public synchronized Event getEvent(long eventId) {
         return events.get(eventId);
     }
 
-    public synchronized void applyMutation(long eventId, String mutatorId) {
+    /**
+     * Applies a mutation to a message and appends the fault event to the schedule.
+     * @param eventId The ID of the message to mutate.
+     * @param fault The fault to apply.
+     */
+    public synchronized void applyMutation(long eventId, Fault fault) {
         Event e = events.get(eventId);
-        MessageMutationFault mutator = this.messageMutatorService.getMutator(mutatorId);
 
         // check if event does not exist
         if (e == null) {
-            throw new RuntimeException(String.format("Event %d not found", eventId));
+            throw new IllegalArgumentException(String.format("Event %d not found", eventId));
         }
 
         // check if mutator does not exist
-        if (mutator == null) {
-            throw new RuntimeException("Mutator not found");
+        if (fault == null) {
+            throw new IllegalArgumentException("Mutator not found");
         }
 
         // check if event is not in QUEUED state
         if (e.getStatus() != Event.Status.QUEUED) {
-            throw new RuntimeException("Message not found or not in QUEUED state");
+            throw new IllegalArgumentException("Message not found or not in QUEUED state");
         }
 
         // check it is a message event!
         if (!(e instanceof MessageEvent m)) {
-            throw new RuntimeException(String.format(
+            throw new IllegalArgumentException(String.format(
                     "Event %d is not a message - cannot mutate it.", eventId));
         }
 
+        // create input for the fault
+        FaultInput<T> input = new FaultInput<>(this.scenario, e);
+
         // check if mutator can be applied to the event
-        if (!mutator.canMutate(m.getPayload())) {
-            throw new RuntimeException(
-                    String.format("Mutator %s cannot be applied to event %d", mutatorId, eventId)
+        if (!fault.test(input)) {
+            throw new IllegalArgumentException(
+                    String.format("Mutator %s cannot be applied to event %d", fault.getId(), eventId)
             );
         }
 
         // apply the mutation
-        mutator.accept(new FaultInput<T>(this.scenario, m));
+        fault.accept(input);
 
         // create a new event for the mutation
         Event mutateMessageEvent = new MutateMessageEvent(
                 this.eventSeqNum.getAndIncrement(), m.getSenderId(),
                 m.getRecipientId(), new MutateMessageEventPayload(
-                        eventId, mutatorId));
+                        eventId, fault.getId()));
         events.put(mutateMessageEvent.getEventId(), mutateMessageEvent);
 
         // append the event to the schedule
@@ -328,7 +355,34 @@ public class Transport<T extends Serializable> {
         log.info("Mutated: " + m);
     }
 
-    public long setTimeout(Replica<T> replica, Runnable runnable,
+    public void applyFault(String faultId) {
+        Fault<T> fault = this.networkFaults.get(faultId);
+        if (fault == null) {
+            throw new IllegalArgumentException("Fault not found: " + faultId);
+        }
+        this.applyFault(fault);
+    }
+
+    public void applyFault(Fault<T> fault) {
+        // create input for the fault
+        FaultInput<T> input = new FaultInput<>(this.scenario);
+
+        // check if fault can be applied
+        if (!fault.test(input)) {
+            throw new IllegalArgumentException("Fault cannot be applied");
+        }
+
+        // apply the fault
+        fault.accept(input);
+
+        // create a new event for the fault and append it to the schedule
+        Event faultEvent = new GenericFaultEvent(this.eventSeqNum.getAndIncrement(),
+                "none", "none", fault);
+        faultEvent.setStatus(Event.Status.DELIVERED);
+        this.schedule.appendEvent(faultEvent);
+    }
+
+    public synchronized long setTimeout(Replica<T> replica, Runnable runnable,
                            long timeout) {
         Event e = new TimeoutEvent(this.eventSeqNum.getAndIncrement(),
                 "TIMEOUT", replica.getNodeId(),
@@ -339,7 +393,7 @@ public class Transport<T extends Serializable> {
         return e.getEventId();
     }
 
-    public void clearReplicaTimeouts(Replica<T> replica) {
+    public synchronized void clearReplicaTimeouts(Replica<T> replica) {
         // get all event IDs for timeouts from this replica
         List<Long> eventIds =
                 this.events.values()
@@ -354,15 +408,26 @@ public class Transport<T extends Serializable> {
 
         // remove all event IDs
         for (Long eventId : eventIds) {
-            this.events.remove(eventId);
+            events.get(eventId).setStatus(Event.Status.DROPPED);
         }
     }
 
-    public Set<String> getNodeIds() {
+    public synchronized Set<String> getNodeIds() {
         return nodes.keySet();
     }
 
-    public Replica<T> getNode(String nodeId) {
+    public synchronized Replica<T> getNode(String nodeId) {
         return nodes.get(nodeId);
+    }
+
+    public List<Fault<T>> getEnabledNetworkFaults() {
+        FaultInput<T> input = new FaultInput<>(this.scenario);
+        return this.networkFaults.values().stream()
+                .filter(f -> f.test(input))
+                .toList();
+    }
+
+    public Fault<T> getNetworkFault(String faultId) {
+        return this.networkFaults.get(faultId);
     }
 }

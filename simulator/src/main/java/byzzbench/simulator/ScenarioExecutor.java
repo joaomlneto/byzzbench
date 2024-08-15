@@ -8,6 +8,7 @@ import byzzbench.simulator.state.adob.AdobDistributedState;
 import byzzbench.simulator.transport.Transport;
 import lombok.Getter;
 import lombok.Setter;
+import lombok.ToString;
 
 import java.io.Serializable;
 
@@ -18,10 +19,12 @@ import java.io.Serializable;
  * @param <T> The type of the entries in the commit log of each {@link Replica}.
  */
 @Getter
+@ToString
 public abstract class ScenarioExecutor<T extends Serializable> {
     /**
      * The transport layer for the scenario.
      */
+    @ToString.Exclude
     protected final Transport<T> transport;
     /**
      * The scheduler for the scenario.
@@ -66,6 +69,8 @@ public abstract class ScenarioExecutor<T extends Serializable> {
         this.setupScenario();
         this.adobOracle.reset();
         this.runScenario();
+        System.out.println("Scenario reset");
+        System.out.println(this);
     }
 
     /**
@@ -103,4 +108,5 @@ public abstract class ScenarioExecutor<T extends Serializable> {
      * Runs the scenario - must be implemented by subclasses.
      */
     protected abstract void run();
+
 }

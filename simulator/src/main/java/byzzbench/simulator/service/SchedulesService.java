@@ -1,6 +1,6 @@
 package byzzbench.simulator.service;
 
-import byzzbench.simulator.Schedule;
+import byzzbench.simulator.schedule.Schedule;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;

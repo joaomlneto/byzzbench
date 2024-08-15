@@ -8,8 +8,9 @@ import byzzbench.simulator.service.SchedulesService;
 import lombok.extern.java.Log;
 import org.springframework.stereotype.Component;
 
-import java.util.Set;
-import java.util.TreeSet;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
 
 @Component
 @Log
@@ -23,17 +24,15 @@ public class FastHotStuffScenarioExecutor extends ScenarioExecutor<Block> {
     @Override
     public void setup() {
         try {
-            Set<String> nodeIds = new TreeSet<>();
+            List<String> nodeIds = new ArrayList<>();
             for (int i = 0; i < NUM_NODES; i++) {
                 nodeIds.add(Character.toString((char) ('A' + i)));
             }
 
             nodeIds.forEach(nodeId -> {
-                Replica<Block> replica = new FastHotStuffReplica(nodeId, nodeIds, transport);
+                Replica<Block> replica = new FastHotStuffReplica(nodeId, new HashSet<>(nodeIds), transport);
                 this.addNode(replica);
             });
-
-            //transport.addFaults(new FHSBugFaults().getFaults());
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
