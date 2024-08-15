@@ -13,26 +13,21 @@ import lombok.Setter;
 
 @Getter
 public class XRPLValidateMessage extends MessagePayload {
-    private final String senderNodeId;
-    //private signature sign;
-    @Setter
-    private XRPLLedger ledger;
+  private final String senderNodeId;
+  // private signature sign;
+  @Setter private XRPLLedger ledger;
 
-    public XRPLValidateMessage(String nodeId, XRPLLedger l) {
-        this.senderNodeId = nodeId;
-        this.ledger = l;
-    }
+  public XRPLValidateMessage(String nodeId, XRPLLedger l) {
+    this.senderNodeId = nodeId;
+    this.ledger = l;
+  }
 
-    @Override
-    public String getType() {
-        return "VALIDATE";
-    }
+  @Override
+  public String getType() {
+    return "VALIDATE";
+  }
 
-    public String getSenderNodeId() {
-        return senderNodeId;
-    }
+  public String getSenderNodeId() { return senderNodeId; }
 
-    public XRPLLedger getLedger() {
-        return ledger;
-    }
+  public XRPLLedger getLedger() { return ledger; }
 }
