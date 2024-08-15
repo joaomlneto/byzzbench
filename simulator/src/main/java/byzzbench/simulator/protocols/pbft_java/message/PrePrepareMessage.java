@@ -8,13 +8,13 @@ import lombok.EqualsAndHashCode;
 @Data
 @EqualsAndHashCode(callSuper = true)
 public class PrePrepareMessage extends IPhaseMessage {
-    private long viewNumber;
-    private long sequenceNumber;
-    private byte[] digest;
-    private RequestMessage request;
+  private long viewNumber;
+  private long sequenceNumber;
+  private byte[] digest;
+  private RequestMessage request;
 
-    @Override
-    public String getType() {
-        return "PRE-PREPARE";
-    }
+  @Override
+  public String getType() {
+    return "PRE-PREPARE";
+  }
 }
