@@ -2,6 +2,7 @@ package byzzbench.simulator.service;
 
 import byzzbench.simulator.ScenarioExecutor;
 import byzzbench.simulator.TerminationCondition;
+import byzzbench.simulator.schedule.Schedule;
 import byzzbench.simulator.scheduler.EventDecision;
 import byzzbench.simulator.transport.Event;
 import lombok.Getter;
@@ -12,7 +13,6 @@ import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Service;
 
 import java.io.Serializable;
-import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -30,10 +30,10 @@ import java.util.concurrent.Executors;
 public class SimulatorService {
     private final int MAX_EVENTS_FOR_RUN = SimulatorConfig.MAX_EVENTS_FOR_RUN;
     private final int MAX_DROPPED_MESSAGES = SimulatorConfig.MAX_DROPPED_MESSAGES;
-    private int droppedMessageCount;
     private final SchedulesService schedulesService;
     private final ScenarioFactoryService scenarioFactoryService;
     private final ExecutorService executor = Executors.newFixedThreadPool(1);
+    private int droppedMessageCount;
     private SimulatorServiceMode mode = SimulatorServiceMode.STOPPED;
     private boolean shouldStop = false;
     private ScenarioExecutor<? extends Serializable> scenarioExecutor;
@@ -130,10 +130,6 @@ public class SimulatorService {
         });
     }
 
-    public enum SimulatorServiceMode {
-        STOPPED, RUNNING
-    }
-
     public void invokeScheduleNext() throws Exception {
         Optional<EventDecision> decisionOptional = this.scenarioExecutor.getScheduler().scheduleNext();
         if (decisionOptional.isPresent()) {
@@ -150,11 +146,15 @@ public class SimulatorService {
         }
     }
 
-    private String convertEventListToString(List<Event> l) {
+    private String convertEventListToString(Schedule schedule) {
         String res = "schedule: \n ";
-        for (Event event : l) {
+        for (Event event : schedule.getEvents()) {
             res += "eid: "+ event.getEventId() + " " + event.getSenderId() + " -> " + event.getRecipientId() + ", ";
         }
         return res;
+    }
+
+    public enum SimulatorServiceMode {
+        STOPPED, RUNNING
     }
 }

@@ -18,10 +18,15 @@ import java.util.Random;
  *            Replica}.
  */
 public class RandomScheduler<T extends Serializable> extends BaseScheduler<T> {
-    private double DELIVER_MESSAGE_PROBABILITY = 0.09;
-    private double DROP_MESSAGE_PROBABILITY = 0.01;
-    private double MUTATE_MESSAGE_PROBABILITY = 0.00;
+    private final double MUTATE_MESSAGE_PROBABILITY = 0.00;
     Random random = new Random();
+    private double DELIVER_MESSAGE_PROBABILITY = 0.92;
+    private double DROP_MESSAGE_PROBABILITY = 0.08;
+
+    public RandomScheduler(MessageMutatorService messageMutatorService, Transport<T> transport) {
+        super("Random", messageMutatorService, transport);
+        assert_probabilities();
+    }
 
     private void assert_probabilities() {
         assert DELIVER_MESSAGE_PROBABILITY >= 0 && DELIVER_MESSAGE_PROBABILITY <= 1;
@@ -29,11 +34,6 @@ public class RandomScheduler<T extends Serializable> extends BaseScheduler<T> {
         assert MUTATE_MESSAGE_PROBABILITY >= 0 && MUTATE_MESSAGE_PROBABILITY <= 1;
         assert DROP_MESSAGE_PROBABILITY + MUTATE_MESSAGE_PROBABILITY +
                 DELIVER_MESSAGE_PROBABILITY == 1;
-    }
-
-    public RandomScheduler(MessageMutatorService messageMutatorService, Transport<T> transport) {
-        super("Random", messageMutatorService, transport);
-        assert_probabilities();
     }
 
     @Override

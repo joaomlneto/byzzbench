@@ -95,6 +95,6 @@ public class Router {
      * @return The next unused partition ID.
      */
     private int getUnusedPartitionId() {
-        return partitionSequenceNumber.incrementAndGet();
+        return partitionSequenceNumber.getAndIncrement();
     }
 }
