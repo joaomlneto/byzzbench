@@ -1,8 +1,10 @@
+"use client";
+
 import { NodeMailbox } from "@/components/messages/NodeMailbox";
 import { NodeStateNavLink } from "@/components/NodeStateNavLink";
-import { useGetNode } from "@/lib/byzzbench-client";
-import { Container, JsonInput, Stack, Title } from "@mantine/core";
-import React from "react";
+import { useGetNode, useGetPartitions } from "@/lib/byzzbench-client";
+import { Card, Group, Space, Text, Title, Tooltip } from "@mantine/core";
+import React, { useMemo } from "react";
 
 export type NodeCardProps = {
   nodeId: string;
@@ -10,27 +12,33 @@ export type NodeCardProps = {
 
 export const NodeCard = ({ nodeId }: NodeCardProps) => {
   const { data } = useGetNode(nodeId);
+  const partitionsQuery = useGetPartitions();
+
+  const partitionId = useMemo(() => {
+    return partitionsQuery.data?.data[nodeId] ?? 0;
+  }, [partitionsQuery.data, nodeId]);
 
   return (
-    <Container
-      fluid
-      style={{ border: "1px solid black", minWidth: 400 }}
-      p="md"
-    >
-      <Stack gap="xs">
-        {false && (
-          <JsonInput value={JSON.stringify(data?.data, null, 2)} autosize />
-        )}
-        {data && (
-          <NodeStateNavLink
-            data={data.data}
-            label={<Title order={4}>{nodeId}</Title>}
-            defaultOpened
-            opened={true}
-          />
-        )}
-        <NodeMailbox nodeId={nodeId} />
-      </Stack>
-    </Container>
+    <Card withBorder shadow="sm" padding="xs" m="xs">
+      {data && (
+        <NodeStateNavLink
+          data={data.data}
+          label={
+            <Group justify="space-between">
+              <Tooltip label="Node ID">
+                <Title order={4}>{nodeId}</Title>
+              </Tooltip>
+              <Tooltip label="Network partition ID">
+                <Text>P{partitionId}</Text>
+              </Tooltip>
+            </Group>
+          }
+          defaultOpened
+          opened={true}
+        />
+      )}
+      <Space h="xs" />
+      <NodeMailbox nodeId={nodeId} />
+    </Card>
   );
 };

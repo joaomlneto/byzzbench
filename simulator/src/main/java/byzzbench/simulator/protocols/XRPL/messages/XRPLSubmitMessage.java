@@ -1,14 +1,14 @@
 package byzzbench.simulator.protocols.XRPL.messages;
 
 import byzzbench.simulator.transport.MessagePayload;
-import lombok.With;
+import lombok.Data;
 
 /*
  * Submit message as used in the gossip protocol.
- * A node broadcasts a submit message to all nodes it 
+ * A node broadcasts a submit message to all nodes it
  * is connected once it recieves a transaction from a client.
  */
-@With
+@Data
 public class XRPLSubmitMessage extends MessagePayload {
     private String tx;
 

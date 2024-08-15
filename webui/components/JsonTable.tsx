@@ -1,3 +1,5 @@
+"use client";
+
 import { Stack, Table, Text, Title } from "@mantine/core";
 import React from "react";
 

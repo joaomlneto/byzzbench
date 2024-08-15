@@ -6,6 +6,12 @@ import lombok.ToString;
 
 import java.io.Serializable;
 
+/**
+ * Represents a single entry in a {@link VectorClock}.
+ * Each entry consists of a node identifier and a version number.
+ * The version number is a positive integer.
+ * The node identifier is a non-empty string.
+ */
 @Getter
 @EqualsAndHashCode
 @ToString

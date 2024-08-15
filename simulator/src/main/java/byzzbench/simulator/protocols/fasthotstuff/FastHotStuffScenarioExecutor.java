@@ -2,39 +2,37 @@ package byzzbench.simulator.protocols.fasthotstuff;
 
 import byzzbench.simulator.Replica;
 import byzzbench.simulator.ScenarioExecutor;
-import byzzbench.simulator.protocols.fasthotstuff.faults.FHSBugFaults;
 import byzzbench.simulator.protocols.fasthotstuff.message.Block;
+import byzzbench.simulator.service.MessageMutatorService;
 import byzzbench.simulator.service.SchedulesService;
-import byzzbench.simulator.transport.Transport;
 import lombok.extern.java.Log;
 import org.springframework.stereotype.Component;
 
-import java.util.Set;
-import java.util.TreeSet;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
 
 @Component
 @Log
 public class FastHotStuffScenarioExecutor extends ScenarioExecutor<Block> {
     private final int NUM_NODES = 4;
 
-    public FastHotStuffScenarioExecutor(SchedulesService schedulesService) {
-        super("fasthotstuff", new Transport(schedulesService));
+    public FastHotStuffScenarioExecutor(MessageMutatorService messageMutatorService, SchedulesService schedulesService) {
+        super("fasthotstuff", messageMutatorService, schedulesService);
     }
 
     @Override
     public void setup() {
         try {
-            Set<String> nodeIds = new TreeSet<>();
+            List<String> nodeIds = new ArrayList<>();
             for (int i = 0; i < NUM_NODES; i++) {
                 nodeIds.add(Character.toString((char) ('A' + i)));
             }
 
             nodeIds.forEach(nodeId -> {
-                Replica<Block> replica = new FastHotStuffReplica(nodeId, nodeIds, transport);
+                Replica<Block> replica = new FastHotStuffReplica(nodeId, new HashSet<>(nodeIds), transport);
                 this.addNode(replica);
             });
-
-            transport.addFaults(new FHSBugFaults().getFaults());
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
