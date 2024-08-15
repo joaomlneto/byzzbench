@@ -1,22 +1,39 @@
 package byzzbench.simulator.faults;
 
-import byzzbench.simulator.transport.MessageEvent;
-import lombok.RequiredArgsConstructor;
+import java.io.Serializable;
+import java.util.function.Consumer;
+import java.util.function.Predicate;
 
 /**
- * Class for applying a fault to a {@link MessageEvent}.
- * A fault is composed of a {@link FaultPrecondition} and a {@link
- * FaultBehavior}. The fault may be applied to a {@link MessageEvent} only if
- * the {@link FaultPrecondition} is satisfied.
+ * An interface representing a fault, which is a combination of a {@link Predicate}
+ * which checks if the fault can be applied to a message, and a {@link Consumer}, which
+ * applies the faulty behavior.
  */
-@RequiredArgsConstructor
-public class Fault {
-  private final FaultPrecondition precondition;
-  private final FaultBehavior behavior;
+public interface Fault<T extends Serializable> extends Predicate<FaultInput<T>>, FaultBehavior<T>, Serializable {
+    /**
+     * Gets the unique id of the fault.
+     * @return the id of the fault
+     */
+    String getId();
 
-  public void apply(MessageEvent message) {
-    if (precondition.isSatisfiedBy(message)) {
-      behavior.mutate(message);
-    }
-  }
+    /**
+     * Gets a human-readable name of the fault.
+     * @return the name of the fault
+     */
+    String getName();
+
+    /**
+     * Checks if the fault can be applied to the given state
+     * @param state the state of the system
+     * @return True if the fault can be applied, false otherwise
+     */
+    @Override
+    boolean test(FaultInput<T> state);
+
+    /**
+     * Applies a fault to the state of the system
+     * @param state the state of the system
+     */
+    @Override
+    void accept(FaultInput<T> state);
 }

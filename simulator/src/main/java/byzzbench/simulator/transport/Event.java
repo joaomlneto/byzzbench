@@ -16,16 +16,40 @@ import java.time.Instant;
         @JsonSubTypes.Type(value = MessageEvent.class, name = "Message"),
 })
 public interface Event extends Serializable {
+    /**
+     * Get the eventId
+     * @return a long representing the eventId
+     */
     long getEventId();
 
+    /**
+     * Get the senderId
+     * @return a String representing the senderId
+     */
     String getSenderId();
 
+    /**
+     * Get the recipientId
+     * @return a String representing the recipientId
+     */
     String getRecipientId();
 
+    /**
+     * Get a string representation of the event
+     * @return a String representing the event
+     */
     String toString();
 
+    /**
+     * Get the time at which the event was created
+     * @return an Instant representing the time at which the event was created
+     */
     Instant getCreatedAt();
 
+    /**
+     * Get the time at which the event was delivered
+     * @return an Instant representing the time at which the event was delivered
+     */
     Instant getDeliveredAt();
 
     Status getStatus();

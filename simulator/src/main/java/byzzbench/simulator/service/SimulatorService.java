@@ -46,7 +46,6 @@ public class SimulatorService {
         log.info("Simulator service started");
     }
 
-
     /**
      * Changes the scenario to the scenario with the given ID.
      *
@@ -55,10 +54,10 @@ public class SimulatorService {
     public void changeScenario(String id) {
         this.scenarioExecutor = this.scenarioFactoryService.getScenario(id);
         this.terminationCondition = this.scenarioExecutor.getTerminationCondition();
-        this.scenarioExecutor.setupScenario();
-        this.scenarioExecutor.runScenario();
+        //this.scenarioExecutor.setupScenario();
+        //this.scenarioExecutor.runScenario();
         this.droppedMessageCount = 0;
-        // this.scenarioExecutor.reset();
+        this.scenarioExecutor.reset();
     }
 
     /**
@@ -113,13 +112,13 @@ public class SimulatorService {
                             flag = false;
                         }
                     }
-                    
+
                     // run the scenario for the given number of events
                    /*  for (int i = 1; i < numActionsPerRun; i++) {
                         System.out.println("Running action " + i + "/" + numActionsPerRun);
                         this.scenarioExecutor.getScheduler().scheduleNext();
                     } */
-                   
+
                     log.info("executed schedule: " + convertEventListToString(this.scenarioExecutor.getTransport().getSchedule()) );
                     this.scenarioExecutor.reset();
                 }
@@ -137,7 +136,7 @@ public class SimulatorService {
 
     public void invokeScheduleNext() throws Exception {
         Optional<EventDecision> decisionOptional = this.scenarioExecutor.getScheduler().scheduleNext();
-        if (decisionOptional.isPresent()) { 
+        if (decisionOptional.isPresent()) {
             EventDecision decision = decisionOptional.get();
             if (decision.getDecision() == EventDecision.DecisionType.DROPPED) {
                 this.droppedMessageCount += 1;

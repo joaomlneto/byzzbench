@@ -1,3 +1,5 @@
+"use client";
+
 import { useGetNumSavedSchedules } from "@/lib/byzzbench-client";
 
 export const RunningSimulatorStats = () => {

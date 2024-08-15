@@ -2,11 +2,8 @@ package byzzbench.simulator.protocols.XRPL;
 
 import byzzbench.simulator.ScenarioExecutor;
 import byzzbench.simulator.TerminationCondition;
-import byzzbench.simulator.protocols.XRPL.mutators.XRPLProposeMessageMutatorFactory;
-import byzzbench.simulator.protocols.XRPL.mutators.XRPLSubmitMessageMutatorFactory;
-import byzzbench.simulator.protocols.XRPL.mutators.XRPLValidateMessageMutatorFactory;
+import byzzbench.simulator.service.MessageMutatorService;
 import byzzbench.simulator.service.SchedulesService;
-import byzzbench.simulator.transport.Transport;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
@@ -22,17 +19,17 @@ public class XRPLScenarioExecutor extends ScenarioExecutor<XRPLLedger>  {
     private List<XRPLReplica> replica_list;
     private XRPLTerminationCondition terminationCondition;
 
-    public XRPLScenarioExecutor(SchedulesService schedulesService) {
-        super("xrpl", new Transport<>(schedulesService));
+    public XRPLScenarioExecutor(MessageMutatorService messageMutatorService, SchedulesService schedulesService) {
+        super("xrpl", messageMutatorService, schedulesService);
         this.setNumClients(1);
     }
 
     @Override
     public void setup() {
         setupDefault();
-        transport.registerMessageMutators(new XRPLProposeMessageMutatorFactory());
-        transport.registerMessageMutators(new XRPLSubmitMessageMutatorFactory());
-        transport.registerMessageMutators(new XRPLValidateMessageMutatorFactory());
+        //transport.registerMessageMutators(new XRPLProposeMessageMutatorFactory());
+        //transport.registerMessageMutators(new XRPLSubmitMessageMutatorFactory());
+        //transport.registerMessageMutators(new XRPLValidateMessageMutatorFactory());
         this.terminationCondition = new XRPLTerminationCondition(replica_list);
     }
 
@@ -59,6 +56,8 @@ public class XRPLScenarioExecutor extends ScenarioExecutor<XRPLLedger>  {
                 this.replica_list.add(replica);
                 transport.addNode(replica);
             });
+            //transport.registerMessageMutators(new XRPLProposeMessageMutatorFactory());
+            //transport.registerMessageMutators(new XRPLSubmitMessageMutatorFactory());
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -91,6 +90,8 @@ public class XRPLScenarioExecutor extends ScenarioExecutor<XRPLLedger>  {
             replica_list.forEach(r -> {
                 transport.addNode(r);
             });
+            //transport.registerMessageMutators(new XRPLProposeMessageMutatorFactory());
+            //transport.registerMessageMutators(new XRPLSubmitMessageMutatorFactory());
         } catch (Exception e) {
             throw new RuntimeException(e);
         }

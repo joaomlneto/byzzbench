@@ -1,3 +1,5 @@
+"use client";
+
 import { useGetAllAdobCaches } from "@/lib/byzzbench-client";
 import React, { useMemo } from "react";
 import { GraphUtils, GraphView } from "react-digraph";

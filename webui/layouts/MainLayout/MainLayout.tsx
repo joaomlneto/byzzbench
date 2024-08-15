@@ -8,7 +8,8 @@ import { SaveScheduleActionIcon } from "@/components/SaveScheduleActionIcon";
 import { ScenarioSelect } from "@/components/ScenarioSelect";
 import { StartActionIcon } from "@/components/StartActionIcon";
 import { StopActionIcon } from "@/components/StopActionIcon";
-import { AppShell, Group, Text } from "@mantine/core";
+import { HeaderMenu } from "@/layouts/MainLayout/HeaderMenu";
+import { AppShell, Group } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
 import React, { PropsWithChildren } from "react";
 
@@ -20,7 +21,7 @@ export const MainLayout = ({ children }: PropsWithChildren) => {
       <AppShell.Header>
         <Group p="xs">
           <ColorSchemeToggle />
-          <Text fw={900}>ByzzBench</Text>
+          <HeaderMenu />
           <ScenarioSelect />
           <ResetActionIcon />
           <DoSchedulerActionIcon />
