@@ -2,10 +2,11 @@ package byzzbench.simulator.protocols.pbft_java.message;
 
 import byzzbench.simulator.transport.MessagePayload;
 
-public interface IPhaseMessage extends MessagePayload {
-    long getViewNumber();
+public abstract class IPhaseMessage extends MessagePayload {
+    public abstract long getViewNumber();
 
-    long getSequenceNumber();
+    public abstract long getSequenceNumber();
 
-    byte[] getDigest();
+    public abstract byte[] getDigest();
+    
 }

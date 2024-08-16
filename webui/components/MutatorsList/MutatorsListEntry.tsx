@@ -1,10 +1,10 @@
 "use client";
 
 import { useGetMutator } from "@/lib/byzzbench-client/generated";
-import { Container, Group, Text, Title } from "@mantine/core";
+import { Container, Grid, Text, Title } from "@mantine/core";
 import React from "react";
 
-export const MutatorsListEntry = ({ mutatorId }: { mutatorId: number }) => {
+export const MutatorsListEntry = ({ mutatorId }: { mutatorId: string }) => {
   const { data: mutator } = useGetMutator(mutatorId);
 
   if (!mutator) {
@@ -13,18 +13,18 @@ export const MutatorsListEntry = ({ mutatorId }: { mutatorId: number }) => {
 
   return (
     <Container fluid style={{ border: "1px solid black" }} p="md">
-      <Group justify="space-between" wrap="nowrap" mb="sm">
-        <div>
-          <Title order={4}>
-            {mutatorId}: {mutator.data.name}
-          </Title>
-          <Text lineClamp={1}>
-            {/*mutator.data.inputClasses
-              ?.map((s) => s.split(".").at(-1))
-              .join(", ")*/}
+      <Grid justify="space-between">
+        <Grid.Col span="content">
+          <Text size="sm">{mutator.data.id}</Text>
+          <Title order={6}>{mutator.data.name}</Title>
+          <Text size="xs">
+            {// @ts-ignore
+            mutator.data["inputClasses"]
+              //?.map((s) => s.split(".").at(-1))
+              ?.join(", ")}
           </Text>
-        </div>
-      </Group>
+        </Grid.Col>
+      </Grid>
     </Container>
   );
 };

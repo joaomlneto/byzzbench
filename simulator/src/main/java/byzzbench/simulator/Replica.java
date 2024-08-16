@@ -1,9 +1,7 @@
 package byzzbench.simulator;
 
 import byzzbench.simulator.state.CommitLog;
-import byzzbench.simulator.transport.ClientReplyPayload;
 import byzzbench.simulator.transport.MessagePayload;
-import byzzbench.simulator.transport.SignedMessagePayload;
 import byzzbench.simulator.transport.Transport;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Getter;
@@ -94,13 +92,9 @@ public abstract class Replica<T extends Serializable> implements Serializable {
      * @param recipient the recipient of the message
      */
     protected void sendMessage(MessagePayload message, String recipient) {
-        if (message instanceof SignedMessagePayload signableMessage) {
-            signableMessage.sign(this.nodeId);
-            this.transport.sendMessage(this.nodeId, signableMessage, recipient);
-        } else {
-            this.transport.sendMessage(this.nodeId, message, recipient);
-        }
-        
+        message.sign(this.nodeId);
+        this.transport.sendMessage(this.nodeId, message, recipient);
+
     }
 
     /**
@@ -111,12 +105,9 @@ public abstract class Replica<T extends Serializable> implements Serializable {
      */
     protected void multicastMessage(MessagePayload message,
                                     Set<String> recipients) {
-        if (message instanceof SignedMessagePayload signableMessage) {
-            signableMessage.sign(this.nodeId);
-            this.transport.multicast(this.nodeId, recipients, signableMessage);
-        } else {
-            this.transport.multicast(this.nodeId, recipients, message);
-        }
+        message.sign(this.nodeId);
+        this.transport.multicast(this.nodeId, recipients, message);
+
     }
 
     /**
@@ -129,12 +120,8 @@ public abstract class Replica<T extends Serializable> implements Serializable {
                 .filter(otherNodeId -> !otherNodeId.equals(this.nodeId))
                 .collect(java.util.stream.Collectors.toSet());
 
-        if (message instanceof SignedMessagePayload signableMessage) {
-            signableMessage.sign(this.nodeId);
-            this.transport.multicast(this.nodeId, otherNodes, signableMessage);
-        } else {
+            message.sign(this.nodeId);
             this.transport.multicast(this.nodeId, otherNodes, message);
-        }
     }
 
     /**
@@ -143,12 +130,8 @@ public abstract class Replica<T extends Serializable> implements Serializable {
      * @param message the message to broadcast
      */
     protected void broadcastMessageIncludingSelf(MessagePayload message) {
-        if (message instanceof SignedMessagePayload signableMessage) {
-            signableMessage.sign(this.nodeId);
-            this.transport.multicast(this.nodeId, this.nodeIds, signableMessage);
-        } else {
+            message.sign(this.nodeId);
             this.transport.multicast(this.nodeId, this.nodeIds, message);
-        }
     }
 
     /**
@@ -166,7 +149,6 @@ public abstract class Replica<T extends Serializable> implements Serializable {
      * created. Subclasses should override this method to perform any
      * initialization that is required.
      */
-
     public abstract void initialize();
 
     /**
@@ -178,9 +160,13 @@ public abstract class Replica<T extends Serializable> implements Serializable {
      */
     public abstract void handleClientRequest(String clientId, Serializable request) throws Exception;
 
+    /**
+     * Send a reply to a client.
+     * @param clientId the ID of the client
+     * @param reply the reply payload
+     */
     public void sendReplyToClient(String clientId, Serializable reply) {
-        ClientReplyPayload response = new ClientReplyPayload(clientId, reply);
-        this.transport.sendClientResponse(this.nodeId, response, clientId);
+        this.transport.sendClientResponse(this.nodeId, reply, clientId);
     }
 
     /**
@@ -240,6 +226,8 @@ public abstract class Replica<T extends Serializable> implements Serializable {
      * @param newLeaderId the new leader ID
      */
     public void notifyObserversLeaderChange(String newLeaderId) {
+        System.out.println("Notifying observers of leader change: " + newLeaderId);
+        System.out.println("Observers: " + this.observers);
         this.observers.forEach(observer -> observer.onLeaderChange(this, newLeaderId));
     }
 

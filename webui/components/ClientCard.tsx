@@ -13,7 +13,11 @@ export const ClientCard = ({ clientId }: ClientCardProps) => {
   const { data } = useGetClient(clientId);
 
   return (
-    <Container fluid style={{ border: "1px solid black" }} p="md">
+    <Container
+      fluid
+      style={{ border: "1px solid black", maxWidth: 400 }}
+      p="md"
+    >
       <Stack gap="xs">
         {false && (
           <JsonInput value={JSON.stringify(data?.data, null, 2)} autosize />

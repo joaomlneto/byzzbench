@@ -2,10 +2,13 @@ package byzzbench.simulator;
 
 import byzzbench.simulator.scheduler.BaseScheduler;
 import byzzbench.simulator.scheduler.RandomScheduler;
+import byzzbench.simulator.service.MessageMutatorService;
+import byzzbench.simulator.service.SchedulesService;
 import byzzbench.simulator.state.adob.AdobDistributedState;
 import byzzbench.simulator.transport.Transport;
 import lombok.Getter;
 import lombok.Setter;
+import lombok.ToString;
 
 import java.io.Serializable;
 
@@ -16,22 +19,25 @@ import java.io.Serializable;
  * @param <T> The type of the entries in the commit log of each {@link Replica}.
  */
 @Getter
+@ToString
 public abstract class ScenarioExecutor<T extends Serializable> {
     /**
      * The transport layer for the scenario.
      */
+    @ToString.Exclude
     protected final Transport<T> transport;
-
     /**
      * The scheduler for the scenario.
      */
     protected final BaseScheduler<T> scheduler;
-
     /**
      * The AdoB oracle for the scenario, which keeps track of the distributed state.
      */
     protected final AdobDistributedState adobOracle;
-
+    /**
+     * A unique identifier for the scenario.
+     */
+    private final String id;
     /**
      * The number of "regular" clients in the scenario.
      */
@@ -39,13 +45,16 @@ public abstract class ScenarioExecutor<T extends Serializable> {
     private int numClients = 0;
 
     /**
-     * Creates a new scenario executor with the given transport layer.
+     * Creates a new scenario executor
      *
-     * @param transport The transport layer for the scenario.
+     * @param id The unique identifier for the scenario.
+     * @param messageMutatorService The service for mutating messages.
+     * @param schedulesService The service for storing and managing schedules.
      */
-    protected ScenarioExecutor(Transport<T> transport) {
-        this.transport = transport;
-        this.scheduler = new RandomScheduler<>(transport);
+    protected ScenarioExecutor(String id, MessageMutatorService messageMutatorService, SchedulesService schedulesService) {
+        this.id = id;
+        this.transport = new Transport<>(this, messageMutatorService, schedulesService);
+        this.scheduler = new RandomScheduler<>(messageMutatorService, transport);
         this.setup();
 
         // AdoB must be initialized after the setup method is called
@@ -58,8 +67,10 @@ public abstract class ScenarioExecutor<T extends Serializable> {
     public void reset() {
         this.transport.reset();
         this.setupScenario();
-        this.runScenario();
         this.adobOracle.reset();
+        this.runScenario();
+        System.out.println("Scenario reset");
+        System.out.println(this);
     }
 
     /**
@@ -77,6 +88,7 @@ public abstract class ScenarioExecutor<T extends Serializable> {
      */
     public final void setupScenario() {
         this.transport.createClients(this.numClients);
+        this.transport.getNodes().values().forEach(Replica::initialize);
         this.setup();
     }
 
@@ -84,14 +96,18 @@ public abstract class ScenarioExecutor<T extends Serializable> {
      * Logic to set up the scenario - must be implemented by subclasses.
      */
     protected abstract void setup();
+    public abstract TerminationCondition getTerminationCondition();
 
+    /**
+     * Runs the scenario by calling the run method and initializing all nodes.
+     */
     public final void runScenario() {
         this.run();
-        this.transport.getNodes().values().forEach(Replica::initialize);
     }
 
     /**
      * Runs the scenario - must be implemented by subclasses.
      */
     protected abstract void run();
+
 }

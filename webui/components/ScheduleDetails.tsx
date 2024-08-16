@@ -13,7 +13,7 @@ export const ScheduleDetails = ({ schedule }: ScheduleDetailsProps) => {
     <div>
       <Title order={4}>{schedule.name}</Title>
       {schedule.actions.map((action, i) => (
-        <div key={i}>
+        <div key={`${i}-${action.label}`}>
           {action.type == "DeliverEvent" &&
             `Deliver event #${action.event.eventId}`}
         </div>

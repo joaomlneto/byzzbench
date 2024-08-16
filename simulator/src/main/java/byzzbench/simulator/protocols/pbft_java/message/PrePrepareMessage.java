@@ -1,16 +1,17 @@
 package byzzbench.simulator.protocols.pbft_java.message;
 
-import byzzbench.simulator.transport.MessagePayload;
+import lombok.AllArgsConstructor;
 import lombok.Data;
-import lombok.With;
+import lombok.EqualsAndHashCode;
 
+@AllArgsConstructor
 @Data
-@With
-public class PrePrepareMessage implements MessagePayload, IPhaseMessage {
-    private final long viewNumber;
-    private final long sequenceNumber;
-    private final byte[] digest;
-    private final RequestMessage request;
+@EqualsAndHashCode(callSuper = true)
+public class PrePrepareMessage extends IPhaseMessage {
+    private long viewNumber;
+    private long sequenceNumber;
+    private byte[] digest;
+    private RequestMessage request;
 
     @Override
     public String getType() {

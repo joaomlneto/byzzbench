@@ -2,21 +2,26 @@ package byzzbench.simulator.protocols.pbft_java;
 
 import byzzbench.simulator.Replica;
 import byzzbench.simulator.ScenarioExecutor;
-import byzzbench.simulator.protocols.pbft_java.mutator.PrePrepareMessageMutatorFactory;
-import byzzbench.simulator.transport.Transport;
+import byzzbench.simulator.TerminationCondition;
+import byzzbench.simulator.service.MessageMutatorService;
+import byzzbench.simulator.service.SchedulesService;
 import lombok.extern.java.Log;
+import org.springframework.stereotype.Component;
 
 import java.io.Serializable;
 import java.util.Set;
 import java.util.TreeSet;
 
+@Component
 @Log
 public class PbftScenarioExecutor<T extends Serializable> extends ScenarioExecutor<T> {
     private final int NUM_NODES = 4;
+    private PbftTerminationCondition terminationCondition;
 
-    public PbftScenarioExecutor() {
-        super(new Transport());
+    public PbftScenarioExecutor(MessageMutatorService messageMutatorService, SchedulesService schedulesService) {
+        super("pbft-java", messageMutatorService, schedulesService);
         this.setNumClients(1);
+        this.terminationCondition = new PbftTerminationCondition();
     }
 
     @Override
@@ -32,8 +37,6 @@ public class PbftScenarioExecutor<T extends Serializable> extends ScenarioExecut
                 Replica replica = new PbftReplica<String, String>(nodeId, nodeIds, 1, 1000, messageLog, transport);
                 this.addNode(replica);
             });
-
-            transport.registerMessageMutators(new PrePrepareMessageMutatorFactory());
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -48,5 +51,10 @@ public class PbftScenarioExecutor<T extends Serializable> extends ScenarioExecut
             e.printStackTrace();
             throw new RuntimeException(e);
         }
+    }
+
+    @Override
+    public TerminationCondition getTerminationCondition() {
+        return this.terminationCondition;
     }
 }

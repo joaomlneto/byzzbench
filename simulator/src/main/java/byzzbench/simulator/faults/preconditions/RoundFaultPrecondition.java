@@ -1,19 +1,41 @@
 package byzzbench.simulator.faults.preconditions;
 
-import byzzbench.simulator.faults.FaultPrecondition;
+import byzzbench.simulator.faults.FaultInput;
+import byzzbench.simulator.faults.FaultPredicate;
+import byzzbench.simulator.transport.Event;
 import byzzbench.simulator.transport.MessageEvent;
-import byzzbench.simulator.transport.messages.RoundMessage;
+import byzzbench.simulator.transport.messages.RoundMessagePayload;
+import lombok.RequiredArgsConstructor;
 
-public class RoundFaultPrecondition implements FaultPrecondition {
+import java.util.Optional;
+
+@RequiredArgsConstructor
+public class RoundFaultPrecondition implements FaultPredicate<MessageEvent> {
   private final long round;
 
-  public RoundFaultPrecondition(long round) { this.round = round; }
+  @Override
+  public String getId() {
+    return "RoundFaultPrecondition";
+  }
 
   @Override
-  public boolean isSatisfiedBy(MessageEvent message) {
-    if (message instanceof RoundMessage roundMessage) {
-      return roundMessage.getRound() == round;
+  public String getName() {
+    return "Round Fault Precondition";
+  }
+
+  @Override
+  public boolean test(FaultInput<MessageEvent> ctx) {
+    Optional<Event> event = ctx.getEvent();
+
+    if (event.isEmpty()) {
+      return false;
     }
-    return false;
+
+    if (!(event.get() instanceof MessageEvent message)) {
+      return false;
+    }
+
+    return message.getPayload() instanceof RoundMessagePayload roundMessage
+            && roundMessage.getRound() == round;
   }
 }

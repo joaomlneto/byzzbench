@@ -18,7 +18,6 @@ import byzzbench.simulator.protocols.XRPL.messages.XRPLTxMessage;
 import byzzbench.simulator.protocols.XRPL.messages.XRPLValidateMessage;
 import byzzbench.simulator.state.TotalOrderCommitLog;
 import byzzbench.simulator.transport.MessagePayload;
-import byzzbench.simulator.transport.SignedMessagePayload;
 import byzzbench.simulator.transport.Transport;
 import lombok.Getter;
 
@@ -71,41 +70,21 @@ public class XRPLReplica extends Replica<XRPLLedger> {
 
     @Override
     public void handleMessage(String sender, MessagePayload message) throws Exception {
-        if (message instanceof SignedMessagePayload signableMessage) {
-            if (signableMessage.isSignedBy(sender)) {
-                if (signableMessage instanceof XRPLProposeMessage propmsg) {
-                    proposeMessageHandler(propmsg);
-                    return;
-                } else if (signableMessage instanceof XRPLSubmitMessage submsg) {
-                    submitMessageHandler(submsg);
-                    return;
-                } else if (signableMessage instanceof XRPLValidateMessage valmsg) {
-                    validateMessageHandler(valmsg);
-                    return;
-                } else {
-                    throw new Exception("Unknown message type");
-                }
-            } else {
-                throw new Exception("Illegal signature of message");
-            }
+        if (message instanceof XRPLProposeMessage propmsg) {
+            proposeMessageHandler(propmsg);
+            return;
+        } else if (message instanceof XRPLSubmitMessage submsg) {
+            submitMessageHandler(submsg);
+            return;
+        } else if (message instanceof XRPLValidateMessage valmsg) {
+            validateMessageHandler(valmsg);
+            return;
+        } else if (message instanceof XRPLTxMessage txmsg) {
+            recvTxHandler(txmsg);
+            return;
         } else {
-                if (message instanceof XRPLProposeMessage propmsg) {
-                proposeMessageHandler(propmsg);
-                return;
-            } else if (message instanceof XRPLSubmitMessage submsg) {
-                submitMessageHandler(submsg);
-                return;
-            } else if (message instanceof XRPLValidateMessage valmsg) {
-                validateMessageHandler(valmsg);
-                return;
-            } else if (message instanceof XRPLTxMessage txmsg) {
-                recvTxHandler(txmsg);
-                return;
-            } else {
-                throw new Exception("Unknown message type");
-            }
+            throw new Exception("Unknown message type");
         }
-        
 
     }
 
@@ -171,6 +150,9 @@ public class XRPLReplica extends Replica<XRPLLedger> {
         try {
             XRPLProposal prop = msg.getProposal();
             Deque<XRPLProposal> props = this.recentPeerPositions.get(prop.getNodeId());
+            if (props == null) {
+                throw new RuntimeException("node not in our UNL");
+            }
             if (props.size() >= 10) {
                 props.removeFirst();
             }
@@ -183,7 +165,7 @@ public class XRPLReplica extends Replica<XRPLLedger> {
                 }
             }
         } catch (Exception e) {
-            log.info("Couldn't handle propose message in node " + this.getNodeId() + ": " + e.getMessage());
+            log.info("Error handling propose message in node " + this.getNodeId() + ": " + e.getMessage());
         }
         
     }
@@ -289,7 +271,7 @@ public class XRPLReplica extends Replica<XRPLLedger> {
         } else {
             threshold = 0.95;
         }
-        boolean newVote = (dt.getYesVotes() + boolToInt(dt.getOurVote())) / (dt.getNoVotes() + dt.getYesVotes() + 1) > threshold;
+        boolean newVote = (double) (dt.getYesVotes() + boolToInt(dt.getOurVote())) / (dt.getNoVotes() + dt.getYesVotes() + 1) > threshold;
         return newVote != dt.getOurVote();
     }
 
@@ -332,7 +314,7 @@ public class XRPLReplica extends Replica<XRPLLedger> {
                 agree += 1;
             } 
         }
-        return (agree + 1) / total >= 0.8;
+        return (double) (agree + 1) / total >= 0.8;
     }
 
     /*
@@ -361,19 +343,22 @@ public class XRPLReplica extends Replica<XRPLLedger> {
     private void createDisputes(List<String> txns) {
         Set<String> symmDiff = computeSymmetricDifference(this.result.getTxList(), txns);
         for (String tx : symmDiff) {
-            DisputedTx dt = new DisputedTx(tx, this.result.containsTx(tx), 0, 0, new HashMap<>());
-            for (String nodeId : this.ourUNL) {
-                if (this.currPeerProposals.get(nodeId) != null) {
-                    if (this.currPeerProposals.get(nodeId).containsTx(tx)) {
-                        dt.incrementYesVotes();
-                        dt.addEntryToVotesMap(nodeId, true);
-                    } else {
-                        dt.incrementNoVotes();
-                        dt.addEntryToVotesMap(nodeId, false);
+            if (!this.result.disputesContain(tx)) {
+                DisputedTx dt = new DisputedTx(tx, this.result.containsTx(tx), 0, 0, new HashMap<>());
+                for (String nodeId : this.ourUNL) {
+                    if (this.currPeerProposals.get(nodeId) != null) {
+                        if (this.currPeerProposals.get(nodeId).containsTx(tx)) {
+                            dt.incrementYesVotes();
+                            dt.addEntryToVotesMap(nodeId, true);
+                        } else {
+                            dt.incrementNoVotes();
+                            dt.addEntryToVotesMap(nodeId, false);
+                        }
                     }
                 }
+                this.result.addDisputed(dt);
             }
-            this.result.addDisputed(dt);
+            
         }
     }
 

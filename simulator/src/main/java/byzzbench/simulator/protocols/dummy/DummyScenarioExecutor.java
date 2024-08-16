@@ -2,19 +2,23 @@ package byzzbench.simulator.protocols.dummy;
 
 import byzzbench.simulator.Replica;
 import byzzbench.simulator.ScenarioExecutor;
+import byzzbench.simulator.TerminationCondition;
 import byzzbench.simulator.protocols.pbft_java.MessageLog;
-import byzzbench.simulator.transport.Transport;
+import byzzbench.simulator.service.MessageMutatorService;
+import byzzbench.simulator.service.SchedulesService;
 import lombok.extern.java.Log;
+import org.springframework.stereotype.Component;
 
 import java.io.Serializable;
 import java.util.Set;
 import java.util.TreeSet;
 
+@Component
 @Log
 public class DummyScenarioExecutor<T extends Serializable> extends ScenarioExecutor<T> {
 
-    public DummyScenarioExecutor() throws Exception {
-        super(new Transport());
+    public DummyScenarioExecutor(MessageMutatorService messageMutatorService, SchedulesService schedulesService) throws Exception {
+        super("dummy", messageMutatorService, schedulesService);
     }
 
     @Override
@@ -44,5 +48,11 @@ public class DummyScenarioExecutor<T extends Serializable> extends ScenarioExecu
             e.printStackTrace();
             throw new RuntimeException(e);
         }
+    }
+
+    @Override
+    public TerminationCondition getTerminationCondition() {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'getTerminationCondition'");
     }
 }
