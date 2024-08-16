@@ -6,7 +6,6 @@ import byzzbench.simulator.state.CommitLog;
 import byzzbench.simulator.transport.Event;
 import byzzbench.simulator.transport.MessageEvent;
 import byzzbench.simulator.transport.Transport;
-
 import java.io.Serializable;
 import java.util.Comparator;
 import java.util.Optional;
@@ -18,7 +17,10 @@ import java.util.Optional;
  *     Replica}.
  */
 public class FifoScheduler<T extends Serializable> extends BaseScheduler<T> {
-  public FifoScheduler(MessageMutatorService messageMutatorService, Transport<T> transport) { super("FIFO", messageMutatorService, transport); }
+  public FifoScheduler(MessageMutatorService messageMutatorService,
+                       Transport<T> transport) {
+    super("FIFO", messageMutatorService, transport);
+  }
 
   @Override
   public Optional<EventDecision> scheduleNext() throws Exception {
@@ -32,7 +34,8 @@ public class FifoScheduler<T extends Serializable> extends BaseScheduler<T> {
 
     if (event.isPresent()) {
       this.getTransport().deliverEvent(event.get().getEventId());
-      EventDecision decision = new EventDecision(EventDecision.DecisionType.DELIVERED, event.get().getEventId());
+      EventDecision decision = new EventDecision(
+          EventDecision.DecisionType.DELIVERED, event.get().getEventId());
       return Optional.of(decision);
     } else {
       return Optional.empty();
@@ -42,6 +45,7 @@ public class FifoScheduler<T extends Serializable> extends BaseScheduler<T> {
   @Override
   public void stopDropMessages() {
     // TODO Auto-generated method stub
-    throw new UnsupportedOperationException("Unimplemented method 'stopDropMessages'");
+    throw new UnsupportedOperationException(
+        "Unimplemented method 'stopDropMessages'");
   }
 }
