@@ -2,15 +2,15 @@ package byzzbench.simulator.protocols.fasthotstuff;
 
 import byzzbench.simulator.Replica;
 import byzzbench.simulator.ScenarioExecutor;
+import byzzbench.simulator.TerminationCondition;
 import byzzbench.simulator.protocols.fasthotstuff.message.Block;
 import byzzbench.simulator.service.MessageMutatorService;
 import byzzbench.simulator.service.SchedulesService;
 import lombok.extern.java.Log;
 import org.springframework.stereotype.Component;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
+import java.util.Set;
+import java.util.TreeSet;
 
 @Component
 @Log
@@ -24,13 +24,13 @@ public class FastHotStuffScenarioExecutor extends ScenarioExecutor<Block> {
     @Override
     public void setup() {
         try {
-            List<String> nodeIds = new ArrayList<>();
+            Set<String> nodeIds = new TreeSet<>();
             for (int i = 0; i < NUM_NODES; i++) {
                 nodeIds.add(Character.toString((char) ('A' + i)));
             }
 
             nodeIds.forEach(nodeId -> {
-                Replica<Block> replica = new FastHotStuffReplica(nodeId, new HashSet<>(nodeIds), transport);
+                Replica<Block> replica = new FastHotStuffReplica(nodeId, nodeIds, transport);
                 this.addNode(replica);
             });
         } catch (Exception e) {
@@ -42,5 +42,11 @@ public class FastHotStuffScenarioExecutor extends ScenarioExecutor<Block> {
     public synchronized void run() {
         // nothing to do at the moment
         // TODO: genesis block creation logic should be moved here
+    }
+
+    @Override
+    public TerminationCondition getTerminationCondition() {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'getTerminationCondition'");
     }
 }

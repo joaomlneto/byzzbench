@@ -71,4 +71,13 @@ public class XRPLConsensusResult {
     public void resetDisputes() {
         this.disputeds.clear();
     }
+
+    public boolean disputesContain(String tx) {
+        for (DisputedTx disputedTx : this.disputeds) {
+            if (disputedTx.getTx().equals(tx)) {
+                return true;
+            }
+        }
+        return false;
+    }
 }

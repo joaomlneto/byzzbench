@@ -1,6 +1,7 @@
 package byzzbench.simulator.protocols.XRPL;
 
 import byzzbench.simulator.ScenarioExecutor;
+import byzzbench.simulator.TerminationCondition;
 import byzzbench.simulator.service.MessageMutatorService;
 import byzzbench.simulator.service.SchedulesService;
 import org.springframework.stereotype.Component;
@@ -16,6 +17,7 @@ public class XRPLScenarioExecutor extends ScenarioExecutor<XRPLLedger>  {
 
 
     private List<XRPLReplica> replica_list;
+    private XRPLTerminationCondition terminationCondition;
 
     public XRPLScenarioExecutor(MessageMutatorService messageMutatorService, SchedulesService schedulesService) {
         super("xrpl", messageMutatorService, schedulesService);
@@ -25,6 +27,10 @@ public class XRPLScenarioExecutor extends ScenarioExecutor<XRPLLedger>  {
     @Override
     public void setup() {
         setupDefault();
+        //transport.registerMessageMutators(new XRPLProposeMessageMutatorFactory());
+        //transport.registerMessageMutators(new XRPLSubmitMessageMutatorFactory());
+        //transport.registerMessageMutators(new XRPLValidateMessageMutatorFactory());
+        this.terminationCondition = new XRPLTerminationCondition(replica_list);
     }
 
     @Override
@@ -73,7 +79,7 @@ public class XRPLScenarioExecutor extends ScenarioExecutor<XRPLLedger>  {
             XRPLReplica replica2 = new XRPLReplica("B", nodeIds, this.transport, unl1, genesis);
             XRPLReplica replica3 = new XRPLReplica("C", nodeIds, this.transport, unl1, genesis);
 
-            XRPLReplica replica4 = new XRPLReplica("D", nodeIds, this.transport, nodeIds, genesis);
+            XRPLReplica replica4 = new XRPLReplica("D", nodeIds, this.transport, Set.of("D"), genesis);
 
             XRPLReplica replica5 = new XRPLReplica("E", nodeIds, this.transport, unl2, genesis);
             XRPLReplica replica6 = new XRPLReplica("F", nodeIds, this.transport, unl2, genesis);
@@ -143,6 +149,11 @@ public class XRPLScenarioExecutor extends ScenarioExecutor<XRPLLedger>  {
         for (XRPLReplica xrplReplica : replica_list) {
             xrplReplica.onHeartbeat();
         }
+    }
+
+    @Override
+    public TerminationCondition getTerminationCondition() {
+        return this.terminationCondition;
     }
 
 }

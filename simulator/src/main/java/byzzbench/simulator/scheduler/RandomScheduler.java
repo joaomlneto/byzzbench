@@ -18,13 +18,17 @@ import java.util.Random;
  *            Replica}.
  */
 public class RandomScheduler<T extends Serializable> extends BaseScheduler<T> {
-    private final double DELIVER_MESSAGE_PROBABILITY = 0.92;
-    private final double DROP_MESSAGE_PROBABILITY = 0.08;
     private final double MUTATE_MESSAGE_PROBABILITY = 0.00;
     Random random = new Random();
+    private double DELIVER_MESSAGE_PROBABILITY = 0.92;
+    private double DROP_MESSAGE_PROBABILITY = 0.08;
 
     public RandomScheduler(MessageMutatorService messageMutatorService, Transport<T> transport) {
         super("Random", messageMutatorService, transport);
+        assert_probabilities();
+    }
+
+    private void assert_probabilities() {
         assert DELIVER_MESSAGE_PROBABILITY >= 0 && DELIVER_MESSAGE_PROBABILITY <= 1;
         assert DROP_MESSAGE_PROBABILITY >= 0 && DROP_MESSAGE_PROBABILITY <= 1;
         assert MUTATE_MESSAGE_PROBABILITY >= 0 && MUTATE_MESSAGE_PROBABILITY <= 1;
@@ -33,8 +37,7 @@ public class RandomScheduler<T extends Serializable> extends BaseScheduler<T> {
     }
 
     @Override
-    public synchronized Optional<Event> scheduleNext() throws Exception {
-
+    public synchronized Optional<EventDecision> scheduleNext() throws Exception {
         // Get a random event
         List<Event> queuedEvents =
                 getTransport().getEventsInState(Event.Status.QUEUED);
@@ -74,7 +77,8 @@ public class RandomScheduler<T extends Serializable> extends BaseScheduler<T> {
             Event timeout = queuedTimeouts.get(random.nextInt(queuedTimeouts.size()));
             getTransport().deliverEvent(timeout.getEventId());
 
-            return Optional.of(timeout);
+            EventDecision decision = new EventDecision(EventDecision.DecisionType.DELIVERED, timeout.getEventId());
+            return Optional.of(decision);
         }
 
         // check if we should target a message
@@ -93,10 +97,11 @@ public class RandomScheduler<T extends Serializable> extends BaseScheduler<T> {
 
             // check if we should drop it
             if (random.nextDouble() < DROP_MESSAGE_PROBABILITY) {
-                // FIXME: we should return a "decision" object, not just the event id we
-                // targeted!
+
                 getTransport().dropEvent(message.getEventId());
-                return Optional.of(message);
+                EventDecision decision = new EventDecision(EventDecision.DecisionType.DROPPED, message.getEventId());
+
+                return Optional.of(decision);
             }
 
             // check if should mutate and deliver it
@@ -110,18 +115,20 @@ public class RandomScheduler<T extends Serializable> extends BaseScheduler<T> {
                     // no mutators, return nothing
                     return Optional.empty();
                 }
-                // FIXME: we should return a "decision" object, not just the event id we
-                // targeted!
                 getTransport().applyMutation(
                         message.getEventId(),
                         mutators.get(random.nextInt(mutators.size())));
                 getTransport().deliverEvent(message.getEventId());
-                return Optional.of(message);
+
+                EventDecision decision = new EventDecision(EventDecision.DecisionType.MUTATED, message.getEventId());
+                return Optional.of(decision);
             }
 
             // deliver the message, without changes
             getTransport().deliverEvent(message.getEventId());
-            return Optional.of(message);
+
+            EventDecision decision = new EventDecision(EventDecision.DecisionType.DELIVERED, message.getEventId());
+            return Optional.of(decision);
         }
 
         if (dieRoll < timeoutEventProb + messageEventProb + clientRequestEventProb) {
@@ -134,7 +141,9 @@ public class RandomScheduler<T extends Serializable> extends BaseScheduler<T> {
             Event request = queuedClientRequests.get(random.nextInt(clientRequestEventCount));
 
             getTransport().deliverEvent(request.getEventId());
-            return Optional.of(request);
+
+            EventDecision decision = new EventDecision(EventDecision.DecisionType.DELIVERED, request.getEventId());
+            return Optional.of(decision);
         }
 
         if (dieRoll < timeoutEventProb + messageEventProb + clientRequestEventProb + clientReplyEventProb) {
@@ -147,11 +156,22 @@ public class RandomScheduler<T extends Serializable> extends BaseScheduler<T> {
             Event reply = queuedClientReplies.get(random.nextInt(clientReplyEventCount));
 
             getTransport().deliverEvent(reply.getEventId());
-            return Optional.of(reply);
+
+            EventDecision decision = new EventDecision(EventDecision.DecisionType.DELIVERED, reply.getEventId());
+            return Optional.of(decision);
         }
 
 
 
         return Optional.empty();
+    }
+
+    @Override
+    public void stopDropMessages() {
+        System.out.println("Will not drop messages after this point");
+        this.dropMessages = false;
+        this.DELIVER_MESSAGE_PROBABILITY += this.DROP_MESSAGE_PROBABILITY;
+        this.DROP_MESSAGE_PROBABILITY = 0;
+        assert_probabilities();
     }
 }
