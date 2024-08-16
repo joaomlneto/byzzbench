@@ -30,6 +30,8 @@ import java.util.concurrent.Executors;
 public class SimulatorService {
     private final int MAX_EVENTS_FOR_RUN = SimulatorConfig.MAX_EVENTS_FOR_RUN;
     private final int MAX_DROPPED_MESSAGES = SimulatorConfig.MAX_DROPPED_MESSAGES;
+    private final int CHECK_TERMINATION_FREQ = SimulatorConfig.CHECK_TERMINATION_FREQ;
+    private int droppedMessageCount;
     private final SchedulesService schedulesService;
     private final ScenarioFactoryService scenarioFactoryService;
     private final ExecutorService executor = Executors.newFixedThreadPool(1);
@@ -53,6 +55,7 @@ public class SimulatorService {
      */
     public void changeScenario(String id) {
         this.scenarioExecutor = this.scenarioFactoryService.getScenario(id);
+        this.scenarioExecutor.setupScenario();
         this.terminationCondition = this.scenarioExecutor.getTerminationCondition();
         //this.scenarioExecutor.setupScenario();
         //this.scenarioExecutor.runScenario();
@@ -105,7 +108,7 @@ public class SimulatorService {
                         this.invokeScheduleNext();
                         num_events += 1;
 
-                        if ((num_events % 50 == 0 && this.terminationCondition.shouldTerminate())) {
+                        if ((num_events % CHECK_TERMINATION_FREQ == 0 && this.terminationCondition.shouldTerminate())) {
                             log.info("Termination condition has been satisfied for this run, terminating. . .");
                             flag = false;
                             numTerm += 1;

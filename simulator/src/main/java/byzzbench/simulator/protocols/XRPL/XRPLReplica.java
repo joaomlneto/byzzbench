@@ -124,7 +124,6 @@ public class XRPLReplica extends Replica<XRPLLedger> {
                 }
 
                 //if enough nodes validated, we can update validLedger
-                if (valCount >= (0.8 * this.ourUNL.size()) && (this.currWorkLedger.getSeq() > this.validLedger.getSeq())) {
                     this.validLedger = this.currWorkLedger;
                     for (String tx : this.validLedger.transactions) {
                         for (String pendingtx : this.pendingTransactions) {
