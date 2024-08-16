@@ -1,8 +1,10 @@
+"use client";
+
 import { DeliverMessageActionIcon } from "@/components/messages";
 import { MutateMessageMenu } from "@/components/messages/MutateMessageMenu";
 import { NodeStateNavLink } from "@/components/NodeStateNavLink";
 import { useGetMessage } from "@/lib/byzzbench-client/generated";
-import { Badge, Collapse, Container, Group, Text } from "@mantine/core";
+import { Badge, Card, Collapse, Group, Text, Tooltip } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
 import React, { useMemo } from "react";
 
@@ -26,21 +28,22 @@ export const NodeMailboxEntry = ({ messageId }: { messageId: number }) => {
   }
 
   return (
-    <Container fluid w="100%" style={{ border: "1px solid black" }} p="xs">
-      <Group
-        justify="space-between"
-        wrap="nowrap"
-        mb="sm"
-        onClick={(e) => {
-          e.preventDefault();
-          toggle();
-        }}
-      >
-        <Group wrap="nowrap" gap="xs">
+    <Card withBorder shadow="xs" px="xs" py={2} m={0}>
+      <Group justify="space-between" wrap="nowrap">
+        <Group
+          wrap="nowrap"
+          gap="xs"
+          onClick={(e) => {
+            e.preventDefault();
+            toggle();
+          }}
+        >
           <Text span c="dimmed">
             {payload?.eventId}
           </Text>
-          <Badge size="sm">{message.data.senderId}</Badge>
+          <Tooltip label="Sender">
+            <Badge size="sm">{message.data.senderId}</Badge>
+          </Tooltip>
           <Text lineClamp={1}>
             {
               // @ts-ignore
@@ -61,6 +64,6 @@ export const NodeMailboxEntry = ({ messageId }: { messageId: number }) => {
           <NodeStateNavLink key={key} label={key} data={value} />
         ))}
       </Collapse>
-    </Container>
+    </Card>
   );
 };

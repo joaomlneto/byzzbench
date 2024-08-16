@@ -42,4 +42,8 @@ public class Client<T extends Serializable> implements Serializable {
         // randomly select a replica to send the request to
         long nodeIndex = new Random().nextInt(nodeIds.size());
     }
+
+    public void handleReply(String senderId, Serializable reply) {
+        // TODO
+    }
 }

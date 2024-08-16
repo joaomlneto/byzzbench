@@ -2,14 +2,12 @@ package byzzbench.simulator.controller;
 
 import byzzbench.simulator.Client;
 import byzzbench.simulator.Replica;
-import byzzbench.simulator.service.ScenarioFactoryService;
-import byzzbench.simulator.service.SchedulerFactoryService;
-import byzzbench.simulator.service.SchedulesService;
-import byzzbench.simulator.service.SimulatorService;
+import byzzbench.simulator.faults.Fault;
+import byzzbench.simulator.faults.MessageMutationFault;
+import byzzbench.simulator.schedule.Schedule;
+import byzzbench.simulator.service.*;
 import byzzbench.simulator.state.adob.AdobCache;
 import byzzbench.simulator.transport.Event;
-import byzzbench.simulator.transport.MessageMutator;
-import byzzbench.simulator.transport.Schedule;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
@@ -18,6 +16,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 /**
@@ -26,6 +25,7 @@ import java.util.stream.IntStream;
 @RestController
 @RequiredArgsConstructor
 public class SimulatorController {
+    private final MessageMutatorService messageMutatorService;
     private final SchedulesService schedulesService;
     private final SimulatorService simulatorService;
     private final ScenarioFactoryService scenarioFactoryService;
@@ -145,6 +145,7 @@ public class SimulatorController {
         return simulatorService.getScenarioExecutor()
                 .getTransport()
                 .getSchedule()
+                .getEvents()
                 .stream()
                 .map(Event::getEventId)
                 .toList();
@@ -159,12 +160,20 @@ public class SimulatorController {
     }
 
     @GetMapping("/event/{eventId}/mutators")
-    public List<Long> getMessageMutators(@PathVariable Long eventId) {
-        return simulatorService.getScenarioExecutor()
+    public List<String> getMessageMutators(@PathVariable Long eventId) {
+        Event e = simulatorService.getScenarioExecutor()
                 .getTransport()
-                .getEventMutators(eventId)
+                .getEvents()
+                .get(eventId);
+
+        // if the event is not found, throw an exception
+        if (e == null) {
+            throw new IllegalArgumentException("Event not found: " + eventId);
+        }
+
+        return messageMutatorService.getMutatorsForEvent(e)
                 .stream()
-                .map(Map.Entry::getKey)
+                .map(MessageMutationFault::getId)
                 .toList();
     }
 
@@ -175,7 +184,7 @@ public class SimulatorController {
 
     @PostMapping("/event/{eventId}/drop")
     public void dropMessage(@PathVariable Long eventId) {
-        simulatorService.getScenarioExecutor().getTransport().dropMessage(eventId);
+        simulatorService.getScenarioExecutor().getTransport().dropEvent(eventId);
     }
 
     /**
@@ -184,28 +193,26 @@ public class SimulatorController {
      * @param mutatorId The ID of the mutator to apply.
      */
     @PostMapping("/event/{eventId}/mutate/{mutatorId}")
-    public void mutateMessage(@PathVariable Long eventId, @PathVariable Long mutatorId) {
-        simulatorService.getScenarioExecutor().getTransport().applyMutation(eventId, mutatorId);
+    public void mutateMessage(@PathVariable Long eventId, @PathVariable String mutatorId) {
+        Fault<?> f = this.messageMutatorService.getMutator(mutatorId);
+        simulatorService.getScenarioExecutor().getTransport().applyMutation(eventId, f);
     }
 
     @GetMapping("/mutators")
-    public Set<Long> getMutators() {
-        return simulatorService.getScenarioExecutor()
-                .getTransport()
-                .getMutators()
+    public Set<String> getMutators() {
+        return messageMutatorService
+                .getMutatorsMap()
                 .keySet();
     }
 
     @GetMapping("/mutators/{mutatorId}")
-    public MessageMutator getMutator(@PathVariable Long mutatorId) {
-        return simulatorService.getScenarioExecutor()
-                .getTransport()
-                .getMutators()
-                .get(mutatorId);
+    public MessageMutationFault<? extends Serializable> getMutator(@PathVariable String mutatorId) {
+        return messageMutatorService
+                .getMutator(mutatorId);
     }
 
     @PostMapping("/reset")
-    public void reset() throws Exception {
+    public void reset() {
         simulatorService.getScenarioExecutor().reset();
     }
 
@@ -273,7 +280,7 @@ public class SimulatorController {
     // returns: list of schedules
     @PostMapping("/start")
     public void start(@RequestParam int eventsPerRun) {
-        System.out.println("Starting simulator with " + eventsPerRun + " events per run");
+        //System.out.println("Starting simulator with " + eventsPerRun + " events per run");
         simulatorService.start(eventsPerRun);
     }
 
@@ -282,7 +289,7 @@ public class SimulatorController {
         if (!simulatorService.getMode().equals(SimulatorService.SimulatorServiceMode.RUNNING)) {
             throw new IllegalStateException("Simulator is not running");
         }
-        System.out.println("Stopping simulator");
+        //System.out.println("Stopping simulator");
         simulatorService.stop();
     }
 
@@ -291,4 +298,37 @@ public class SimulatorController {
         return simulatorService.getMode();
     }
 
+    @GetMapping("/network-faults")
+    public Set<String> getNetworkFaults() {
+        return simulatorService.getScenarioExecutor().getTransport().getNetworkFaults().keySet();
+    }
+
+    @GetMapping("/enabled-network-faults")
+    public Set<String> getEnabledNetworkFaults() {
+        return simulatorService
+                .getScenarioExecutor()
+                .getTransport()
+                .getEnabledNetworkFaults()
+                .stream()
+                .map(Fault::getId)
+                .collect(Collectors.toSet());
+    }
+
+    @GetMapping("/network-faults/{faultId}")
+    public Fault<? extends Serializable> getNetworkFault(@PathVariable String faultId) {
+        return simulatorService.getScenarioExecutor().getTransport().getNetworkFault(faultId);
+    }
+
+    @PostMapping("/network-fault/{faultId}")
+    public void enableNetworkFault(@PathVariable String faultId) {
+        simulatorService.getScenarioExecutor().getTransport().applyFault(faultId);
+    }
+
+    @GetMapping("/partitions")
+    public Map<String, Integer> getPartitions() {
+        return simulatorService.getScenarioExecutor()
+                .getTransport()
+                .getRouter()
+                .getPartitions();
+    }
 }

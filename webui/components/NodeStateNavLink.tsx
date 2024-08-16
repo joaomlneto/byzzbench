@@ -1,3 +1,5 @@
+"use client";
+
 import { NavLink, NavLinkProps, Text, Tooltip } from "@mantine/core";
 import {
   Icon123,
@@ -12,9 +14,14 @@ import React from "react";
 
 export type NodeStateNavLinkProps = NavLinkProps & {
   data?: any;
+  compact?: boolean;
 };
 
-export const NodeStateNavLink = ({ data, label }: NodeStateNavLinkProps) => {
+export const NodeStateNavLink = ({
+  data,
+  label,
+  compact,
+}: NodeStateNavLinkProps) => {
   if (data === null || data === undefined) {
     return (
       <NavLink
@@ -31,7 +38,7 @@ export const NodeStateNavLink = ({ data, label }: NodeStateNavLinkProps) => {
       <NavLink
         label={label}
         leftSection={<IconFileDigit size={16} />}
-        description={typeof data}
+        //description={typeof data}
         rightSection={
           data ? (
             <Tooltip label="true">
@@ -52,7 +59,7 @@ export const NodeStateNavLink = ({ data, label }: NodeStateNavLinkProps) => {
       <NavLink
         leftSection={<IconList size={16} />}
         label={label}
-        description={<Text size="sm">Array ({data.length})</Text>}
+        //description={<Text size="sm">Array ({data.length})</Text>}
       >
         {data.map((value, index) => (
           <NodeStateNavLink key={index} label={index} data={value} />
@@ -72,7 +79,7 @@ export const NodeStateNavLink = ({ data, label }: NodeStateNavLinkProps) => {
           ) : undefined
         }
         label={data["__className__"] ?? label ?? "(unknown class)"}
-        description={typeof data}
+        //description={typeof data}
         rightSection={
           <Text
             size="sm"
@@ -89,7 +96,7 @@ export const NodeStateNavLink = ({ data, label }: NodeStateNavLinkProps) => {
   return (
     <NavLink
       label={label ?? data["__className__"] ?? "(unknown class)"}
-      description={`${(data["__className__"] ?? "").replace(/.*\./, "")} (${Object.keys(data).length})`}
+      //description={`${(data["__className__"] ?? "").replace(/.*\./, "")} (${Object.keys(data).length})`}
       leftSection={<IconCylinder size={16} />}
     >
       {Object.entries(data ?? {})

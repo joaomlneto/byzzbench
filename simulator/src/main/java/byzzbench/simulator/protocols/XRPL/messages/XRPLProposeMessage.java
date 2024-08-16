@@ -2,18 +2,17 @@ package byzzbench.simulator.protocols.XRPL.messages;
 
 import byzzbench.simulator.protocols.XRPL.XRPLProposal;
 import byzzbench.simulator.transport.MessagePayload;
-import lombok.With;
+import lombok.Data;
 
 
 /*
  * Node Proposal message sent in the establish phase.
  * A node sends this message when it is trying to propose
  * a ledger for the given sequence number, a node may update
- * its proposal via other propose messages with subsequent 
+ * its proposal via other propose messages with subsequent
  * sequence numbers.
  */
-
-@With
+@Data
 public class XRPLProposeMessage extends MessagePayload {
     private XRPLProposal prop;
     private String senderId;
@@ -30,7 +29,7 @@ public class XRPLProposeMessage extends MessagePayload {
 
     public String getSenderId() {
         return this.senderId;
-    }    
+    }
 
     public XRPLProposal getProposal() {
         return this.prop;

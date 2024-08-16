@@ -2,11 +2,11 @@
 
 import AdoBStateDiagram from "@/components/adob/AdoBStateDiagram";
 import { ClientList } from "@/components/ClientList";
+import { ScenarioEnabledFaultsList } from "@/components/FaultsList";
 import {
   DeliveredMessagesList,
   DroppedMessagesList,
 } from "@/components/messages";
-import { MutatorsList } from "@/components/MutatorsList";
 import { NodeList } from "@/components/NodeList";
 import { RunningSimulatorStats } from "@/components/RunningSimulatorStats";
 import { ScheduleList } from "@/components/ScheduleList";
@@ -71,10 +71,10 @@ export default function Home() {
               <DroppedMessagesList />
             </Accordion.Panel>
           </Accordion.Item>
-          <Accordion.Item key="mutators" value="mutators">
-            <Accordion.Control>Message Mutators</Accordion.Control>
+          <Accordion.Item key="faults" value="faults">
+            <Accordion.Control>Network Faults</Accordion.Control>
             <Accordion.Panel>
-              <MutatorsList />
+              <ScenarioEnabledFaultsList />
             </Accordion.Panel>
           </Accordion.Item>
           <Accordion.Item key="adob" value="adob">

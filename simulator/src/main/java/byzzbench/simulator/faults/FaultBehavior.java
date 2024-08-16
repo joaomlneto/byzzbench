@@ -1,11 +1,9 @@
 package byzzbench.simulator.faults;
 
-import byzzbench.simulator.transport.MessageEvent;
+import java.io.Serializable;
+import java.util.function.Consumer;
 
-/**
- * Interface for the behavior of a fault.
- * The behavior of a fault is to mutate a {@link MessageEvent}.
- */
-public interface FaultBehavior {
-  void mutate(MessageEvent message);
+public interface FaultBehavior<T extends Serializable> extends Consumer<FaultInput<T>>, Serializable {
+    String getId();
+    String getName();
 }
