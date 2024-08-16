@@ -2,6 +2,7 @@ package byzzbench.simulator.service;
 
 import byzzbench.simulator.ScenarioExecutor;
 import byzzbench.simulator.TerminationCondition;
+import byzzbench.simulator.schedule.Schedule;
 import byzzbench.simulator.scheduler.EventDecision;
 import byzzbench.simulator.transport.Event;
 import lombok.Getter;
@@ -12,7 +13,6 @@ import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Service;
 
 import java.io.Serializable;
-import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -30,10 +30,10 @@ import java.util.concurrent.Executors;
 public class SimulatorService {
     private final int MAX_EVENTS_FOR_RUN = SimulatorConfig.MAX_EVENTS_FOR_RUN;
     private final int MAX_DROPPED_MESSAGES = SimulatorConfig.MAX_DROPPED_MESSAGES;
-    private int droppedMessageCount;
     private final SchedulesService schedulesService;
     private final ScenarioFactoryService scenarioFactoryService;
     private final ExecutorService executor = Executors.newFixedThreadPool(1);
+    private int droppedMessageCount;
     private SimulatorServiceMode mode = SimulatorServiceMode.STOPPED;
     private boolean shouldStop = false;
     private ScenarioExecutor<? extends Serializable> scenarioExecutor;
@@ -46,7 +46,6 @@ public class SimulatorService {
         log.info("Simulator service started");
     }
 
-
     /**
      * Changes the scenario to the scenario with the given ID.
      *
@@ -55,10 +54,10 @@ public class SimulatorService {
     public void changeScenario(String id) {
         this.scenarioExecutor = this.scenarioFactoryService.getScenario(id);
         this.terminationCondition = this.scenarioExecutor.getTerminationCondition();
-        this.scenarioExecutor.setupScenario();
-        this.scenarioExecutor.runScenario();
+        //this.scenarioExecutor.setupScenario();
+        //this.scenarioExecutor.runScenario();
         this.droppedMessageCount = 0;
-        // this.scenarioExecutor.reset();
+        this.scenarioExecutor.reset();
     }
 
     /**
@@ -118,7 +117,7 @@ public class SimulatorService {
                             numMaxedOut += 1;
                         }
                     }
-                    
+
                     // run the scenario for the given number of events
                    /*  for (int i = 1; i < numActionsPerRun; i++) {
                         System.out.println("Running action " + i + "/" + numActionsPerRun);
@@ -139,13 +138,9 @@ public class SimulatorService {
         });
     }
 
-    public enum SimulatorServiceMode {
-        STOPPED, RUNNING
-    }
-
     public void invokeScheduleNext() throws Exception {
         Optional<EventDecision> decisionOptional = this.scenarioExecutor.getScheduler().scheduleNext();
-        if (decisionOptional.isPresent()) { 
+        if (decisionOptional.isPresent()) {
             EventDecision decision = decisionOptional.get();
             if (decision.getDecision() == EventDecision.DecisionType.DROPPED) {
                 this.droppedMessageCount += 1;
@@ -163,9 +158,13 @@ public class SimulatorService {
     @SuppressWarnings("unused")
     private String convertEventListToString(List<Event> l) {
         String res = "schedule: \n ";
-        for (Event event : l) {
+        for (Event event : schedule.getEvents()) {
             res += "eid: "+ event.getEventId() + " " + event.getSenderId() + " -> " + event.getRecipientId() + ", ";
         }
         return res;
+    }
+
+    public enum SimulatorServiceMode {
+        STOPPED, RUNNING
     }
 }

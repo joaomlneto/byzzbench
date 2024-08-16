@@ -8,6 +8,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 
+/**
+ * A vector clock implementation.
+ *
+ * @see <a href="https://en.wikipedia.org/wiki/Vector_clock">Vector Clock</a>
+ */
 @EqualsAndHashCode
 @ToString
 public class VectorClock implements Serializable {

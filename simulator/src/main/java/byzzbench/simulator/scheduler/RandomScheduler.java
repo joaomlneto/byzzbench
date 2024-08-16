@@ -1,12 +1,13 @@
 package byzzbench.simulator.scheduler;
 
 import byzzbench.simulator.Replica;
+import byzzbench.simulator.faults.MessageMutationFault;
+import byzzbench.simulator.service.MessageMutatorService;
 import byzzbench.simulator.state.CommitLog;
 import byzzbench.simulator.transport.*;
 
 import java.io.Serializable;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.Random;
 
@@ -22,17 +23,17 @@ public class RandomScheduler<T extends Serializable> extends BaseScheduler<T> {
     private double MUTATE_MESSAGE_PROBABILITY = RandomSchedulerConfig.MUTATE_MESSAGE_PROBABILITY;
     Random random = new Random();
 
+    public RandomScheduler(MessageMutatorService messageMutatorService, Transport<T> transport) {
+        super("Random", messageMutatorService, transport);
+        assert_probabilities();
+    }
+
     private void assert_probabilities() {
         assert DELIVER_MESSAGE_PROBABILITY >= 0 && DELIVER_MESSAGE_PROBABILITY <= 1;
         assert DROP_MESSAGE_PROBABILITY >= 0 && DROP_MESSAGE_PROBABILITY <= 1;
         assert MUTATE_MESSAGE_PROBABILITY >= 0 && MUTATE_MESSAGE_PROBABILITY <= 1;
         assert DROP_MESSAGE_PROBABILITY + MUTATE_MESSAGE_PROBABILITY +
                 DELIVER_MESSAGE_PROBABILITY == 1;
-    }
-
-    public RandomScheduler(Transport<T> transport) {
-        super("Random", transport);
-        assert_probabilities();
     }
 
     @Override
@@ -96,24 +97,27 @@ public class RandomScheduler<T extends Serializable> extends BaseScheduler<T> {
 
             // check if we should drop it
             if (random.nextDouble() < DROP_MESSAGE_PROBABILITY) {
-                
-                getTransport().dropMessage(message.getEventId());
+
+                getTransport().dropEvent(message.getEventId());
                 EventDecision decision = new EventDecision(EventDecision.DecisionType.DROPPED, message.getEventId());
-                          
+
                 return Optional.of(decision);
             }
 
             // check if should mutate and deliver it
             if (random.nextDouble() < MUTATE_MESSAGE_PROBABILITY) {
-                List<Map.Entry<Long, MessageMutator>> mutators =
-                        getTransport().getEventMutators(message.getEventId());
+                if (!(message instanceof MessageEvent me)) {
+                    throw new IllegalArgumentException("Invalid message type");
+                }
+                List<MessageMutationFault<?>> mutators =
+                        this.getMessageMutatorService().getMutatorsForEvent(me);
                 if (mutators.isEmpty()) {
                     // no mutators, return nothing
                     return Optional.empty();
                 }
                 getTransport().applyMutation(
                         message.getEventId(),
-                        mutators.get(random.nextInt(mutators.size())).getKey());
+                        mutators.get(random.nextInt(mutators.size())));
                 getTransport().deliverEvent(message.getEventId());
 
                 EventDecision decision = new EventDecision(EventDecision.DecisionType.MUTATED, message.getEventId());

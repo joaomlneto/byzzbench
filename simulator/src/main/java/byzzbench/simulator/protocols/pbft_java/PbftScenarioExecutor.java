@@ -3,9 +3,8 @@ package byzzbench.simulator.protocols.pbft_java;
 import byzzbench.simulator.Replica;
 import byzzbench.simulator.ScenarioExecutor;
 import byzzbench.simulator.TerminationCondition;
-import byzzbench.simulator.protocols.pbft_java.mutator.PrePrepareMessageMutatorFactory;
+import byzzbench.simulator.service.MessageMutatorService;
 import byzzbench.simulator.service.SchedulesService;
-import byzzbench.simulator.transport.Transport;
 import lombok.extern.java.Log;
 import org.springframework.stereotype.Component;
 
@@ -19,8 +18,8 @@ public class PbftScenarioExecutor<T extends Serializable> extends ScenarioExecut
     private final int NUM_NODES = 4;
     private PbftTerminationCondition terminationCondition;
 
-    public PbftScenarioExecutor(SchedulesService schedulesService) {
-        super("pbft-java", new Transport(schedulesService));
+    public PbftScenarioExecutor(MessageMutatorService messageMutatorService, SchedulesService schedulesService) {
+        super("pbft-java", messageMutatorService, schedulesService);
         this.setNumClients(1);
         this.terminationCondition = new PbftTerminationCondition();
     }
@@ -38,8 +37,6 @@ public class PbftScenarioExecutor<T extends Serializable> extends ScenarioExecut
                 Replica replica = new PbftReplica<String, String>(nodeId, nodeIds, 1, 1000, messageLog, transport);
                 this.addNode(replica);
             });
-
-            transport.registerMessageMutators(new PrePrepareMessageMutatorFactory());
         } catch (Exception e) {
             throw new RuntimeException(e);
         }

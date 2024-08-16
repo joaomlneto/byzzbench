@@ -1,5 +1,7 @@
 package byzzbench.simulator.protocols.XRPL;
 
+import lombok.Setter;
+
 import java.io.Serializable;
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
@@ -12,11 +14,11 @@ import java.util.List;
 
 
 public class XRPLLedger implements Serializable {
-    private String Id;
-    private String parentId;
-    private int seq;
+    @Setter
     List<String> transactions;
-
+    private String Id;
+    private final String parentId;
+    private final int seq;
     //Fields to implement dummy signature and verification
     private boolean isSigned = false;
     private String signerId = null;
@@ -41,11 +43,6 @@ public class XRPLLedger implements Serializable {
         return this.seq;
     }
 
-    public XRPLLedger withTransactions(List<String> newTxns) {
-        XRPLLedger res = new XRPLLedger(this.parentId, this.seq, newTxns);
-        return res;
-    }
-
     /*
      * Dummy method to sign ledger validation
      */
@@ -53,7 +50,7 @@ public class XRPLLedger implements Serializable {
         this.signerId = signer;
         this.isSigned = true;
     }
-    
+
     /*
      * Dummy method to check ledger signature
      */
@@ -63,7 +60,7 @@ public class XRPLLedger implements Serializable {
 
     public void applyTxes(List<String> txes) {
         for (String tx : txes) {
-            this.transactions.addLast(tx);            
+            this.transactions.addLast(tx);
         }
     }
 
@@ -110,7 +107,7 @@ public class XRPLLedger implements Serializable {
             // Combine all byte arrays
             ByteBuffer buffer = ByteBuffer.allocate(
                     Integer.BYTES + parentIdBytes.length +
-                    seqBytes.length + 
+                    seqBytes.length +
                     transactionsBuffer.position());
 
             // Add the lengths and byte arrays to the buffer
@@ -132,9 +129,9 @@ public class XRPLLedger implements Serializable {
             byte[] messageDigest = md.digest(this.getBytes());
             BigInteger no = new BigInteger(1, messageDigest);
             String hashtext = no.toString(16);
-            while (hashtext.length() < 64) { 
-                hashtext = "0" + hashtext; 
-            } 
+            while (hashtext.length() < 64) {
+                hashtext = "0" + hashtext;
+            }
             this.Id = hashtext;
         } catch (NoSuchAlgorithmException e) {
             throw new RuntimeException(e);

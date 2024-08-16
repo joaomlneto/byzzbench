@@ -1,48 +1,75 @@
 package byzzbench.simulator.protocols.XRPL.mutators;
 
+import byzzbench.simulator.faults.FaultInput;
+import byzzbench.simulator.faults.MessageMutationFault;
+import byzzbench.simulator.faults.MessageMutatorFactory;
+import byzzbench.simulator.protocols.XRPL.messages.XRPLProposeMessage;
+import byzzbench.simulator.transport.Event;
+import byzzbench.simulator.transport.MessageEvent;
+import org.springframework.stereotype.Component;
+
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
-import byzzbench.simulator.protocols.XRPL.messages.XRPLProposeMessage;
-import byzzbench.simulator.transport.MessageMutator;
-import byzzbench.simulator.transport.MessageMutatorFactory;
-
-public class XRPLProposeMessageMutatorFactory extends MessageMutatorFactory {
+@Component
+public class XRPLProposeMessageMutatorFactory extends MessageMutatorFactory<Serializable> {
     RuntimeException invalidMessageTypeException = new IllegalArgumentException("Invalid message type");
 
     @Override
-    public List<MessageMutator> mutators() {
+    public List<MessageMutationFault<Serializable>> mutators() {
         return List.of(
-            new MessageMutator("Increment Proposal Seq", List.of(XRPLProposeMessage.class)) {
+            new MessageMutationFault<>("xrpl-propose-proposal-inc", "Increment Proposal Seq", List.of(XRPLProposeMessage.class)) {
                 @Override
-                public Serializable apply(Serializable serializable) {
-                    if (serializable instanceof XRPLProposeMessage message) {
-                        return message.withProp(message.getProposal().withSeq(message.getProposal().getSeq() + 1));
+                public void accept(FaultInput<Serializable> serializable) {
+                    Optional<Event> event = serializable.getEvent();
+                    if (event.isEmpty()) {
+                        throw invalidMessageTypeException;
                     }
-                    throw invalidMessageTypeException;
+                    if (!(event.get() instanceof MessageEvent messageEvent)) {
+                        throw invalidMessageTypeException;
+                    }
+                    if (!(messageEvent.getPayload() instanceof XRPLProposeMessage message)) {
+                        throw invalidMessageTypeException;
+                    }
+                    message.getProposal().setSeq(message.getProposal().getSeq() + 1);
                 }
             },
-            new MessageMutator("Decrement Proposal Seq", List.of(XRPLProposeMessage.class)) {
+            new MessageMutationFault<>("xrpl-propose-proposal-dec", "Decrement Proposal Seq", List.of(XRPLProposeMessage.class)) {
                 @Override
-                public Serializable apply(Serializable serializable) {
-                    if (serializable instanceof XRPLProposeMessage message) {
-                        return message.withProp(message.getProposal().withSeq(message.getProposal().getSeq() - 1));
+                public void accept(FaultInput<Serializable> serializable) {
+                    Optional<Event> event = serializable.getEvent();
+                    if (event.isEmpty()) {
+                        throw invalidMessageTypeException;
                     }
-                    throw invalidMessageTypeException;
+                    if (!(event.get() instanceof MessageEvent messageEvent)) {
+                        throw invalidMessageTypeException;
+                    }
+                    if (!(messageEvent.getPayload() instanceof XRPLProposeMessage message)) {
+                        throw invalidMessageTypeException;
+                    }
+                    message.getProposal().setSeq(message.getProposal().getSeq() - 1);
                 }
             },
-            new MessageMutator("Mutate Tx", List.of(XRPLProposeMessage.class)) {
+            new MessageMutationFault<>("xrpl-propose-mutate-tx", "Mutate Tx", List.of(XRPLProposeMessage.class)) {
                 @Override
-                public Serializable apply(Serializable serializable) {
-                    if (serializable instanceof XRPLProposeMessage message) {
-                        List<String> newTxns = new ArrayList<>(); 
-                        message.getProposal().getTxns().forEach(tx -> {
-                            newTxns.add(tx + "01");
-                        });
-                        return message.withProp(message.getProposal().withTxns(newTxns));
+                public void accept(FaultInput<Serializable> serializable) {
+                    Optional<Event> event = serializable.getEvent();
+                    if (event.isEmpty()) {
+                        throw invalidMessageTypeException;
                     }
-                    throw invalidMessageTypeException;
+                    if (!(event.get() instanceof MessageEvent messageEvent)) {
+                        throw invalidMessageTypeException;
+                    }
+                    if (!(messageEvent.getPayload() instanceof XRPLProposeMessage message)) {
+                        throw invalidMessageTypeException;
+                    }
+                    List<String> newTxns = new ArrayList<>();
+                    message.getProposal().getTxns().forEach(tx -> {
+                        newTxns.add(tx + "01");
+                    });
+                    message.getProposal().setTxns(newTxns);
                 }
             }
         );
