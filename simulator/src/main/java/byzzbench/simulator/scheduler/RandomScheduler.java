@@ -5,6 +5,7 @@ import byzzbench.simulator.faults.MessageMutationFault;
 import byzzbench.simulator.service.MessageMutatorService;
 import byzzbench.simulator.state.CommitLog;
 import byzzbench.simulator.transport.*;
+import lombok.extern.java.Log;
 
 import java.io.Serializable;
 import java.util.List;
@@ -17,6 +18,7 @@ import java.util.Random;
  * @param <T> The type of the entries in the {@link CommitLog} of each {@link
  *            Replica}.
  */
+@Log
 public class RandomScheduler<T extends Serializable> extends BaseScheduler<T> {
     private double DELIVER_MESSAGE_PROBABILITY = RandomSchedulerConfig.DELIVER_MESSAGE_PROBABILITY;
     private double DROP_MESSAGE_PROBABILITY = RandomSchedulerConfig.DROP_MESSAGE_PROBABILITY;
@@ -53,6 +55,8 @@ public class RandomScheduler<T extends Serializable> extends BaseScheduler<T> {
         int clientRequestEventCount = (int) queuedEvents.stream().filter(ClientRequestEvent.class::isInstance).count();
         int clientReplyEventCount = (int) queuedEvents.stream().filter(ClientReplyEvent.class::isInstance).count();
         int messageEventCount = eventCount - (timeoutEventCount + clientReplyEventCount + clientRequestEventCount);
+
+        log.info("eventCount: " + eventCount + " timeoutEventCount: " + timeoutEventCount + " clientRequestEventCount: " + clientRequestEventCount + " clientReplyEventCount: " + clientReplyEventCount + " messageEventCount: " + messageEventCount);
 
         double timeoutEventProb = (double) timeoutEventCount / eventCount;
         double clientRequestEventProb = (double) clientRequestEventCount / eventCount;

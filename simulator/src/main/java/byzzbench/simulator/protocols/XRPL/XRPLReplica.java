@@ -125,19 +125,26 @@ public class XRPLReplica extends Replica<XRPLLedger> {
 
                 //if enough nodes validated, we can update validLedger
                 if (valCount >= (int) (0.8 * this.ourUNL.size()) && (this.currWorkLedger.getSeq() > this.validLedger.getSeq())) {
+                log.info("Node " + getNodeId() + " updated its validLedger to seq: " + this.validLedger.getSeq());
                     this.validLedger = this.currWorkLedger;
+                    List<String> newPendingTxes = new ArrayList<>();
+                    for (String tx : this.pendingTransactions) {
+                        newPendingTxes.add(tx);
+                    }
                     for (String tx : this.validLedger.transactions) {
                         for (String pendingtx : this.pendingTransactions) {
-                            if (pendingtx.equals(tx)) {
-                                this.pendingTransactions.remove(tx);
+                            if (!pendingtx.equals(tx)) {
+                                newPendingTxes.remove(tx);
                             }
                         }
                     }
+                    this.pendingTransactions = newPendingTxes;
                     //Exeucute txes
                 }
             }
         } catch (Exception e) {
-            log.info("Couldn't handle validate message in node " + this.getNodeId() + ": " + e.getMessage());
+            log.info("Couldn't handle validate message in node " + this.getNodeId() + ": " + e + ": " + e.getMessage());
+            e.printStackTrace();
         }
     }
 

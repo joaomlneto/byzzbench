@@ -35,7 +35,6 @@ public class SimulatorService {
     private final SchedulesService schedulesService;
     private final ScenarioFactoryService scenarioFactoryService;
     private final ExecutorService executor = Executors.newFixedThreadPool(1);
-    private int droppedMessageCount;
     private SimulatorServiceMode mode = SimulatorServiceMode.STOPPED;
     private boolean shouldStop = false;
     private ScenarioExecutor<? extends Serializable> scenarioExecutor;
@@ -56,7 +55,6 @@ public class SimulatorService {
     public void changeScenario(String id) {
         this.scenarioExecutor = this.scenarioFactoryService.getScenario(id);
         this.scenarioExecutor.setupScenario();
-        this.terminationCondition = this.scenarioExecutor.getTerminationCondition();
         //this.scenarioExecutor.setupScenario();
         //this.scenarioExecutor.runScenario();
         this.droppedMessageCount = 0;
@@ -126,6 +124,7 @@ public class SimulatorService {
                         System.out.println("Running action " + i + "/" + numActionsPerRun);
                         this.scenarioExecutor.getScheduler().scheduleNext();
                     } */
+                   log.info("Schedule " + scenarioId + ": " + convertEventListToString(this.scenarioExecutor.getTransport().getSchedule()));
                     this.scenarioExecutor.reset();
                     this.droppedMessageCount = 0;
                     this.scenarioExecutor.getScheduler().resetParameters();
@@ -159,9 +158,9 @@ public class SimulatorService {
 
 
     @SuppressWarnings("unused")
-    private String convertEventListToString(List<Event> l) {
+    private String convertEventListToString(Schedule s) {
         String res = "schedule: \n ";
-        for (Event event : schedule.getEvents()) {
+        for (Event event : s.getEvents()) {
             res += "eid: "+ event.getEventId() + " " + event.getSenderId() + " -> " + event.getRecipientId() + ", ";
         }
         return res;

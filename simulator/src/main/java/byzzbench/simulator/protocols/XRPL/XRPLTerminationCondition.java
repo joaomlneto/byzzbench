@@ -3,11 +3,9 @@ package byzzbench.simulator.protocols.XRPL;
 import java.util.List;
 
 import byzzbench.simulator.TerminationCondition;
-import lombok.extern.java.Log;
 
-@Log
 public class XRPLTerminationCondition extends TerminationCondition {
-    private final int DESIRED_BLOCK_COUNT = 2;
+    private final int DESIRED_BLOCK_COUNT = 3;
 
     private List<XRPLReplica> replicas;
     private int initialSeq;
@@ -29,7 +27,6 @@ public class XRPLTerminationCondition extends TerminationCondition {
         int needed_count = (int) (networkSize * 0.8);
         int count = 0;
         for (XRPLReplica xrplReplica : replicas) {
-            log.info("checking for replica:  " + xrplReplica.hashCode());
             if (xrplReplica.getValidLedger().getSeq() - initialSeq >= DESIRED_BLOCK_COUNT) {
                 count += 1;
             }
