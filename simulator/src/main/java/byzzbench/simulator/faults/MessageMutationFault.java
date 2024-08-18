@@ -49,7 +49,7 @@ public abstract class MessageMutationFault<T extends Serializable> implements Fa
         Optional<Event> event = ctx.getEvent();
         return event.isPresent()
                 && event.get() instanceof MessageEvent messageEvent
-                && canMutate(messageEvent);
+                && canMutate(messageEvent.getPayload());
 
     }
 
