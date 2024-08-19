@@ -124,10 +124,10 @@ public class SimulatorService {
                         System.out.println("Running action " + i + "/" + numActionsPerRun);
                         this.scenarioExecutor.getScheduler().scheduleNext();
                     } */
-                   log.info("Schedule " + scenarioId + ": " + convertEventListToString(this.scenarioExecutor.getTransport().getSchedule()));
                     this.scenarioExecutor.reset();
                     this.droppedMessageCount = 0;
                     this.scenarioExecutor.getScheduler().resetParameters();
+                    this.terminationCondition = this.scenarioExecutor.getTerminationCondition();
                 }
             } catch (Exception e) {
                 throw new RuntimeException(e);
