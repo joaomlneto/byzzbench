@@ -56,8 +56,6 @@ public class RandomScheduler<T extends Serializable> extends BaseScheduler<T> {
         int clientReplyEventCount = (int) queuedEvents.stream().filter(ClientReplyEvent.class::isInstance).count();
         int messageEventCount = eventCount - (timeoutEventCount + clientReplyEventCount + clientRequestEventCount);
 
-        log.info("eventCount: " + eventCount + " timeoutEventCount: " + timeoutEventCount + " clientRequestEventCount: " + clientRequestEventCount + " clientReplyEventCount: " + clientReplyEventCount + " messageEventCount: " + messageEventCount);
-
         double timeoutEventProb = (double) timeoutEventCount / eventCount;
         double clientRequestEventProb = (double) clientRequestEventCount / eventCount;
         double clientReplyEventProb = (double) clientReplyEventCount / eventCount;

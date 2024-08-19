@@ -251,13 +251,13 @@ public class XRPLReplica extends Replica<XRPLLedger> {
                 }
             }
         }
+        this.result.resetDisputes();
         if (hasResChanged) {
             XRPLProposal prop = new XRPLProposal(this.prevLedger.getId(), this.result.getProposal().getSeq() + 1, this.result.getTxList(), this.getNodeId(), 1 /*TODO this should be now (or prev prop time) */);
             this.result.setProposal(prop);
             XRPLProposeMessage propmsg = new XRPLProposeMessage(prop, this.getNodeId());
             this.broadcastMessage(propmsg);
             this.currWorkLedger = new XRPLLedger(this.currWorkLedger.getParentId(), this.currWorkLedger.getSeq(), this.result.getTxList());
-            this.result.resetDisputes();
             for (String nodeId : this.ourUNL) {
                 if (currPeerProposals.get(nodeId) != null) {
                     createDisputes(currPeerProposals.get(nodeId).getTxns());
