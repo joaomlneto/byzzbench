@@ -1,11 +1,10 @@
 package byzzbench.simulator.transport;
 
 import com.fasterxml.jackson.annotation.JsonTypeName;
+import java.time.Instant;
 import lombok.Builder;
 import lombok.Data;
 import lombok.experimental.SuperBuilder;
-
-import java.time.Instant;
 
 /**
  * Event that represents a message being sent from one node to another.
@@ -49,6 +48,5 @@ public class MessageEvent implements Event {
   /**
    * The status of the event.
    */
-  @Builder.Default
-  private Status status = Status.QUEUED;
+  @Builder.Default private Status status = Status.QUEUED;
 }
