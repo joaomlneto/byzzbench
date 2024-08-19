@@ -50,7 +50,6 @@ public abstract class MessageMutationFault<T extends Serializable> implements Fa
         return event.isPresent()
                 && event.get() instanceof MessageEvent messageEvent
                 && canMutate(messageEvent.getPayload());
-
     }
 
 }

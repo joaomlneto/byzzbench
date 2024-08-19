@@ -1,3 +1,4 @@
+"use client";
 import { FaultsList } from "@/components/FaultsList/FaultsList";
 import { useGetEnabledNetworkFaults } from "@/lib/byzzbench-client";
 

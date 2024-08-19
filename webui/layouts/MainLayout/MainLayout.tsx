@@ -1,13 +1,15 @@
 "use client";
 
+import {
+  DoSchedulerActionIcon,
+  ForceSyncActionIcon,
+  ResetActionIcon,
+  SaveScheduleActionIcon,
+  StartActionIcon,
+  StopActionIcon,
+} from "@/components/ActionIcon";
 import { ColorSchemeToggle } from "@/components/ColorSchemeToggle";
-import { DoSchedulerActionIcon } from "@/components/DoSchedulerActionIcon";
-import { ForceSyncActionIcon } from "@/components/ForceSyncActionIcon";
-import { ResetActionIcon } from "@/components/ResetActionIcon";
-import { SaveScheduleActionIcon } from "@/components/SaveScheduleActionIcon";
 import { ScenarioSelect } from "@/components/ScenarioSelect";
-import { StartActionIcon } from "@/components/StartActionIcon";
-import { StopActionIcon } from "@/components/StopActionIcon";
 import { HeaderMenu } from "@/layouts/MainLayout/HeaderMenu";
 import { AppShell, Group } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";

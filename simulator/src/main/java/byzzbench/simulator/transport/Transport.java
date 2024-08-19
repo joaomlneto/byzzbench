@@ -79,7 +79,10 @@ public class Transport<T extends Serializable> {
      */
     @Getter(onMethod_ = {@Synchronized})
     private final Router router = new Router();
-
+    /**
+     * List of observers for the transport layer.
+     */
+    private final List<TransportObserver> observers = new ArrayList<>();
     /**
      * The schedule of events in order of delivery.
      */
@@ -90,7 +93,23 @@ public class Transport<T extends Serializable> {
         this.scenario = scenario;
         this.messageMutatorService = messageMutatorService;
         this.schedulesService = schedulesService;
-        this.schedule = this.schedulesService.addSchedule();
+        this.schedule = this.schedulesService.addSchedule(scenario);
+    }
+
+    /**
+     * Adds an observer to the transport layer.
+     * @param observer The observer to add.
+     */
+    public void addObserver(TransportObserver observer) {
+        this.observers.add(observer);
+    }
+
+    /**
+     * Removes an observer from the transport layer.
+     * @param observer The observer to remove.
+     */
+    public void removeObserver(TransportObserver observer) {
+        this.observers.remove(observer);
     }
 
     /**
@@ -147,9 +166,13 @@ public class Transport<T extends Serializable> {
             throw new IllegalArgumentException("Replica not found: " + recipient);
         }
 
-        long eventId = this.eventSeqNum.getAndIncrement();
-        Event event = new ClientRequestEvent(eventId, sender, recipient, operation);
-        events.put(eventId, event);
+        Event event = ClientRequestEvent.builder()
+                .eventId(this.eventSeqNum.getAndIncrement())
+                .senderId(sender)
+                .recipientId(recipient)
+                .payload(operation)
+                .build();
+        this.appendEvent(event);
     }
 
     /**
@@ -168,9 +191,13 @@ public class Transport<T extends Serializable> {
             throw new IllegalArgumentException("Client not found: " + recipient);
         }
 
-        long eventId = this.eventSeqNum.getAndIncrement();
-        Event event = new ClientReplyEvent(eventId, sender, recipient, response);
-        events.put(eventId, event);
+        Event event = ClientReplyEvent.builder()
+                .eventId(this.eventSeqNum.getAndIncrement())
+                .senderId(sender)
+                .recipientId(recipient)
+                .payload(response)
+                .build();
+        this.appendEvent(event);
     }
 
     /**
@@ -194,7 +221,7 @@ public class Transport<T extends Serializable> {
         this.router.resetPartitions();
         this.events.clear();
         this.nodes.values().forEach(Replica::initialize);
-        this.schedule = schedulesService.addSchedule();
+        this.schedule = schedulesService.addSchedule(this.scenario);
     }
 
     /**
@@ -209,6 +236,11 @@ public class Transport<T extends Serializable> {
                 .toList();
     }
 
+    private synchronized void appendEvent(Event event) {
+        this.events.put(event.getEventId(), event);
+        this.observers.forEach(o -> o.onEventAdded(event));
+    }
+
     /**
      * Multicasts a message to a set of recipients.
      * @param sender The ID of the sender
@@ -219,9 +251,13 @@ public class Transport<T extends Serializable> {
                           MessagePayload payload) {
         for (String recipient : recipients) {
             long messageId = this.eventSeqNum.getAndIncrement();
-            MessageEvent messageEvent =
-                    new MessageEvent(messageId, sender, recipient, payload);
-            events.put(messageId, messageEvent);
+            MessageEvent messageEvent = MessageEvent.builder()
+                    .eventId(messageId)
+                    .senderId(sender)
+                    .recipientId(recipient)
+                    .payload(payload)
+                    .build();
+            this.appendEvent(messageEvent);
 
             // if they don't have connectivity, drop it directly
             if (!router.haveConnectivity(sender, recipient)) {
@@ -272,6 +308,8 @@ public class Transport<T extends Serializable> {
             }
         }
 
+        this.observers.forEach(o -> o.onEventDelivered(e));
+
         log.info("Delivered " + e.getEventId() + ": " + e.getSenderId() + "->" + e.getRecipientId());
     }
 
@@ -287,6 +325,7 @@ public class Transport<T extends Serializable> {
             throw new IllegalArgumentException("Event not found or not in QUEUED state");
         }
         e.setStatus(Event.Status.DROPPED);
+        this.observers.forEach(o -> o.onEventDropped(e));
         log.info("Dropped: " + e.getSenderId() + "->" + e.getRecipientId());
     }
 
@@ -342,15 +381,18 @@ public class Transport<T extends Serializable> {
         fault.accept(input);
 
         // create a new event for the mutation
-        Event mutateMessageEvent = new MutateMessageEvent(
-                this.eventSeqNum.getAndIncrement(), m.getSenderId(),
-                m.getRecipientId(), new MutateMessageEventPayload(
-                        eventId, fault.getId()));
-        events.put(mutateMessageEvent.getEventId(), mutateMessageEvent);
+        MutateMessageEvent mutateMessageEvent = MutateMessageEvent.builder()
+                .eventId(this.eventSeqNum.getAndIncrement())
+                .senderId(m.getSenderId())
+                .recipientId(m.getRecipientId())
+                .payload(new MutateMessageEventPayload(eventId, fault.getId()))
+                .build();
+        this.appendEvent(mutateMessageEvent);
 
         // append the event to the schedule
         mutateMessageEvent.setStatus(Event.Status.DELIVERED);
         this.schedule.appendEvent(mutateMessageEvent);
+        this.observers.forEach(o -> o.onMessageMutation(mutateMessageEvent.getPayload()));
 
         log.info("Mutated: " + m);
     }
@@ -376,21 +418,32 @@ public class Transport<T extends Serializable> {
         fault.accept(input);
 
         // create a new event for the fault and append it to the schedule
-        Event faultEvent = new GenericFaultEvent(this.eventSeqNum.getAndIncrement(),
-                "none", "none", fault);
+        GenericFaultEvent faultEvent = GenericFaultEvent.builder()
+                .eventId(this.eventSeqNum.getAndIncrement())
+                .senderId("none")
+                .recipientId("none")
+                .payload(fault)
+                .build();
         faultEvent.setStatus(Event.Status.DELIVERED);
         this.schedule.appendEvent(faultEvent);
+        this.observers.forEach(o -> o.onFault(fault));
     }
 
     public synchronized long setTimeout(Replica<T> replica, Runnable runnable,
                            long timeout) {
-        Event e = new TimeoutEvent(this.eventSeqNum.getAndIncrement(),
-                "TIMEOUT", replica.getNodeId(),
-                timeout, runnable);
-        this.events.put(e.getEventId(), e);
+        TimeoutEvent timeoutEvent = TimeoutEvent.builder()
+                .eventId(this.eventSeqNum.getAndIncrement())
+                .description("TIMEOUT")
+                .nodeId(replica.getNodeId())
+                .timeout(timeout)
+                .task(runnable)
+                .build();
+        this.appendEvent(timeoutEvent);
+        this.observers.forEach(o -> o.onTimeout(timeoutEvent));
+
         log.info("Timeout set for " + replica.getNodeId() + " in " +
-                timeout + "ms: " + e);
-        return e.getEventId();
+                timeout + "ms: " + timeoutEvent);
+        return timeoutEvent.getEventId();
     }
 
     public synchronized void clearReplicaTimeouts(Replica<T> replica) {
@@ -409,6 +462,7 @@ public class Transport<T extends Serializable> {
         // remove all event IDs
         for (Long eventId : eventIds) {
             events.get(eventId).setStatus(Event.Status.DROPPED);
+            this.observers.forEach(o -> o.onEventDropped(events.get(eventId)));
         }
     }
 

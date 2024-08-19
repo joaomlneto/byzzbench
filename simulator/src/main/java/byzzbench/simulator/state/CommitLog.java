@@ -18,4 +18,8 @@ public abstract class CommitLog<T extends Serializable>
      * @param operation The operation to add.
      */
     public abstract void add(T operation);
+
+    public abstract int getLength();
+
+    public abstract T get(int index);
 }

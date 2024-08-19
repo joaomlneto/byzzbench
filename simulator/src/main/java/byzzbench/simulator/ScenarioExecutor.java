@@ -4,6 +4,8 @@ import byzzbench.simulator.scheduler.BaseScheduler;
 import byzzbench.simulator.scheduler.RandomScheduler;
 import byzzbench.simulator.service.MessageMutatorService;
 import byzzbench.simulator.service.SchedulesService;
+import byzzbench.simulator.state.AgreementPredicate;
+import byzzbench.simulator.state.LivenessPredicate;
 import byzzbench.simulator.state.adob.AdobDistributedState;
 import byzzbench.simulator.transport.Transport;
 import lombok.Getter;
@@ -11,6 +13,8 @@ import lombok.Setter;
 import lombok.ToString;
 
 import java.io.Serializable;
+import java.util.List;
+import java.util.function.Predicate;
 
 /**
  * Abstract class for running a scenario, which consists of a set of {@link
@@ -38,6 +42,10 @@ public abstract class ScenarioExecutor<T extends Serializable> {
      * A unique identifier for the scenario.
      */
     private final String id;
+    /**
+     * The invariants that must be satisfied by the scenario at all times.
+     */
+    private final List<Predicate<ScenarioExecutor<T>>> invariants = List.of(new AgreementPredicate<>(), new LivenessPredicate<>());
     /**
      * The number of "regular" clients in the scenario.
      */
@@ -96,6 +104,11 @@ public abstract class ScenarioExecutor<T extends Serializable> {
      * Logic to set up the scenario - must be implemented by subclasses.
      */
     protected abstract void setup();
+
+    /**
+     * Returns the termination condition for the scenario.
+     * @return The termination condition for the scenario.
+     */
     public abstract TerminationCondition getTerminationCondition();
 
     /**
@@ -109,5 +122,13 @@ public abstract class ScenarioExecutor<T extends Serializable> {
      * Runs the scenario - must be implemented by subclasses.
      */
     protected abstract void run();
+
+    /**
+     * Checks if the invariants are satisfied by the scenario in its current state.
+     * @return True if the invariants are satisfied, false otherwise.
+     */
+    public final boolean invariantsHold() {
+        return this.invariants.stream().allMatch(invariant -> invariant.test(this));
+    }
 
 }

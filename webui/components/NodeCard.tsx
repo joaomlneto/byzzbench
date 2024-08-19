@@ -1,6 +1,6 @@
 "use client";
 
-import { NodeMailbox } from "@/components/messages/NodeMailbox";
+import { NodeMailbox } from "@/components/Events/NodeMailbox";
 import { NodeStateNavLink } from "@/components/NodeStateNavLink";
 import { useGetNode, useGetPartitions } from "@/lib/byzzbench-client";
 import { Card, Group, Space, Text, Title, Tooltip } from "@mantine/core";

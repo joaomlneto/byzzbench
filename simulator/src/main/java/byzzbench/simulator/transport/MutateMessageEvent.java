@@ -1,6 +1,10 @@
 package byzzbench.simulator.transport;
 
+import com.fasterxml.jackson.annotation.JsonTypeName;
+import lombok.Builder;
 import lombok.Data;
+import lombok.experimental.SuperBuilder;
+import org.springframework.lang.NonNull;
 
 import java.time.Instant;
 
@@ -10,6 +14,8 @@ import java.time.Instant;
  * @see Event
  */
 @Data
+@JsonTypeName("MutateMessage")
+@SuperBuilder
 public class MutateMessageEvent implements Event {
     /**
      * The unique identifier of the event.
@@ -29,6 +35,7 @@ public class MutateMessageEvent implements Event {
     /**
      * The payload of the request.
      */
+    @NonNull
     private final MutateMessageEventPayload payload;
 
     /**
@@ -39,14 +46,11 @@ public class MutateMessageEvent implements Event {
     /**
      * The physical time at which the request was delivered.
      */
-    private transient Instant deliveredAt = null;
+    private transient Instant deliveredAt;
 
     /**
      * The status of the event.
      */
+    @Builder.Default
     private Status status = Status.QUEUED;
-
-    public String getType() {
-        return "Message Mutation";
-    }
 }

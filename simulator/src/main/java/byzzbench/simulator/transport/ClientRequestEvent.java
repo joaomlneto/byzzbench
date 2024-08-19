@@ -1,6 +1,9 @@
 package byzzbench.simulator.transport;
 
+import com.fasterxml.jackson.annotation.JsonTypeName;
+import lombok.Builder;
 import lombok.Data;
+import lombok.experimental.SuperBuilder;
 
 import java.io.Serializable;
 import java.time.Instant;
@@ -11,6 +14,8 @@ import java.time.Instant;
  * @see Event
  */
 @Data
+@JsonTypeName("ClientRequest")
+@SuperBuilder
 public class ClientRequestEvent implements Event {
     /**
      * The unique identifier of the event.
@@ -40,14 +45,11 @@ public class ClientRequestEvent implements Event {
     /**
      * The physical time at which the request was delivered.
      */
-    private transient Instant deliveredAt = null;
+    private transient Instant deliveredAt;
 
     /**
      * The status of the event.
      */
+    @Builder.Default
     private Status status = Status.QUEUED;
-
-    public String getType() {
-        return "Client Request";
-    }
 }
