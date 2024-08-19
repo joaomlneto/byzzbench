@@ -16,7 +16,7 @@ export function SaveScheduleModal({
     initialValues: {
       name:
         innerProps.name ??
-        `${innerProps.schedule.scenarioId}/${new Date().toLocaleString()}`,
+        `${innerProps.schedule.scenarioId} @ ${new Date().toISOString()}`,
       schedule: innerProps.schedule,
     },
 
