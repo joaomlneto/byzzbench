@@ -1,13 +1,9 @@
 "use client";
 
-import { MessageListEntry } from "@/components/messages/MessagesList/MessageListEntry";
-import { Grid } from "@mantine/core";
-import React from "react";
-
 export type MessagesListProps = {
   messageIds: number[];
 };
-
+/*
 export const MessagesList = ({ messageIds }: MessagesListProps) => {
   return (
     <Grid gutter="md">
@@ -19,3 +15,4 @@ export const MessagesList = ({ messageIds }: MessagesListProps) => {
     </Grid>
   );
 };
+*/

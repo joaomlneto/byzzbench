@@ -1,7 +1,7 @@
 "use client";
 
-import { DeliverMessageActionIcon } from "@/components/messages";
-import { MutateMessageMenu } from "@/components/messages/MutateMessageMenu";
+import { DeliverMessageActionIcon } from "@/components/ActionIcon";
+import { MutateMessageMenu } from "@/components/Events/MutateMessageMenu";
 import { NodeStateNavLink } from "@/components/NodeStateNavLink";
 import { useGetMessage } from "@/lib/byzzbench-client/generated";
 import { Badge, Card, Collapse, Group, Text, Tooltip } from "@mantine/core";
@@ -11,8 +11,6 @@ import React, { useMemo } from "react";
 export const NodeMailboxEntry = ({ messageId }: { messageId: number }) => {
   const [opened, { toggle }] = useDisclosure(false);
   const { data: message } = useGetMessage(messageId);
-
-  //const payload = useMemo(() => message?.data.payload, [message?.data.payload]);
   const payload = useMemo(() => message?.data, [message?.data]);
 
   const payloadWithoutClassname = useMemo(() => {

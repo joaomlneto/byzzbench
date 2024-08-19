@@ -141,14 +141,42 @@ public class SimulatorController {
      * @return The list of delivered event IDs in order.
      */
     @GetMapping("/schedule")
-    public List<Long> getSchedule() {
+    public Schedule getSchedule() {
         return simulatorService.getScenarioExecutor()
                 .getTransport()
-                .getSchedule()
-                .getEvents()
-                .stream()
-                .map(Event::getEventId)
-                .toList();
+                .getSchedule();
+    }
+
+    /**
+     * Materializes a given schedule in a given scenario.
+     * @param schedule The schedule to materialize.
+     */
+    @PutMapping("/schedule")
+    public void materializeSchedule(@RequestBody Schedule schedule) {
+        // FIXME: the deserialization of the schedule is not working
+        System.out.println("Materializing Schedule: " + schedule);
+        /*
+        ScenarioExecutor<?> scenarioExecutor = simulatorService.getScenarioExecutor();
+
+        // set scenario
+        simulatorService.changeScenario(schedule.getScenarioId());
+
+        System.out.println("SO FAR SO GOOD!");
+
+        // set schedule
+        for (Event event : schedule.getEvents()) {
+            Event e = scenarioExecutor.getTransport().getEvent(event.getEventId());
+
+            if (e == null) {
+                throw new IllegalArgumentException("Event not found: " + event.getEventId());
+            }
+
+            if (e.getStatus() != Event.Status.QUEUED) {
+                throw new IllegalArgumentException("Event is not in QUEUED state: " + event.getEventId());
+            }
+
+            // TODO: apply the event
+        }*/
     }
 
     @GetMapping("/event/{eventId}")

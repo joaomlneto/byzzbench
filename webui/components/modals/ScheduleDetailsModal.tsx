@@ -1,7 +1,7 @@
 "use client";
 
-import { ScheduleDetails } from "@/components/ScheduleDetails";
-import { Schedule } from "@/hooks/useSavedSchedules";
+import { ScheduleDetails } from "@/components/Schedule";
+import { Schedule } from "@/lib/byzzbench-client";
 import { type ContextModalProps } from "@mantine/modals";
 import React from "react";
 

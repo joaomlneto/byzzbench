@@ -1,5 +1,6 @@
 "use client";
 
+import { Schedule } from "@/lib/byzzbench-client";
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
@@ -11,15 +12,15 @@ export type DeliverEventAction = {
   event: any;
 };
 
-export type Schedule = {
-  name: string;
-  actions: Action[];
+export type SavedSchedule = {
+  id: string;
+  schedule: Schedule;
 };
 
 export type SchedulesStoreState = {
-  schedules: Schedule[];
-  addSchedule: (schedule: Schedule) => void;
-  removeSchedule: (schedule: Schedule) => void;
+  schedules: SavedSchedule[];
+  addSchedule: (id: string, schedule: Schedule) => void;
+  removeSchedule: (id: string) => void;
   reset: () => void;
 };
 
@@ -31,12 +32,12 @@ const opts = {
 export const useSavedSchedulesStore = create<SchedulesStoreState>()(
   persist(
     (set, get) => ({
-      schedules: [],
-      addSchedule: (schedule: Schedule) =>
-        set((state) => ({ schedules: [...get().schedules, schedule] })),
-      removeSchedule: (schedule: Schedule) =>
+      schedules: [] satisfies SavedSchedule[],
+      addSchedule: (id: string, schedule: Schedule) =>
+        set((state) => ({ schedules: [...get().schedules, { id, schedule }] })),
+      removeSchedule: (id: string) =>
         set((state) => ({
-          schedules: state.schedules.filter((s) => s !== schedule),
+          schedules: state.schedules.filter((s) => s.id !== id),
         })),
       reset: () => set({ schedules: [] }),
     }),

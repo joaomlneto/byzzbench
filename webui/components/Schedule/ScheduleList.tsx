@@ -4,11 +4,12 @@ import { useSavedSchedulesStore } from "@/hooks/useSavedSchedules";
 import { deliverMessage } from "@/lib/byzzbench-client";
 import { ActionIcon, Container, Group, Stack, Text } from "@mantine/core";
 import { modals } from "@mantine/modals";
+import { showNotification } from "@mantine/notifications";
 import { IconInfoCircle, IconPlayerPlay, IconX } from "@tabler/icons-react";
 import { useQueryClient } from "@tanstack/react-query";
-import React from "react";
+import React, { memo } from "react";
 
-export const ScheduleList = () => {
+export const ScheduleList = memo(() => {
   const queryClient = useQueryClient();
   const schedules = useSavedSchedulesStore((state) => state.schedules);
   const removeSchedule = useSavedSchedulesStore(
@@ -19,15 +20,15 @@ export const ScheduleList = () => {
     <Container size="xs">
       <Stack gap="xs">
         {schedules.map((schedule) => (
-          <Group key={schedule.name} justify="space-between">
-            <Text>{schedule.name}</Text>
+          <Group key={schedule.id} justify="space-between">
+            <Text>{schedule.id}</Text>
             <Group>
               <ActionIcon
                 onClick={() => {
                   modals.openContextModal({
                     title: "Schedule Details",
                     modal: "scheduleDetails",
-                    innerProps: { schedule },
+                    innerProps: { schedule: schedule.schedule },
                   });
                 }}
               >
@@ -35,10 +36,17 @@ export const ScheduleList = () => {
               </ActionIcon>
               <ActionIcon
                 onClick={async () => {
-                  for (const action of schedule.actions) {
-                    if (action.type === "DeliverEvent") {
-                      console.log(`Deliver event #${action.event.eventId}`);
-                      await deliverMessage(action.event.eventId);
+                  for (const event of schedule.schedule.events ?? []) {
+                    if (event.type === "DeliverEvent") {
+                      if (!event.eventId) {
+                        showNotification({
+                          message: "Event without ID",
+                          color: "red",
+                        });
+                        return;
+                      }
+                      console.log(`Deliver event #${event.eventId}`);
+                      await deliverMessage(event.eventId);
                     }
                   }
                   await queryClient.invalidateQueries();
@@ -50,9 +58,9 @@ export const ScheduleList = () => {
                 onClick={() =>
                   modals.openConfirmModal({
                     title: "Delete Schedule?",
-                    children: `Are you sure you want to delete the ${schedule.name} schedule?`,
+                    children: `Are you sure you want to delete the ${schedule.id} schedule?`,
                     labels: { cancel: "Cancel", confirm: "Delete" },
-                    onConfirm: () => removeSchedule(schedule),
+                    onConfirm: () => removeSchedule(schedule.id),
                   })
                 }
               >
@@ -64,4 +72,5 @@ export const ScheduleList = () => {
       </Stack>
     </Container>
   );
-};
+});
+ScheduleList.displayName = "ScheduleList";

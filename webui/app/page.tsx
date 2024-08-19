@@ -3,15 +3,11 @@
 import AdoBStateDiagram from "@/components/adob/AdoBStateDiagram";
 import { ClientList } from "@/components/ClientList";
 import { ScenarioEnabledFaultsList } from "@/components/FaultsList";
-import {
-  DeliveredMessagesList,
-  DroppedMessagesList,
-} from "@/components/messages";
 import { NodeList } from "@/components/NodeList";
 import { RunningSimulatorStats } from "@/components/RunningSimulatorStats";
-import { ScheduleList } from "@/components/ScheduleList";
-import { useGetMode } from "@/lib/byzzbench-client";
-import { Accordion, Container, Stack } from "@mantine/core";
+import { ScheduleDetails, ScheduleList } from "@/components/Schedule";
+import { useGetMode, useGetSchedule } from "@/lib/byzzbench-client";
+import { Accordion, Container, ScrollArea, Stack } from "@mantine/core";
 import { useLocalStorage } from "@mantine/hooks";
 import React from "react";
 
@@ -21,6 +17,8 @@ export default function Home() {
       key: "byzzbench/selectedAccordionEntries",
       defaultValue: ["nodes", "schedule"],
     });
+
+  const { data: schedule } = useGetSchedule();
 
   const mode = useGetMode();
 
@@ -62,14 +60,16 @@ export default function Home() {
           <Accordion.Item key="schedule" value="schedule">
             <Accordion.Control>Schedule</Accordion.Control>
             <Accordion.Panel>
-              <DeliveredMessagesList />
+              <ScrollArea h={250} type="auto">
+                {schedule?.data && (
+                  <ScheduleDetails hideTitle schedule={schedule.data} />
+                )}
+              </ScrollArea>
             </Accordion.Panel>
           </Accordion.Item>
           <Accordion.Item key="dropped_msgs" value="dropped_msgs">
             <Accordion.Control>Dropped Messages</Accordion.Control>
-            <Accordion.Panel>
-              <DroppedMessagesList />
-            </Accordion.Panel>
+            <Accordion.Panel>{/*<DroppedMessagesList />*/}</Accordion.Panel>
           </Accordion.Item>
           <Accordion.Item key="faults" value="faults">
             <Accordion.Control>Network Faults</Accordion.Control>
