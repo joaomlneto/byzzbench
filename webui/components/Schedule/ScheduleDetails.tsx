@@ -4,6 +4,10 @@ import { EventCard } from "@/components/Events/EventCard";
 import {
   changeScenario,
   deliverMessage,
+  enableNetworkFault,
+  GenericFaultEvent,
+  mutateMessage,
+  MutateMessageEvent,
   Schedule,
 } from "@/lib/byzzbench-client";
 import { Button, Container, Group, Title } from "@mantine/core";
@@ -39,6 +43,16 @@ export const ScheduleDetails = ({
                 case "ClientRequest":
                   await deliverMessage(event.eventId);
                   break;
+                case "MutateMessage":
+                  await mutateMessage(
+                    (event as MutateMessageEvent).payload!.eventId,
+                    (event as MutateMessageEvent).payload!.mutatorId,
+                  );
+                  break;
+                case "GenericFault":
+                  await enableNetworkFault(
+                    (event as GenericFaultEvent).payload!.id!,
+                  );
                 default:
                   console.error("Unknown event type", event);
               }

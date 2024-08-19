@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonTypeName;
 import lombok.Builder;
 import lombok.Data;
 import lombok.experimental.SuperBuilder;
+import org.springframework.lang.NonNull;
 
 import java.time.Instant;
 
@@ -34,6 +35,7 @@ public class MutateMessageEvent implements Event {
     /**
      * The payload of the request.
      */
+    @NonNull
     private final MutateMessageEventPayload payload;
 
     /**

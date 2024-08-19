@@ -1,5 +1,5 @@
 import { ClientReplyEventCard } from "@/components/Events/EventCard/ClientReplyEventCard";
-import { FaultInjectionEventCard } from "@/components/Events/EventCard/FaultInjectionEventCard";
+import { GenericFaultEventCard } from "@/components/Events/EventCard/GenericFaultEventCard";
 import { Event } from "@/lib/byzzbench-client";
 import { CardProps } from "@mantine/core";
 import React from "react";
@@ -20,8 +20,8 @@ export const EventCard = ({ event, ...otherProps }: EventCardProps) => {
       return <ClientRequestEventCard event={event} {...otherProps} />;
     case "ClientReply":
       return <ClientReplyEventCard event={event} {...otherProps} />;
-    case "FaultInjection":
-      return <FaultInjectionEventCard event={event} {...otherProps} />;
+    case "GenericFault":
+      return <GenericFaultEventCard event={event} {...otherProps} />;
     case "MutateMessage":
       return <MutateMessageEventCard event={event} {...otherProps} />;
     default:

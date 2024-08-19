@@ -2,6 +2,7 @@
 
 import AdoBStateDiagram from "@/components/adob/AdoBStateDiagram";
 import { ClientList } from "@/components/ClientList";
+import { DroppedMessagesList } from "@/components/Events";
 import { ScenarioEnabledFaultsList } from "@/components/FaultsList";
 import { NodeList } from "@/components/NodeList";
 import { RunningSimulatorStats } from "@/components/RunningSimulatorStats";
@@ -69,7 +70,7 @@ export default function Home() {
           </Accordion.Item>
           <Accordion.Item key="dropped_msgs" value="dropped_msgs">
             <Accordion.Control>Dropped Messages</Accordion.Control>
-            <Accordion.Panel>{/*<DroppedMessagesList />*/}</Accordion.Panel>
+            <Accordion.Panel>{<DroppedMessagesList />}</Accordion.Panel>
           </Accordion.Item>
           <Accordion.Item key="faults" value="faults">
             <Accordion.Control>Network Faults</Accordion.Control>
