@@ -1,7 +1,11 @@
 package byzzbench.simulator.transport;
 
-import java.time.Instant;
+import com.fasterxml.jackson.annotation.JsonTypeName;
+import lombok.Builder;
 import lombok.Data;
+import lombok.experimental.SuperBuilder;
+
+import java.time.Instant;
 
 /**
  * Event that represents a timeout.
@@ -9,6 +13,8 @@ import lombok.Data;
  * @see Event
  */
 @Data
+@JsonTypeName("Timeout")
+@SuperBuilder
 public class TimeoutEvent implements Event {
   /**
    * The unique identifier of the event.
@@ -44,12 +50,13 @@ public class TimeoutEvent implements Event {
   /**
    * The status of the event.
    */
+  @Builder.Default
   private Status status = Status.QUEUED;
 
   /**
    * The physical time at which the Timeout was delivered.
    */
-  private transient Instant deliveredAt = null;
+  private transient Instant deliveredAt;
 
   @Override
   public String getSenderId() {

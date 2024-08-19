@@ -1,5 +1,6 @@
 package byzzbench.simulator.service;
 
+import byzzbench.simulator.ScenarioExecutor;
 import byzzbench.simulator.schedule.Schedule;
 import org.springframework.stereotype.Service;
 
@@ -15,8 +16,8 @@ public class SchedulesService {
      * Add a new empty schedule
      * @return the new schedule
      */
-    public Schedule addSchedule() {
-        return this.addSchedule(new Schedule());
+    public Schedule addSchedule(ScenarioExecutor scenario) {
+        return this.addSchedule(Schedule.builder().scenarioId(scenario.getId()).build());
     }
 
     /**

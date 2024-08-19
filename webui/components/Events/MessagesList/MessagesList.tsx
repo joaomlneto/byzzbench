@@ -1,8 +1,7 @@
 "use client";
 
-import { MessageListEntry } from "@/components/messages/MessagesList/MessageListEntry";
+import { MessageListEntry } from "@/components/Events/MessagesList/MessageListEntry";
 import { Grid } from "@mantine/core";
-import React from "react";
 
 export type MessagesListProps = {
   messageIds: number[];

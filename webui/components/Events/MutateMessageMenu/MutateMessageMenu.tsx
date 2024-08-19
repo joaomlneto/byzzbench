@@ -1,6 +1,6 @@
 "use client";
 
-import { MutateMessageMenuEntry } from "@/components/messages/MutateMessageMenu/MutateMessageMenuEntry";
+import { MutateMessageMenuEntry } from "@/components/Events/MutateMessageMenu/MutateMessageMenuEntry";
 import {
   useDropMessage,
   useGetMessageMutators,

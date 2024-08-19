@@ -2,7 +2,7 @@
 
 import { NodeStateNavLink } from "@/components/NodeStateNavLink";
 import { useGetClient } from "@/lib/byzzbench-client";
-import { Container, JsonInput, Stack, Title } from "@mantine/core";
+import { Card, Title } from "@mantine/core";
 import React from "react";
 
 export type ClientCardProps = {
@@ -13,24 +13,15 @@ export const ClientCard = ({ clientId }: ClientCardProps) => {
   const { data } = useGetClient(clientId);
 
   return (
-    <Container
-      fluid
-      style={{ border: "1px solid black", maxWidth: 400 }}
-      p="md"
-    >
-      <Stack gap="xs">
-        {false && (
-          <JsonInput value={JSON.stringify(data?.data, null, 2)} autosize />
-        )}
-        {data && (
-          <NodeStateNavLink
-            data={data.data}
-            label={<Title order={4}>{clientId}</Title>}
-            defaultOpened
-            opened={true}
-          />
-        )}
-      </Stack>
-    </Container>
+    <Card p="md" style={{ maxWidth: "400px" }}>
+      {data && (
+        <NodeStateNavLink
+          data={data.data}
+          label={<Title order={4}>{clientId}</Title>}
+          defaultOpened
+          opened={true}
+        />
+      )}
+    </Card>
   );
 };

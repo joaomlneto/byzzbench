@@ -3,7 +3,7 @@
 import {
   DeliverMessageActionIcon,
   DropMessageActionIcon,
-} from "@/components/messages";
+} from "@/components/ActionIcon";
 import { NodeStateNavLink } from "@/components/NodeStateNavLink";
 import { useGetMessage } from "@/lib/byzzbench-client/generated";
 import { Collapse, Container, Group, Text, Title } from "@mantine/core";

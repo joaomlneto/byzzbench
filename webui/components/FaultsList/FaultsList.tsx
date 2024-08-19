@@ -1,3 +1,4 @@
+"use client";
 import { FaultsListEntry } from "@/components/FaultsList/FaultsListEntry";
 import { Grid } from "@mantine/core";
 import React from "react";
