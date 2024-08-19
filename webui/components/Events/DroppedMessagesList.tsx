@@ -1,3 +1,5 @@
+"use client";
+
 import { MessagesList } from "@/components/Events/MessagesList";
 import { useGetDroppedMessages } from "@/lib/byzzbench-client";
 

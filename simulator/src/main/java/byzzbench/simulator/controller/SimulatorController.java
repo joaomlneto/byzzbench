@@ -155,6 +155,7 @@ public class SimulatorController {
     public void materializeSchedule(@RequestBody Schedule schedule) {
         // FIXME: the deserialization of the schedule is not working
         System.out.println("Materializing Schedule: " + schedule);
+        throw new UnsupportedOperationException("Materializing schedules is not supported yet.");
         /*
         ScenarioExecutor<?> scenarioExecutor = simulatorService.getScenarioExecutor();
 

@@ -7,8 +7,12 @@ import React from "react";
 
 export function ScheduleDetailsModal({
   innerProps,
-}: ContextModalProps<{ schedule: Schedule }>) {
-  const schedule = innerProps.schedule;
-
-  return <ScheduleDetails schedule={schedule} />;
+}: ContextModalProps<{ title: string; schedule: Schedule }>) {
+  return (
+    <ScheduleDetails
+      title={innerProps.title}
+      schedule={innerProps.schedule}
+      hideDetailsButton
+    />
+  );
 }

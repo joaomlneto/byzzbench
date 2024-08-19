@@ -1,7 +1,7 @@
 "use client";
 
 import { ScheduleDetails } from "@/components/Schedule";
-import { Action, useSavedSchedulesStore } from "@/hooks/useSavedSchedules";
+import { useSavedSchedulesStore } from "@/hooks/useSavedSchedules";
 import { getSchedule, Schedule } from "@/lib/byzzbench-client";
 import { Button, Stack, TextInput } from "@mantine/core";
 import { useForm } from "@mantine/form";
@@ -11,12 +11,13 @@ import React, { useEffect } from "react";
 
 export function SaveScheduleModal({
   innerProps,
-}: ContextModalProps<{ actions: Action[] }>) {
-  const actions = innerProps.actions;
-
+}: ContextModalProps<{ name?: string; schedule: Schedule }>) {
   const form = useForm<{ name: string; schedule?: Schedule }>({
     initialValues: {
-      name: "",
+      name:
+        innerProps.name ??
+        `${innerProps.schedule.scenarioId}/${new Date().toLocaleString()}`,
+      schedule: innerProps.schedule,
     },
 
     validate: {
@@ -56,6 +57,7 @@ export function SaveScheduleModal({
       <Stack gap="sm">
         <TextInput label="Trace Name" {...form.getInputProps("name")} />
         <ScheduleDetails
+          title={form.getValues().name}
           schedule={form.getValues().schedule ?? { scenarioId: "", events: [] }}
         />
         <Button type="submit">Save</Button>

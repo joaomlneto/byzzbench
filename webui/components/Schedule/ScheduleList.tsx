@@ -1,11 +1,10 @@
 "use client";
 
+import { ScheduleDetails } from "@/components/Schedule/ScheduleDetails";
 import { useSavedSchedulesStore } from "@/hooks/useSavedSchedules";
-import { deliverMessage } from "@/lib/byzzbench-client";
-import { ActionIcon, Container, Group, Stack, Text } from "@mantine/core";
+import { ActionIcon, Container, Group, Stack } from "@mantine/core";
 import { modals } from "@mantine/modals";
-import { showNotification } from "@mantine/notifications";
-import { IconInfoCircle, IconPlayerPlay, IconX } from "@tabler/icons-react";
+import { IconX } from "@tabler/icons-react";
 import { useQueryClient } from "@tanstack/react-query";
 import React, { memo } from "react";
 
@@ -21,39 +20,13 @@ export const ScheduleList = memo(() => {
       <Stack gap="xs">
         {schedules.map((schedule) => (
           <Group key={schedule.id} justify="space-between">
-            <Text>{schedule.id}</Text>
+            <ScheduleDetails
+              title={schedule.id}
+              schedule={schedule.schedule}
+              hideSchedule
+              hideSaveButton
+            />
             <Group>
-              <ActionIcon
-                onClick={() => {
-                  modals.openContextModal({
-                    title: "Schedule Details",
-                    modal: "scheduleDetails",
-                    innerProps: { schedule: schedule.schedule },
-                  });
-                }}
-              >
-                <IconInfoCircle />
-              </ActionIcon>
-              <ActionIcon
-                onClick={async () => {
-                  for (const event of schedule.schedule.events ?? []) {
-                    if (event.type === "DeliverEvent") {
-                      if (!event.eventId) {
-                        showNotification({
-                          message: "Event without ID",
-                          color: "red",
-                        });
-                        return;
-                      }
-                      console.log(`Deliver event #${event.eventId}`);
-                      await deliverMessage(event.eventId);
-                    }
-                  }
-                  await queryClient.invalidateQueries();
-                }}
-              >
-                <IconPlayerPlay />
-              </ActionIcon>
               <ActionIcon
                 onClick={() =>
                   modals.openConfirmModal({

@@ -1,3 +1,5 @@
+"use client";
+
 import { ClientReplyEventCard } from "@/components/Events/EventCard/ClientReplyEventCard";
 import { GenericFaultEventCard } from "@/components/Events/EventCard/GenericFaultEventCard";
 import { Event } from "@/lib/byzzbench-client";

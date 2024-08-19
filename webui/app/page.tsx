@@ -63,7 +63,11 @@ export default function Home() {
             <Accordion.Panel>
               <ScrollArea h={250} type="auto">
                 {schedule?.data && (
-                  <ScheduleDetails hideTitle schedule={schedule.data} />
+                  <ScheduleDetails
+                    hideTitle
+                    title="Current Schedule"
+                    schedule={schedule.data}
+                  />
                 )}
               </ScrollArea>
             </Accordion.Panel>

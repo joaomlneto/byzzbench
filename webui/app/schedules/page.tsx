@@ -6,7 +6,7 @@ import { Container, Pagination, Title } from "@mantine/core";
 import { usePagination } from "@mantine/hooks";
 import React, { useMemo } from "react";
 
-const ITEMS_PER_PAGE = 5;
+const ITEMS_PER_PAGE = 20;
 
 export default function Home() {
   const numSavedSchedulesQuery = useGetNumSavedSchedules();

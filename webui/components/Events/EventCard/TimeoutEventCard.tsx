@@ -1,3 +1,4 @@
+"use client";
 import { NodeStateNavLink } from "@/components/NodeStateNavLink";
 import { TimeoutEvent } from "@/lib/byzzbench-client";
 import { Card, CardProps } from "@mantine/core";

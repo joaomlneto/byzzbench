@@ -4,14 +4,6 @@ import { Schedule } from "@/lib/byzzbench-client";
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
-export type Action = DeliverEventAction;
-
-export type DeliverEventAction = {
-  type: "DeliverEvent";
-  label: string;
-  event: any;
-};
-
 export type SavedSchedule = {
   id: string;
   schedule: Schedule;

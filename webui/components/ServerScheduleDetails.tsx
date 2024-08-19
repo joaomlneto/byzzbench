@@ -1,24 +1,29 @@
 "use client";
 
-import { ScheduleDetails } from "@/components/Schedule";
+import { ScheduleDetails, ScheduleDetailsProps } from "@/components/Schedule";
 import { useGetSavedSchedule } from "@/lib/byzzbench-client";
-import { Title } from "@mantine/core";
 import React, { memo } from "react";
 
-export type ServerScheduleDetailsProps = {
+export type ServerScheduleDetailsProps = Omit<
+  ScheduleDetailsProps,
+  "schedule" | "title"
+> & {
+  title?: string;
   scheduleId: number;
 };
 
 export const ServerScheduleDetails = memo(
-  ({ scheduleId }: ServerScheduleDetailsProps) => {
+  ({ scheduleId, title, ...otherProps }: ServerScheduleDetailsProps) => {
     const savedScheduleQuery = useGetSavedSchedule(scheduleId);
     return (
-      <div>
-        <Title order={6}>Schedule {scheduleId}</Title>
-        {savedScheduleQuery.data && (
-          <ScheduleDetails schedule={savedScheduleQuery.data?.data} />
-        )}
-      </div>
+      savedScheduleQuery.data && (
+        <ScheduleDetails
+          title={title ?? `Schedule ${scheduleId}`}
+          schedule={savedScheduleQuery.data?.data}
+          hideSchedule
+          {...otherProps}
+        />
+      )
     );
   },
 );
