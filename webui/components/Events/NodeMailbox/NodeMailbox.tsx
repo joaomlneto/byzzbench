@@ -2,14 +2,14 @@
 
 import { useGetNodeMailbox } from "@/lib/byzzbench-client";
 import { Stack } from "@mantine/core";
-import React, { useMemo } from "react";
+import React, { memo, useMemo } from "react";
 import { NodeMailboxEntry } from ".";
 
 export type NodeMailboxProps = {
   nodeId: string;
 };
 
-export const NodeMailbox = ({ nodeId }: NodeMailboxProps) => {
+export const NodeMailbox = memo(({ nodeId }: NodeMailboxProps) => {
   const { data } = useGetNodeMailbox(nodeId);
 
   const messageIds = useMemo(() => data?.data ?? [], [data?.data]);
@@ -21,4 +21,5 @@ export const NodeMailbox = ({ nodeId }: NodeMailboxProps) => {
       ))}
     </Stack>
   );
-};
+});
+NodeMailbox.displayName = "NodeMailbox";
