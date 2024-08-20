@@ -34,7 +34,7 @@ public class PrePrepareMessageMutatorFactory extends MessageMutatorFactory<Seria
                         if (!(messageEvent.getPayload() instanceof PrePrepareMessage message)) {
                             throw invalidMessageTypeException;
                         }
-                        message.setViewNumber(message.getViewNumber() + 1);
+                        messageEvent.setPayload(message.withViewNumber(message.getViewNumber() + 1));
                     }
                 },
                 new MessageMutationFault<>("pbft-preprepare-view-dec", "Decrement View Number", List.of(PrePrepareMessage.class)) {
@@ -50,7 +50,7 @@ public class PrePrepareMessageMutatorFactory extends MessageMutatorFactory<Seria
                         if (!(messageEvent.getPayload() instanceof PrePrepareMessage message)) {
                             throw invalidMessageTypeException;
                         }
-                        message.setViewNumber(message.getViewNumber() - 1);
+                        messageEvent.setPayload(message.withViewNumber(message.getViewNumber() - 1));
                     }
                 },
                 new MessageMutationFault<>("pbft-preprepare-seq-inc", "Increment Sequence Number", List.of(PrePrepareMessage.class)) {
@@ -66,7 +66,7 @@ public class PrePrepareMessageMutatorFactory extends MessageMutatorFactory<Seria
                         if (!(messageEvent.getPayload() instanceof PrePrepareMessage message)) {
                             throw invalidMessageTypeException;
                         }
-                        message.setSequenceNumber(message.getSequenceNumber() + 1);
+                        messageEvent.setPayload(message.withSequenceNumber(message.getSequenceNumber() + 1));
                     }
                 },
                 new MessageMutationFault<>("pbft-preprepare-sec-dec", "Decrement Sequence Number", List.of(PrePrepareMessage.class)) {
@@ -82,7 +82,7 @@ public class PrePrepareMessageMutatorFactory extends MessageMutatorFactory<Seria
                         if (!(messageEvent.getPayload() instanceof PrePrepareMessage message)) {
                             throw invalidMessageTypeException;
                         }
-                        message.setSequenceNumber(message.getSequenceNumber() - 1);
+                        messageEvent.setPayload(message.withSequenceNumber(message.getSequenceNumber() - 1));
                     }
                 }
         );

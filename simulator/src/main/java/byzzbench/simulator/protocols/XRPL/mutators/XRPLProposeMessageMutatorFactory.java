@@ -33,7 +33,7 @@ public class XRPLProposeMessageMutatorFactory extends MessageMutatorFactory<Seri
                     if (!(messageEvent.getPayload() instanceof XRPLProposeMessage message)) {
                         throw invalidMessageTypeException;
                     }
-                    message.getProposal().setSeq(message.getProposal().getSeq() + 1);
+                    message.setProp(message.getProposal().withSeq(message.getProposal().getSeq() + 1));
                 }
             },
             new MessageMutationFault<>("xrpl-propose-proposal-dec", "Decrement Proposal Seq", List.of(XRPLProposeMessage.class)) {
@@ -49,7 +49,7 @@ public class XRPLProposeMessageMutatorFactory extends MessageMutatorFactory<Seri
                     if (!(messageEvent.getPayload() instanceof XRPLProposeMessage message)) {
                         throw invalidMessageTypeException;
                     }
-                    message.getProposal().setSeq(message.getProposal().getSeq() - 1);
+                    message.setProp(message.getProposal().withSeq(message.getProposal().getSeq() - 1));
                 }
             },
             new MessageMutationFault<>("xrpl-propose-mutate-tx", "Mutate Tx", List.of(XRPLProposeMessage.class)) {
@@ -69,7 +69,7 @@ public class XRPLProposeMessageMutatorFactory extends MessageMutatorFactory<Seri
                     message.getProposal().getTxns().forEach(tx -> {
                         newTxns.add(tx + "01");
                     });
-                    message.getProposal().setTxns(newTxns);
+                    message.setProp(message.getProposal().withTxns(newTxns));
                 }
             }
         );

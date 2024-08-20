@@ -2,6 +2,7 @@ package byzzbench.simulator.protocols.XRPL.messages;
 
 import byzzbench.simulator.transport.MessagePayload;
 import lombok.Data;
+import lombok.With;
 
 /*
  * Submit message as used in the gossip protocol.
@@ -9,6 +10,7 @@ import lombok.Data;
  * is connected once it recieves a transaction from a client.
  */
 @Data
+@With
 public class XRPLSubmitMessage extends MessagePayload {
     private String tx;
 

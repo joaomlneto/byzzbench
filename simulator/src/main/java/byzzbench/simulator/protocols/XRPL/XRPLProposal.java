@@ -1,12 +1,14 @@
 package byzzbench.simulator.protocols.XRPL;
 
 import lombok.Data;
+import lombok.With;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
 @Data
+@With
 public class XRPLProposal {
     private String prevLedgerId;
     private int seq;
