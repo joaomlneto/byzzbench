@@ -5,7 +5,7 @@ import java.util.List;
 import byzzbench.simulator.TerminationCondition;
 
 public class XRPLTerminationCondition extends TerminationCondition {
-    private final int DESIRED_BLOCK_COUNT = 3;
+    private final int DESIRED_BLOCK_COUNT = 5;
 
     private List<XRPLReplica> replicas;
     private int initialSeq;

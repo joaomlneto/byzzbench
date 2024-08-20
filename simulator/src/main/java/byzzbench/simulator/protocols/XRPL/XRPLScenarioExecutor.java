@@ -13,7 +13,7 @@ import java.util.TreeSet;
 
 @Component
 public class XRPLScenarioExecutor extends ScenarioExecutor<XRPLLedger>  {
-    private final int NUM_NODES = 3;
+    private final int NUM_NODES = 7;
 
 
     private List<XRPLReplica> replica_list;
@@ -26,16 +26,13 @@ public class XRPLScenarioExecutor extends ScenarioExecutor<XRPLLedger>  {
 
     @Override
     public void setup() {
-        setupDefault();
-        //transport.registerMessageMutators(new XRPLProposeMessageMutatorFactory());
-        //transport.registerMessageMutators(new XRPLSubmitMessageMutatorFactory());
-        //transport.registerMessageMutators(new XRPLValidateMessageMutatorFactory());
+        setupForScenario3();
         this.terminationCondition = new XRPLTerminationCondition(replica_list);
     }
 
     @Override
     public void run() {
-        this.runScenario1();
+        this.runScenario3();
     }
 
     /*
