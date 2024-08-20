@@ -3,6 +3,7 @@ package byzzbench.simulator.protocols.XRPL.mutators;
 import byzzbench.simulator.faults.FaultInput;
 import byzzbench.simulator.faults.MessageMutationFault;
 import byzzbench.simulator.faults.MessageMutatorFactory;
+import byzzbench.simulator.protocols.XRPL.XRPLLedger;
 import byzzbench.simulator.protocols.XRPL.messages.XRPLValidateMessage;
 import byzzbench.simulator.transport.Event;
 import byzzbench.simulator.transport.MessageEvent;
@@ -30,14 +31,14 @@ public class XRPLValidateMessageMutatorFactory extends MessageMutatorFactory {
                     if (!(event.get() instanceof MessageEvent messageEvent)) {
                         throw invalidMessageTypeException;
                     }
-                    if (messageEvent.getPayload() instanceof XRPLValidateMessage message) {
-                        List<String> newTxns = new ArrayList<>();
-                        for (String tx : message.getLedger().getTransactions()) {
-                            newTxns.add(tx + "01");
-                        }
-                        message.getLedger().setTransactions(newTxns);
+                    if (!(messageEvent.getPayload() instanceof XRPLValidateMessage message)) {
+                        throw invalidMessageTypeException;
                     }
-                    throw invalidMessageTypeException;
+                    List<String> newTxns = new ArrayList<>();
+                    for (String tx : message.getLedger().getTransactions()) {
+                        newTxns.add(tx + "01");
+                    }
+                    message.setLedger(new XRPLLedger(message.getLedger().getParentId(), message.getLedger().getSeq(), newTxns));
                 }
             }
         );

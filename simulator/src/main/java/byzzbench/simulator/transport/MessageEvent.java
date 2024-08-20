@@ -30,17 +30,14 @@ public class MessageEvent implements Event {
    * The unique identifier of the receiving node
    */
   private final String recipientId;
-
-  /**
-   * The payload of the message.
-   */
-  private final MessagePayload payload;
-
   /**
    * The physical time at which the Message was created.
    */
   private final Instant createdAt = Instant.now();
-
+  /**
+   * The payload of the message.
+   */
+  private MessagePayload payload;
   /**
    * The physical time at which the Message was delivered.
    */

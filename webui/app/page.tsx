@@ -4,6 +4,7 @@ import AdoBStateDiagram from "@/components/adob/AdoBStateDiagram";
 import { ClientList } from "@/components/ClientList";
 import { DroppedMessagesList } from "@/components/Events";
 import { ScenarioEnabledFaultsList } from "@/components/FaultsList";
+import { ImportScheduleButton } from "@/components/ImportScheduleButton";
 import { NodeList } from "@/components/NodeList";
 import { RunningSimulatorStats } from "@/components/RunningSimulatorStats";
 import { ScheduleDetails, ScheduleList } from "@/components/Schedule";
@@ -49,6 +50,7 @@ export default function Home() {
           <Accordion.Item key="saved_schedules" value="saved_schedules">
             <Accordion.Control>Saved Schedules</Accordion.Control>
             <Accordion.Panel>
+              <ImportScheduleButton />
               <ScheduleList />
             </Accordion.Panel>
           </Accordion.Item>
@@ -65,6 +67,9 @@ export default function Home() {
                 {schedule?.data && (
                   <ScheduleDetails
                     hideTitle
+                    hideMaterializeButton
+                    hideDownloadButton
+                    hideDetailsButton
                     title="Current Schedule"
                     schedule={schedule.data}
                   />

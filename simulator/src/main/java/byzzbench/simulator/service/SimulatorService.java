@@ -156,9 +156,7 @@ public class SimulatorService {
         }
     }
 
-
-    @SuppressWarnings("unused")
-    private String convertEventListToString(Schedule s) {
+    private String convertEventListToString(Schedule<?> schedule) {
         String res = "schedule: \n ";
         for (Event event : s.getEvents()) {
             res += "eid: "+ event.getEventId() + " " + event.getSenderId() + " -> " + event.getRecipientId() + ", ";
