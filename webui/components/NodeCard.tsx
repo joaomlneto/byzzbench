@@ -19,7 +19,13 @@ export const NodeCard = ({ nodeId }: NodeCardProps) => {
   }, [partitionsQuery.data, nodeId]);
 
   return (
-    <Card withBorder shadow="sm" padding="xs" m="xs">
+    <Card
+      withBorder
+      shadow="sm"
+      padding="xs"
+      m="xs"
+      style={{ minWidth: 350, maxWidth: 400 }}
+    >
       {data && (
         <NodeStateNavLink
           data={data.data}
