@@ -38,7 +38,10 @@ public class XRPLValidateMessageMutatorFactory extends MessageMutatorFactory {
                     for (String tx : message.getLedger().getTransactions()) {
                         newTxns.add(tx + "01");
                     }
-                    message.setLedger(new XRPLLedger(message.getLedger().getParentId(), message.getLedger().getSeq(), newTxns));
+
+                    XRPLValidateMessage mutatedMessage = message.withLedger(new XRPLLedger(message.getLedger().getParentId(), message.getLedger().getSeq(), newTxns));
+                    mutatedMessage.sign(message.getSignedBy());
+                    messageEvent.setPayload(mutatedMessage);
                 }
             }
         );

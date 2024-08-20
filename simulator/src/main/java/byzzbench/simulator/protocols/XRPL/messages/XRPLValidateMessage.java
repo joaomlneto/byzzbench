@@ -4,6 +4,7 @@ import byzzbench.simulator.protocols.XRPL.XRPLLedger;
 import byzzbench.simulator.transport.MessagePayload;
 import lombok.Getter;
 import lombok.Setter;
+import lombok.With;
 
 /*
  * Validate messages are sent in the accept phase. This is
@@ -12,6 +13,7 @@ import lombok.Setter;
  */
 
 @Getter
+@With
 public class XRPLValidateMessage extends MessagePayload {
     private final String senderNodeId;
     //private signature sign;

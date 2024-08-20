@@ -3,13 +3,14 @@ package byzzbench.simulator.protocols.XRPL;
 import lombok.Data;
 import lombok.With;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
 @Data
 @With
-public class XRPLProposal {
+public class XRPLProposal implements Serializable {
     private String prevLedgerId;
     private int seq;
     private List<String> txns;
@@ -29,22 +30,6 @@ public class XRPLProposal {
 
     public boolean containsTx(String tx) {
         return this.txns.contains(tx);
-    }
-
-    public String getPrevLedgerId() {
-        return prevLedgerId;
-    }
-    public int getSeq() {
-        return seq;
-    }
-    public List<String> getTxns() {
-        return txns;
-    }
-    public String getNodeId() {
-        return nodeId;
-    }
-    public long getCreatedTime() {
-        return createdTime;
     }
 
     public boolean isTxListEqual(List<String> txList) {
