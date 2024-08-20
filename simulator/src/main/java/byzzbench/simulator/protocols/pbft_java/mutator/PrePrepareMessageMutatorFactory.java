@@ -34,7 +34,9 @@ public class PrePrepareMessageMutatorFactory extends MessageMutatorFactory<Seria
                         if (!(messageEvent.getPayload() instanceof PrePrepareMessage message)) {
                             throw invalidMessageTypeException;
                         }
-                        messageEvent.setPayload(message.withViewNumber(message.getViewNumber() + 1));
+                        PrePrepareMessage mutatedMessage = message.withViewNumber(message.getViewNumber() + 1);
+                        mutatedMessage.sign(message.getSignedBy());
+                        messageEvent.setPayload(mutatedMessage);
                     }
                 },
                 new MessageMutationFault<>("pbft-preprepare-view-dec", "Decrement View Number", List.of(PrePrepareMessage.class)) {
@@ -50,7 +52,9 @@ public class PrePrepareMessageMutatorFactory extends MessageMutatorFactory<Seria
                         if (!(messageEvent.getPayload() instanceof PrePrepareMessage message)) {
                             throw invalidMessageTypeException;
                         }
-                        messageEvent.setPayload(message.withViewNumber(message.getViewNumber() - 1));
+                        PrePrepareMessage mutatedMessage = message.withViewNumber(message.getViewNumber() - 1);
+                        mutatedMessage.sign(message.getSignedBy());
+                        messageEvent.setPayload(mutatedMessage);
                     }
                 },
                 new MessageMutationFault<>("pbft-preprepare-seq-inc", "Increment Sequence Number", List.of(PrePrepareMessage.class)) {
@@ -66,7 +70,10 @@ public class PrePrepareMessageMutatorFactory extends MessageMutatorFactory<Seria
                         if (!(messageEvent.getPayload() instanceof PrePrepareMessage message)) {
                             throw invalidMessageTypeException;
                         }
-                        messageEvent.setPayload(message.withSequenceNumber(message.getSequenceNumber() + 1));
+
+                        PrePrepareMessage mutatedMessage = message.withSequenceNumber(message.getSequenceNumber() + 1);
+                        mutatedMessage.sign(message.getSignedBy());
+                        messageEvent.setPayload(mutatedMessage);
                     }
                 },
                 new MessageMutationFault<>("pbft-preprepare-sec-dec", "Decrement Sequence Number", List.of(PrePrepareMessage.class)) {
@@ -82,7 +89,9 @@ public class PrePrepareMessageMutatorFactory extends MessageMutatorFactory<Seria
                         if (!(messageEvent.getPayload() instanceof PrePrepareMessage message)) {
                             throw invalidMessageTypeException;
                         }
-                        messageEvent.setPayload(message.withSequenceNumber(message.getSequenceNumber() - 1));
+                        PrePrepareMessage mutatedMessage = message.withSequenceNumber(message.getSequenceNumber() - 1);
+                        mutatedMessage.sign(message.getSignedBy());
+                        messageEvent.setPayload(mutatedMessage);
                     }
                 }
         );

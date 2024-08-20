@@ -32,7 +32,9 @@ public class XRPLSubmitMessageMutatorFactory extends MessageMutatorFactory<Seria
                     if (!(messageEvent.getPayload() instanceof XRPLSubmitMessage message)) {
                         throw invalidMessageTypeException;
                     }
-                    messageEvent.setPayload(message.withTx(message.getTx() + "01"));
+                    XRPLSubmitMessage mutatedMessage = message.withTx(message.getTx() + "01");
+                    mutatedMessage.sign(message.getSignedBy());
+                    messageEvent.setPayload(mutatedMessage);
                 }
 
             }
