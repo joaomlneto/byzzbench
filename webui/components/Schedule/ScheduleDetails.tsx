@@ -6,12 +6,14 @@ import {
   deliverMessage,
   enableNetworkFault,
   GenericFaultEvent,
+  getEvent,
   mutateMessage,
   MutateMessageEvent,
   Schedule,
 } from "@/lib/byzzbench-client";
 import { Button, Container, Group, Title } from "@mantine/core";
 import { openContextModal } from "@mantine/modals";
+import { showNotification } from "@mantine/notifications";
 import { useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import React from "react";
@@ -56,7 +58,39 @@ export const ScheduleDetails = ({
               console.log("Materializing Schedule: ", schedule);
               await changeScenario({ scenarioId: schedule.scenarioId });
               let i = 0;
+              let hasNotifiedMismatchedEvents = false;
+
               for (const event of schedule.events ?? []) {
+                const remoteEvent = await getEvent(event.eventId).then(
+                  (event) => event.data,
+                );
+
+                // check if events do not match; if so, notify and break
+                // check if event and remoteEvent are the same
+                const objA = { ...event, createdAt: null, status: null };
+                const objB = {
+                  ...remoteEvent,
+                  createdAt: null,
+                  status: null,
+                };
+                if (JSON.stringify(objA) !== JSON.stringify(objB)) {
+                  hasNotifiedMismatchedEvents = true;
+                  console.error(
+                    `Event ${event.eventId} does not match remote event`,
+                    objA,
+                    objB,
+                  );
+                  if (!hasNotifiedMismatchedEvents) {
+                    showNotification({
+                      title: "Error materializing schedule",
+                      message: `Event ${event.eventId} does not match remote event. Will continue to try to materialize the rest of the schedule. See console for more details.`,
+                      color: "red",
+                    });
+                  }
+                  //break;
+                  //continue;
+                }
+
                 console.log(
                   `Pushing Event ${++i}/${schedule.events.length}: ${event}`,
                 );
