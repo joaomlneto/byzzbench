@@ -14,7 +14,9 @@ import lombok.ToString;
 
 import java.io.Serializable;
 import java.util.List;
+import java.util.Set;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 /**
  * Abstract class for running a scenario, which consists of a set of {@link
@@ -129,6 +131,18 @@ public abstract class ScenarioExecutor<T extends Serializable> {
      */
     public final boolean invariantsHold() {
         return this.invariants.stream().allMatch(invariant -> invariant.test(this));
+    }
+
+    /**
+     * Returns the invariants that are not satisfied by the scenario in its current state.
+     * @return The invariants that are not satisfied by the scenario in its current state.
+     */
+    public final Set<Predicate<ScenarioExecutor<T>>> unsatisfiedInvariants() {
+        return this.invariants.stream().filter(invariant -> !invariant.test(this)).collect(Collectors.toSet());
+    }
+
+    public final void finalizeSchedule() {
+        this.transport.getSchedule().finalizeSchedule(this.unsatisfiedInvariants());
     }
 
 }
