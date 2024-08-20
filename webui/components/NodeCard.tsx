@@ -16,7 +16,7 @@ export const NodeCard = ({ nodeId }: NodeCardProps) => {
 
   const partitionId = useMemo(() => {
     return partitionsQuery.data?.data[nodeId] ?? 0;
-  }, [partitionsQuery.data, nodeId]);
+  }, [nodeId, partitionsQuery.data?.data]);
 
   return (
     <Card
