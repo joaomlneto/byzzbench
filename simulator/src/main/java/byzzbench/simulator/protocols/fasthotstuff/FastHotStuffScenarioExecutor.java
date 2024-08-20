@@ -46,7 +46,11 @@ public class FastHotStuffScenarioExecutor extends ScenarioExecutor<Block> {
 
     @Override
     public TerminationCondition getTerminationCondition() {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'getTerminationCondition'");
+        return new TerminationCondition() {
+            @Override
+            public boolean shouldTerminate() {
+                return false;
+            }
+        };
     }
 }
