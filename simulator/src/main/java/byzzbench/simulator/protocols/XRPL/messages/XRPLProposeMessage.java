@@ -3,6 +3,7 @@ package byzzbench.simulator.protocols.XRPL.messages;
 import byzzbench.simulator.protocols.XRPL.XRPLProposal;
 import byzzbench.simulator.transport.MessagePayload;
 import lombok.Data;
+import lombok.With;
 
 
 /*
@@ -13,6 +14,7 @@ import lombok.Data;
  * sequence numbers.
  */
 @Data
+@With
 public class XRPLProposeMessage extends MessagePayload {
     private XRPLProposal prop;
     private String senderId;

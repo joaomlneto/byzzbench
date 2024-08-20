@@ -69,7 +69,9 @@ public class XRPLProposeMessageMutatorFactory extends MessageMutatorFactory<Seri
                     message.getProposal().getTxns().forEach(tx -> {
                         newTxns.add(tx + "01");
                     });
-                    message.setProp(message.getProposal().withTxns(newTxns));
+                    XRPLProposeMessage mutatedMessage = message.withProp(message.getProposal().withTxns(newTxns));
+                    mutatedMessage.sign(message.getSignedBy());
+                    messageEvent.setPayload(mutatedMessage);
                 }
             }
         );
