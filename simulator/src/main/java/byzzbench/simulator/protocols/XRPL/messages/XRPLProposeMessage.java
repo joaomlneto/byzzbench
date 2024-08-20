@@ -16,25 +16,17 @@ import lombok.With;
 @Data
 @With
 public class XRPLProposeMessage extends MessagePayload {
-    private XRPLProposal prop;
+    private XRPLProposal proposal;
     private String senderId;
 
     public XRPLProposeMessage(XRPLProposal prop_, String id) {
-        this.prop = prop_;
+        this.proposal = prop_;
         this.senderId = id;
     }
 
     @Override
     public String getType() {
         return "PROPOSE";
-    }
-
-    public String getSenderId() {
-        return this.senderId;
-    }
-
-    public XRPLProposal getProposal() {
-        return this.prop;
     }
 
 }
