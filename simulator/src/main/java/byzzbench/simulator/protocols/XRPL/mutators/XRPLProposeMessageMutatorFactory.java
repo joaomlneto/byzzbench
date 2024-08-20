@@ -33,7 +33,9 @@ public class XRPLProposeMessageMutatorFactory extends MessageMutatorFactory<Seri
                     if (!(messageEvent.getPayload() instanceof XRPLProposeMessage message)) {
                         throw invalidMessageTypeException;
                     }
-                    message.setProposal(message.getProposal().withSeq(message.getProposal().getSeq() + 1));
+                    XRPLProposeMessage mutatedMessage = message.withProposal(message.getProposal().withSeq(message.getProposal().getSeq() + 1));
+                    mutatedMessage.sign(message.getSignedBy());
+                    messageEvent.setPayload(mutatedMessage);
                 }
             },
             new MessageMutationFault<>("xrpl-propose-proposal-dec", "Decrement Proposal Seq", List.of(XRPLProposeMessage.class)) {
@@ -49,7 +51,9 @@ public class XRPLProposeMessageMutatorFactory extends MessageMutatorFactory<Seri
                     if (!(messageEvent.getPayload() instanceof XRPLProposeMessage message)) {
                         throw invalidMessageTypeException;
                     }
-                    message.setProposal(message.getProposal().withSeq(message.getProposal().getSeq() - 1));
+                    XRPLProposeMessage mutatedMessage = message.withProposal(message.getProposal().withSeq(message.getProposal().getSeq() - 1));
+                    mutatedMessage.sign(message.getSignedBy());
+                    messageEvent.setPayload(mutatedMessage);
                 }
             },
             new MessageMutationFault<>("xrpl-propose-mutate-tx", "Mutate Tx", List.of(XRPLProposeMessage.class)) {
