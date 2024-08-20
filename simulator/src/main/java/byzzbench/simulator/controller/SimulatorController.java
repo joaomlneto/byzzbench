@@ -299,6 +299,15 @@ public class SimulatorController {
                 .toList();
     }
 
+    @GetMapping("/saved-schedules/buggy")
+    public List<Integer> getBuggyScheduleIds() {
+        return schedulesService.getSchedules()
+                .stream()
+                .filter(Schedule::isBuggy)
+                .map(schedulesService.getSchedules()::indexOf)
+                .toList();
+    }
+
     @GetMapping("/saved-schedules/{scheduleId}")
     public Schedule getSavedSchedule(@PathVariable int scheduleId) {
         return schedulesService.getSchedules().get(scheduleId);
