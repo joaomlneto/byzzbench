@@ -3,7 +3,6 @@ package byzzbench.simulator.protocols.fasthotstuff;
 import byzzbench.simulator.Replica;
 import byzzbench.simulator.ScenarioExecutor;
 import byzzbench.simulator.TerminationCondition;
-import byzzbench.simulator.protocols.fasthotstuff.message.Block;
 import byzzbench.simulator.service.MessageMutatorService;
 import byzzbench.simulator.service.SchedulesService;
 import lombok.extern.java.Log;
@@ -14,7 +13,7 @@ import java.util.TreeSet;
 
 @Component
 @Log
-public class FastHotStuffScenarioExecutor extends ScenarioExecutor<Block> {
+public class FastHotStuffScenarioExecutor extends ScenarioExecutor {
     private final int NUM_NODES = 4;
 
     public FastHotStuffScenarioExecutor(MessageMutatorService messageMutatorService, SchedulesService schedulesService) {
@@ -30,7 +29,7 @@ public class FastHotStuffScenarioExecutor extends ScenarioExecutor<Block> {
             }
 
             nodeIds.forEach(nodeId -> {
-                Replica<Block> replica = new FastHotStuffReplica(nodeId, nodeIds, transport);
+                Replica replica = new FastHotStuffReplica(nodeId, nodeIds, transport);
                 this.addNode(replica);
             });
         } catch (Exception e) {

@@ -9,15 +9,14 @@ import byzzbench.simulator.service.SchedulesService;
 import lombok.extern.java.Log;
 import org.springframework.stereotype.Component;
 
-import java.io.Serializable;
 import java.util.Set;
 import java.util.TreeSet;
 
 @Component
 @Log
-public class DummyScenarioExecutor<T extends Serializable> extends ScenarioExecutor<T> {
+public class DummyScenarioExecutor extends ScenarioExecutor {
 
-    public DummyScenarioExecutor(MessageMutatorService messageMutatorService, SchedulesService schedulesService) throws Exception {
+    public DummyScenarioExecutor(MessageMutatorService messageMutatorService, SchedulesService schedulesService) {
         super("dummy", messageMutatorService, schedulesService);
     }
 
@@ -31,7 +30,7 @@ public class DummyScenarioExecutor<T extends Serializable> extends ScenarioExecu
 
             nodeIds.forEach(nodeId -> {
                 MessageLog messageLog = new MessageLog(100, 100, 200);
-                Replica replica = new DummyReplica<String, String>(nodeId, nodeIds, transport);
+                Replica replica = new DummyReplica(nodeId, nodeIds, transport);
                 this.addNode(replica);
             });
         } catch (Exception e) {

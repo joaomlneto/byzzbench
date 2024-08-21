@@ -9,7 +9,6 @@ import lombok.ToString;
 import lombok.extern.jackson.Jacksonized;
 import org.springframework.lang.NonNull;
 
-import java.io.Serializable;
 import java.util.*;
 import java.util.function.Predicate;
 
@@ -18,7 +17,7 @@ import java.util.function.Predicate;
 @Builder
 @JsonIgnoreProperties(ignoreUnknown = true)
 @ToString
-public class Schedule<T extends Serializable> {
+public class Schedule {
     /**
      * The scenario ID that this schedule belongs to.
      */
@@ -33,7 +32,7 @@ public class Schedule<T extends Serializable> {
     /**
      * The set of invariants that are violated by this schedule.
      */
-    private final Set<Predicate<ScenarioExecutor<T>>> brokenInvariants = new HashSet<>();
+    private final Set<Predicate<ScenarioExecutor>> brokenInvariants = new HashSet<>();
     @NonNull
     private boolean isFinalized;
 
@@ -48,7 +47,7 @@ public class Schedule<T extends Serializable> {
      * Marks the schedule as read-only, with the given broken invariants.
      * @param brokenInvariants the set of broken invariants.
      */
-    public void finalizeSchedule(Set<Predicate<ScenarioExecutor<T>>> brokenInvariants) {
+    public void finalizeSchedule(Set<Predicate<ScenarioExecutor>> brokenInvariants) {
         isFinalized = true;
         this.brokenInvariants.addAll(brokenInvariants);
     }

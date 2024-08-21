@@ -5,11 +5,10 @@ import byzzbench.simulator.state.CommitLog;
 import byzzbench.simulator.transport.MessagePayload;
 import byzzbench.simulator.transport.Transport;
 
-import java.io.Serializable;
 import java.util.Random;
 import java.util.Set;
 
-public abstract class PbftReplica extends Replica<Serializable> {
+public abstract class PbftReplica extends Replica {
     protected Random random = new Random();
 
     // !! From Node.cc !!
@@ -47,7 +46,7 @@ public abstract class PbftReplica extends Replica<Serializable> {
     protected long execCommand = 0;
     protected long nonDetChoices = 0;
 
-    protected PbftReplica(String nodeId, Set<String> nodeIds, Transport<Serializable> transport, CommitLog<Serializable> commitLog) {
+    protected PbftReplica(String nodeId, Set<String> nodeIds, Transport transport, CommitLog commitLog) {
         super(nodeId, nodeIds, transport, commitLog);
 
         this.numFaulty = (nodeIds.size() - 1) / 3;

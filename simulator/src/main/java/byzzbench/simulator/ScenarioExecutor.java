@@ -12,7 +12,6 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
 
-import java.io.Serializable;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Predicate;
@@ -21,21 +20,19 @@ import java.util.stream.Collectors;
 /**
  * Abstract class for running a scenario, which consists of a set of {@link
  * Replica} and a {@link Transport} layer.
- *
- * @param <T> The type of the entries in the commit log of each {@link Replica}.
  */
 @Getter
 @ToString
-public abstract class ScenarioExecutor<T extends Serializable> {
+public abstract class ScenarioExecutor {
     /**
      * The transport layer for the scenario.
      */
     @ToString.Exclude
-    protected final Transport<T> transport;
+    protected final Transport transport;
     /**
      * The scheduler for the scenario.
      */
-    protected final BaseScheduler<T> scheduler;
+    protected final BaseScheduler scheduler;
     /**
      * The AdoB oracle for the scenario, which keeps track of the distributed state.
      */
@@ -47,7 +44,7 @@ public abstract class ScenarioExecutor<T extends Serializable> {
     /**
      * The invariants that must be satisfied by the scenario at all times.
      */
-    private final List<Predicate<ScenarioExecutor<T>>> invariants = List.of(new AgreementPredicate<>(), new LivenessPredicate<>());
+    private final List<Predicate<ScenarioExecutor>> invariants = List.of(new AgreementPredicate<>(), new LivenessPredicate());
     /**
      * The number of "regular" clients in the scenario.
      */
@@ -63,8 +60,8 @@ public abstract class ScenarioExecutor<T extends Serializable> {
      */
     protected ScenarioExecutor(String id, MessageMutatorService messageMutatorService, SchedulesService schedulesService) {
         this.id = id;
-        this.transport = new Transport<>(this, messageMutatorService, schedulesService);
-        this.scheduler = new RandomScheduler<>(messageMutatorService, transport);
+        this.transport = new Transport(this, messageMutatorService, schedulesService);
+        this.scheduler = new RandomScheduler(messageMutatorService, transport);
         this.setup();
 
         // AdoB must be initialized after the setup method is called
@@ -88,7 +85,7 @@ public abstract class ScenarioExecutor<T extends Serializable> {
      *
      * @param replica The node to add.
      */
-    public void addNode(Replica<T> replica) {
+    public void addNode(Replica replica) {
         this.transport.addNode(replica);
         replica.addObserver(this.adobOracle);
     }
@@ -137,7 +134,7 @@ public abstract class ScenarioExecutor<T extends Serializable> {
      * Returns the invariants that are not satisfied by the scenario in its current state.
      * @return The invariants that are not satisfied by the scenario in its current state.
      */
-    public final Set<Predicate<ScenarioExecutor<T>>> unsatisfiedInvariants() {
+    public final Set<Predicate<ScenarioExecutor>> unsatisfiedInvariants() {
         return this.invariants.stream().filter(invariant -> !invariant.test(this)).collect(Collectors.toSet());
     }
 

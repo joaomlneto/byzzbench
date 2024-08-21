@@ -15,16 +15,16 @@ public class FaultsFactoryService {
     /**
      * Map of fault behaviors by id.
      */
-    Map<String, FaultBehavior<?>> faultBehaviors = new HashMap<>();
+    Map<String, FaultBehavior> faultBehaviors = new HashMap<>();
 
     /**
      * Map of fault behaviors by input class.
      */
-    Map<Class<? extends Serializable>, Set<FaultBehavior<?>>> faultBehaviorsByInputClass = new HashMap<>();
+    Map<Class<? extends Serializable>, Set<FaultBehavior>> faultBehaviorsByInputClass = new HashMap<>();
 
-    public FaultsFactoryService(List<? extends FaultBehavior<?>> faultBehaviors) {
+    public FaultsFactoryService(List<? extends FaultBehavior> faultBehaviors) {
         // add fault behaviors to the map
-        for (FaultBehavior<?> faultBehavior : faultBehaviors) {
+        for (FaultBehavior faultBehavior : faultBehaviors) {
             if (this.faultBehaviors.containsKey(faultBehavior.getId())) {
                 throw new IllegalArgumentException("Duplicate fault behavior id: " + faultBehavior.getId());
             }
@@ -34,8 +34,8 @@ public class FaultsFactoryService {
         // populate message mutators (fault behaviors specifically applied to events) by input class
         faultBehaviors
                 .stream()
-                .filter(faultBehavior -> faultBehavior instanceof MessageMutationFault<?>)
-                .map(faultBehavior -> (MessageMutationFault<?>) faultBehavior)
+                .filter(faultBehavior -> faultBehavior instanceof MessageMutationFault)
+                .map(faultBehavior -> (MessageMutationFault) faultBehavior)
                 .forEach(faultBehavior -> {
                     for (Class<? extends Serializable> inputClass : faultBehavior.getInputClasses()) {
                         faultBehaviorsByInputClass

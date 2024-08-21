@@ -9,21 +9,20 @@ import byzzbench.simulator.transport.MessageEvent;
 import lombok.ToString;
 import org.springframework.stereotype.Component;
 
-import java.io.Serializable;
 import java.util.List;
 import java.util.Optional;
 
 @Component
 @ToString
-public class PrePrepareMessageMutatorFactory extends MessageMutatorFactory<Serializable> {
+public class PrePrepareMessageMutatorFactory extends MessageMutatorFactory {
     RuntimeException invalidMessageTypeException = new IllegalArgumentException("Invalid message type");
 
     @Override
-    public List<MessageMutationFault<Serializable>> mutators() {
+    public List<MessageMutationFault> mutators() {
         return List.of(
-                new MessageMutationFault<>("pbft-preprepare-view-inc", "Increment View Number", List.of(PrePrepareMessage.class)) {
+                new MessageMutationFault("pbft-preprepare-view-inc", "Increment View Number", List.of(PrePrepareMessage.class)) {
                     @Override
-                    public void accept(FaultInput<Serializable> serializable) {
+                    public void accept(FaultInput serializable) {
                         Optional<Event> event = serializable.getEvent();
                         if (event.isEmpty()) {
                             throw invalidMessageTypeException;
@@ -39,9 +38,9 @@ public class PrePrepareMessageMutatorFactory extends MessageMutatorFactory<Seria
                         messageEvent.setPayload(mutatedMessage);
                     }
                 },
-                new MessageMutationFault<>("pbft-preprepare-view-dec", "Decrement View Number", List.of(PrePrepareMessage.class)) {
+                new MessageMutationFault("pbft-preprepare-view-dec", "Decrement View Number", List.of(PrePrepareMessage.class)) {
                     @Override
-                    public void accept(FaultInput<Serializable> serializable) {
+                    public void accept(FaultInput serializable) {
                         Optional<Event> event = serializable.getEvent();
                         if (event.isEmpty()) {
                             throw invalidMessageTypeException;
@@ -57,9 +56,9 @@ public class PrePrepareMessageMutatorFactory extends MessageMutatorFactory<Seria
                         messageEvent.setPayload(mutatedMessage);
                     }
                 },
-                new MessageMutationFault<>("pbft-preprepare-seq-inc", "Increment Sequence Number", List.of(PrePrepareMessage.class)) {
+                new MessageMutationFault("pbft-preprepare-seq-inc", "Increment Sequence Number", List.of(PrePrepareMessage.class)) {
                     @Override
-                    public void accept(FaultInput<Serializable> serializable) {
+                    public void accept(FaultInput serializable) {
                         Optional<Event> event = serializable.getEvent();
                         if (event.isEmpty()) {
                             throw invalidMessageTypeException;
@@ -76,9 +75,9 @@ public class PrePrepareMessageMutatorFactory extends MessageMutatorFactory<Seria
                         messageEvent.setPayload(mutatedMessage);
                     }
                 },
-                new MessageMutationFault<>("pbft-preprepare-sec-dec", "Decrement Sequence Number", List.of(PrePrepareMessage.class)) {
+                new MessageMutationFault("pbft-preprepare-sec-dec", "Decrement Sequence Number", List.of(PrePrepareMessage.class)) {
                     @Override
-                    public void accept(FaultInput<Serializable> serializable) {
+                    public void accept(FaultInput serializable) {
                         Optional<Event> event = serializable.getEvent();
                         if (event.isEmpty()) {
                             throw invalidMessageTypeException;

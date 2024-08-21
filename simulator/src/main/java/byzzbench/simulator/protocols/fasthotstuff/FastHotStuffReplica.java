@@ -14,7 +14,7 @@ import java.util.concurrent.atomic.AtomicLong;
 
 @Log
 @Getter
-public class FastHotStuffReplica extends LeaderBasedProtocolReplica<Block> {
+public class FastHotStuffReplica extends LeaderBasedProtocolReplica {
     public static final int TIMEOUT_DELAY = 15000; // 15 seconds
 
     private final AtomicLong round = new AtomicLong(3);
@@ -26,8 +26,8 @@ public class FastHotStuffReplica extends LeaderBasedProtocolReplica<Block> {
     private final Map<String, Block> knownBlocks = new HashMap<>();
     private GenericQuorumCertificate highestQc = new QuorumCertificate(new ArrayList<>());
 
-    public FastHotStuffReplica(String nodeId, Set<String> nodeIds, Transport<Block> transport) {
-        super(nodeId, nodeIds, transport, new TotalOrderCommitLog<>());
+    public FastHotStuffReplica(String nodeId, Set<String> nodeIds, Transport transport) {
+        super(nodeId, nodeIds, transport, new TotalOrderCommitLog());
     }
 
     @Override

@@ -8,15 +8,14 @@ import byzzbench.simulator.service.SchedulesService;
 import lombok.extern.java.Log;
 import org.springframework.stereotype.Component;
 
-import java.io.Serializable;
 import java.util.Set;
 import java.util.TreeSet;
 
 @Component
 @Log
-public class PbftScenarioExecutor<T extends Serializable> extends ScenarioExecutor<T> {
+public class PbftScenarioExecutor extends ScenarioExecutor {
     private final int NUM_NODES = 4;
-    private PbftTerminationCondition terminationCondition;
+    private final PbftTerminationCondition terminationCondition;
 
     public PbftScenarioExecutor(MessageMutatorService messageMutatorService, SchedulesService schedulesService) {
         super("pbft-java", messageMutatorService, schedulesService);

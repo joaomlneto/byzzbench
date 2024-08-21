@@ -18,7 +18,7 @@ import java.util.Optional;
 @Getter
 @ToString
 @RequiredArgsConstructor
-public abstract class MessageMutationFault<T extends Serializable> implements Fault<T> {
+public abstract class MessageMutationFault implements Fault {
     @NonNull
     private final String id;
     @NonNull
@@ -45,7 +45,7 @@ public abstract class MessageMutationFault<T extends Serializable> implements Fa
      * @return True if the message can be mutated by this mutator, false otherwise
      */
     @Override
-    public final boolean test(FaultInput<T> ctx) {
+    public final boolean test(FaultInput ctx) {
         Optional<Event> event = ctx.getEvent();
         return event.isPresent()
                 && event.get() instanceof MessageEvent messageEvent

@@ -5,20 +5,19 @@ import byzzbench.simulator.transport.Event;
 import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 
-import java.io.Serializable;
 import java.util.Optional;
 
-public class FaultInput<T extends Serializable> {
+public class FaultInput {
     @Getter
-    private final ScenarioExecutor<T> scenario;
+    private final ScenarioExecutor scenario;
     private final Event eventOptional;
 
-    public FaultInput(@NotNull ScenarioExecutor<T> scenario, @NotNull Event event) {
+    public FaultInput(@NotNull ScenarioExecutor scenario, @NotNull Event event) {
         this.scenario = scenario;
         this.eventOptional = event;
     }
 
-    public FaultInput(ScenarioExecutor<T> scenario) {
+    public FaultInput(ScenarioExecutor scenario) {
         this.scenario = scenario;
         this.eventOptional = null;
     }

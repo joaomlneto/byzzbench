@@ -3,7 +3,6 @@ package byzzbench.simulator.service;
 import byzzbench.simulator.ScenarioExecutor;
 import org.springframework.stereotype.Service;
 
-import java.io.Serializable;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -31,7 +30,7 @@ public class ScenarioFactoryService {
      * @return the scenario
      * @throws IllegalArgumentException if the scenario id is unknown
      */
-    public ScenarioExecutor<? extends Serializable> getScenario(String id) {
+    public ScenarioExecutor getScenario(String id) {
         ScenarioExecutor scenario = scenarios.get(id);
         if (scenario == null) {
             throw new IllegalArgumentException("Unknown scenario id: " + id);

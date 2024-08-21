@@ -12,7 +12,6 @@ import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Service;
 
-import java.io.Serializable;
 import java.util.Optional;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -36,7 +35,7 @@ public class SimulatorService {
     private int droppedMessageCount;
     private SimulatorServiceMode mode = SimulatorServiceMode.STOPPED;
     private boolean shouldStop = false;
-    private ScenarioExecutor<? extends Serializable> scenarioExecutor;
+    private ScenarioExecutor scenarioExecutor;
     private TerminationCondition terminationCondition;
 
     @EventListener(ApplicationReadyEvent.class)
@@ -107,6 +106,14 @@ public class SimulatorService {
                             flag = false;
                         }
 
+                        // if the invariants do not hold, terminate the run
+                        if (!this.scenarioExecutor.invariantsHold()) {
+                            log.info("Invariants do not hold, terminating. . .");
+                            var unsatisfiedInvariants = this.scenarioExecutor.unsatisfiedInvariants();
+                            this.scenarioExecutor.getTransport().getSchedule().finalizeSchedule(unsatisfiedInvariants);
+                            break;
+                        }
+
                         if (num_events > MAX_EVENTS_FOR_RUN) {
                             log.info("Reached max # of actions for this run, terminating. . .");
                             flag = false;
@@ -146,7 +153,7 @@ public class SimulatorService {
         }
     }
 
-    private String convertEventListToString(Schedule<?> schedule) {
+    private String convertEventListToString(Schedule schedule) {
         String res = "schedule: \n ";
         for (Event event : schedule.getEvents()) {
             res += "eid: "+ event.getEventId() + " " + event.getSenderId() + " -> " + event.getRecipientId() + ", ";

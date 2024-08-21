@@ -26,13 +26,11 @@ import java.util.concurrent.atomic.AtomicLong;
  * This class is responsible for handling events (messages and timeouts).
  * It also provides methods for sending messages, setting timeouts, and applying
  * faults.
- *
- * @param <T> The type of the entries in the commit log of each {@link Replica}.
  */
 @Log
 @ToString
-public class Transport<T extends Serializable> {
-    private final ScenarioExecutor<T> scenario;
+public class Transport {
+    private final ScenarioExecutor scenario;
 
     /**
      * The service for storing and managing schedules.
@@ -54,18 +52,18 @@ public class Transport<T extends Serializable> {
      */
     @Getter(onMethod_ = {@Synchronized})
     @JsonIgnore
-    private final Map<String, Replica<T>> nodes = new HashMap<>();
+    private final Map<String, Replica> nodes = new HashMap<>();
 
     @Getter(onMethod_ = {@Synchronized})
     @JsonIgnore
-    private final Map<String, Fault<T>> networkFaults = new HashMap<>();
+    private final Map<String, Fault> networkFaults = new HashMap<>();
 
     /**
      * Map of client id to the {@link Client} object.
      */
     @Getter(onMethod_ = {@Synchronized})
     @JsonIgnore
-    private final Map<String, Client<T>> clients = new HashMap<>();
+    private final Map<String, Client> clients = new HashMap<>();
 
     /**
      * Map of event ID to the {@link Event} object.
@@ -89,7 +87,7 @@ public class Transport<T extends Serializable> {
     @Getter(onMethod_ = {@Synchronized})
     private Schedule schedule;
 
-    public Transport (ScenarioExecutor<T> scenario, MessageMutatorService messageMutatorService, SchedulesService schedulesService) {
+    public Transport (ScenarioExecutor scenario, MessageMutatorService messageMutatorService, SchedulesService schedulesService) {
         this.scenario = scenario;
         this.messageMutatorService = messageMutatorService;
         this.schedulesService = schedulesService;
@@ -117,15 +115,15 @@ public class Transport<T extends Serializable> {
      *
      * @param replica The node to add.
      */
-    public synchronized void addNode(Replica<T> replica) {
+    public synchronized void addNode(Replica replica) {
         nodes.put(replica.getNodeId(), replica);
 
         // for each node, add a IsolateNodeFault and a HealNodeFault
-        this.addNetworkFault(new IsolateProcessNetworkFault<>(replica.getNodeId()));
-        this.addNetworkFault(new HealNodeNetworkFault<>(replica.getNodeId()));
+        this.addNetworkFault(new IsolateProcessNetworkFault(replica.getNodeId()));
+        this.addNetworkFault(new HealNodeNetworkFault(replica.getNodeId()));
     }
 
-    public void addNetworkFault(Fault<T> fault) {
+    public void addNetworkFault(Fault fault) {
         this.networkFaults.put(fault.getId(), fault);
     }
 
@@ -134,7 +132,7 @@ public class Transport<T extends Serializable> {
      *
      * @param client The client to add.
      */
-    public synchronized void addClient(Client<T> client) {
+    public synchronized void addClient(Client client) {
         clients.put(client.getClientId(), client);
     }
 
@@ -145,7 +143,7 @@ public class Transport<T extends Serializable> {
      */
     public synchronized void createClients(int numClients) {
         for (int i = 0; i < numClients; i++) {
-            Client<T> client = new Client<>(String.format("C%d", i), this);
+            Client client = new Client(String.format("C%d", i), this);
             this.addClient(client);
         }
     }
@@ -341,6 +339,17 @@ public class Transport<T extends Serializable> {
     /**
      * Applies a mutation to a message and appends the fault event to the schedule.
      * @param eventId The ID of the message to mutate.
+     * @param faultId The ID of the fault to apply.
+     */
+    public synchronized void applyMutation(long eventId, String faultId) {
+        // FIXME: should not be doing type erasure here!
+        Fault fault = this.messageMutatorService.getMutator(faultId);
+        this.applyMutation(eventId, fault);
+    }
+
+    /**
+     * Applies a mutation to a message and appends the fault event to the schedule.
+     * @param eventId The ID of the message to mutate.
      * @param fault The fault to apply.
      */
     public synchronized void applyMutation(long eventId, Fault fault) {
@@ -368,7 +377,7 @@ public class Transport<T extends Serializable> {
         }
 
         // create input for the fault
-        FaultInput<T> input = new FaultInput<>(this.scenario, e);
+        FaultInput input = new FaultInput(this.scenario, e);
 
         // check if mutator can be applied to the event
         if (!fault.test(input)) {
@@ -398,16 +407,16 @@ public class Transport<T extends Serializable> {
     }
 
     public void applyFault(String faultId) {
-        Fault<T> fault = this.networkFaults.get(faultId);
+        Fault fault = this.networkFaults.get(faultId);
         if (fault == null) {
             throw new IllegalArgumentException("Fault not found: " + faultId);
         }
         this.applyFault(fault);
     }
 
-    public void applyFault(Fault<T> fault) {
+    public void applyFault(Fault fault) {
         // create input for the fault
-        FaultInput<T> input = new FaultInput<>(this.scenario);
+        FaultInput input = new FaultInput(this.scenario);
 
         // check if fault can be applied
         if (!fault.test(input)) {
@@ -429,7 +438,7 @@ public class Transport<T extends Serializable> {
         this.observers.forEach(o -> o.onFault(fault));
     }
 
-    public synchronized long setTimeout(Replica<T> replica, Runnable runnable,
+    public synchronized long setTimeout(Replica replica, Runnable runnable,
                            long timeout) {
         TimeoutEvent timeoutEvent = TimeoutEvent.builder()
                 .eventId(this.eventSeqNum.getAndIncrement())
@@ -446,7 +455,7 @@ public class Transport<T extends Serializable> {
         return timeoutEvent.getEventId();
     }
 
-    public synchronized void clearReplicaTimeouts(Replica<T> replica) {
+    public synchronized void clearReplicaTimeouts(Replica replica) {
         // get all event IDs for timeouts from this replica
         List<Long> eventIds =
                 this.events.values()
@@ -470,18 +479,18 @@ public class Transport<T extends Serializable> {
         return nodes.keySet();
     }
 
-    public synchronized Replica<T> getNode(String nodeId) {
+    public synchronized Replica getNode(String nodeId) {
         return nodes.get(nodeId);
     }
 
-    public List<Fault<T>> getEnabledNetworkFaults() {
-        FaultInput<T> input = new FaultInput<>(this.scenario);
+    public List<Fault> getEnabledNetworkFaults() {
+        FaultInput input = new FaultInput(this.scenario);
         return this.networkFaults.values().stream()
                 .filter(f -> f.test(input))
                 .toList();
     }
 
-    public Fault<T> getNetworkFault(String faultId) {
+    public Fault getNetworkFault(String faultId) {
         return this.networkFaults.get(faultId);
     }
 }

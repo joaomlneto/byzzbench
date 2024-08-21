@@ -1,29 +1,23 @@
 package byzzbench.simulator.scheduler;
 
-import byzzbench.simulator.Replica;
 import byzzbench.simulator.faults.MessageMutationFault;
 import byzzbench.simulator.service.MessageMutatorService;
-import byzzbench.simulator.state.CommitLog;
 import byzzbench.simulator.transport.*;
 
-import java.io.Serializable;
 import java.util.List;
 import java.util.Optional;
 import java.util.Random;
 
 /**
  * A scheduler that randomly selects events to deliver, drop, mutate or timeout.
- *
- * @param <T> The type of the entries in the {@link CommitLog} of each {@link
- *            Replica}.
  */
-public class RandomScheduler<T extends Serializable> extends BaseScheduler<T> {
+public class RandomScheduler extends BaseScheduler {
     private final double MUTATE_MESSAGE_PROBABILITY = 0.00;
     Random random = new Random();
     private double DELIVER_MESSAGE_PROBABILITY = 0.92;
     private double DROP_MESSAGE_PROBABILITY = 0.08;
 
-    public RandomScheduler(MessageMutatorService messageMutatorService, Transport<T> transport) {
+    public RandomScheduler(MessageMutatorService messageMutatorService, Transport transport) {
         super("Random", messageMutatorService, transport);
         assert_probabilities();
     }
@@ -109,7 +103,7 @@ public class RandomScheduler<T extends Serializable> extends BaseScheduler<T> {
                 if (!(message instanceof MessageEvent me)) {
                     throw new IllegalArgumentException("Invalid message type");
                 }
-                List<MessageMutationFault<?>> mutators =
+                List<MessageMutationFault> mutators =
                         this.getMessageMutatorService().getMutatorsForEvent(me);
                 if (mutators.isEmpty()) {
                     // no mutators, return nothing
@@ -117,6 +111,7 @@ public class RandomScheduler<T extends Serializable> extends BaseScheduler<T> {
                 }
                 getTransport().applyMutation(
                         message.getEventId(),
+                        // FIXME: should not be doing type erasure here!
                         mutators.get(random.nextInt(mutators.size())));
                 getTransport().deliverEvent(message.getEventId());
 

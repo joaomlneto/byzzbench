@@ -8,10 +8,10 @@ import byzzbench.simulator.schedule.Schedule;
 import byzzbench.simulator.service.*;
 import byzzbench.simulator.state.adob.AdobCache;
 import byzzbench.simulator.transport.Event;
+import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
-import java.io.Serializable;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -58,7 +58,7 @@ public class SimulatorController {
      * @return The client with the given ID.
      */
     @GetMapping("/client/{clientId}")
-    public Client<? extends Serializable> getClient(@PathVariable String clientId) {
+    public Client getClient(@PathVariable String clientId) {
         return simulatorService.getScenarioExecutor().getTransport().getClients().get(clientId);
     }
 
@@ -70,7 +70,7 @@ public class SimulatorController {
     }
 
     @GetMapping("/node/{nodeId}")
-    public Replica<? extends Serializable> getNode(@PathVariable String nodeId) {
+    public Replica getNode(@PathVariable String nodeId) {
         return simulatorService.getScenarioExecutor().getTransport().getNode(nodeId);
     }
 
@@ -223,8 +223,7 @@ public class SimulatorController {
      */
     @PostMapping("/event/{eventId}/mutate/{mutatorId}")
     public void mutateMessage(@PathVariable Long eventId, @PathVariable String mutatorId) {
-        Fault<?> f = this.messageMutatorService.getMutator(mutatorId);
-        simulatorService.getScenarioExecutor().getTransport().applyMutation(eventId, f);
+        simulatorService.getScenarioExecutor().getTransport().applyMutation(eventId, mutatorId);
     }
 
     @GetMapping("/mutators")
@@ -235,7 +234,7 @@ public class SimulatorController {
     }
 
     @GetMapping("/mutators/{mutatorId}")
-    public MessageMutationFault<? extends Serializable> getMutator(@PathVariable String mutatorId) {
+    public MessageMutationFault getMutator(@PathVariable String mutatorId) {
         return messageMutatorService
                 .getMutator(mutatorId);
     }
@@ -353,7 +352,7 @@ public class SimulatorController {
     }
 
     @GetMapping("/network-faults/{faultId}")
-    public Fault<? extends Serializable> getNetworkFault(@PathVariable String faultId) {
+    public Fault getNetworkFault(@PathVariable String faultId) {
         return simulatorService.getScenarioExecutor().getTransport().getNetworkFault(faultId);
     }
 
@@ -368,5 +367,16 @@ public class SimulatorController {
                 .getTransport()
                 .getRouter()
                 .getPartitions();
+    }
+
+    @PutMapping("/test")
+    public void testDeserialize(@RequestBody MyThing thing) {
+        System.out.println("thing: " + thing);
+    }
+
+    @Data
+    public class MyThing {
+        String name;
+        int age;
     }
 }
