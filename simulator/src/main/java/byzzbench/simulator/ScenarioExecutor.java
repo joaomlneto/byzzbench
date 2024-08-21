@@ -44,7 +44,7 @@ public abstract class ScenarioExecutor {
     /**
      * The invariants that must be satisfied by the scenario at all times.
      */
-    private final List<Predicate<ScenarioExecutor>> invariants = List.of(new AgreementPredicate<>(), new LivenessPredicate());
+    private final List<Predicate<ScenarioExecutor>> invariants = List.of(new AgreementPredicate(), new LivenessPredicate());
     /**
      * The number of "regular" clients in the scenario.
      */
