@@ -70,6 +70,7 @@ export default function Home() {
                     hideMaterializeButton
                     hideDownloadButton
                     hideDetailsButton
+                    hideScenario
                     title="Current Schedule"
                     schedule={schedule.data}
                   />

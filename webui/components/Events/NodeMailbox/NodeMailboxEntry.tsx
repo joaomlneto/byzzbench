@@ -22,6 +22,7 @@ export const NodeMailboxEntry = memo(({ messageId }: { messageId: number }) => {
         <Group
           wrap="nowrap"
           gap="xs"
+          grow
           onClick={(e) => {
             e.preventDefault();
             toggle();
@@ -30,18 +31,20 @@ export const NodeMailboxEntry = memo(({ messageId }: { messageId: number }) => {
           <Text span c="dimmed">
             {message.data.eventId}
           </Text>
-          <Badge size="sm">{message.data.senderId}</Badge>
-          <Text lineClamp={1}>
-            {
-              // @ts-ignore
-              message.data.payload?.type ?? message.data.type ?? "???"
-            }
-          </Text>
+          <Badge size="xs">{message.data.senderId}</Badge>
+          <Group grow>
+            <Text lineClamp={1} w="200px">
+              {
+                // @ts-ignore
+                message.data.payload?.type ?? message.data.type ?? "???"
+              }
+            </Text>
+          </Group>
         </Group>
         {message.data.status == "QUEUED" && (
           <Group gap="xs" wrap="nowrap">
-            {true && <DeliverMessageActionIcon messageId={messageId} />}
-            {true && <MutateMessageMenu messageId={messageId} />}
+            <DeliverMessageActionIcon messageId={messageId} />
+            <MutateMessageMenu messageId={messageId} />
           </Group>
         )}
       </Group>
