@@ -12,7 +12,7 @@ import java.util.Set;
 import java.util.TreeSet;
 
 @Component
-public class XRPLScenarioExecutor extends ScenarioExecutor<XRPLLedger>  {
+public class XRPLScenarioExecutor extends ScenarioExecutor  {
     private final int NUM_NODES = 3;
 
 
