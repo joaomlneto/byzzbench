@@ -4,25 +4,16 @@ import { DeliverMessageActionIcon } from "@/components/ActionIcon";
 import { MutateMessageMenu } from "@/components/Events/MutateMessageMenu";
 import { NodeStateNavLink } from "@/components/NodeStateNavLink";
 import { useGetMessage } from "@/lib/byzzbench-client/generated";
-import { Badge, Card, Collapse, Group, Text, Tooltip } from "@mantine/core";
+import { Badge, Card, Collapse, Group, Text } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
-import React, { useMemo } from "react";
+import React, { memo } from "react";
 
-export const NodeMailboxEntry = ({ messageId }: { messageId: number }) => {
+export const NodeMailboxEntry = memo(({ messageId }: { messageId: number }) => {
   const [opened, { toggle }] = useDisclosure(false);
   const { data: message } = useGetMessage(messageId);
-  const payload = useMemo(() => message?.data, [message?.data]);
 
-  const payloadWithoutClassname = useMemo(() => {
-    if (!payload) {
-      return null;
-    }
-    const { type, ...rest } = payload;
-    return rest;
-  }, [payload]);
-
-  if (!message) {
-    return "Loading...";
+  if (!message?.data) {
+    return null;
   }
 
   return (
@@ -37,31 +28,30 @@ export const NodeMailboxEntry = ({ messageId }: { messageId: number }) => {
           }}
         >
           <Text span c="dimmed">
-            {payload?.eventId}
+            {message.data.eventId}
           </Text>
-          <Tooltip label="Sender">
-            <Badge size="sm">{message.data.senderId}</Badge>
-          </Tooltip>
+          <Badge size="sm">{message.data.senderId}</Badge>
           <Text lineClamp={1}>
             {
               // @ts-ignore
-              payload?.payload?.type ?? payload?.type ?? "???"
+              message.data.payload?.type ?? message.data.type ?? "???"
             }
           </Text>
         </Group>
-        {payload?.status == "QUEUED" && (
+        {message.data.status == "QUEUED" && (
           <Group gap="xs" wrap="nowrap">
-            <DeliverMessageActionIcon messageId={messageId} />
-            <MutateMessageMenu messageId={messageId} />
+            {true && <DeliverMessageActionIcon messageId={messageId} />}
+            {true && <MutateMessageMenu messageId={messageId} />}
           </Group>
         )}
       </Group>
       <Collapse in={opened}>
-        {/*false && <JsonTable data={payloadWithoutClassname} />*/}
-        {Object.entries(payloadWithoutClassname ?? {}).map(([key, value]) => (
+        {Object.entries(message.data ?? {}).map(([key, value]) => (
           <NodeStateNavLink key={key} label={key} data={value} />
         ))}
       </Collapse>
     </Card>
   );
-};
+});
+
+NodeMailboxEntry.displayName = "NodeMailboxEntry";

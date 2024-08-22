@@ -58,7 +58,13 @@ export function SaveScheduleModal({
         <TextInput label="Trace Name" {...form.getInputProps("name")} />
         <ScheduleDetails
           title={form.getValues().name}
-          schedule={form.getValues().schedule ?? { scenarioId: "", events: [] }}
+          schedule={
+            form.getValues().schedule ?? {
+              scenarioId: "",
+              events: [],
+              finalized: false,
+            }
+          }
         />
         <Button type="submit">Save</Button>
       </Stack>
