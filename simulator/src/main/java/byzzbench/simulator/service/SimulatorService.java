@@ -29,10 +29,11 @@ import java.util.concurrent.Executors;
 public class SimulatorService {
     private final int MAX_EVENTS_FOR_RUN = SimulatorConfig.MAX_EVENTS_FOR_RUN;
     private final int MAX_DROPPED_MESSAGES = SimulatorConfig.MAX_DROPPED_MESSAGES;
+    private final int CHECK_TERMINATION_FREQ = SimulatorConfig.CHECK_TERMINATION_FREQ;
+    private int droppedMessageCount;
     private final SchedulesService schedulesService;
     private final ScenarioFactoryService scenarioFactoryService;
     private final ExecutorService executor = Executors.newFixedThreadPool(1);
-    private int droppedMessageCount;
     private SimulatorServiceMode mode = SimulatorServiceMode.STOPPED;
     private boolean shouldStop = false;
     private ScenarioExecutor scenarioExecutor;
@@ -52,7 +53,7 @@ public class SimulatorService {
      */
     public void changeScenario(String id) {
         this.scenarioExecutor = this.scenarioFactoryService.getScenario(id);
-        this.terminationCondition = this.scenarioExecutor.getTerminationCondition();
+        this.scenarioExecutor.setupScenario();
         //this.scenarioExecutor.setupScenario();
         //this.scenarioExecutor.runScenario();
         this.droppedMessageCount = 0;
@@ -88,6 +89,10 @@ public class SimulatorService {
             // reset the scenario to ensure that the scenario is in a clean state
             this.changeScenario(this.scenarioExecutor.getId());
             this.terminationCondition = this.scenarioExecutor.getTerminationCondition();
+
+            int numTerm = 0;
+            int numMaxedOut = 0;
+            int numErr = 0;
             try {
                 // run the scenario until the stop flag is set
                 while (!this.shouldStop) {
@@ -97,42 +102,57 @@ public class SimulatorService {
                     System.out.println("Running scenario #" + scenarioId);
 
                     boolean flag = true;
-                    while (flag) {
-                        this.invokeScheduleNext();
-                        num_events += 1;
+                        try {
+                            while (flag) {
+                                this.invokeScheduleNext();
+                                num_events += 1;
 
-                        if ((num_events % 50 == 0 && this.terminationCondition.shouldTerminate())) {
-                            log.info("Termination condition has been satisfied for this run, terminating. . .");
+                                if ((num_events % CHECK_TERMINATION_FREQ == 0 && this.terminationCondition.shouldTerminate())) {
+                                    log.info("Termination condition has been satisfied for this run, terminating. . .");
+                                    flag = false;
+                                    numTerm += 1;
+                                }
+
+                                // if the invariants do not hold, terminate the run
+                                if (!this.scenarioExecutor.invariantsHold()) {
+                                    log.info("Invariants do not hold, terminating. . .");
+                                    var unsatisfiedInvariants = this.scenarioExecutor.unsatisfiedInvariants();
+                                    this.scenarioExecutor.getTransport().getSchedule().finalizeSchedule(unsatisfiedInvariants);
+                                    break;
+                                }
+
+                                if (num_events > MAX_EVENTS_FOR_RUN) {
+                                    log.info("Reached max # of actions for this run, terminating. . .");
+                                    flag = false;
+                                    numMaxedOut += 1;
+                                }
+                            }
+
+                        } catch (Exception e) {
+                            System.out.println("Error in schedule " + scenarioId + ": " + e);
+                            e.printStackTrace();
                             flag = false;
+                            numErr += 1;
                         }
-
-                        // if the invariants do not hold, terminate the run
-                        if (!this.scenarioExecutor.invariantsHold()) {
-                            log.info("Invariants do not hold, terminating. . .");
-                            var unsatisfiedInvariants = this.scenarioExecutor.unsatisfiedInvariants();
-                            this.scenarioExecutor.getTransport().getSchedule().finalizeSchedule(unsatisfiedInvariants);
-                            break;
-                        }
-
-                        if (num_events > MAX_EVENTS_FOR_RUN) {
-                            log.info("Reached max # of actions for this run, terminating. . .");
-                            flag = false;
-                        }
-                    }
 
                     // run the scenario for the given number of events
                    /*  for (int i = 1; i < numActionsPerRun; i++) {
                         System.out.println("Running action " + i + "/" + numActionsPerRun);
                         this.scenarioExecutor.getScheduler().scheduleNext();
                     } */
-
-                    log.info("executed schedule: " + convertEventListToString(this.scenarioExecutor.getTransport().getSchedule()) );
                     this.scenarioExecutor.reset();
+                    this.droppedMessageCount = 0;
+                    this.scenarioExecutor.getScheduler().resetParameters();
+                    this.terminationCondition = this.scenarioExecutor.getTerminationCondition();
                 }
             } catch (Exception e) {
                 throw new RuntimeException(e);
             } finally {
                 this.mode = SimulatorServiceMode.STOPPED;
+
+                System.out.println("number of runs terminated by condition: " + numTerm);
+                System.out.println("number of runs terminated by max actions: " + numMaxedOut);
+                System.out.println("number of runs halted by error: " + numErr);
             }
         });
     }

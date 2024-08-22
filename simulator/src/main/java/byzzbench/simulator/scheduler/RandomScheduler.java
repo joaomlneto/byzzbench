@@ -3,6 +3,7 @@ package byzzbench.simulator.scheduler;
 import byzzbench.simulator.faults.MessageMutationFault;
 import byzzbench.simulator.service.MessageMutatorService;
 import byzzbench.simulator.transport.*;
+import lombok.extern.java.Log;
 
 import java.util.List;
 import java.util.Optional;
@@ -11,11 +12,12 @@ import java.util.Random;
 /**
  * A scheduler that randomly selects events to deliver, drop, mutate or timeout.
  */
+@Log
 public class RandomScheduler extends BaseScheduler {
-    private final double MUTATE_MESSAGE_PROBABILITY = 0.00;
+    private double DELIVER_MESSAGE_PROBABILITY = RandomSchedulerConfig.DELIVER_MESSAGE_PROBABILITY;
+    private double DROP_MESSAGE_PROBABILITY = RandomSchedulerConfig.DROP_MESSAGE_PROBABILITY;
+    private double MUTATE_MESSAGE_PROBABILITY = RandomSchedulerConfig.MUTATE_MESSAGE_PROBABILITY;
     Random random = new Random();
-    private double DELIVER_MESSAGE_PROBABILITY = 0.92;
-    private double DROP_MESSAGE_PROBABILITY = 0.08;
 
     public RandomScheduler(MessageMutatorService messageMutatorService, Transport transport) {
         super("Random", messageMutatorService, transport);
@@ -111,7 +113,6 @@ public class RandomScheduler extends BaseScheduler {
                 }
                 getTransport().applyMutation(
                         message.getEventId(),
-                        // FIXME: should not be doing type erasure here!
                         mutators.get(random.nextInt(mutators.size())));
                 getTransport().deliverEvent(message.getEventId());
 
@@ -168,5 +169,13 @@ public class RandomScheduler extends BaseScheduler {
         this.DELIVER_MESSAGE_PROBABILITY += this.DROP_MESSAGE_PROBABILITY;
         this.DROP_MESSAGE_PROBABILITY = 0;
         assert_probabilities();
+    }
+
+    @Override
+    public void resetParameters() {
+        this.dropMessages = true;
+        DELIVER_MESSAGE_PROBABILITY = RandomSchedulerConfig.DELIVER_MESSAGE_PROBABILITY;
+        DROP_MESSAGE_PROBABILITY = RandomSchedulerConfig.DROP_MESSAGE_PROBABILITY;
+        MUTATE_MESSAGE_PROBABILITY = RandomSchedulerConfig.MUTATE_MESSAGE_PROBABILITY;
     }
 }

@@ -21,4 +21,5 @@ public abstract class BaseScheduler {
 
   public abstract Optional<EventDecision> scheduleNext() throws Exception;
   public abstract void stopDropMessages();
+  public abstract void resetParameters();
 }

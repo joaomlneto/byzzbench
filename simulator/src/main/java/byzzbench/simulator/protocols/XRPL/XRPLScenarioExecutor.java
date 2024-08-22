@@ -12,8 +12,8 @@ import java.util.Set;
 import java.util.TreeSet;
 
 @Component
-public class XRPLScenarioExecutor extends ScenarioExecutor  {
-    private final int NUM_NODES = 3;
+public class XRPLScenarioExecutor extends ScenarioExecutor<XRPLLedger>  {
+    private final int NUM_NODES = 7;
 
 
     private List<XRPLReplica> replica_list;
@@ -27,9 +27,6 @@ public class XRPLScenarioExecutor extends ScenarioExecutor  {
     @Override
     public void setup() {
         setupForScenario3();
-        //transport.registerMessageMutators(new XRPLProposeMessageMutatorFactory());
-        //transport.registerMessageMutators(new XRPLSubmitMessageMutatorFactory());
-        //transport.registerMessageMutators(new XRPLValidateMessageMutatorFactory());
         this.terminationCondition = new XRPLTerminationCondition(replica_list);
     }
 
@@ -45,14 +42,16 @@ public class XRPLScenarioExecutor extends ScenarioExecutor  {
     private void setupDefault() {
         try {
             Set<String> nodeIds = new TreeSet<>();
+            List<String> unl = new ArrayList<>();
             for (int i = 0; i < NUM_NODES; i++) {
                 nodeIds.add(Character.toString((char) ('A' + i)));
+                unl.add(Character.toString((char) ('A' + i)));
             }
             this.replica_list = new ArrayList<>();
             XRPLLedger genesis = new XRPLLedger( "0", 1, new ArrayList<>());
             nodeIds.forEach(nodeId -> {
                 //XRPLMessageLog messageLog = new XRPLMessageLog();
-                XRPLReplica replica = new XRPLReplica(nodeId, nodeIds, this.transport, nodeIds, genesis); //nodes trust all nodes currently
+                XRPLReplica replica = new XRPLReplica(nodeId, nodeIds, this.transport, unl, genesis); //nodes trust all nodes currently
                 this.replica_list.add(replica);
                 transport.addNode(replica);
             });
@@ -72,14 +71,14 @@ public class XRPLScenarioExecutor extends ScenarioExecutor  {
             this.replica_list = new ArrayList<>();
             XRPLLedger genesis = new XRPLLedger( "0", 1, new ArrayList<>());
 
-            Set<String> unl1 = Set.of("A", "B", "C", "D", "E");
-            Set<String> unl2 = Set.of("C", "D", "E", "F", "G");
+            List<String> unl1 = List.of("A", "B", "C", "D", "E");
+            List<String> unl2 = List.of("C", "D", "E", "F", "G");
 
             XRPLReplica replica1 = new XRPLReplica("A", nodeIds, this.transport, unl1, genesis);
             XRPLReplica replica2 = new XRPLReplica("B", nodeIds, this.transport, unl1, genesis);
             XRPLReplica replica3 = new XRPLReplica("C", nodeIds, this.transport, unl1, genesis);
 
-            XRPLReplica replica4 = new XRPLReplica("D", nodeIds, this.transport, Set.of("D"), genesis);
+            XRPLReplica replica4 = new XRPLReplica("D", nodeIds, this.transport, List.of("D"), genesis);
 
             XRPLReplica replica5 = new XRPLReplica("E", nodeIds, this.transport, unl2, genesis);
             XRPLReplica replica6 = new XRPLReplica("F", nodeIds, this.transport, unl2, genesis);
