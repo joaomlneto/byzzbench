@@ -1,56 +1,45 @@
 package byzzbench.simulator.transport;
 
 import byzzbench.simulator.utils.NonNull;
-import com.fasterxml.jackson.annotation.JsonTypeName;
 import lombok.Builder;
 import lombok.Data;
 import lombok.experimental.SuperBuilder;
 
 import java.time.Instant;
 
-/**
- * Event that represents a message mutation.
- *
- * @see Event
- */
 @Data
-@JsonTypeName("MutateMessage")
 @SuperBuilder
-public class MutateMessageEvent implements Event {
+public abstract class BaseEvent implements Event {
     /**
      * The unique identifier of the event.
      */
-    private final long eventId;
-
-    /**
-     * The unique identifier of the client that generated the event.
-     */
-    private final String senderId;
-
-    /**
-     * The unique identifier of the receiving node
-     */
-    private final String recipientId;
-
-    /**
-     * The payload of the request.
-     */
     @NonNull
-    private final MutateMessageEventPayload payload;
+    private final long eventId;
 
     /**
      * The physical time at which the request was created.
      */
+    @Builder.Default
+    @NonNull
     private final Instant createdAt = Instant.now();
 
     /**
      * The physical time at which the request was delivered.
      */
+    @NonNull
     private transient Instant deliveredAt;
 
     /**
      * The status of the event.
      */
     @Builder.Default
+    @NonNull
     private Status status = Status.QUEUED;
+
+    public void setStatus(Status status) {
+        if (this.status != Status.QUEUED) {
+            throw new IllegalStateException("Can only change the status of a queued event");
+        }
+        this.status = status;
+    }
 }
