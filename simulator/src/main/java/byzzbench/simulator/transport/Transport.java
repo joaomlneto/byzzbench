@@ -438,9 +438,6 @@ public class Transport {
 
     public synchronized long setTimeout(Replica replica, Runnable runnable,
                            long timeout) {
-        // print the stack trace when this timeout is set
-        new Exception().printStackTrace();
-
         TimeoutEvent timeoutEvent = TimeoutEvent.builder()
                 .eventId(this.eventSeqNum.getAndIncrement())
                 .description("TIMEOUT")
