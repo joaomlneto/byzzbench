@@ -27,4 +27,5 @@ public abstract class BaseScheduler<T extends Serializable> {
 
   public abstract Optional<EventDecision> scheduleNext() throws Exception;
   public abstract void stopDropMessages();
+  public abstract void resetParameters();
 }
