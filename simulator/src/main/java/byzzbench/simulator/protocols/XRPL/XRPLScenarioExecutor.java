@@ -147,7 +147,6 @@ public class XRPLScenarioExecutor extends ScenarioExecutor  {
     private void initializeHeartbeats() {
         //The first heartbeat to initialize
         for (XRPLReplica xrplReplica : replica_list) {
-            System.out.print("Init: " + xrplReplica.getNodeId());
             xrplReplica.onHeartbeat();
         }
     }
