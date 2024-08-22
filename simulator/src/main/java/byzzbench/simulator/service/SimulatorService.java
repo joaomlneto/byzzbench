@@ -93,6 +93,7 @@ public class SimulatorService {
             
             int numTerm = 0;
             int numMaxedOut = 0;
+            int numErr = 0;
             try {
                 // run the scenario until the stop flag is set
                 while (!this.shouldStop) {
@@ -102,22 +103,30 @@ public class SimulatorService {
                     System.out.println("Running scenario #" + scenarioId);
 
                     boolean flag = true;
-                    while (flag) {
-                        this.invokeScheduleNext();
-                        num_events += 1;
+                        try {
+                            while (flag) {
+                                this.invokeScheduleNext();
+                                num_events += 1;
 
-                        if ((num_events % CHECK_TERMINATION_FREQ == 0 && this.terminationCondition.shouldTerminate())) {
-                            log.info("Termination condition has been satisfied for this run, terminating. . .");
-                            flag = false;
-                            numTerm += 1;
-                        }
+                                if ((num_events % CHECK_TERMINATION_FREQ == 0 && this.terminationCondition.shouldTerminate())) {
+                                    log.info("Termination condition has been satisfied for this run, terminating. . .");
+                                    flag = false;
+                                    numTerm += 1;
+                                }
 
-                        if (num_events > MAX_EVENTS_FOR_RUN) {
-                            log.info("Reached max # of actions for this run, terminating. . .");
+                                if (num_events > MAX_EVENTS_FOR_RUN) {
+                                    log.info("Reached max # of actions for this run, terminating. . .");
+                                    flag = false;
+                                    numMaxedOut += 1;
+                                }
+                            }
+                            
+                        } catch (Exception e) {
+                            System.out.println("Error in schedule " + scenarioId + ": " + e);
+                            e.printStackTrace();
                             flag = false;
-                            numMaxedOut += 1;
+                            numErr += 1;
                         }
-                    }
 
                     // run the scenario for the given number of events
                    /*  for (int i = 1; i < numActionsPerRun; i++) {
@@ -134,8 +143,9 @@ public class SimulatorService {
             } finally {
                 this.mode = SimulatorServiceMode.STOPPED;
                 
-                log.info("number of runs terminated by condition: " + numTerm);
-                log.info("number of runs terminated by max actions: " + numMaxedOut);
+                System.out.println("number of runs terminated by condition: " + numTerm);
+                System.out.println("number of runs terminated by max actions: " + numMaxedOut);
+                System.out.println("number of runs halted by error: " + numErr);
             }
         });
     }
