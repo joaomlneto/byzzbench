@@ -1,8 +1,8 @@
 package byzzbench.simulator.faults;
 
 import byzzbench.simulator.transport.Router;
+import byzzbench.simulator.utils.NonNull;
 import lombok.Getter;
-import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.ToString;
 

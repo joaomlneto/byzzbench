@@ -1,5 +1,7 @@
 package byzzbench.simulator.faults;
 
+import byzzbench.simulator.utils.NonNull;
+
 import java.io.Serializable;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
@@ -14,12 +16,14 @@ public interface Fault extends Predicate<FaultInput>, FaultBehavior, Serializabl
      * Gets the unique id of the fault.
      * @return the id of the fault
      */
+    @NonNull
     String getId();
 
     /**
      * Gets a human-readable name of the fault.
      * @return the name of the fault
      */
+    @NonNull
     String getName();
 
     /**

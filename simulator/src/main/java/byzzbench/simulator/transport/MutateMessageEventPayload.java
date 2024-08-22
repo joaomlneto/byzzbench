@@ -1,7 +1,7 @@
 package byzzbench.simulator.transport;
 
+import byzzbench.simulator.utils.NonNull;
 import lombok.Data;
-import org.springframework.lang.NonNull;
 
 import java.io.Serializable;
 

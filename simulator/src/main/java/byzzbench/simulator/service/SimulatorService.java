@@ -155,10 +155,12 @@ public class SimulatorService {
 
     private String convertEventListToString(Schedule schedule) {
         String res = "schedule: \n ";
+        /*
         for (Event event : schedule.getEvents()) {
             res += "eid: "+ event.getEventId() + " " + event.getSenderId() + " -> " + event.getRecipientId() + ", ";
         }
-        return res;
+        return res;*/
+        return schedule.getEvents().stream().map(Event::toString).reduce("", (acc, event) -> acc + event + ", ");
     }
 
     public enum SimulatorServiceMode {

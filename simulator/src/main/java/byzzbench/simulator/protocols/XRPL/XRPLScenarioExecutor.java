@@ -26,7 +26,7 @@ public class XRPLScenarioExecutor extends ScenarioExecutor  {
 
     @Override
     public void setup() {
-        setupDefault();
+        setupForScenario3();
         //transport.registerMessageMutators(new XRPLProposeMessageMutatorFactory());
         //transport.registerMessageMutators(new XRPLSubmitMessageMutatorFactory());
         //transport.registerMessageMutators(new XRPLValidateMessageMutatorFactory());
@@ -35,7 +35,7 @@ public class XRPLScenarioExecutor extends ScenarioExecutor  {
 
     @Override
     public void run() {
-        this.runScenario1();
+        this.runScenario3();
     }
 
     /*
@@ -85,7 +85,7 @@ public class XRPLScenarioExecutor extends ScenarioExecutor  {
             XRPLReplica replica6 = new XRPLReplica("F", nodeIds, this.transport, unl2, genesis);
             XRPLReplica replica7 = new XRPLReplica("G", nodeIds, this.transport, unl2, genesis);
 
-            this.replica_list.addAll(Set.of(replica1, replica2, replica3, replica4, replica5, replica6, replica7));
+            this.replica_list.addAll(List.of(replica1, replica2, replica3, replica4, replica5, replica6, replica7));
 
             replica_list.forEach(r -> {
                 transport.addNode(r);
@@ -147,6 +147,7 @@ public class XRPLScenarioExecutor extends ScenarioExecutor  {
     private void initializeHeartbeats() {
         //The first heartbeat to initialize
         for (XRPLReplica xrplReplica : replica_list) {
+            System.out.print("Init: " + xrplReplica.getNodeId());
             xrplReplica.onHeartbeat();
         }
     }

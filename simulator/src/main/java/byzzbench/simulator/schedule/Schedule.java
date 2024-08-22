@@ -2,12 +2,12 @@ package byzzbench.simulator.schedule;
 
 import byzzbench.simulator.ScenarioExecutor;
 import byzzbench.simulator.transport.Event;
+import byzzbench.simulator.utils.NonNull;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.ToString;
 import lombok.extern.jackson.Jacksonized;
-import org.springframework.lang.NonNull;
 
 import java.util.*;
 import java.util.function.Predicate;
@@ -32,7 +32,9 @@ public class Schedule {
     /**
      * The set of invariants that are violated by this schedule.
      */
+    @NonNull
     private final Set<Predicate<ScenarioExecutor>> brokenInvariants = new HashSet<>();
+
     @NonNull
     private boolean isFinalized;
 

@@ -98,7 +98,7 @@ public class Transport {
      * Adds an observer to the transport layer.
      * @param observer The observer to add.
      */
-    public void addObserver(TransportObserver observer) {
+    public synchronized void addObserver(TransportObserver observer) {
         this.observers.add(observer);
     }
 
@@ -106,7 +106,7 @@ public class Transport {
      * Removes an observer from the transport layer.
      * @param observer The observer to remove.
      */
-    public void removeObserver(TransportObserver observer) {
+    public synchronized void removeObserver(TransportObserver observer) {
         this.observers.remove(observer);
     }
 
@@ -123,7 +123,7 @@ public class Transport {
         this.addNetworkFault(new HealNodeNetworkFault(replica.getNodeId()));
     }
 
-    public void addNetworkFault(Fault fault) {
+    public synchronized void addNetworkFault(Fault fault) {
         this.networkFaults.put(fault.getId(), fault);
     }
 
@@ -308,7 +308,7 @@ public class Transport {
 
         this.observers.forEach(o -> o.onEventDelivered(e));
 
-        log.info("Delivered " + e.getEventId() + ": " + e.getSenderId() + "->" + e.getRecipientId());
+        log.info("Delivered " + e);
     }
 
     /**
@@ -324,7 +324,7 @@ public class Transport {
         }
         e.setStatus(Event.Status.DROPPED);
         this.observers.forEach(o -> o.onEventDropped(e));
-        log.info("Dropped: " + e.getSenderId() + "->" + e.getRecipientId());
+        log.info("Dropped: " + e);
     }
 
     /**
@@ -406,7 +406,7 @@ public class Transport {
         log.info("Mutated: " + m);
     }
 
-    public void applyFault(String faultId) {
+    public synchronized void applyFault(String faultId) {
         Fault fault = this.networkFaults.get(faultId);
         if (fault == null) {
             throw new IllegalArgumentException("Fault not found: " + faultId);
@@ -414,7 +414,7 @@ public class Transport {
         this.applyFault(fault);
     }
 
-    public void applyFault(Fault fault) {
+    public synchronized void applyFault(Fault fault) {
         // create input for the fault
         FaultInput input = new FaultInput(this.scenario);
 
@@ -429,8 +429,6 @@ public class Transport {
         // create a new event for the fault and append it to the schedule
         GenericFaultEvent faultEvent = GenericFaultEvent.builder()
                 .eventId(this.eventSeqNum.getAndIncrement())
-                .senderId("none")
-                .recipientId("none")
                 .payload(fault)
                 .build();
         faultEvent.setStatus(Event.Status.DELIVERED);
@@ -440,6 +438,9 @@ public class Transport {
 
     public synchronized long setTimeout(Replica replica, Runnable runnable,
                            long timeout) {
+        // print the stack trace when this timeout is set
+        new Exception().printStackTrace();
+
         TimeoutEvent timeoutEvent = TimeoutEvent.builder()
                 .eventId(this.eventSeqNum.getAndIncrement())
                 .description("TIMEOUT")
@@ -449,6 +450,7 @@ public class Transport {
                 .build();
         this.appendEvent(timeoutEvent);
         this.observers.forEach(o -> o.onTimeout(timeoutEvent));
+
 
         log.info("Timeout set for " + replica.getNodeId() + " in " +
                 timeout + "ms: " + timeoutEvent);
@@ -463,7 +465,7 @@ public class Transport {
                         .filter(
                                 e
                                         -> e instanceof TimeoutEvent t &&
-                                        t.getSenderId().equals(replica.getNodeId()) &&
+                                        t.getNodeId().equals(replica.getNodeId()) &&
                                         t.getStatus() == Event.Status.QUEUED)
                         .map(Event::getEventId)
                         .toList();
@@ -483,14 +485,14 @@ public class Transport {
         return nodes.get(nodeId);
     }
 
-    public List<Fault> getEnabledNetworkFaults() {
+    public synchronized List<Fault> getEnabledNetworkFaults() {
         FaultInput input = new FaultInput(this.scenario);
         return this.networkFaults.values().stream()
                 .filter(f -> f.test(input))
                 .toList();
     }
 
-    public Fault getNetworkFault(String faultId) {
+    public synchronized Fault getNetworkFault(String faultId) {
         return this.networkFaults.get(faultId);
     }
 }
