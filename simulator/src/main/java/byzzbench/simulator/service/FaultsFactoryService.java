@@ -15,7 +15,7 @@ public class FaultsFactoryService {
     /**
      * Map of fault behaviors by id.
      */
-    Map<String, FaultBehavior> faultBehaviors = new HashMap<>();
+    SortedMap<String, FaultBehavior> faultBehaviors = new TreeMap<>();
 
     /**
      * Map of fault behaviors by input class.

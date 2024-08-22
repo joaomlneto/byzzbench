@@ -1,10 +1,12 @@
 package byzzbench.simulator.state.adob;
 
+import byzzbench.simulator.utils.NonNull;
 import lombok.Getter;
+import lombok.experimental.SuperBuilder;
 
 import java.io.Serializable;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.SortedSet;
+import java.util.TreeSet;
 
 
 /**
@@ -12,6 +14,7 @@ import java.util.Set;
  *
  * @see <a href="https://flint.cs.yale.edu/flint/publications/adob-tr.pdf">AdoB</a>
  */
+@SuperBuilder
 public class MethodCache extends AdobCache {
     @Getter
     private final Serializable method;
@@ -20,14 +23,15 @@ public class MethodCache extends AdobCache {
      * The set of nodes that voted for this commit.
      */
     @Getter
-    private final Set<String> voters = new HashSet<>();
+    private final SortedSet<String> voters = new TreeSet<>();
 
     /**
      * The node that initiated the commit.
      */
+    @NonNull
     private final String initiator;
 
-    public MethodCache(long id, AdobCache parent, Serializable method, String initialVoter) {
+    public MethodCache(long id, AdobCache parent, Serializable method, @NonNull String initialVoter) {
         super(id, parent);
         this.method = method;
         this.initiator = initialVoter;

@@ -306,7 +306,7 @@ public class FastHotStuffReplica extends LeaderBasedProtocolReplica {
 
     public <K, V extends GenericVoteMessage> Optional<Set<V>> canMakeQc(Map<K, Set<V>> collection, K key, V value) {
         boolean before = collection.containsKey(key) && collection.get(key).size() >= this.computeQuorumSize();
-        collection.computeIfAbsent(key, k -> new HashSet<>()).add(value);
+        collection.computeIfAbsent(key, k -> new TreeSet<>()).add(value);
         boolean after = collection.containsKey(key) && collection.get(key).size() >= this.computeQuorumSize();
         if (after && !before) {
             return Optional.of(collection.get(key));

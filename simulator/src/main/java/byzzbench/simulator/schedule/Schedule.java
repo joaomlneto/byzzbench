@@ -33,7 +33,7 @@ public class Schedule {
      * The set of invariants that are violated by this schedule.
      */
     @NonNull
-    private final Set<Predicate<ScenarioExecutor>> brokenInvariants = new HashSet<>();
+    private final SortedSet<Predicate<ScenarioExecutor>> brokenInvariants = new TreeSet<>();
 
     @NonNull
     private boolean isFinalized;

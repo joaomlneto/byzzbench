@@ -24,7 +24,7 @@ public class MessageMutatorService {
     /**
      * Map of class to the set of mutators that can mutate it.
      */
-    private final Map<Class<? extends Serializable>, Set<MessageMutationFault>> mutatorsByClass = new HashMap<>();
+    private final Map<Class<? extends Serializable>, SortedSet<MessageMutationFault>> mutatorsByClass = new HashMap<>();
 
     public MessageMutatorService(List<MessageMutationFault> mutators, List<? extends MessageMutatorFactory> mutatorFactories) {
         // add mutators to the map
@@ -49,7 +49,7 @@ public class MessageMutatorService {
         // populate mutatorsByClass
         for (MessageMutationFault mutator : this.mutatorsMap.values()) {
             for (Class<? extends Serializable> clazz : mutator.getInputClasses()) {
-                this.mutatorsByClass.computeIfAbsent(clazz, k -> new HashSet<>()).add(mutator);
+                this.mutatorsByClass.computeIfAbsent(clazz, k -> new TreeSet<>()).add(mutator);
             }
         }
     }
@@ -62,7 +62,7 @@ public class MessageMutatorService {
     }
 
     public List<MessageMutationFault> getMutatorsForClass(Class<? extends Serializable> clazz) {
-        return new ArrayList<>(this.mutatorsByClass.getOrDefault(clazz, Collections.emptySet()));
+        return new ArrayList<>(this.mutatorsByClass.getOrDefault(clazz, Collections.emptySortedSet()));
     }
 
     public List<MessageMutationFault> getMutatorsForEvent(Event event) {

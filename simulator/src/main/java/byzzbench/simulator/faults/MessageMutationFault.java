@@ -2,8 +2,9 @@ package byzzbench.simulator.faults;
 
 import byzzbench.simulator.transport.Event;
 import byzzbench.simulator.transport.MessageEvent;
+import byzzbench.simulator.utils.NonNull;
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
-import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.ToString;
 
@@ -18,7 +19,8 @@ import java.util.Optional;
 @Getter
 @ToString
 @RequiredArgsConstructor
-public abstract class MessageMutationFault implements Fault {
+@EqualsAndHashCode
+public abstract class MessageMutationFault implements Fault, Comparable<MessageMutationFault> {
     @NonNull
     private final String id;
     @NonNull
@@ -52,4 +54,8 @@ public abstract class MessageMutationFault implements Fault {
                 && canMutate(messageEvent.getPayload());
     }
 
+    @Override
+    public int compareTo(MessageMutationFault other) {
+        return id.compareTo(other.id);
+    }
 }
