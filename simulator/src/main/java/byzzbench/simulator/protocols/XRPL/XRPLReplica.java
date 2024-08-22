@@ -24,7 +24,7 @@ import lombok.Getter;
 @lombok.extern.java.Log
 public class XRPLReplica extends Replica<XRPLLedger> {
 
-    private @Getter Set<String> ourUNL;  //The nodeIDs of nodes in our UNL, our "peers"
+    private @Getter List<String> ourUNL;  //The nodeIDs of nodes in our UNL, our "peers"
     private @Getter List<String> pendingTransactions; //Our candidate set
     private @Getter XRPLReplicaState state;
     private @Getter Map<String, XRPLProposal> currPeerProposals; 
@@ -44,7 +44,7 @@ public class XRPLReplica extends Replica<XRPLLedger> {
 
     private @Getter XRPLLedgerTreeNode tree;
 
-    protected XRPLReplica(String nodeId, Set<String> nodeIds, Transport<XRPLLedger> transport, Set<String> UNL, XRPLLedger prevLedger_) {
+    protected XRPLReplica(String nodeId, Set<String> nodeIds, Transport<XRPLLedger> transport, List<String> UNL, XRPLLedger prevLedger_) {
         super(nodeId, nodeIds, transport, new TotalOrderCommitLog<>());
         this.ourUNL = UNL;
         this.result = new XRPLConsensusResult();
@@ -55,6 +55,7 @@ public class XRPLReplica extends Replica<XRPLLedger> {
         this.pendingTransactions = new ArrayList<>();
         this.validations = new HashMap<>();
         this.validLedger = prevLedger_;
+        this.currWorkLedger = this.validLedger;
         this.tree = new XRPLLedgerTreeNode(prevLedger_);
 
         this.recentPeerPositions = new HashMap<>();
@@ -107,44 +108,46 @@ public class XRPLReplica extends Replica<XRPLLedger> {
 
     private void validateMessageHandler(XRPLValidateMessage msg) {
         try {
-            if (msg.getLedger().getSeq() == this.currWorkLedger.getSeq() && msg.getLedger().isSignedBy(msg.getSenderNodeId())) {
-                XRPLLedgerTreeNode n = new XRPLLedgerTreeNode(msg.getLedger());
-                this.tree.addChild(n);
-                this.validations.put(msg.getSenderNodeId(), msg.getLedger());
+            if (msg.getLedger().isSignedBy(msg.getSenderNodeId())) {
+                if (msg.getLedger().getSeq() == this.currWorkLedger.getSeq()) {
+                    XRPLLedgerTreeNode n = new XRPLLedgerTreeNode(msg.getLedger());
+                    this.tree.addChild(n);
+                    this.validations.put(msg.getSenderNodeId(), msg.getLedger());
 
-                //count validations for the recieved ledger
-                int valCount = 0;
-                for (String nodeId : ourUNL) {
-                    XRPLLedger ledger = validations.get(nodeId);
-                    if (!(ledger == null)) {
-                        if (ledger.equals(this.currWorkLedger)) {
-                            valCount += 1;
-                        }
-                    }
-                }
-
-                //if enough nodes validated, we can update validLedger
-                if (valCount >= (int) (0.8 * this.ourUNL.size()) && (this.currWorkLedger.getSeq() > this.validLedger.getSeq())) {
-                    this.validLedger = this.currWorkLedger;
-                    List<String> newPendingTxes = new ArrayList<>();
-                    for (String tx : this.pendingTransactions) {
-                        newPendingTxes.add(tx);
-                    }
-                    for (String tx : this.validLedger.transactions) {
-                        for (String pendingtx : this.pendingTransactions) {
-                            if (!pendingtx.equals(tx)) {
-                                newPendingTxes.remove(tx);
+                    //count validations for the recieved ledger
+                    int valCount = 0;
+                    for (String nodeId : ourUNL) {
+                        XRPLLedger ledger = validations.get(nodeId);
+                        if (!(ledger == null)) {
+                            if (ledger.equals(this.currWorkLedger)) {
+                                valCount += 1;
                             }
                         }
                     }
-                    this.pendingTransactions = newPendingTxes;
-                    //Exeucute txes
+
+                    //if enough nodes validated, we can update validLedger
+                    if (valCount >= (int) (0.8 * this.ourUNL.size()) && (this.currWorkLedger.getSeq() > this.validLedger.getSeq())) {
+                        this.validLedger = this.currWorkLedger;
+                        List<String> newPendingTxes = new ArrayList<>();
+                        for (String tx : this.pendingTransactions) {
+                            newPendingTxes.add(tx);
+                        }
+                        for (String tx : this.validLedger.transactions) {
+                            for (String pendingtx : this.pendingTransactions) {
+                                if (!pendingtx.equals(tx)) {
+                                    newPendingTxes.remove(tx);
+                                }
+                            }
+                        }
+                        this.pendingTransactions = newPendingTxes;
+                        //Exeucute txes
+                    }
                 }
             } else {
                 throw new IllegalArgumentException("message signature invalid");
             }
         } catch (Exception e) {
-            log.info("Couldn't handle validate message in node " + this.getNodeId() + ": " + e + ": " + e.getMessage());
+            System.out.println("Couldn't handle validate message in node " + this.getNodeId() + ": " + e + ": " + e.getMessage());
             e.printStackTrace();
         }
     }
@@ -159,7 +162,7 @@ public class XRPLReplica extends Replica<XRPLLedger> {
             XRPLProposal prop = msg.getProposal();
             Deque<XRPLProposal> props = this.recentPeerPositions.get(prop.getNodeId());
             if (props == null) {
-                throw new RuntimeException("node not in our UNL");
+                //throw new RuntimeException("node not in our UNL");
             }
             if (props.size() >= 10) {
                 props.removeFirst();
@@ -476,6 +479,18 @@ public class XRPLReplica extends Replica<XRPLLedger> {
 
     private XRPLLedger getPreferredLedger(XRPLLedger L) {
         XRPLLedgerTreeNode node = findInTree(L.getId(), tree);
+        // if (node == null) {
+        //     System.out.println("Got null for node in tree, in: " + this.getNodeId());
+        //     System.out.println("Tried to find ledger with hash: " + L.getId());
+        //     System.out.println("tree: " + tree.getLedger().getId());
+        //     for (XRPLLedgerTreeNode nde : tree.getChildren()) {
+        //         System.out.println("child: " + nde.getLedger().getId());
+        //         for (XRPLLedgerTreeNode gnode : nde.getChildren()) {
+        //             System.out.println("grandchild: " + gnode.getLedger().getId());
+        //         }
+        //     }
+            
+        // }
 
         if (node.getChildren().isEmpty()) {
             return node.getLedger();
