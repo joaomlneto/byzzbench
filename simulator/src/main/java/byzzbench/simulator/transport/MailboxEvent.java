@@ -5,5 +5,5 @@ package byzzbench.simulator.transport;
  * This interface is used to ensure that all events have a recipient ID.
  */
 public interface MailboxEvent {
-    String getRecipientId();
+  String getRecipientId();
 }

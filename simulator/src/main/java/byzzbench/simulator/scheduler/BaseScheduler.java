@@ -3,11 +3,10 @@ package byzzbench.simulator.scheduler;
 import byzzbench.simulator.service.MessageMutatorService;
 import byzzbench.simulator.transport.Transport;
 import byzzbench.simulator.utils.NonNull;
+import java.util.Optional;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
-
-import java.util.Optional;
 
 /**
  * Abstract base class for a scheduler.
@@ -15,7 +14,9 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public abstract class BaseScheduler {
   @NonNull @Getter private final String id;
-  @NonNull @Getter(AccessLevel.PROTECTED) private final MessageMutatorService messageMutatorService;
+  @NonNull
+  @Getter(AccessLevel.PROTECTED)
+  private final MessageMutatorService messageMutatorService;
   @NonNull @Getter(AccessLevel.PROTECTED) private final Transport transport;
   @Getter protected boolean dropMessages = true;
 

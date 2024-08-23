@@ -2,7 +2,6 @@ package byzzbench.simulator.utils;
 
 import jakarta.annotation.Nonnull;
 import jakarta.validation.constraints.NotNull;
-
 import java.lang.annotation.*;
 
 /**
@@ -22,5 +21,4 @@ import java.lang.annotation.*;
 @Nonnull
 @lombok.NonNull
 @NotNull
-public @interface NonNull {
-}
+public @interface NonNull {}

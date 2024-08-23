@@ -14,19 +14,14 @@ import lombok.With;
 @Data
 @With
 public class XRPLSubmitMessage extends MessagePayload {
-    private String tx;
+  private String tx;
 
-    public XRPLSubmitMessage(String tx_) {
-        this.tx = tx_;
-    }
+  public XRPLSubmitMessage(String tx_) { this.tx = tx_; }
 
-    @Override
-    public String getType() {
-        return "SUBMIT";
-    }
+  @Override
+  public String getType() {
+    return "SUBMIT";
+  }
 
-    public String getTx() {
-        return tx;
-    }
-
+  public String getTx() { return tx; }
 }

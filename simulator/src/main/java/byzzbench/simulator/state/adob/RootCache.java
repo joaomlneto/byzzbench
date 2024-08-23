@@ -9,19 +9,18 @@ import lombok.experimental.SuperBuilder;
  */
 @SuperBuilder
 public class RootCache extends AdobCache {
-    protected RootCache(long id) {
-        super(id, null);
-    }
+  protected RootCache(long id) { super(id, null); }
 
-    @Override
-    public String getCacheType() {
-        return "Root";
-    }
+  @Override
+  public String getCacheType() {
+    return "Root";
+  }
 
-    @Override
-    @JsonIgnore
-    public byte getCRank() {
-        //throw new UnsupportedOperationException("Root cache does not have a rank.");
-        return -1;
-    }
+  @Override
+  @JsonIgnore
+  public byte getCRank() {
+    // throw new UnsupportedOperationException("Root cache does not have a
+    // rank.");
+    return -1;
+  }
 }

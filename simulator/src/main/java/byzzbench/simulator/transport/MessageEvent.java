@@ -14,5 +14,4 @@ import lombok.experimental.SuperBuilder;
 @Data
 @JsonTypeName("Message")
 @SuperBuilder
-public class MessageEvent extends BaseMessageEvent<MessagePayload> {
-}
+public class MessageEvent extends BaseMessageEvent<MessagePayload> {}

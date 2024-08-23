@@ -1,12 +1,11 @@
 package byzzbench.simulator.transport;
 
 import com.fasterxml.jackson.annotation.JsonTypeName;
+import java.time.Instant;
 import lombok.Builder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.experimental.SuperBuilder;
-
-import java.time.Instant;
 
 /**
  * Event that represents a timeout.
@@ -48,8 +47,7 @@ public class TimeoutEvent extends BaseEvent implements MailboxEvent {
   /**
    * The status of the event.
    */
-  @Builder.Default
-  private Status status = Status.QUEUED;
+  @Builder.Default private Status status = Status.QUEUED;
 
   /**
    * The physical time at which the Timeout was delivered.
