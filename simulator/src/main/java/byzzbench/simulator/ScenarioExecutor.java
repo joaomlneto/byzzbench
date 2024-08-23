@@ -64,7 +64,7 @@ public abstract class ScenarioExecutor {
      */
     protected ScenarioExecutor(String id, MessageMutatorService messageMutatorService, SchedulesService schedulesService) {
         this.id = id;
-        this.transport = new Transport(this, messageMutatorService, schedulesService);
+        this.transport = new Transport(this, schedulesService);
         this.scheduler = new RandomScheduler(messageMutatorService, transport);
         this.setup();
 

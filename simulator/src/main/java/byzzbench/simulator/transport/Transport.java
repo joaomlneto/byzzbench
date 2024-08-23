@@ -8,7 +8,6 @@ import byzzbench.simulator.faults.FaultInput;
 import byzzbench.simulator.faults.HealNodeNetworkFault;
 import byzzbench.simulator.faults.IsolateProcessNetworkFault;
 import byzzbench.simulator.schedule.Schedule;
-import byzzbench.simulator.service.MessageMutatorService;
 import byzzbench.simulator.service.SchedulesService;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Getter;
@@ -30,12 +29,10 @@ import java.util.concurrent.atomic.AtomicLong;
 @Log
 @ToString
 public class Transport {
-    private final ScenarioExecutor scenario;
-
     /**
-     * The service for storing and managing schedules.
+     * The scenario
      */
-    private final MessageMutatorService messageMutatorService;
+    private final ScenarioExecutor scenario;
 
     /**
      * The service for storing and managing schedules.
@@ -88,9 +85,8 @@ public class Transport {
     @JsonIgnore
     private Schedule schedule;
 
-    public Transport (ScenarioExecutor scenario, MessageMutatorService messageMutatorService, SchedulesService schedulesService) {
+    public Transport (ScenarioExecutor scenario, SchedulesService schedulesService) {
         this.scenario = scenario;
-        this.messageMutatorService = messageMutatorService;
         this.schedulesService = schedulesService;
         this.schedule = this.schedulesService.addSchedule(scenario);
     }
@@ -335,17 +331,6 @@ public class Transport {
      */
     public synchronized Event getEvent(long eventId) {
         return events.get(eventId);
-    }
-
-    /**
-     * Applies a mutation to a message and appends the fault event to the schedule.
-     * @param eventId The ID of the message to mutate.
-     * @param faultId The ID of the fault to apply.
-     */
-    public synchronized void applyMutation(long eventId, String faultId) {
-        // FIXME: should not be doing type erasure here!
-        Fault fault = this.messageMutatorService.getMutator(faultId);
-        this.applyMutation(eventId, fault);
     }
 
     /**

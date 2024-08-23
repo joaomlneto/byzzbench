@@ -278,7 +278,8 @@ public class SimulatorController {
      */
     @PostMapping("/event/{eventId}/mutate/{mutatorId}")
     public void mutateMessage(@PathVariable Long eventId, @PathVariable String mutatorId) {
-        simulatorService.getScenarioExecutor().getTransport().applyMutation(eventId, mutatorId);
+        MessageMutationFault mutator = this.messageMutatorService.getMutator(mutatorId);
+        simulatorService.getScenarioExecutor().getTransport().applyMutation(eventId, mutator);
     }
 
     /**
