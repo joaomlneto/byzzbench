@@ -10,7 +10,7 @@ import lombok.RequiredArgsConstructor;
 import java.util.Optional;
 
 @RequiredArgsConstructor
-public class RoundFaultPrecondition implements FaultPredicate<MessageEvent> {
+public class RoundFaultPrecondition implements FaultPredicate {
   private final long round;
 
   @Override
@@ -24,7 +24,7 @@ public class RoundFaultPrecondition implements FaultPredicate<MessageEvent> {
   }
 
   @Override
-  public boolean test(FaultInput<MessageEvent> ctx) {
+  public boolean test(FaultInput ctx) {
     Optional<Event> event = ctx.getEvent();
 
     if (event.isEmpty()) {

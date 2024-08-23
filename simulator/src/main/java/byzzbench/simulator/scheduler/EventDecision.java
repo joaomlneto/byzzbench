@@ -1,11 +1,12 @@
 package byzzbench.simulator.scheduler;
 
+import byzzbench.simulator.utils.NonNull;
 import lombok.Data;
 
 @Data
 public class EventDecision {
-    private final DecisionType decision;
-    private final long eventId;
+    @NonNull private final DecisionType decision;
+    @NonNull private final long eventId;
 
     public enum DecisionType {
         DELIVERED,

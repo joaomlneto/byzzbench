@@ -9,8 +9,8 @@ import java.io.Serializable;
  */
 @Getter
 public abstract class MessagePayload implements Serializable {
-  public boolean signed;
-  public String signedBy;
+  private boolean signed;
+  private String signedBy;
   public abstract String getType();
 
 

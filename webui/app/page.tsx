@@ -8,8 +8,18 @@ import { ImportScheduleButton } from "@/components/ImportScheduleButton";
 import { NodeList } from "@/components/NodeList";
 import { RunningSimulatorStats } from "@/components/RunningSimulatorStats";
 import { ScheduleDetails, ScheduleList } from "@/components/Schedule";
-import { useGetMode, useGetSchedule } from "@/lib/byzzbench-client";
-import { Accordion, Container, ScrollArea, Stack } from "@mantine/core";
+import {
+  useGetMode,
+  useGetScenario,
+  useGetSchedule,
+} from "@/lib/byzzbench-client";
+import {
+  Accordion,
+  Container,
+  JsonInput,
+  ScrollArea,
+  Stack,
+} from "@mantine/core";
 import { useLocalStorage } from "@mantine/hooks";
 import React from "react";
 
@@ -23,6 +33,7 @@ export default function Home() {
   const { data: schedule } = useGetSchedule();
 
   const mode = useGetMode();
+  const scenarioQuery = useGetScenario();
 
   if (mode.data?.data === "RUNNING") {
     return (
@@ -41,6 +52,17 @@ export default function Home() {
           value={selectedAccordionEntries}
           onChange={setSelectedAccordionEntries}
         >
+          <Accordion.Item key="scenario" value="scenario">
+            <Accordion.Control>Scenario Configuration</Accordion.Control>
+            <Accordion.Panel>
+              <JsonInput
+                value={JSON.stringify(scenarioQuery.data?.data, null, 2)}
+                autosize
+                maxRows={30}
+                readOnly
+              />
+            </Accordion.Panel>
+          </Accordion.Item>
           <Accordion.Item key="clients" value="clients">
             <Accordion.Control>Clients</Accordion.Control>
             <Accordion.Panel>

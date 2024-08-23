@@ -11,7 +11,7 @@ import java.util.Set;
 
 @Log
 @ToString(callSuper = true)
-public class DummyReplica<O extends Serializable, R extends Serializable> extends Replica<O> {
+public class DummyReplica extends Replica {
 
     public DummyReplica(String replicaId,
                         Set<String> nodeIds,

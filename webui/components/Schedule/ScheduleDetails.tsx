@@ -11,7 +11,8 @@ import {
   MutateMessageEvent,
   Schedule,
 } from "@/lib/byzzbench-client";
-import { Button, Container, Group, Title } from "@mantine/core";
+import { Button, Container, Group, Pagination, Title } from "@mantine/core";
+import { usePagination } from "@mantine/hooks";
 import { openContextModal } from "@mantine/modals";
 import { showNotification } from "@mantine/notifications";
 import { useQueryClient } from "@tanstack/react-query";
@@ -28,7 +29,10 @@ export type ScheduleDetailsProps = {
   hideSaveButton?: boolean;
   hideDownloadButton?: boolean;
   hideDetailsButton?: boolean;
+  entriesPerPage?: number;
 };
+
+const ENTRIES_PER_PAGE = 50;
 
 export const ScheduleDetails = ({
   title,
@@ -39,10 +43,15 @@ export const ScheduleDetails = ({
   hideSaveButton = false,
   hideDownloadButton = false,
   hideDetailsButton = false,
+  entriesPerPage = ENTRIES_PER_PAGE,
   schedule,
 }: ScheduleDetailsProps) => {
   const queryClient = useQueryClient();
   const router = useRouter();
+  const numPages = Math.ceil((schedule.events?.length ?? 0) / entriesPerPage);
+  const pagination = usePagination({ total: numPages, initialPage: 1 });
+  const start = (pagination.active - 1) * entriesPerPage;
+  const end = start + entriesPerPage;
 
   return (
     <Container size="sm">
@@ -56,7 +65,7 @@ export const ScheduleDetails = ({
             size="xs"
             onClick={async () => {
               console.log("Materializing Schedule: ", schedule);
-              await changeScenario({ scenarioId: schedule.scenarioId });
+              await changeScenario({ scenarioId: schedule.scenarioId }, {});
               let i = 0;
               let hasNotifiedMismatchedEvents = false;
 
@@ -110,6 +119,7 @@ export const ScheduleDetails = ({
                     await enableNetworkFault(
                       (event as GenericFaultEvent).payload!.id!,
                     );
+                    break;
                   default:
                     console.error("Unknown event type", event);
                 }
@@ -178,10 +188,19 @@ export const ScheduleDetails = ({
           </Button>
         )}
       </Group>
-      {!hideSchedule &&
-        schedule.events?.map((event) => (
-          <EventCard event={event} key={event.eventId} />
-        ))}
+      {!hideSchedule && (
+        <>
+          <Pagination
+            total={numPages}
+            onChange={pagination.setPage}
+            siblings={3}
+            boundaries={2}
+          />
+          {schedule.events
+            ?.slice(start, end)
+            .map((event) => <EventCard event={event} key={event.eventId} />)}
+        </>
+      )}
     </Container>
   );
 };

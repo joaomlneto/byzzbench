@@ -2,20 +2,17 @@ package byzzbench.simulator.state;
 
 import lombok.Getter;
 
-import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
 /**
  * Commit log for total order replication, backed by a list.
- *
- * @param <T> The type of the entries in the commit log.
  */
 @Getter
-public class TotalOrderCommitLog<T extends Serializable> extends CommitLog<T> {
-  private final List<T> log = new ArrayList<>();
+public class TotalOrderCommitLog extends CommitLog {
+  private final List<LogEntry> log = new ArrayList<>();
 
-  public void add(T operation) { log.add(operation); }
+  public void add(LogEntry operation) { log.add(operation); }
 
   @Override
   public int getLength() {
@@ -23,7 +20,7 @@ public class TotalOrderCommitLog<T extends Serializable> extends CommitLog<T> {
   }
 
     @Override
-    public T get(int index) {
+    public LogEntry get(int index) {
         return log.get(index);
     }
 }

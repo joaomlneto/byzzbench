@@ -23,7 +23,13 @@ export const ScenarioSelect = () => {
           console.log("Scenario is null");
           return;
         }
-        void changeScenario({ scenarioId: value })
+        void changeScenario(
+          { scenarioId: value },
+          {
+            one: 1,
+            two: 2,
+          },
+        )
           .then(async () => {
             queryClient.invalidateQueries();
             console.log("Scenario changed to ", value);

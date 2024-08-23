@@ -1,31 +1,25 @@
 package byzzbench.simulator.scheduler;
 
-import byzzbench.simulator.Replica;
 import byzzbench.simulator.faults.MessageMutationFault;
 import byzzbench.simulator.service.MessageMutatorService;
-import byzzbench.simulator.state.CommitLog;
 import byzzbench.simulator.transport.*;
 import lombok.extern.java.Log;
 
-import java.io.Serializable;
 import java.util.List;
 import java.util.Optional;
 import java.util.Random;
 
 /**
  * A scheduler that randomly selects events to deliver, drop, mutate or timeout.
- *
- * @param <T> The type of the entries in the {@link CommitLog} of each {@link
- *            Replica}.
  */
 @Log
-public class RandomScheduler<T extends Serializable> extends BaseScheduler<T> {
+public class RandomScheduler extends BaseScheduler {
     private double DELIVER_MESSAGE_PROBABILITY = RandomSchedulerConfig.DELIVER_MESSAGE_PROBABILITY;
     private double DROP_MESSAGE_PROBABILITY = RandomSchedulerConfig.DROP_MESSAGE_PROBABILITY;
     private double MUTATE_MESSAGE_PROBABILITY = RandomSchedulerConfig.MUTATE_MESSAGE_PROBABILITY;
     Random random = new Random();
 
-    public RandomScheduler(MessageMutatorService messageMutatorService, Transport<T> transport) {
+    public RandomScheduler(MessageMutatorService messageMutatorService, Transport transport) {
         super("Random", messageMutatorService, transport);
         assert_probabilities();
     }
@@ -111,7 +105,7 @@ public class RandomScheduler<T extends Serializable> extends BaseScheduler<T> {
                 if (!(message instanceof MessageEvent me)) {
                     throw new IllegalArgumentException("Invalid message type");
                 }
-                List<MessageMutationFault<?>> mutators =
+                List<MessageMutationFault> mutators =
                         this.getMessageMutatorService().getMutatorsForEvent(me);
                 if (mutators.isEmpty()) {
                     // no mutators, return nothing

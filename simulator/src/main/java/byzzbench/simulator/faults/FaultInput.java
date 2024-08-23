@@ -2,28 +2,33 @@ package byzzbench.simulator.faults;
 
 import byzzbench.simulator.ScenarioExecutor;
 import byzzbench.simulator.transport.Event;
-import jakarta.validation.constraints.NotNull;
+import byzzbench.simulator.utils.NonNull;
 import lombok.Getter;
 
-import java.io.Serializable;
 import java.util.Optional;
 
-public class FaultInput<T extends Serializable> {
+public class FaultInput {
     @Getter
-    private final ScenarioExecutor<T> scenario;
+    @NonNull
+    private final ScenarioExecutor scenario;
+
     private final Event eventOptional;
 
-    public FaultInput(@NotNull ScenarioExecutor<T> scenario, @NotNull Event event) {
+    public FaultInput(@NonNull ScenarioExecutor scenario, @NonNull Event event) {
         this.scenario = scenario;
         this.eventOptional = event;
     }
 
-    public FaultInput(ScenarioExecutor<T> scenario) {
+    public FaultInput(@NonNull ScenarioExecutor scenario) {
         this.scenario = scenario;
         this.eventOptional = null;
     }
 
     public Optional<Event> getEvent() {
         return Optional.ofNullable(eventOptional);
+    }
+
+    public boolean hasEvent() {
+        return eventOptional != null;
     }
 }

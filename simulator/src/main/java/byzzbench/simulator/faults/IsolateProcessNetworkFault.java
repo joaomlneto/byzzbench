@@ -6,15 +6,13 @@ import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.ToString;
 
-import java.io.Serializable;
-
 /**
  * A fault that isolates a given node from the network
  */
 @Getter
 @ToString
 @RequiredArgsConstructor
-public class IsolateProcessNetworkFault<T extends Serializable> implements Fault<T> {
+public class IsolateProcessNetworkFault implements Fault {
     /**
      * The ID of the node to isolate
      */
@@ -35,7 +33,7 @@ public class IsolateProcessNetworkFault<T extends Serializable> implements Fault
      * @return True if the node is not already isolated, false otherwise
      */
     @Override
-    public final boolean test(FaultInput<T> ctx) {
+    public final boolean test(FaultInput ctx) {
         Router router = ctx.getScenario().getTransport().getRouter();
         return router.getNodePartition(nodeId) == Router.DEFAULT_PARTITION;
     }
@@ -45,7 +43,7 @@ public class IsolateProcessNetworkFault<T extends Serializable> implements Fault
      * @param ctx The context of the fault
      */
     @Override
-    public void accept(FaultInput<T> ctx) {
+    public void accept(FaultInput ctx) {
         Router router = ctx.getScenario().getTransport().getRouter();
         router.isolateNode(nodeId);
     }

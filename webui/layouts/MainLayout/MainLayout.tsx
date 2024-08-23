@@ -5,6 +5,7 @@ import {
   ForceSyncActionIcon,
   ResetActionIcon,
   SaveScheduleActionIcon,
+  SelectScenarioActionIcon,
   StartActionIcon,
   StopActionIcon,
 } from "@/components/ActionIcon";
@@ -22,6 +23,7 @@ export const MainLayout = ({ children }: PropsWithChildren) => {
           <ColorSchemeToggle />
           <HeaderMenu />
           <ScenarioSelect />
+          <SelectScenarioActionIcon />
           <ResetActionIcon />
           <DoSchedulerActionIcon />
           <ForceSyncActionIcon />

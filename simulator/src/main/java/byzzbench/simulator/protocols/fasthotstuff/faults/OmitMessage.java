@@ -8,7 +8,7 @@ import byzzbench.simulator.transport.MessageEvent;
 
 import java.util.Optional;
 
-public class OmitMessage implements Fault<MessageEvent> {
+public class OmitMessage implements Fault {
     private final int round;
     private final String sender;
     private final Class<?> messageType;
@@ -20,12 +20,12 @@ public class OmitMessage implements Fault<MessageEvent> {
     }
 
     @Override
-    public boolean test(FaultInput<MessageEvent> state) {
+    public boolean test(FaultInput state) {
         return false;
     }
 
     @Override
-    public void accept(FaultInput<MessageEvent> ctx) {
+    public void accept(FaultInput ctx) {
         Optional<Event> e = ctx.getEvent();
 
         if (e.isEmpty()) {

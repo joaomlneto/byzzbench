@@ -12,12 +12,10 @@ import java.util.Set;
 /**
  * Represents a client in the system. Each client has a unique identifier.
  * The client is responsible for sending requests to the replicas in the system.
- *
- * @param <T> The type of the entries in the commit log of each {@link Replica}.
  */
 @Getter
 @RequiredArgsConstructor
-public class Client<T extends Serializable> implements Serializable {
+public class Client implements Serializable {
     /**
      * The unique ID of the client.
      */
@@ -27,7 +25,7 @@ public class Client<T extends Serializable> implements Serializable {
      * The transport layer for the client.
      */
     @JsonIgnore
-    private final transient Transport<T> transport;
+    private final transient Transport transport;
 
     private final long maxRequests = 1;
 
