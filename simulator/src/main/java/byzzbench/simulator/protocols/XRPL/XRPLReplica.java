@@ -32,7 +32,7 @@ public class XRPLReplica extends Replica {
     private @Getter XRPLConsensusResult result;
     private @Getter Map<String, XRPLLedger> validations; //map of last validated ledgers indexed on nodeId
 
-    protected XRPLReplica(String nodeId, Set<String> nodeIds, Transport transport, List<String> UNL, XRPLLedger prevLedger_) {
+    protected XRPLReplica(String nodeId, SortedSet<String> nodeIds, Transport transport, List<String> UNL, XRPLLedger prevLedger_) {
         super(nodeId, nodeIds, transport, new TotalOrderCommitLog());
         this.ourUNL = UNL;
         this.result = new XRPLConsensusResult();

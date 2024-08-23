@@ -4,7 +4,7 @@ import byzzbench.simulator.state.CommitLog;
 import byzzbench.simulator.transport.Transport;
 import lombok.Getter;
 
-import java.util.Set;
+import java.util.SortedSet;
 
 /**
  * Abstract class for a replica that is part of a leader-based protocol.
@@ -14,7 +14,7 @@ public abstract class LeaderBasedProtocolReplica extends Replica {
     private long viewNumber = -1;
     private String leaderId;
 
-    protected LeaderBasedProtocolReplica(String nodeId, Set<String> nodeIds, Transport transport, CommitLog commitLog) {
+    protected LeaderBasedProtocolReplica(String nodeId, SortedSet<String> nodeIds, Transport transport, CommitLog commitLog) {
         super(nodeId, nodeIds, transport, commitLog);
     }
 

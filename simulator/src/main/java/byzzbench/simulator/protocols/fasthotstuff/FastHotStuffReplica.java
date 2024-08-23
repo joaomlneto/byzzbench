@@ -26,7 +26,7 @@ public class FastHotStuffReplica extends LeaderBasedProtocolReplica {
     private final Map<String, Block> knownBlocks = new HashMap<>();
     private GenericQuorumCertificate highestQc = new QuorumCertificate(new ArrayList<>());
 
-    public FastHotStuffReplica(String nodeId, Set<String> nodeIds, Transport transport) {
+    public FastHotStuffReplica(String nodeId, SortedSet<String> nodeIds, Transport transport) {
         super(nodeId, nodeIds, transport, new TotalOrderCommitLog());
     }
 

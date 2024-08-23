@@ -6,7 +6,7 @@ import byzzbench.simulator.transport.MessagePayload;
 import byzzbench.simulator.transport.Transport;
 
 import java.util.Random;
-import java.util.Set;
+import java.util.SortedSet;
 
 public abstract class PbftReplica extends Replica {
     protected Random random = new Random();
@@ -46,7 +46,7 @@ public abstract class PbftReplica extends Replica {
     protected long execCommand = 0;
     protected long nonDetChoices = 0;
 
-    protected PbftReplica(String nodeId, Set<String> nodeIds, Transport transport, CommitLog commitLog) {
+    protected PbftReplica(String nodeId, SortedSet<String> nodeIds, Transport transport, CommitLog commitLog) {
         super(nodeId, nodeIds, transport, commitLog);
 
         this.numFaulty = (nodeIds.size() - 1) / 3;

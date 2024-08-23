@@ -8,7 +8,7 @@ import byzzbench.simulator.service.SchedulesService;
 import lombok.extern.java.Log;
 import org.springframework.stereotype.Component;
 
-import java.util.Set;
+import java.util.SortedSet;
 import java.util.TreeSet;
 
 @Component
@@ -23,7 +23,7 @@ public class FastHotStuffScenarioExecutor extends ScenarioExecutor {
     @Override
     public void setup() {
         try {
-            Set<String> nodeIds = new TreeSet<>();
+            SortedSet<String> nodeIds = new TreeSet<>();
             for (int i = 0; i < NUM_NODES; i++) {
                 nodeIds.add(Character.toString((char) ('A' + i)));
             }

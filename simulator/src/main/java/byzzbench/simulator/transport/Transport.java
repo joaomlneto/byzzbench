@@ -206,7 +206,7 @@ public class Transport {
      */
     public synchronized void sendMessage(String sender, MessagePayload message,
                             String recipient) {
-        this.multicast(sender, Set.of(recipient), message);
+        this.multicast(sender, new TreeSet<>(Set.of(recipient)), message);
     }
 
     /**
@@ -245,7 +245,7 @@ public class Transport {
      * @param recipients The set of recipient IDs
      * @param payload The payload of the message
      */
-    public synchronized void multicast(String sender, Set<String> recipients,
+    public synchronized void multicast(String sender, SortedSet<String> recipients,
                           MessagePayload payload) {
         for (String recipient : recipients) {
             long messageId = this.eventSeqNum.getAndIncrement();

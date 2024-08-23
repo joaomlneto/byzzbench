@@ -53,7 +53,7 @@ public class PbftReplica<O extends Serializable, R extends Serializable> extends
     private volatile boolean disgruntled = false;
 
     public PbftReplica(String replicaId,
-                       Set<String> nodeIds,
+                       SortedSet<String> nodeIds,
                        int tolerance,
                        long timeout,
                        MessageLog messageLog,

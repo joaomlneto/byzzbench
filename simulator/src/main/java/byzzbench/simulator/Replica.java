@@ -13,7 +13,7 @@ import java.io.Serializable;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.List;
-import java.util.Set;
+import java.util.SortedSet;
 
 /**
  * Superclass for all replicas in the system.
@@ -54,7 +54,7 @@ public abstract class Replica implements Serializable {
      * The set of known node IDs in the system (excludes client IDs).
      */
     @JsonIgnore
-    private final transient Set<String> nodeIds;
+    private final transient SortedSet<String> nodeIds;
 
     /**
      * The transport layer for this replica.
@@ -76,7 +76,7 @@ public abstract class Replica implements Serializable {
      * @param transport the transport layer
      * @param commitLog the commit log
      */
-    protected Replica(String nodeId, Set<String> nodeIds, Transport transport,
+    protected Replica(String nodeId, SortedSet<String> nodeIds, Transport transport,
                       CommitLog commitLog) {
         this.nodeId = nodeId;
         this.nodeIds = nodeIds;
@@ -103,7 +103,7 @@ public abstract class Replica implements Serializable {
      * @param recipients the recipients of the message
      */
     protected void multicastMessage(MessagePayload message,
-                                    Set<String> recipients) {
+                                    SortedSet<String> recipients) {
         message.sign(this.nodeId);
         this.transport.multicast(this.nodeId, recipients, message);
 
@@ -115,9 +115,9 @@ public abstract class Replica implements Serializable {
      * @param message the message to broadcast
      */
     protected void broadcastMessage(MessagePayload message) {
-        Set<String> otherNodes = this.nodeIds.stream()
+        SortedSet<String> otherNodes = this.nodeIds.stream()
                 .filter(otherNodeId -> !otherNodeId.equals(this.nodeId))
-                .collect(java.util.stream.Collectors.toSet());
+                .collect(java.util.stream.Collectors.toCollection(java.util.TreeSet::new));
 
             message.sign(this.nodeId);
             this.transport.multicast(this.nodeId, otherNodes, message);
