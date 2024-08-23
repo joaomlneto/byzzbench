@@ -190,7 +190,6 @@ export const ScheduleDetails = ({
       </Group>
       {!hideSchedule && (
         <>
-          <Title order={6}>Entries per page {entriesPerPage}</Title>
           <Pagination
             total={numPages}
             onChange={pagination.setPage}
