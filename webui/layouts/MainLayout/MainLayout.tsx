@@ -5,11 +5,11 @@ import {
   ForceSyncActionIcon,
   ResetActionIcon,
   SaveScheduleActionIcon,
+  SelectScenarioActionIcon,
   StartActionIcon,
   StopActionIcon,
 } from "@/components/ActionIcon";
 import { ColorSchemeToggle } from "@/components/ColorSchemeToggle";
-import { ScenarioSelect } from "@/components/ScenarioSelect";
 import { HeaderMenu } from "@/layouts/MainLayout/HeaderMenu";
 import { AppShell, Group } from "@mantine/core";
 import React, { PropsWithChildren } from "react";
@@ -21,7 +21,7 @@ export const MainLayout = ({ children }: PropsWithChildren) => {
         <Group p="xs">
           <ColorSchemeToggle />
           <HeaderMenu />
-          <ScenarioSelect />
+          <SelectScenarioActionIcon />
           <ResetActionIcon />
           <DoSchedulerActionIcon />
           <ForceSyncActionIcon />

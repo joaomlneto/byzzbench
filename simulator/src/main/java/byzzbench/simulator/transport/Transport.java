@@ -466,6 +466,7 @@ public class Transport<T extends Serializable> {
         }
     }
 
+    @JsonIgnore
     public synchronized Set<String> getNodeIds() {
         return nodes.keySet();
     }

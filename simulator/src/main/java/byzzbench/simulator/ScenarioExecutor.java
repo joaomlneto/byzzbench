@@ -47,7 +47,7 @@ public abstract class ScenarioExecutor<T extends Serializable> {
     /**
      * The invariants that must be satisfied by the scenario at all times.
      */
-    private final List<Predicate<ScenarioExecutor<T>>> invariants = List.of(new AgreementPredicate<>(), new LivenessPredicate<>());
+    private final List<Predicate<ScenarioExecutor>> invariants = List.of(new AgreementPredicate(), new LivenessPredicate());
     /**
      * The number of "regular" clients in the scenario.
      */
@@ -137,7 +137,7 @@ public abstract class ScenarioExecutor<T extends Serializable> {
      * Returns the invariants that are not satisfied by the scenario in its current state.
      * @return The invariants that are not satisfied by the scenario in its current state.
      */
-    public final Set<Predicate<ScenarioExecutor<T>>> unsatisfiedInvariants() {
+    public final Set<Predicate<ScenarioExecutor>> unsatisfiedInvariants() {
         return this.invariants.stream().filter(invariant -> !invariant.test(this)).collect(Collectors.toSet());
     }
 

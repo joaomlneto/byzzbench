@@ -2,16 +2,15 @@ package byzzbench.simulator.state;
 
 import byzzbench.simulator.Replica;
 import byzzbench.simulator.ScenarioExecutor;
+import byzzbench.simulator.ScenarioPredicate;
 
-import java.io.Serializable;
 import java.util.Collection;
 import java.util.Objects;
-import java.util.function.Predicate;
 
-public class AgreementPredicate<T extends Serializable> implements Predicate<ScenarioExecutor<T>> {
+public class AgreementPredicate implements ScenarioPredicate {
     @Override
-    public boolean test(ScenarioExecutor<T> scenarioExecutor) {
-        Collection<Replica<T>> replicas = scenarioExecutor.getTransport().getNodes().values();
+    public boolean test(ScenarioExecutor scenarioExecutor) {
+        Collection<Replica> replicas = scenarioExecutor.getTransport().getNodes().values();
 
         // get the max length of the commit logs of all replicas
         int commonPrefixLength = replicas.stream()

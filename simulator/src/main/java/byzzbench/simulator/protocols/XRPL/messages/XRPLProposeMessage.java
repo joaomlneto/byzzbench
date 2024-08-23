@@ -3,6 +3,7 @@ package byzzbench.simulator.protocols.XRPL.messages;
 import byzzbench.simulator.protocols.XRPL.XRPLProposal;
 import byzzbench.simulator.transport.MessagePayload;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.With;
 
 
@@ -13,6 +14,7 @@ import lombok.With;
  * its proposal via other propose messages with subsequent
  * sequence numbers.
  */
+@EqualsAndHashCode(callSuper = true)
 @Data
 @With
 public class XRPLProposeMessage extends MessagePayload {

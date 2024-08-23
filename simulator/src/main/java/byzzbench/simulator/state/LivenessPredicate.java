@@ -1,18 +1,15 @@
 package byzzbench.simulator.state;
 
 import byzzbench.simulator.ScenarioExecutor;
+import byzzbench.simulator.ScenarioPredicate;
 import byzzbench.simulator.transport.Event;
-
-import java.io.Serializable;
-import java.util.function.Predicate;
 
 /**
  * Predicate that checks if the scenario satisfies the liveness property.
- * @param <T> The type of the entries in the commit log of each {@link byzzbench.simulator.Replica}.
  */
-public class LivenessPredicate<T extends Serializable> implements Predicate<ScenarioExecutor<T>> {
+public class LivenessPredicate implements ScenarioPredicate {
     @Override
-    public boolean test(ScenarioExecutor<T> scenarioExecutor) {
+    public boolean test(ScenarioExecutor scenarioExecutor) {
         boolean hasNoQueuedEvents = scenarioExecutor.getTransport().getEventsInState(Event.Status.QUEUED).isEmpty();
         if (hasNoQueuedEvents) {
             System.out.println("LivenessPredicate: No events in the QUEUED state");
