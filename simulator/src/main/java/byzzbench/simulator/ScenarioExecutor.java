@@ -8,34 +8,35 @@ import byzzbench.simulator.state.AgreementPredicate;
 import byzzbench.simulator.state.LivenessPredicate;
 import byzzbench.simulator.state.adob.AdobDistributedState;
 import byzzbench.simulator.transport.Transport;
+import com.fasterxml.jackson.databind.JsonNode;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
+import lombok.extern.java.Log;
 
-import java.io.Serializable;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Predicate;
+import java.util.logging.Level;
 import java.util.stream.Collectors;
 
 /**
  * Abstract class for running a scenario, which consists of a set of {@link
  * Replica} and a {@link Transport} layer.
- *
- * @param <T> The type of the entries in the commit log of each {@link Replica}.
  */
 @Getter
 @ToString
-public abstract class ScenarioExecutor<T extends Serializable> {
+@Log
+public abstract class ScenarioExecutor {
     /**
      * The transport layer for the scenario.
      */
     @ToString.Exclude
-    protected final Transport<T> transport;
+    protected final Transport transport;
     /**
      * The scheduler for the scenario.
      */
-    protected final BaseScheduler<T> scheduler;
+    protected final BaseScheduler scheduler;
     /**
      * The AdoB oracle for the scenario, which keeps track of the distributed state.
      */
@@ -63,8 +64,8 @@ public abstract class ScenarioExecutor<T extends Serializable> {
      */
     protected ScenarioExecutor(String id, MessageMutatorService messageMutatorService, SchedulesService schedulesService) {
         this.id = id;
-        this.transport = new Transport<>(this, messageMutatorService, schedulesService);
-        this.scheduler = new RandomScheduler<>(messageMutatorService, transport);
+        this.transport = new Transport(this, schedulesService);
+        this.scheduler = new RandomScheduler(messageMutatorService, transport);
         this.setup();
 
         // AdoB must be initialized after the setup method is called
@@ -79,8 +80,7 @@ public abstract class ScenarioExecutor<T extends Serializable> {
         this.setupScenario();
         this.adobOracle.reset();
         this.runScenario();
-        System.out.println("Scenario reset");
-        System.out.println(this);
+        log.log(Level.INFO,"Scenario reset: %s", this.toString());
     }
 
     /**
@@ -88,7 +88,7 @@ public abstract class ScenarioExecutor<T extends Serializable> {
      *
      * @param replica The node to add.
      */
-    public void addNode(Replica<T> replica) {
+    public void addNode(Replica replica) {
         this.transport.addNode(replica);
         replica.addObserver(this.adobOracle);
     }
@@ -101,6 +101,21 @@ public abstract class ScenarioExecutor<T extends Serializable> {
         this.transport.getNodes().values().forEach(Replica::initialize);
         this.setup();
     }
+
+    public final void loadParameters(JsonNode parameters) {
+        // get num clients
+        if (parameters.has("numClients")) {
+            this.numClients = parameters.get("numClients").asInt();
+        }
+
+        this.loadParameters(parameters);
+    }
+
+    /**
+     * Loads the parameters for the scenario from a JSON object.
+     * @param parameters The JSON object containing the parameters for the scenario.
+     */
+    public abstract void loadScenarioParameters(JsonNode parameters);
 
     /**
      * Logic to set up the scenario - must be implemented by subclasses.

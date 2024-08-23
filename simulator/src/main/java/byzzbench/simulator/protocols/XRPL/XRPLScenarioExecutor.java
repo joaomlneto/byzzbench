@@ -4,15 +4,16 @@ import byzzbench.simulator.ScenarioExecutor;
 import byzzbench.simulator.TerminationCondition;
 import byzzbench.simulator.service.MessageMutatorService;
 import byzzbench.simulator.service.SchedulesService;
+import com.fasterxml.jackson.databind.JsonNode;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
+import java.util.SortedSet;
 import java.util.TreeSet;
 
 @Component
-public class XRPLScenarioExecutor extends ScenarioExecutor<XRPLLedger>  {
+public class XRPLScenarioExecutor extends ScenarioExecutor  {
     private final int NUM_NODES = 7;
 
 
@@ -22,6 +23,11 @@ public class XRPLScenarioExecutor extends ScenarioExecutor<XRPLLedger>  {
     public XRPLScenarioExecutor(MessageMutatorService messageMutatorService, SchedulesService schedulesService) {
         super("xrpl", messageMutatorService, schedulesService);
         this.setNumClients(1);
+    }
+
+    @Override
+    public void loadScenarioParameters(JsonNode parameters) {
+        // no parameters to load
     }
 
     @Override
@@ -41,7 +47,7 @@ public class XRPLScenarioExecutor extends ScenarioExecutor<XRPLLedger>  {
     @SuppressWarnings("unused")
     private void setupDefault() {
         try {
-            Set<String> nodeIds = new TreeSet<>();
+            SortedSet<String> nodeIds = new TreeSet<>();
             List<String> unl = new ArrayList<>();
             for (int i = 0; i < NUM_NODES; i++) {
                 nodeIds.add(Character.toString((char) ('A' + i)));
@@ -64,7 +70,7 @@ public class XRPLScenarioExecutor extends ScenarioExecutor<XRPLLedger>  {
     @SuppressWarnings("unused")
     private void setupForScenario3() {
         try {
-            Set<String> nodeIds = new TreeSet<>();
+            SortedSet<String> nodeIds = new TreeSet<>();
             for (int i = 0; i < 7; i++) {
                 nodeIds.add(Character.toString((char) ('A' + i)));
             }

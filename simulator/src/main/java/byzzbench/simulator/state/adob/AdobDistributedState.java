@@ -8,10 +8,7 @@ import lombok.Synchronized;
 import lombok.extern.java.Log;
 
 import java.io.Serializable;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
@@ -167,8 +164,12 @@ public class AdobDistributedState implements ReplicaObserver, Serializable {
         log.info(String.format("%s: timeout%n", r.getNodeId()));
         // create TCache
         long id = maxExistingCacheId.incrementAndGet();
-        TimeoutCache tCache = new TimeoutCache(id, root, Set.of(r.getNodeId()), Set.of(r.getNodeId()));
-
+        TimeoutCache tCache = TimeoutCache
+                .builder()
+                .id(id)
+                .parent(root)
+                .voters(new TreeSet<>(Collections.singleton(r.getNodeId())))
+                .supporters(new TreeSet<>(Collections.singleton(r.getNodeId()))).build();
         caches.put(id, tCache);
     }
 

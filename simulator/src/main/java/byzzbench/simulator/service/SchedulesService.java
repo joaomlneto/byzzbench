@@ -2,12 +2,14 @@ package byzzbench.simulator.service;
 
 import byzzbench.simulator.ScenarioExecutor;
 import byzzbench.simulator.schedule.Schedule;
+import lombok.Getter;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+@Getter
 @Service
 public class SchedulesService {
     private final List<Schedule> schedules = Collections.synchronizedList(new ArrayList<>());
@@ -17,7 +19,9 @@ public class SchedulesService {
      * @return the new schedule
      */
     public Schedule addSchedule(ScenarioExecutor scenario) {
-        return this.addSchedule(Schedule.builder().scenarioId(scenario.getId()).build());
+        Schedule.ScheduleBuilder builder = Schedule.builder();
+        Schedule schedule = builder.scenarioId(scenario.getId()).build();
+        return this.addSchedule(schedule);
     }
 
     /**
@@ -28,9 +32,5 @@ public class SchedulesService {
     public Schedule addSchedule(Schedule schedule) {
         schedules.add(schedule);
         return schedule;
-    }
-
-    public List<Schedule> getSchedules() {
-        return schedules;
     }
 }

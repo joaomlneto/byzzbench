@@ -4,20 +4,17 @@ import byzzbench.simulator.state.CommitLog;
 import byzzbench.simulator.transport.Transport;
 import lombok.Getter;
 
-import java.io.Serializable;
-import java.util.Set;
+import java.util.SortedSet;
 
 /**
  * Abstract class for a replica that is part of a leader-based protocol.
- *
- * @param <T> The type of the entries in the commit log.
  */
 @Getter
-public abstract class LeaderBasedProtocolReplica<T extends Serializable> extends Replica<T> {
+public abstract class LeaderBasedProtocolReplica extends Replica {
     private long viewNumber = -1;
     private String leaderId;
 
-    protected LeaderBasedProtocolReplica(String nodeId, Set<String> nodeIds, Transport<T> transport, CommitLog<T> commitLog) {
+    protected LeaderBasedProtocolReplica(String nodeId, SortedSet<String> nodeIds, Transport transport, CommitLog commitLog) {
         super(nodeId, nodeIds, transport, commitLog);
     }
 

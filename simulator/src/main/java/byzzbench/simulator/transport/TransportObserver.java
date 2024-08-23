@@ -2,9 +2,7 @@ package byzzbench.simulator.transport;
 
 import byzzbench.simulator.faults.Fault;
 
-import java.io.Serializable;
-
-public interface TransportObserver<T extends Serializable> {
+public interface TransportObserver {
     /**
      * Called when an event is added to the transport layer.
      * @param event The event that was added.
@@ -33,7 +31,7 @@ public interface TransportObserver<T extends Serializable> {
      * Called when a fault is injected.
      * @param fault The fault that was injected.
      */
-    void onFault(Fault<T> fault);
+    void onFault(Fault fault);
 
     /**
      * Called when a timeout event is triggered.

@@ -9,7 +9,6 @@ import byzzbench.simulator.transport.Event;
 import byzzbench.simulator.transport.MessageEvent;
 import org.springframework.stereotype.Component;
 
-import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -18,12 +17,12 @@ import java.util.Optional;
 public class XRPLValidateMessageMutatorFactory extends MessageMutatorFactory {
 
     @Override
-    public List<MessageMutationFault<Serializable>> mutators() {
+    public List<MessageMutationFault> mutators() {
         RuntimeException invalidMessageTypeException = new IllegalArgumentException("Invalid message type");
         return List.of(
-            new MessageMutationFault<>("change tx", "Change TX", List.of(XRPLValidateMessage.class)) {
+            new MessageMutationFault("change tx", "Change TX", List.of(XRPLValidateMessage.class)) {
                 @Override
-                public void accept(FaultInput<Serializable> serializable) {
+                public void accept(FaultInput serializable) {
                     Optional<Event> event = serializable.getEvent();
                     if (event.isEmpty()) {
                         throw invalidMessageTypeException;

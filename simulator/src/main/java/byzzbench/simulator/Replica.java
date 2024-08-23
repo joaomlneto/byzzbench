@@ -1,6 +1,7 @@
 package byzzbench.simulator;
 
 import byzzbench.simulator.state.CommitLog;
+import byzzbench.simulator.state.LogEntry;
 import byzzbench.simulator.transport.MessagePayload;
 import byzzbench.simulator.transport.Transport;
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -12,20 +13,18 @@ import java.io.Serializable;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.List;
-import java.util.Set;
+import java.util.SortedSet;
 
 /**
  * Superclass for all replicas in the system.
  * <p>
  * Each replica has a unique node ID, a set of known node IDs in the system, a
  * reference to the {@link Transport} layer, and a {@link CommitLog}.
- *
- * @param <T> The type of the entries in the commit log of each {@link Replica}.
  */
 @Log
 @Getter
 @ToString
-public abstract class Replica<T extends Serializable> implements Serializable {
+public abstract class Replica implements Serializable {
     /**
      * The message digest algorithm to use for hashing messages.
      */
@@ -44,7 +43,7 @@ public abstract class Replica<T extends Serializable> implements Serializable {
      * The commit log for this replica.
      */
     @Getter
-    private final transient CommitLog<T> commitLog;
+    private final transient CommitLog commitLog;
 
     /**
      * The unique ID of the replica.
@@ -55,13 +54,13 @@ public abstract class Replica<T extends Serializable> implements Serializable {
      * The set of known node IDs in the system (excludes client IDs).
      */
     @JsonIgnore
-    private final transient Set<String> nodeIds;
+    private final transient SortedSet<String> nodeIds;
 
     /**
      * The transport layer for this replica.
      */
     @JsonIgnore
-    private final transient Transport<T> transport;
+    private final transient Transport transport;
 
     /**
      * The observers of this replica.
@@ -77,8 +76,8 @@ public abstract class Replica<T extends Serializable> implements Serializable {
      * @param transport the transport layer
      * @param commitLog the commit log
      */
-    protected Replica(String nodeId, Set<String> nodeIds, Transport<T> transport,
-                      CommitLog<T> commitLog) {
+    protected Replica(String nodeId, SortedSet<String> nodeIds, Transport transport,
+                      CommitLog commitLog) {
         this.nodeId = nodeId;
         this.nodeIds = nodeIds;
         this.transport = transport;
@@ -104,7 +103,7 @@ public abstract class Replica<T extends Serializable> implements Serializable {
      * @param recipients the recipients of the message
      */
     protected void multicastMessage(MessagePayload message,
-                                    Set<String> recipients) {
+                                    SortedSet<String> recipients) {
         message.sign(this.nodeId);
         this.transport.multicast(this.nodeId, recipients, message);
 
@@ -116,9 +115,9 @@ public abstract class Replica<T extends Serializable> implements Serializable {
      * @param message the message to broadcast
      */
     protected void broadcastMessage(MessagePayload message) {
-        Set<String> otherNodes = this.nodeIds.stream()
+        SortedSet<String> otherNodes = this.nodeIds.stream()
                 .filter(otherNodeId -> !otherNodeId.equals(this.nodeId))
-                .collect(java.util.stream.Collectors.toSet());
+                .collect(java.util.stream.Collectors.toCollection(java.util.TreeSet::new));
 
             message.sign(this.nodeId);
             this.transport.multicast(this.nodeId, otherNodes, message);
@@ -184,7 +183,7 @@ public abstract class Replica<T extends Serializable> implements Serializable {
      *
      * @param operation the operation to commit
      */
-    public void commitOperation(T operation) {
+    public void commitOperation(LogEntry operation) {
         this.commitLog.add(operation);
         this.notifyObserversLocalCommit(operation);
     }
