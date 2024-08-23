@@ -6,6 +6,7 @@ import byzzbench.simulator.TerminationCondition;
 import byzzbench.simulator.protocols.pbft_java.MessageLog;
 import byzzbench.simulator.service.MessageMutatorService;
 import byzzbench.simulator.service.SchedulesService;
+import com.fasterxml.jackson.databind.JsonNode;
 import lombok.extern.java.Log;
 import org.springframework.stereotype.Component;
 
@@ -18,6 +19,11 @@ public class DummyScenarioExecutor extends ScenarioExecutor {
 
     public DummyScenarioExecutor(MessageMutatorService messageMutatorService, SchedulesService schedulesService) {
         super("dummy", messageMutatorService, schedulesService);
+    }
+
+    @Override
+    public void loadScenarioParameters(JsonNode parameters) {
+        // no parameters to load
     }
 
     @Override

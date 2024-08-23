@@ -65,7 +65,7 @@ export const ScheduleDetails = ({
             size="xs"
             onClick={async () => {
               console.log("Materializing Schedule: ", schedule);
-              await changeScenario({ scenarioId: schedule.scenarioId });
+              await changeScenario({ scenarioId: schedule.scenarioId }, {});
               let i = 0;
               let hasNotifiedMismatchedEvents = false;
 

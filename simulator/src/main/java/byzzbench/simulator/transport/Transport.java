@@ -85,6 +85,7 @@ public class Transport {
      * The schedule of events in order of delivery.
      */
     @Getter(onMethod_ = {@Synchronized})
+    @JsonIgnore
     private Schedule schedule;
 
     public Transport (ScenarioExecutor scenario, MessageMutatorService messageMutatorService, SchedulesService schedulesService) {

@@ -1,6 +1,7 @@
 package byzzbench.simulator.service;
 
 import byzzbench.simulator.ScenarioExecutor;
+import com.fasterxml.jackson.databind.JsonNode;
 import org.springframework.stereotype.Service;
 
 import java.util.HashMap;
@@ -30,7 +31,7 @@ public class ScenarioFactoryService {
      * @return the scenario
      * @throws IllegalArgumentException if the scenario id is unknown
      */
-    public ScenarioExecutor getScenario(String id) {
+    public ScenarioExecutor getScenario(String id, JsonNode parameters) {
         ScenarioExecutor scenario = scenarios.get(id);
         if (scenario == null) {
             throw new IllegalArgumentException("Unknown scenario id: " + id);

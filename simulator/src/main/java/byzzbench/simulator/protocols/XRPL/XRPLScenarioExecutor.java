@@ -4,6 +4,7 @@ import byzzbench.simulator.ScenarioExecutor;
 import byzzbench.simulator.TerminationCondition;
 import byzzbench.simulator.service.MessageMutatorService;
 import byzzbench.simulator.service.SchedulesService;
+import com.fasterxml.jackson.databind.JsonNode;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
@@ -22,6 +23,11 @@ public class XRPLScenarioExecutor extends ScenarioExecutor  {
     public XRPLScenarioExecutor(MessageMutatorService messageMutatorService, SchedulesService schedulesService) {
         super("xrpl", messageMutatorService, schedulesService);
         this.setNumClients(1);
+    }
+
+    @Override
+    public void loadScenarioParameters(JsonNode parameters) {
+        // no parameters to load
     }
 
     @Override

@@ -5,6 +5,7 @@ import byzzbench.simulator.ScenarioExecutor;
 import byzzbench.simulator.TerminationCondition;
 import byzzbench.simulator.service.MessageMutatorService;
 import byzzbench.simulator.service.SchedulesService;
+import com.fasterxml.jackson.databind.JsonNode;
 import lombok.extern.java.Log;
 import org.springframework.stereotype.Component;
 
@@ -18,6 +19,11 @@ public class FastHotStuffScenarioExecutor extends ScenarioExecutor {
 
     public FastHotStuffScenarioExecutor(MessageMutatorService messageMutatorService, SchedulesService schedulesService) {
         super("fasthotstuff", messageMutatorService, schedulesService);
+    }
+
+    @Override
+    public void loadScenarioParameters(JsonNode parameters) {
+        // no parameters to load
     }
 
     @Override

@@ -2,6 +2,7 @@ package byzzbench.simulator.controller;
 
 import byzzbench.simulator.Client;
 import byzzbench.simulator.Replica;
+import byzzbench.simulator.ScenarioExecutor;
 import byzzbench.simulator.faults.Fault;
 import byzzbench.simulator.faults.MessageMutationFault;
 import byzzbench.simulator.schedule.Schedule;
@@ -9,6 +10,7 @@ import byzzbench.simulator.service.*;
 import byzzbench.simulator.state.adob.AdobCache;
 import byzzbench.simulator.transport.Event;
 import byzzbench.simulator.transport.MailboxEvent;
+import com.fasterxml.jackson.databind.JsonNode;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
@@ -363,7 +365,9 @@ public class SimulatorController {
      * @param scenarioId The ID of the scenario to change to.
      */
     @PostMapping("/change-scenario")
-    public void changeScenario(@RequestParam String scenarioId) {
+    public void changeScenario(@RequestParam String scenarioId, @RequestBody JsonNode params) {
+        System.out.println("params: " + params);
+        params.fieldNames().forEachRemaining(System.out::println);
         simulatorService.changeScenario(scenarioId);
     }
 
@@ -479,6 +483,11 @@ public class SimulatorController {
     @PutMapping("/test")
     public void testDeserialize(@RequestBody MyThing thing) {
         System.out.println("thing: " + thing);
+    }
+
+    @GetMapping("/scenario")
+    public ScenarioExecutor getScenario() {
+        return simulatorService.getScenarioExecutor();
     }
 
     @Data

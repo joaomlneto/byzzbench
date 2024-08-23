@@ -5,6 +5,7 @@ import byzzbench.simulator.ScenarioExecutor;
 import byzzbench.simulator.TerminationCondition;
 import byzzbench.simulator.service.MessageMutatorService;
 import byzzbench.simulator.service.SchedulesService;
+import com.fasterxml.jackson.databind.JsonNode;
 import lombok.extern.java.Log;
 import org.springframework.stereotype.Component;
 
@@ -21,6 +22,11 @@ public class PbftScenarioExecutor extends ScenarioExecutor {
         super("pbft-java", messageMutatorService, schedulesService);
         this.setNumClients(1);
         this.terminationCondition = new PbftTerminationCondition();
+    }
+
+    @Override
+    public void loadScenarioParameters(JsonNode parameters) {
+        // no parameters to load
     }
 
     @Override

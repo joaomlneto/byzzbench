@@ -5,6 +5,8 @@ import byzzbench.simulator.TerminationCondition;
 import byzzbench.simulator.schedule.Schedule;
 import byzzbench.simulator.scheduler.EventDecision;
 import byzzbench.simulator.transport.Event;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.java.Log;
@@ -30,10 +32,10 @@ public class SimulatorService {
     private final int MAX_EVENTS_FOR_RUN = SimulatorConfig.MAX_EVENTS_FOR_RUN;
     private final int MAX_DROPPED_MESSAGES = SimulatorConfig.MAX_DROPPED_MESSAGES;
     private final int CHECK_TERMINATION_FREQ = SimulatorConfig.CHECK_TERMINATION_FREQ;
-    private int droppedMessageCount;
     private final SchedulesService schedulesService;
     private final ScenarioFactoryService scenarioFactoryService;
     private final ExecutorService executor = Executors.newFixedThreadPool(1);
+    private int droppedMessageCount;
     private SimulatorServiceMode mode = SimulatorServiceMode.STOPPED;
     private boolean shouldStop = false;
     private ScenarioExecutor scenarioExecutor;
@@ -52,10 +54,17 @@ public class SimulatorService {
      * @param id The ID of the scenario to change to.
      */
     public void changeScenario(String id) {
-        this.scenarioExecutor = this.scenarioFactoryService.getScenario(id);
+        this.changeScenario(id, JsonNodeFactory.instance.objectNode());
+    }
+
+    /**
+     * Changes the scenario to the scenario with the given ID.
+     *
+     * @param id The ID of the scenario to change to.
+     */
+    public void changeScenario(String id, JsonNode params) {
+        this.scenarioExecutor = this.scenarioFactoryService.getScenario(id, params);
         this.scenarioExecutor.setupScenario();
-        //this.scenarioExecutor.setupScenario();
-        //this.scenarioExecutor.runScenario();
         this.droppedMessageCount = 0;
         this.scenarioExecutor.reset();
     }

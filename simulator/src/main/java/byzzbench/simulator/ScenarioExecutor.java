@@ -8,13 +8,16 @@ import byzzbench.simulator.state.AgreementPredicate;
 import byzzbench.simulator.state.LivenessPredicate;
 import byzzbench.simulator.state.adob.AdobDistributedState;
 import byzzbench.simulator.transport.Transport;
+import com.fasterxml.jackson.databind.JsonNode;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
+import lombok.extern.java.Log;
 
 import java.util.List;
 import java.util.Set;
 import java.util.function.Predicate;
+import java.util.logging.Level;
 import java.util.stream.Collectors;
 
 /**
@@ -23,6 +26,7 @@ import java.util.stream.Collectors;
  */
 @Getter
 @ToString
+@Log
 public abstract class ScenarioExecutor {
     /**
      * The transport layer for the scenario.
@@ -76,8 +80,7 @@ public abstract class ScenarioExecutor {
         this.setupScenario();
         this.adobOracle.reset();
         this.runScenario();
-        System.out.println("Scenario reset");
-        System.out.println(this);
+        log.log(Level.INFO,"Scenario reset: %s", this.toString());
     }
 
     /**
@@ -98,6 +101,21 @@ public abstract class ScenarioExecutor {
         this.transport.getNodes().values().forEach(Replica::initialize);
         this.setup();
     }
+
+    public final void loadParameters(JsonNode parameters) {
+        // get num clients
+        if (parameters.has("numClients")) {
+            this.numClients = parameters.get("numClients").asInt();
+        }
+
+        this.loadParameters(parameters);
+    }
+
+    /**
+     * Loads the parameters for the scenario from a JSON object.
+     * @param parameters The JSON object containing the parameters for the scenario.
+     */
+    public abstract void loadScenarioParameters(JsonNode parameters);
 
     /**
      * Logic to set up the scenario - must be implemented by subclasses.
