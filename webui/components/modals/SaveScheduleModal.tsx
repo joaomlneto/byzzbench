@@ -63,6 +63,7 @@ export function SaveScheduleModal({
               scenarioId: "",
               events: [],
               finalized: false,
+              brokenInvariants: [],
             }
           }
         />

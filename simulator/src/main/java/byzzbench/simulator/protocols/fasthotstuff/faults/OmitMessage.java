@@ -1,7 +1,7 @@
 package byzzbench.simulator.protocols.fasthotstuff.faults;
 
 import byzzbench.simulator.faults.Fault;
-import byzzbench.simulator.faults.FaultInput;
+import byzzbench.simulator.faults.FaultContext;
 import byzzbench.simulator.protocols.fasthotstuff.message.Block;
 import byzzbench.simulator.transport.Event;
 import byzzbench.simulator.transport.MessageEvent;
@@ -20,12 +20,12 @@ public class OmitMessage implements Fault {
     }
 
     @Override
-    public boolean test(FaultInput state) {
+    public boolean test(FaultContext state) {
         return false;
     }
 
     @Override
-    public void accept(FaultInput ctx) {
+    public void accept(FaultContext ctx) {
         Optional<Event> e = ctx.getEvent();
 
         if (e.isEmpty()) {

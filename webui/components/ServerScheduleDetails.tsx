@@ -1,7 +1,7 @@
 "use client";
 
 import { ScheduleDetails, ScheduleDetailsProps } from "@/components/Schedule";
-import { useGetSavedSchedule } from "@/lib/byzzbench-client";
+import { useGetScenarioSchedule } from "@/lib/byzzbench-client";
 import React, { memo } from "react";
 
 export type ServerScheduleDetailsProps = Omit<
@@ -14,7 +14,7 @@ export type ServerScheduleDetailsProps = Omit<
 
 export const ServerScheduleDetails = memo(
   ({ scheduleId, title, ...otherProps }: ServerScheduleDetailsProps) => {
-    const savedScheduleQuery = useGetSavedSchedule(scheduleId);
+    const savedScheduleQuery = useGetScenarioSchedule(scheduleId);
     return (
       savedScheduleQuery.data && (
         <ScheduleDetails

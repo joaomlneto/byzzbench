@@ -2,11 +2,14 @@ package byzzbench.simulator.controller;
 
 import byzzbench.simulator.Client;
 import byzzbench.simulator.Replica;
-import byzzbench.simulator.ScenarioExecutor;
+import byzzbench.simulator.Scenario;
 import byzzbench.simulator.faults.Fault;
 import byzzbench.simulator.faults.MessageMutationFault;
 import byzzbench.simulator.schedule.Schedule;
-import byzzbench.simulator.service.*;
+import byzzbench.simulator.service.MessageMutatorService;
+import byzzbench.simulator.service.ScenarioService;
+import byzzbench.simulator.service.SchedulerFactoryService;
+import byzzbench.simulator.service.SimulatorService;
 import byzzbench.simulator.state.adob.AdobCache;
 import byzzbench.simulator.transport.Event;
 import byzzbench.simulator.transport.MailboxEvent;
@@ -29,9 +32,8 @@ import java.util.stream.IntStream;
 @RequiredArgsConstructor
 public class SimulatorController {
     private final MessageMutatorService messageMutatorService;
-    private final SchedulesService schedulesService;
     private final SimulatorService simulatorService;
-    private final ScenarioFactoryService scenarioFactoryService;
+    private final ScenarioService scenarioService;
     private final SchedulerFactoryService schedulerFactoryService;
 
     /**
@@ -49,7 +51,7 @@ public class SimulatorController {
      */
     @GetMapping("/clients")
     public Set<String> getClients() {
-        return simulatorService.getScenarioExecutor()
+        return simulatorService.getScenario()
                 .getTransport()
                 .getClients()
                 .keySet();
@@ -62,7 +64,7 @@ public class SimulatorController {
      */
     @GetMapping("/client/{clientId}")
     public Client getClient(@PathVariable String clientId) {
-        return simulatorService.getScenarioExecutor().getTransport().getClients().get(clientId);
+        return simulatorService.getScenario().getTransport().getClients().get(clientId);
     }
 
     /**
@@ -71,7 +73,7 @@ public class SimulatorController {
      */
     @GetMapping("/nodes")
     public Set<String> getNodes() {
-        return simulatorService.getScenarioExecutor()
+        return simulatorService.getScenario()
                 .getTransport()
                 .getNodeIds();
     }
@@ -83,7 +85,7 @@ public class SimulatorController {
      */
     @GetMapping("/node/{nodeId}")
     public Replica getNode(@PathVariable String nodeId) {
-        return simulatorService.getScenarioExecutor().getTransport().getNode(nodeId);
+        return simulatorService.getScenario().getTransport().getNode(nodeId);
     }
 
     /**
@@ -95,7 +97,7 @@ public class SimulatorController {
     @GetMapping("/node/{nodeId}/mailbox")
     public List<Long> getNodeMailbox(@PathVariable String nodeId,
                    @RequestParam(required = false) String type) {
-        return simulatorService.getScenarioExecutor()
+        return simulatorService.getScenario()
                 .getTransport()
                 .getEventsInState(Event.Status.QUEUED)
                 .stream()
@@ -111,7 +113,7 @@ public class SimulatorController {
      */
     @GetMapping("/events")
     public List<Long> getEvents() {
-        return simulatorService.getScenarioExecutor()
+        return simulatorService.getScenario()
                 .getTransport()
                 .getEvents()
                 .keySet()
@@ -126,7 +128,7 @@ public class SimulatorController {
      */
     @GetMapping("/events/{eventId}")
     public Event getEvent(@PathVariable Long eventId) {
-        return simulatorService.getScenarioExecutor()
+        return simulatorService.getScenario()
                 .getTransport()
                 .getEvents()
                 .get(eventId);
@@ -138,7 +140,7 @@ public class SimulatorController {
      */
     @GetMapping("/events/queued")
     public List<Long> getQueuedMessages() {
-        return simulatorService.getScenarioExecutor()
+        return simulatorService.getScenario()
                 .getTransport()
                 .getEventsInState(Event.Status.QUEUED)
                 .stream()
@@ -152,7 +154,7 @@ public class SimulatorController {
      */
     @GetMapping("/events/dropped")
     public List<Long> getDroppedMessages() {
-        return simulatorService.getScenarioExecutor()
+        return simulatorService.getScenario()
                 .getTransport()
                 .getEventsInState(Event.Status.DROPPED)
                 .stream()
@@ -166,7 +168,7 @@ public class SimulatorController {
      */
     @GetMapping("/events/delivered")
     public List<Long> getDeliveredMessages() {
-        return simulatorService.getScenarioExecutor()
+        return simulatorService.getScenario()
                 .getTransport()
                 .getEventsInState(Event.Status.DELIVERED)
                 .stream()
@@ -180,9 +182,7 @@ public class SimulatorController {
      */
     @GetMapping("/schedule")
     public Schedule getSchedule() {
-        return simulatorService.getScenarioExecutor()
-                .getTransport()
-                .getSchedule();
+        return simulatorService.getScenario().getSchedule();
     }
 
     /**
@@ -223,7 +223,7 @@ public class SimulatorController {
      */
     @GetMapping("/event/{eventId}")
     public Event getMessage(@PathVariable Long eventId) {
-        return simulatorService.getScenarioExecutor()
+        return simulatorService.getScenario()
                 .getTransport()
                 .getEvents()
                 .get(eventId);
@@ -236,7 +236,7 @@ public class SimulatorController {
      */
     @GetMapping("/event/{eventId}/mutators")
     public List<String> getMessageMutators(@PathVariable Long eventId) {
-        Event e = simulatorService.getScenarioExecutor()
+        Event e = simulatorService.getScenario()
                 .getTransport()
                 .getEvents()
                 .get(eventId);
@@ -259,7 +259,7 @@ public class SimulatorController {
      */
     @PostMapping("/event/{eventId}/deliver")
     public void deliverMessage(@PathVariable Long eventId) throws Exception {
-        simulatorService.getScenarioExecutor().getTransport().deliverEvent(eventId);
+        simulatorService.getScenario().getTransport().deliverEvent(eventId);
     }
 
     /**
@@ -268,7 +268,7 @@ public class SimulatorController {
      */
     @PostMapping("/event/{eventId}/drop")
     public void dropMessage(@PathVariable Long eventId) {
-        simulatorService.getScenarioExecutor().getTransport().dropEvent(eventId);
+        simulatorService.getScenario().getTransport().dropEvent(eventId);
     }
 
     /**
@@ -279,7 +279,7 @@ public class SimulatorController {
     @PostMapping("/event/{eventId}/mutate/{mutatorId}")
     public void mutateMessage(@PathVariable Long eventId, @PathVariable String mutatorId) {
         MessageMutationFault mutator = this.messageMutatorService.getMutator(mutatorId);
-        simulatorService.getScenarioExecutor().getTransport().applyMutation(eventId, mutator);
+        simulatorService.getScenario().getTransport().applyMutation(eventId, mutator);
     }
 
     /**
@@ -309,7 +309,7 @@ public class SimulatorController {
      */
     @PostMapping("/reset")
     public void reset() {
-        simulatorService.getScenarioExecutor().reset();
+        simulatorService.resetScenario();
     }
 
     /**
@@ -330,7 +330,7 @@ public class SimulatorController {
      */
     @GetMapping("/adob")
     public AdobCache getAdob() {
-        return simulatorService.getScenarioExecutor().getAdobOracle().getRoot();
+        return simulatorService.getScenario().getAdobOracle().getRoot();
     }
 
     /**
@@ -339,7 +339,7 @@ public class SimulatorController {
      */
     @GetMapping("/adob/caches")
     public Collection<AdobCache> getAllAdobCaches() {
-        return simulatorService.getScenarioExecutor().getAdobOracle().getCaches().values();
+        return simulatorService.getScenario().getAdobOracle().getCaches().values();
     }
 
     /**
@@ -349,7 +349,7 @@ public class SimulatorController {
      */
     @GetMapping("/adob/caches/{cacheId}")
     public AdobCache getAdobCache(@PathVariable Long cacheId) {
-        return simulatorService.getScenarioExecutor().getAdobOracle().getCaches().get(cacheId);
+        return simulatorService.getScenario().getAdobOracle().getCaches().get(cacheId);
     }
 
     /**
@@ -358,7 +358,7 @@ public class SimulatorController {
      */
     @GetMapping("/scenarios")
     public List<String> getScenarios() {
-        return scenarioFactoryService.getScenarioIds();
+        return scenarioService.getScenarioIds();
     }
 
     /**
@@ -367,9 +367,7 @@ public class SimulatorController {
      */
     @PostMapping("/change-scenario")
     public void changeScenario(@RequestParam String scenarioId, @RequestBody JsonNode params) {
-        System.out.println("params: " + params);
-        params.fieldNames().forEachRemaining(System.out::println);
-        simulatorService.changeScenario(scenarioId);
+        simulatorService.changeScenario(scenarioId, params);
     }
 
     /**
@@ -378,7 +376,7 @@ public class SimulatorController {
      */
     @GetMapping("/current-scenario-id")
     public String getCurrentScenarioId() {
-        return simulatorService.getScenarioExecutor().getId();
+        return simulatorService.getScenario().getId();
     }
 
     /**
@@ -396,7 +394,7 @@ public class SimulatorController {
      */
     @GetMapping("/saved-schedules")
     public List<Integer> getNumSavedSchedules() {
-        return IntStream.range(0, schedulesService.getSchedules().size())
+        return IntStream.range(0, scenarioService.getScenarios().size())
                 .boxed()
                 .toList();
     }
@@ -407,21 +405,22 @@ public class SimulatorController {
      */
     @GetMapping("/saved-schedules/buggy")
     public List<Integer> getBuggyScheduleIds() {
-        return schedulesService.getSchedules()
-                .stream()
+        List<Scenario> scenarios = scenarioService.getScenarios();
+        return scenarios.stream()
+                .map(Scenario::getSchedule)
                 .filter(Schedule::isBuggy)
-                .map(schedulesService.getSchedules()::indexOf)
+                .map(scenarios::indexOf)
                 .toList();
     }
 
     /**
      * Get a given saved schedule.
-     * @param scheduleId The ID of the schedule to get.
-     * @return The schedule with the given ID.
+     * @param scenarioId The ID of the scenario to get the schedule for.
+     * @return The schedule for the scenario with the given ID.
      */
-    @GetMapping("/saved-schedules/{scheduleId}")
-    public Schedule getSavedSchedule(@PathVariable int scheduleId) {
-        return schedulesService.getSchedules().get(scheduleId);
+    @GetMapping("/scenario/{scenarioId}/schedule")
+    public Schedule getScenarioSchedule(@PathVariable int scenarioId) {
+        return scenarioService.getScenarios().get(scenarioId).getSchedule();
     }
 
     // endpoint to run the current scenario N times
@@ -449,13 +448,13 @@ public class SimulatorController {
 
     @GetMapping("/network-faults")
     public Set<String> getNetworkFaults() {
-        return simulatorService.getScenarioExecutor().getTransport().getNetworkFaults().keySet();
+        return simulatorService.getScenario().getTransport().getNetworkFaults().keySet();
     }
 
     @GetMapping("/enabled-network-faults")
     public Set<String> getEnabledNetworkFaults() {
         return simulatorService
-                .getScenarioExecutor()
+                .getScenario()
                 .getTransport()
                 .getEnabledNetworkFaults()
                 .stream()
@@ -465,17 +464,17 @@ public class SimulatorController {
 
     @GetMapping("/network-faults/{faultId}")
     public Fault getNetworkFault(@PathVariable String faultId) {
-        return simulatorService.getScenarioExecutor().getTransport().getNetworkFault(faultId);
+        return simulatorService.getScenario().getTransport().getNetworkFault(faultId);
     }
 
     @PostMapping("/network-fault/{faultId}")
     public void enableNetworkFault(@PathVariable String faultId) {
-        simulatorService.getScenarioExecutor().getTransport().applyFault(faultId);
+        simulatorService.getScenario().getTransport().applyFault(faultId);
     }
 
     @GetMapping("/partitions")
     public Map<String, Integer> getPartitions() {
-        return simulatorService.getScenarioExecutor()
+        return simulatorService.getScenario()
                 .getTransport()
                 .getRouter()
                 .getPartitions();
@@ -487,8 +486,8 @@ public class SimulatorController {
     }
 
     @GetMapping("/scenario")
-    public ScenarioExecutor getScenario() {
-        return simulatorService.getScenarioExecutor();
+    public Scenario getScenario() {
+        return simulatorService.getScenario();
     }
 
     @Data

@@ -30,7 +30,7 @@ public class HealNodeNetworkFault implements Fault {
      * @return True if the specific node is not in the default partition, false otherwise
      */
     @Override
-    public final boolean test(FaultInput ctx) {
+    public final boolean test(FaultContext ctx) {
         Router router = ctx.getScenario().getTransport().getRouter();
         return router.getNodePartition(nodeId) != Router.DEFAULT_PARTITION;
     }
@@ -40,7 +40,7 @@ public class HealNodeNetworkFault implements Fault {
      * @param state the input argument
      */
     @Override
-    public void accept(FaultInput state) {
+    public void accept(FaultContext state) {
         Router router = state.getScenario().getTransport().getRouter();
         router.healNode(nodeId);
     }

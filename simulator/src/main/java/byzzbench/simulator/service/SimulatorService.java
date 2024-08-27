@@ -1,10 +1,8 @@
 package byzzbench.simulator.service;
 
-import byzzbench.simulator.ScenarioExecutor;
+import byzzbench.simulator.Scenario;
 import byzzbench.simulator.TerminationCondition;
-import byzzbench.simulator.schedule.Schedule;
 import byzzbench.simulator.scheduler.EventDecision;
-import byzzbench.simulator.transport.Event;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import lombok.Getter;
@@ -32,14 +30,15 @@ public class SimulatorService {
     private final int MAX_EVENTS_FOR_RUN = SimulatorConfig.MAX_EVENTS_FOR_RUN;
     private final int MAX_DROPPED_MESSAGES = SimulatorConfig.MAX_DROPPED_MESSAGES;
     private final int CHECK_TERMINATION_FREQ = SimulatorConfig.CHECK_TERMINATION_FREQ;
-    private final SchedulesService schedulesService;
-    private final ScenarioFactoryService scenarioFactoryService;
+    private final ScenarioService scenarioService;
     private final ExecutorService executor = Executors.newFixedThreadPool(1);
     private int droppedMessageCount;
     private SimulatorServiceMode mode = SimulatorServiceMode.STOPPED;
     private boolean shouldStop = false;
-    private ScenarioExecutor scenarioExecutor;
+    private Scenario scenario;
     private TerminationCondition terminationCondition;
+    private String scenarioId;
+    private JsonNode scenarioParams;
 
     @EventListener(ApplicationReadyEvent.class)
     void onStartup() {
@@ -60,13 +59,20 @@ public class SimulatorService {
     /**
      * Changes the scenario to the scenario with the given ID.
      *
-     * @param id The ID of the scenario to change to.
+     * @param scenarioId The ID of the scenario to change to.
+     * @param params The parameters for the scenario.
      */
-    public void changeScenario(String id, JsonNode params) {
-        this.scenarioExecutor = this.scenarioFactoryService.getScenario(id, params);
-        this.scenarioExecutor.setupScenario();
+    public void changeScenario(String scenarioId, JsonNode params) {
+        this.scenarioId = scenarioId;
+        this.scenarioParams = params;
+        this.resetScenario();
+    }
+
+    public void resetScenario() {
+        this.scenario = this.scenarioService.generateScenario(this.scenarioId, this.scenarioParams);
+        this.scenario.setupScenario();
         this.droppedMessageCount = 0;
-        this.scenarioExecutor.reset();
+        this.scenario.runScenario();
     }
 
     /**
@@ -96,8 +102,8 @@ public class SimulatorService {
         this.executor.submit(() -> {
             this.mode = SimulatorServiceMode.RUNNING;
             // reset the scenario to ensure that the scenario is in a clean state
-            this.changeScenario(this.scenarioExecutor.getId());
-            this.terminationCondition = this.scenarioExecutor.getTerminationCondition();
+            this.changeScenario(this.scenario.getId());
+            this.terminationCondition = this.scenario.getTerminationCondition();
 
             int numTerm = 0;
             int numMaxedOut = 0;
@@ -107,7 +113,7 @@ public class SimulatorService {
                 while (!this.shouldStop) {
                     int num_events = 0;
                     this.droppedMessageCount = 0;
-                    int scenarioId = this.schedulesService.getSchedules().size() + 1;
+                    int scenarioId = this.scenarioService.getScenarios().size() + 1;
                     System.out.println("Running scenario #" + scenarioId);
 
                     boolean flag = true;
@@ -123,10 +129,10 @@ public class SimulatorService {
                                 }
 
                                 // if the invariants do not hold, terminate the run
-                                if (!this.scenarioExecutor.invariantsHold()) {
+                                if (!this.scenario.invariantsHold()) {
                                     log.info("Invariants do not hold, terminating. . .");
-                                    var unsatisfiedInvariants = this.scenarioExecutor.unsatisfiedInvariants();
-                                    this.scenarioExecutor.getTransport().getSchedule().finalizeSchedule(unsatisfiedInvariants);
+                                    var unsatisfiedInvariants = this.scenario.unsatisfiedInvariants();
+                                    this.scenario.getSchedule().finalizeSchedule(unsatisfiedInvariants);
                                     break;
                                 }
 
@@ -149,10 +155,10 @@ public class SimulatorService {
                         System.out.println("Running action " + i + "/" + numActionsPerRun);
                         this.scenarioExecutor.getScheduler().scheduleNext();
                     } */
-                    this.scenarioExecutor.reset();
+                    this.resetScenario();
                     this.droppedMessageCount = 0;
-                    this.scenarioExecutor.getScheduler().resetParameters();
-                    this.terminationCondition = this.scenarioExecutor.getTerminationCondition();
+                    this.scenario.getScheduler().reset();
+                    this.terminationCondition = this.scenario.getTerminationCondition();
                 }
             } catch (Exception e) {
                 throw new RuntimeException(e);
@@ -167,29 +173,19 @@ public class SimulatorService {
     }
 
     public void invokeScheduleNext() throws Exception {
-        Optional<EventDecision> decisionOptional = this.scenarioExecutor.getScheduler().scheduleNext();
+        Optional<EventDecision> decisionOptional = this.scenario.getScheduler().scheduleNext(this.scenario);
         if (decisionOptional.isPresent()) {
             EventDecision decision = decisionOptional.get();
             if (decision.getDecision() == EventDecision.DecisionType.DROPPED) {
                 this.droppedMessageCount += 1;
             }
 
-            if (this.scenarioExecutor.getScheduler().isDropMessages() && this.droppedMessageCount >= MAX_DROPPED_MESSAGES ) {
-                this.scenarioExecutor.getScheduler().stopDropMessages();
+            if (this.scenario.getScheduler().isDropMessages() && this.droppedMessageCount >= MAX_DROPPED_MESSAGES ) {
+                this.scenario.getScheduler().stopDropMessages();
             }
         } else {
             log.info("Couldn't schedule action");
         }
-    }
-
-    private String convertEventListToString(Schedule schedule) {
-        String res = "schedule: \n ";
-        /*
-        for (Event event : schedule.getEvents()) {
-            res += "eid: "+ event.getEventId() + " " + event.getSenderId() + " -> " + event.getRecipientId() + ", ";
-        }
-        return res;*/
-        return schedule.getEvents().stream().map(Event::toString).reduce("", (acc, event) -> acc + event + ", ");
     }
 
     public enum SimulatorServiceMode {

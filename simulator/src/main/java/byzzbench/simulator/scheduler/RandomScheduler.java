@@ -1,9 +1,13 @@
 package byzzbench.simulator.scheduler;
 
+import byzzbench.simulator.Scenario;
 import byzzbench.simulator.faults.MessageMutationFault;
 import byzzbench.simulator.service.MessageMutatorService;
 import byzzbench.simulator.transport.*;
+import com.fasterxml.jackson.databind.JsonNode;
+import lombok.Getter;
 import lombok.extern.java.Log;
+import org.springframework.stereotype.Component;
 
 import java.util.List;
 import java.util.Optional;
@@ -12,31 +16,48 @@ import java.util.Random;
 /**
  * A scheduler that randomly selects events to deliver, drop, mutate or timeout.
  */
+@Component
 @Log
 public class RandomScheduler extends BaseScheduler {
-    private double DELIVER_MESSAGE_PROBABILITY = RandomSchedulerConfig.DELIVER_MESSAGE_PROBABILITY;
-    private double DROP_MESSAGE_PROBABILITY = RandomSchedulerConfig.DROP_MESSAGE_PROBABILITY;
-    private double MUTATE_MESSAGE_PROBABILITY = RandomSchedulerConfig.MUTATE_MESSAGE_PROBABILITY;
-    Random random = new Random();
+    private final Random random = new Random();
+    private double initialDropMessageProbability = RandomSchedulerConfig.DROP_MESSAGE_PROBABILITY;
+    private double initialMutateMessageProbability = RandomSchedulerConfig.MUTATE_MESSAGE_PROBABILITY;
+    private double initialDeliverMessageProbability = RandomSchedulerConfig.DELIVER_MESSAGE_PROBABILITY;
 
-    public RandomScheduler(MessageMutatorService messageMutatorService, Transport transport) {
-        super("Random", messageMutatorService, transport);
+    @Getter
+    private double deliverMessageProbability = RandomSchedulerConfig.DELIVER_MESSAGE_PROBABILITY;
+    @Getter
+    private double dropMessageProbability = RandomSchedulerConfig.DROP_MESSAGE_PROBABILITY;
+    @Getter
+    private double mutateMessageProbability = RandomSchedulerConfig.MUTATE_MESSAGE_PROBABILITY;
+
+
+    public RandomScheduler(MessageMutatorService messageMutatorService) {
+        super("Random", messageMutatorService);
         assert_probabilities();
     }
 
     private void assert_probabilities() {
-        assert DELIVER_MESSAGE_PROBABILITY >= 0 && DELIVER_MESSAGE_PROBABILITY <= 1;
-        assert DROP_MESSAGE_PROBABILITY >= 0 && DROP_MESSAGE_PROBABILITY <= 1;
-        assert MUTATE_MESSAGE_PROBABILITY >= 0 && MUTATE_MESSAGE_PROBABILITY <= 1;
-        assert DROP_MESSAGE_PROBABILITY + MUTATE_MESSAGE_PROBABILITY +
-                DELIVER_MESSAGE_PROBABILITY == 1;
+        if (deliverMessageProbability < 0 || deliverMessageProbability > 1) {
+            throw new IllegalArgumentException("Invalid deliver message probability: " + deliverMessageProbability);
+        }
+        if (dropMessageProbability < 0 || dropMessageProbability > 1) {
+            throw new IllegalArgumentException("Invalid drop message probability: " + dropMessageProbability);
+        }
+        if (mutateMessageProbability < 0 || mutateMessageProbability > 1) {
+            throw new IllegalArgumentException("Invalid mutate message probability: " + mutateMessageProbability);
+        }
+        if (dropMessageProbability + mutateMessageProbability +
+                deliverMessageProbability != 1) {
+            throw new IllegalArgumentException("Invalid probabilities: they must sum to 1");
+        }
     }
 
     @Override
-    public synchronized Optional<EventDecision> scheduleNext() throws Exception {
+    public synchronized Optional<EventDecision> scheduleNext(Scenario scenario) throws Exception {
         // Get a random event
         List<Event> queuedEvents =
-                getTransport().getEventsInState(Event.Status.QUEUED);
+                scenario.getTransport().getEventsInState(Event.Status.QUEUED);
 
         // if there are no events, return empty
         if (queuedEvents.isEmpty()) {
@@ -71,7 +92,7 @@ public class RandomScheduler extends BaseScheduler {
             }
 
             Event timeout = queuedTimeouts.get(random.nextInt(queuedTimeouts.size()));
-            getTransport().deliverEvent(timeout.getEventId());
+            scenario.getTransport().deliverEvent(timeout.getEventId());
 
             EventDecision decision = new EventDecision(EventDecision.DecisionType.DELIVERED, timeout.getEventId());
             return Optional.of(decision);
@@ -92,16 +113,16 @@ public class RandomScheduler extends BaseScheduler {
             Event message = queuedMessages.get(random.nextInt(queuedMessages.size()));
 
             // check if we should drop it
-            if (random.nextDouble() < DROP_MESSAGE_PROBABILITY) {
+            if (random.nextDouble() < dropMessageProbability) {
 
-                getTransport().dropEvent(message.getEventId());
+                scenario.getTransport().dropEvent(message.getEventId());
                 EventDecision decision = new EventDecision(EventDecision.DecisionType.DROPPED, message.getEventId());
 
                 return Optional.of(decision);
             }
 
             // check if should mutate and deliver it
-            if (random.nextDouble() < MUTATE_MESSAGE_PROBABILITY) {
+            if (random.nextDouble() < mutateMessageProbability) {
                 if (!(message instanceof MessageEvent me)) {
                     throw new IllegalArgumentException("Invalid message type");
                 }
@@ -111,17 +132,17 @@ public class RandomScheduler extends BaseScheduler {
                     // no mutators, return nothing
                     return Optional.empty();
                 }
-                getTransport().applyMutation(
+                scenario.getTransport().applyMutation(
                         message.getEventId(),
                         mutators.get(random.nextInt(mutators.size())));
-                getTransport().deliverEvent(message.getEventId());
+                scenario.getTransport().deliverEvent(message.getEventId());
 
                 EventDecision decision = new EventDecision(EventDecision.DecisionType.MUTATED, message.getEventId());
                 return Optional.of(decision);
             }
 
             // deliver the message, without changes
-            getTransport().deliverEvent(message.getEventId());
+            scenario.getTransport().deliverEvent(message.getEventId());
 
             EventDecision decision = new EventDecision(EventDecision.DecisionType.DELIVERED, message.getEventId());
             return Optional.of(decision);
@@ -136,7 +157,7 @@ public class RandomScheduler extends BaseScheduler {
 
             Event request = queuedClientRequests.get(random.nextInt(clientRequestEventCount));
 
-            getTransport().deliverEvent(request.getEventId());
+            scenario.getTransport().deliverEvent(request.getEventId());
 
             EventDecision decision = new EventDecision(EventDecision.DecisionType.DELIVERED, request.getEventId());
             return Optional.of(decision);
@@ -151,7 +172,7 @@ public class RandomScheduler extends BaseScheduler {
 
             Event reply = queuedClientReplies.get(random.nextInt(clientReplyEventCount));
 
-            getTransport().deliverEvent(reply.getEventId());
+            scenario.getTransport().deliverEvent(reply.getEventId());
 
             EventDecision decision = new EventDecision(EventDecision.DecisionType.DELIVERED, reply.getEventId());
             return Optional.of(decision);
@@ -166,16 +187,33 @@ public class RandomScheduler extends BaseScheduler {
     public void stopDropMessages() {
         System.out.println("Will not drop messages after this point");
         this.dropMessages = false;
-        this.DELIVER_MESSAGE_PROBABILITY += this.DROP_MESSAGE_PROBABILITY;
-        this.DROP_MESSAGE_PROBABILITY = 0;
+        this.deliverMessageProbability += this.dropMessageProbability;
+        this.dropMessageProbability = 0;
         assert_probabilities();
     }
 
     @Override
-    public void resetParameters() {
+    public void reset() {
         this.dropMessages = true;
-        DELIVER_MESSAGE_PROBABILITY = RandomSchedulerConfig.DELIVER_MESSAGE_PROBABILITY;
-        DROP_MESSAGE_PROBABILITY = RandomSchedulerConfig.DROP_MESSAGE_PROBABILITY;
-        MUTATE_MESSAGE_PROBABILITY = RandomSchedulerConfig.MUTATE_MESSAGE_PROBABILITY;
+        deliverMessageProbability = initialDeliverMessageProbability;
+        dropMessageProbability = initialDropMessageProbability;
+        mutateMessageProbability = initialMutateMessageProbability;
+    }
+
+    @Override
+    public void loadSchedulerParameters(JsonNode parameters) {
+        if (parameters.has("deliverMessageProbability")) {
+            this.initialDeliverMessageProbability = parameters.get("deliverMessageProbability").asDouble();
+            this.deliverMessageProbability = parameters.get("deliverMessageProbability").asDouble();
+        }
+        if (parameters.has("dropMessageProbability")) {
+            this.initialDropMessageProbability = parameters.get("dropMessageProbability").asDouble();
+            this.dropMessageProbability = parameters.get("dropMessageProbability").asDouble();
+        }
+        if (parameters.has("mutateMessageProbability")) {
+            this.initialMutateMessageProbability = parameters.get("mutateMessageProbability").asDouble();
+            this.mutateMessageProbability = parameters.get("mutateMessageProbability").asDouble();
+        }
+        assert_probabilities();
     }
 }

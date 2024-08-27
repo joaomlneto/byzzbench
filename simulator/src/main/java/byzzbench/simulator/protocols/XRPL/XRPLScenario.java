@@ -1,28 +1,24 @@
 package byzzbench.simulator.protocols.XRPL;
 
-import byzzbench.simulator.ScenarioExecutor;
+import byzzbench.simulator.BaseScenario;
 import byzzbench.simulator.TerminationCondition;
-import byzzbench.simulator.service.MessageMutatorService;
-import byzzbench.simulator.service.SchedulesService;
+import byzzbench.simulator.scheduler.Scheduler;
 import com.fasterxml.jackson.databind.JsonNode;
-import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.SortedSet;
 import java.util.TreeSet;
 
-@Component
-public class XRPLScenarioExecutor extends ScenarioExecutor  {
+public class XRPLScenario extends BaseScenario {
     private final int NUM_NODES = 7;
 
 
     private List<XRPLReplica> replica_list;
     private XRPLTerminationCondition terminationCondition;
 
-    public XRPLScenarioExecutor(MessageMutatorService messageMutatorService, SchedulesService schedulesService) {
-        super("xrpl", messageMutatorService, schedulesService);
-        this.setNumClients(1);
+    public XRPLScenario(Scheduler scheduler) {
+        super("xrpl", scheduler);
     }
 
     @Override
@@ -31,7 +27,7 @@ public class XRPLScenarioExecutor extends ScenarioExecutor  {
     }
 
     @Override
-    public void setup() {
+    protected void setup() {
         setupForScenario3();
         this.terminationCondition = new XRPLTerminationCondition(replica_list);
     }
@@ -140,6 +136,7 @@ public class XRPLScenarioExecutor extends ScenarioExecutor  {
      */
     @SuppressWarnings("unused")
     private void runScenario3() {
+        System.out.println("Running scenario 3");
         try {
             this.transport.sendClientRequest("C0", "tx", "D");
             this.initializeHeartbeats();

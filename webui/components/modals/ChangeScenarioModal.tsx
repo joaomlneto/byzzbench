@@ -51,6 +51,10 @@ export function ChangeScenarioModal({ innerProps }: ContextModalProps<{}>) {
     clearInputErrorOnChange: true,
   });
 
+  if (!form.values.scenario && currentScenarioId.data?.data) {
+    form.setFieldValue("scenario", currentScenarioId.data.data);
+  }
+
   return (
     <form
       onSubmit={form.onSubmit((values) => {
@@ -72,13 +76,15 @@ export function ChangeScenarioModal({ innerProps }: ContextModalProps<{}>) {
         console.log("Changing scenario", values);
         void changeScenario({ scenarioId: scenario }, parsedParams)
           .then(async () => {
-            queryClient.invalidateQueries();
             console.log("Scenario changed to ", scenario);
           })
           .catch((error) => {
             console.log("Failed to change scenario", error);
+          })
+          .finally(() => {
+            queryClient.invalidateQueries();
+            modals.closeAll();
           });
-        modals.closeAll();
       })}
     >
       <Stack gap="sm">

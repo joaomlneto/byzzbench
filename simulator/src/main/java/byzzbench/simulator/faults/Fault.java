@@ -11,7 +11,7 @@ import java.util.function.Predicate;
  * which checks if the fault can be applied to a message, and a {@link Consumer}, which
  * applies the faulty behavior.
  */
-public interface Fault extends Predicate<FaultInput>, FaultBehavior, Serializable {
+public interface Fault extends Predicate<FaultContext>, FaultBehavior, Serializable {
     /**
      * Gets the unique id of the fault.
      * @return the id of the fault
@@ -32,12 +32,12 @@ public interface Fault extends Predicate<FaultInput>, FaultBehavior, Serializabl
      * @return True if the fault can be applied, false otherwise
      */
     @Override
-    boolean test(FaultInput state);
+    boolean test(FaultContext state);
 
     /**
      * Applies a fault to the state of the system
      * @param state the state of the system
      */
     @Override
-    void accept(FaultInput state);
+    void accept(FaultContext state);
 }

@@ -1,25 +1,25 @@
 package byzzbench.simulator.faults;
 
-import byzzbench.simulator.ScenarioExecutor;
+import byzzbench.simulator.Scenario;
 import byzzbench.simulator.transport.Event;
 import byzzbench.simulator.utils.NonNull;
 import lombok.Getter;
 
 import java.util.Optional;
 
-public class FaultInput {
+public class FaultContext {
     @Getter
     @NonNull
-    private final ScenarioExecutor scenario;
+    private final Scenario scenario;
 
     private final Event eventOptional;
 
-    public FaultInput(@NonNull ScenarioExecutor scenario, @NonNull Event event) {
+    public FaultContext(@NonNull Scenario scenario, @NonNull Event event) {
         this.scenario = scenario;
         this.eventOptional = event;
     }
 
-    public FaultInput(@NonNull ScenarioExecutor scenario) {
+    public FaultContext(@NonNull Scenario scenario) {
         this.scenario = scenario;
         this.eventOptional = null;
     }

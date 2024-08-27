@@ -1,24 +1,21 @@
 package byzzbench.simulator.protocols.fasthotstuff;
 
+import byzzbench.simulator.BaseScenario;
 import byzzbench.simulator.Replica;
-import byzzbench.simulator.ScenarioExecutor;
 import byzzbench.simulator.TerminationCondition;
-import byzzbench.simulator.service.MessageMutatorService;
-import byzzbench.simulator.service.SchedulesService;
+import byzzbench.simulator.scheduler.Scheduler;
 import com.fasterxml.jackson.databind.JsonNode;
 import lombok.extern.java.Log;
-import org.springframework.stereotype.Component;
 
 import java.util.SortedSet;
 import java.util.TreeSet;
 
-@Component
 @Log
-public class FastHotStuffScenarioExecutor extends ScenarioExecutor {
+public class FastHotStuffScenarioExecutor extends BaseScenario {
     private final int NUM_NODES = 4;
 
-    public FastHotStuffScenarioExecutor(MessageMutatorService messageMutatorService, SchedulesService schedulesService) {
-        super("fasthotstuff", messageMutatorService, schedulesService);
+    public FastHotStuffScenarioExecutor(Scheduler scheduler) {
+        super("fasthotstuff", scheduler);
     }
 
     @Override
@@ -27,7 +24,7 @@ public class FastHotStuffScenarioExecutor extends ScenarioExecutor {
     }
 
     @Override
-    public void setup() {
+    protected void setup() {
         try {
             SortedSet<String> nodeIds = new TreeSet<>();
             for (int i = 0; i < NUM_NODES; i++) {

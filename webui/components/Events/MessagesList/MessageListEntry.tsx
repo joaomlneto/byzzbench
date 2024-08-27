@@ -42,8 +42,17 @@ export const MessageListEntry = ({ messageId }: { messageId: number }) => {
       >
         <Group wrap="nowrap">
           <Title order={4}>
-            {payload?.eventId} ({message.data.senderId} -{">"}{" "}
-            {payload?.recipientId})
+            {payload?.eventId} (
+            {
+              // @ts-expect-error: senderId is not in all subtypes of Event
+              message.data.senderId
+            }{" "}
+            -{">"}{" "}
+            {
+              // @ts-expect-error: recipientId is not in all subtypes of Event
+              payload?.recipientId
+            }
+            )
           </Title>
           <Text lineClamp={1}>{payload?.type?.split(".").pop()}</Text>
         </Group>
