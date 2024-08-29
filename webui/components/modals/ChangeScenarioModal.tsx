@@ -3,6 +3,7 @@
 import {
   changeScenario,
   useGetCurrentScenarioId,
+  useGetScenario,
   useGetScenarios,
 } from "@/lib/byzzbench-client";
 import { Button, JsonInput, Select, Stack } from "@mantine/core";
@@ -12,36 +13,16 @@ import { showNotification } from "@mantine/notifications";
 import { useQueryClient } from "@tanstack/react-query";
 import React from "react";
 
-const defaultParams = {
-  scenario: {
-    numClients: 1,
-  },
-  faults: {
-    process: [],
-    network: [],
-    event: [],
-  },
-  scheduler: {
-    type: "random",
-    params: {
-      probabilities: {
-        deliverEvent: 0.9,
-        dropMessage: 0.1,
-        mutateMessage: 0.0,
-      },
-    },
-  },
-};
-
 export function ChangeScenarioModal({ innerProps }: ContextModalProps<{}>) {
   const queryClient = useQueryClient();
   const scenarios = useGetScenarios();
   const currentScenarioId = useGetCurrentScenarioId();
+  const scenarioQuery = useGetScenario();
 
   const form = useForm<{ scenario: string; params: string }>({
     initialValues: {
       scenario: currentScenarioId.data?.data ?? "",
-      params: JSON.stringify(defaultParams, null, 2),
+      params: "",
     },
 
     validate: {
@@ -53,6 +34,13 @@ export function ChangeScenarioModal({ innerProps }: ContextModalProps<{}>) {
 
   if (!form.values.scenario && currentScenarioId.data?.data) {
     form.setFieldValue("scenario", currentScenarioId.data.data);
+  }
+
+  if (!form.values.params && scenarioQuery.data?.data) {
+    form.setFieldValue(
+      "params",
+      JSON.stringify(scenarioQuery.data.data, null, 2),
+    );
   }
 
   return (

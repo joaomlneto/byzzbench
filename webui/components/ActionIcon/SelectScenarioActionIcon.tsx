@@ -14,7 +14,7 @@ export const SelectScenarioActionIcon = () => {
           openContextModal({
             modal: "changeScenario",
             title: "Select Scenario",
-            size: "md",
+            size: "lg",
             innerProps: {},
           });
         }}

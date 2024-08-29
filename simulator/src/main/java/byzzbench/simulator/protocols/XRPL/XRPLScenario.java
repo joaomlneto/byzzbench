@@ -55,7 +55,7 @@ public class XRPLScenario extends BaseScenario {
                 //XRPLMessageLog messageLog = new XRPLMessageLog();
                 XRPLReplica replica = new XRPLReplica(nodeId, nodeIds, this.transport, unl, genesis); //nodes trust all nodes currently
                 this.replica_list.add(replica);
-                transport.addNode(replica);
+                this.addNode(replica);
             });
             //transport.registerMessageMutators(new XRPLProposeMessageMutatorFactory());
             //transport.registerMessageMutators(new XRPLSubmitMessageMutatorFactory());
@@ -89,7 +89,7 @@ public class XRPLScenario extends BaseScenario {
             this.replica_list.addAll(List.of(replica1, replica2, replica3, replica4, replica5, replica6, replica7));
 
             replica_list.forEach(r -> {
-                transport.addNode(r);
+                this.addNode(r);
             });
             //transport.registerMessageMutators(new XRPLProposeMessageMutatorFactory());
             //transport.registerMessageMutators(new XRPLSubmitMessageMutatorFactory());

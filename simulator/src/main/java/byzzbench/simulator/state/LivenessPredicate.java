@@ -1,6 +1,6 @@
 package byzzbench.simulator.state;
 
-import byzzbench.simulator.BaseScenario;
+import byzzbench.simulator.Scenario;
 import byzzbench.simulator.ScenarioPredicate;
 import byzzbench.simulator.transport.Event;
 
@@ -9,7 +9,12 @@ import byzzbench.simulator.transport.Event;
  */
 public class LivenessPredicate implements ScenarioPredicate {
     @Override
-    public boolean test(BaseScenario scenarioExecutor) {
+    public String getId() {
+        return "Liveness";
+    }
+
+    @Override
+    public boolean test(Scenario scenarioExecutor) {
         boolean hasNoQueuedEvents = scenarioExecutor.getTransport().getEventsInState(Event.Status.QUEUED).isEmpty();
         if (hasNoQueuedEvents) {
             System.out.println("LivenessPredicate: No events in the QUEUED state");
