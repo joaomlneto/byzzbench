@@ -27,6 +27,7 @@ public class Transport {
     /**
      * The scenario executor for the transport layer.
      */
+    @Getter(onMethod_ = {@Synchronized})
     private final Scenario scenario;
 
     /**
@@ -384,15 +385,6 @@ public class Transport {
             events.get(eventId).setStatus(Event.Status.DROPPED);
             this.observers.forEach(o -> o.onEventDropped(events.get(eventId)));
         }
-    }
-
-    @JsonIgnore
-    public synchronized Set<String> getNodeIds() {
-        return this.scenario.getNodes().keySet();
-    }
-
-    public synchronized Replica getNode(String nodeId) {
-        return this.scenario.getNodes().get(nodeId);
     }
 
     @JsonIgnore

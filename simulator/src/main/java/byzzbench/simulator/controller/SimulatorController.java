@@ -19,10 +19,7 @@ import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -51,10 +48,10 @@ public class SimulatorController {
      * @return The list of client IDs.
      */
     @GetMapping("/clients")
-    public Set<String> getClients() {
+    public SortedSet<String> getClients() {
         return simulatorService.getScenario()
                 .getClients()
-                .keySet();
+                .navigableKeySet();
     }
 
     /**
@@ -72,10 +69,8 @@ public class SimulatorController {
      * @return The list of node IDs.
      */
     @GetMapping("/nodes")
-    public Set<String> getNodes() {
-        return simulatorService.getScenario()
-                .getTransport()
-                .getNodeIds();
+    public SortedSet<String> getNodes() {
+        return simulatorService.getScenario().getNodes().navigableKeySet();
     }
 
     /**
@@ -85,7 +80,7 @@ public class SimulatorController {
      */
     @GetMapping("/node/{nodeId}")
     public Replica getNode(@PathVariable String nodeId) {
-        return simulatorService.getScenario().getTransport().getNode(nodeId);
+        return simulatorService.getScenario().getNode(nodeId);
     }
 
     /**

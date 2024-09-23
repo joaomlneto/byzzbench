@@ -13,12 +13,12 @@ public class IsolateProcessNetworkFaultFactory implements FaultFactory {
         List<Fault> networkFaults = new ArrayList<>();
 
         // create a IsolateProcessNetworkFault for each node in the network
-        networkFaults.addAll(input.getScenario().getTransport().getNodeIds().stream()
+        networkFaults.addAll(input.getScenario().getNodes().navigableKeySet().stream()
                 .map(IsolateProcessNetworkFault::new)
                 .toList());
 
         // create heal faults for each node in the network
-        networkFaults.addAll(input.getScenario().getTransport().getNodeIds().stream()
+        networkFaults.addAll(input.getScenario().getNodes().navigableKeySet().stream()
                 .map(HealNodeNetworkFault::new)
                 .toList());
 

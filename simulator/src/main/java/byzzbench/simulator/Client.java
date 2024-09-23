@@ -5,6 +5,7 @@ import byzzbench.simulator.utils.NonNull;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Builder;
 import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -17,6 +18,7 @@ import java.util.concurrent.atomic.AtomicLong;
  */
 @Getter
 @Builder
+@RequiredArgsConstructor
 public class Client implements Serializable {
     /**
      * The unique ID of the client.
@@ -65,7 +67,7 @@ public class Client implements Serializable {
      * Sends a request to a replica in the system.
      */
     public void sendRequest() {
-        String recipientId = transport.getNodeIds().iterator().next();
+        String recipientId = transport.getScenario().getNodes().keySet().iterator().next();
         String requestId = String.format("%s/%d", this.clientId, this.requestSequenceNumber.getAndIncrement());
         this.transport.sendClientRequest(this.clientId, requestId, recipientId);
     }
