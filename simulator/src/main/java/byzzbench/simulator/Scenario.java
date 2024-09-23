@@ -7,7 +7,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 
 import java.io.Serializable;
 import java.util.List;
-import java.util.Map;
+import java.util.NavigableMap;
 import java.util.Set;
 
 public interface Scenario extends Serializable {
@@ -50,13 +50,20 @@ public interface Scenario extends Serializable {
      * Get the clients in the scenario.
      * @return A map of client IDs to the client objects.
      */
-    Map<String, Client> getClients();
+    NavigableMap<String, Client> getClients();
 
     /**
      * Get the replicas in the scenario.
      * @return A map of replica IDs to the replica objects.
      */
-    Map<String, Replica> getNodes();
+    NavigableMap<String, Replica> getNodes();
+
+    /**
+     * Get a replica by ID in the scenario.
+     * @return The replica object with the given ID.
+     * @throws IllegalArgumentException If the replica ID is not found.
+     */
+    Replica getNode(String replicaId);
 
     /**
      * Get the observers in the scenario.

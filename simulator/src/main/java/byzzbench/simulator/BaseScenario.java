@@ -15,10 +15,10 @@ import lombok.Synchronized;
 import lombok.ToString;
 import lombok.extern.java.Log;
 
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
+import java.util.NavigableMap;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.stream.Collectors;
 
 /**
@@ -44,14 +44,14 @@ public abstract class BaseScenario implements Scenario {
      */
     @Getter(onMethod_ = {@Synchronized})
     @JsonIgnore
-    private final Map<String, Replica> nodes = new HashMap<>();
+    private final NavigableMap<String, Replica> nodes = new TreeMap<>();
 
     /**
      * Map of client id to the {@link Client} object.
      */
     @Getter(onMethod_ = {@Synchronized})
     @JsonIgnore
-    private final Map<String, Client> clients = new HashMap<>();
+    private final NavigableMap<String, Client> clients = new TreeMap<>();
 
     /**
      * A unique identifier for the scenario.
@@ -146,9 +146,15 @@ public abstract class BaseScenario implements Scenario {
         this.observers.forEach(o -> o.onReplicaAdded(replica));
     }
 
+    @Override
+    public synchronized Replica getNode(String replicaId) {
+        return this.getNodes().get(replicaId);
+    }
+
     /**
      * Sets up the scenario by creating the clients and calling the setup method.
      */
+    @Override
     public final void setupScenario() {
         this.setup();
         getClients().values().forEach(Client::initializeClient);
