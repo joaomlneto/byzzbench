@@ -1,6 +1,7 @@
 package byzzbench.simulator.protocols.XRPL;
 
 import byzzbench.simulator.BaseScenario;
+import byzzbench.simulator.Client;
 import byzzbench.simulator.TerminationCondition;
 import byzzbench.simulator.scheduler.Scheduler;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -138,6 +139,12 @@ public class XRPLScenario extends BaseScenario {
     private void runScenario3() {
         System.out.println("Running scenario 3");
         try {
+            this.addClient(new Client("C0", this.transport) {
+                @Override
+                public void initializeClient() {
+                    this.getTransport().sendClientRequest(this.getClientId(), "tx", "D");
+                }
+            });
             this.transport.sendClientRequest("C0", "tx", "D");
             this.initializeHeartbeats();
         } catch (Exception e) {
