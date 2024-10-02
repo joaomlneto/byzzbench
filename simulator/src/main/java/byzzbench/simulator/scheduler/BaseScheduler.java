@@ -13,13 +13,15 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public abstract class BaseScheduler implements Scheduler {
   @NonNull @Getter private final String id;
-  @NonNull @Getter(AccessLevel.PROTECTED) private final transient MessageMutatorService messageMutatorService;
+  @NonNull
+  @Getter(AccessLevel.PROTECTED)
+  private final transient MessageMutatorService messageMutatorService;
   @Getter protected boolean dropMessages = true;
-
 
   /**
    * Loads the parameters for the scheduler from a JSON object.
-   * @param parameters The JSON object containing the parameters for the scheduler.
+   * @param parameters The JSON object containing the parameters for the
+   *     scheduler.
    */
   public final void loadParameters(JsonNode parameters) {
     // check if drop messages
@@ -31,8 +33,10 @@ public abstract class BaseScheduler implements Scheduler {
   }
 
   /**
-   * Loads the subclass-specific parameters for the scheduler from a JSON object.
-   * @param parameters The JSON object containing the parameters for the scheduler.
+   * Loads the subclass-specific parameters for the scheduler from a JSON
+   * object.
+   * @param parameters The JSON object containing the parameters for the
+   *     scheduler.
    */
   protected abstract void loadSchedulerParameters(JsonNode parameters);
 }
