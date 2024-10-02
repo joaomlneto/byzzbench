@@ -15,7 +15,9 @@ export const PredicateList = () => {
   return (
     <Group p="sm">
       {Object.entries(predicates).map(([name, isSatisfied]) => (
-        <Badge color={isSatisfied ? "green" : "red"}>{name}</Badge>
+        <Badge key={name} color={isSatisfied ? "green" : "red"}>
+          {name}
+        </Badge>
       ))}
     </Group>
   );
