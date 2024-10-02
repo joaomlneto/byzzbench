@@ -42,7 +42,7 @@ public class SimulatorService {
 
     @EventListener(ApplicationReadyEvent.class)
     void onStartup() {
-        this.changeScenario("dummy", JsonNodeFactory.instance.objectNode());
+        this.changeScenario("xrpl", JsonNodeFactory.instance.objectNode());
     }
 
     /**

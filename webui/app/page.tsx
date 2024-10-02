@@ -3,13 +3,19 @@
 import { ClientList } from "@/components/ClientList";
 import { DroppedMessagesList } from "@/components/Events";
 import { ScenarioEnabledFaultsList } from "@/components/FaultsList";
-import { ImportScheduleButton } from "@/components/ImportScheduleButton";
 import { NodeList } from "@/components/NodeList";
 import { PredicateList } from "@/components/PredicateList";
 import { RunningSimulatorStats } from "@/components/RunningSimulatorStats";
-import { ScheduleDetails, ScheduleList } from "@/components/Schedule";
+import { ScheduleDetails } from "@/components/Schedule";
 import { useGetMode, useGetSchedule } from "@/lib/byzzbench-client";
-import { Accordion, Container, ScrollArea, Stack } from "@mantine/core";
+import {
+  Accordion,
+  Container,
+  Group,
+  ScrollArea,
+  Stack,
+  Text,
+} from "@mantine/core";
 import { useLocalStorage } from "@mantine/hooks";
 import dynamic from "next/dynamic";
 import React from "react";
@@ -52,18 +58,14 @@ export default function Home() {
           value={selectedAccordionEntries}
           onChange={setSelectedAccordionEntries}
         >
-          <PredicateList />
+          <Group wrap="nowrap" gap="xs">
+            <Text>Invariants:</Text>
+            <PredicateList />
+          </Group>
           <Accordion.Item key="clients" value="clients">
             <Accordion.Control>Clients</Accordion.Control>
             <Accordion.Panel>
               <ClientList />
-            </Accordion.Panel>
-          </Accordion.Item>
-          <Accordion.Item key="saved_schedules" value="saved_schedules">
-            <Accordion.Control>Saved Schedules</Accordion.Control>
-            <Accordion.Panel>
-              <ImportScheduleButton />
-              <ScheduleList />
             </Accordion.Panel>
           </Accordion.Item>
           <Accordion.Item key="nodes" value="nodes">
@@ -91,7 +93,7 @@ export default function Home() {
             </Accordion.Panel>
           </Accordion.Item>
           <Accordion.Item key="dropped_msgs" value="dropped_msgs">
-            <Accordion.Control>Dropped Messages</Accordion.Control>
+            <Accordion.Control>Discarded Events</Accordion.Control>
             <Accordion.Panel>{<DroppedMessagesList />}</Accordion.Panel>
           </Accordion.Item>
           <Accordion.Item key="faults" value="faults">

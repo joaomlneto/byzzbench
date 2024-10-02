@@ -10,7 +10,7 @@ export const HeaderMenu = () => {
   return (
     <Menu shadow="md" width={200}>
       <Menu.Target>
-        <Button>ByzzBench</Button>
+        <Button size="xs">ByzzBench</Button>
       </Menu.Target>
 
       <Menu.Dropdown>
