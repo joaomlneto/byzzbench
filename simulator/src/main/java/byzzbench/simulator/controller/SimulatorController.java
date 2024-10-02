@@ -18,10 +18,7 @@ import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -50,11 +47,14 @@ public class SimulatorController {
      * @return The list of client IDs.
      */
     @GetMapping("/clients")
-    public Set<String> getClients() {
+    public SortedSet<String> getClients() {
         return simulatorService.getScenario()
                 .getTransport()
                 .getClients()
-                .keySet();
+                .keySet() // get the set of client IDs
+                .stream()
+                .sorted() // sort the client IDs
+                .collect(Collectors.toCollection(TreeSet::new)); // return a sorted set
     }
 
     /**
@@ -72,10 +72,13 @@ public class SimulatorController {
      * @return The list of node IDs.
      */
     @GetMapping("/nodes")
-    public Set<String> getNodes() {
+    public SortedSet<String> getNodes() {
         return simulatorService.getScenario()
                 .getTransport()
-                .getNodeIds();
+                .getNodeIds()
+                .stream()
+                .sorted()
+                .collect(Collectors.toCollection(TreeSet::new));
     }
 
     /**
@@ -287,10 +290,13 @@ public class SimulatorController {
      * @return The list of enabled mutators.
      */
     @GetMapping("/mutators")
-    public Set<String> getMutators() {
+    public SortedSet<String> getMutators() {
         return messageMutatorService
                 .getMutatorsMap()
-                .keySet();
+                .keySet()
+                .stream()
+                .sorted()
+                .collect(Collectors.toCollection(TreeSet::new));
     }
 
     /**
@@ -447,19 +453,23 @@ public class SimulatorController {
     }
 
     @GetMapping("/network-faults")
-    public Set<String> getNetworkFaults() {
-        return simulatorService.getScenario().getTransport().getNetworkFaults().keySet();
+    public SortedSet<String> getNetworkFaults() {
+        return simulatorService.getScenario().getTransport().getNetworkFaults().keySet()
+                .stream()
+                .sorted()
+                .collect(Collectors.toCollection(TreeSet::new));
     }
 
     @GetMapping("/enabled-network-faults")
-    public Set<String> getEnabledNetworkFaults() {
+    public SortedSet<String> getEnabledNetworkFaults() {
         return simulatorService
                 .getScenario()
                 .getTransport()
                 .getEnabledNetworkFaults()
                 .stream()
                 .map(Fault::getId)
-                .collect(Collectors.toSet());
+                .sorted()
+                .collect(Collectors.toCollection(TreeSet::new));
     }
 
     @GetMapping("/network-faults/{faultId}")

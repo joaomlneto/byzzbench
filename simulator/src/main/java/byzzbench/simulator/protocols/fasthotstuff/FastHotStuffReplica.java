@@ -11,6 +11,7 @@ import lombok.extern.java.Log;
 import java.io.Serializable;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.stream.Collectors;
 
 @Log
 @Getter
@@ -21,9 +22,9 @@ public class FastHotStuffReplica extends LeaderBasedProtocolReplica {
     private final AtomicLong lastVotedRound = new AtomicLong(2);
     private final AtomicLong preferredRound = new AtomicLong(1);
     private final AtomicLong highestQcRound = new AtomicLong(2);
-    private final Map<String, Set<VoteMessage>> votes = new HashMap<>();
-    private final Map<Long, Set<NewViewMessage>> newViews = new HashMap<>();
-    private final Map<String, Block> knownBlocks = new HashMap<>();
+    private final SortedMap<String, SortedSet<VoteMessage>> votes = new TreeMap<>();
+    private final SortedMap<Long, SortedSet<NewViewMessage>> newViews = new TreeMap<>();
+    private final SortedMap<String, Block> knownBlocks = new TreeMap<>();
     private GenericQuorumCertificate highestQc = new QuorumCertificate(new ArrayList<>());
 
     public FastHotStuffReplica(String nodeId, SortedSet<String> nodeIds, Transport transport) {
@@ -220,7 +221,7 @@ public class FastHotStuffReplica extends LeaderBasedProtocolReplica {
         boolean authorValid = this.getNodeIds().contains(block.getAuthor());
         boolean qcAuthorsValid = block.getQc().getVotes().stream().allMatch(vote -> this.getNodeIds().contains(vote.getAuthor()));
         boolean hasQuorum = block.getQc().getVotes().size() >= this.computeQuorumSize();
-        Set<String> committedBlocks = block.getQc().getVotes().stream().map(vote -> vote.getBlockHash()).collect(java.util.stream.Collectors.toSet());
+        SortedSet<String> committedBlocks = block.getQc().getVotes().stream().map(vote -> vote.getBlockHash()).collect(Collectors.toCollection(TreeSet::new));
         boolean allSameHash = committedBlocks.size() == 1;
         return authorValid && qcAuthorsValid && allSameHash && hasQuorum;
     }
@@ -286,7 +287,7 @@ public class FastHotStuffReplica extends LeaderBasedProtocolReplica {
     // Adds a vote to the storage
     public Optional<QuorumCertificate> addVote(VoteMessage message) {
         String digest = message.getBlockHash();
-        Optional<Set<VoteMessage>> votes = canMakeQc(this.votes, digest, message);
+        Optional<SortedSet<VoteMessage>> votes = canMakeQc(this.votes, digest, message);
         if (votes.isPresent()) {
             return Optional.of(new QuorumCertificate(votes.get()));
         } else {
@@ -296,7 +297,7 @@ public class FastHotStuffReplica extends LeaderBasedProtocolReplica {
 
     public Optional<AggregateQuorumCertificate> addVote(NewViewMessage message) {
         long round = message.getRound();
-        Optional<Set<NewViewMessage>> newViewsQc = canMakeQc(this.newViews, round, message);
+        Optional<SortedSet<NewViewMessage>> newViewsQc = canMakeQc(this.newViews, round, message);
         if (newViewsQc.isPresent()) {
             return Optional.of(new AggregateQuorumCertificate(newViewsQc.get()));
         } else {
@@ -304,7 +305,7 @@ public class FastHotStuffReplica extends LeaderBasedProtocolReplica {
         }
     }
 
-    public <K, V extends GenericVoteMessage> Optional<Set<V>> canMakeQc(Map<K, Set<V>> collection, K key, V value) {
+    public <K, V extends GenericVoteMessage> Optional<SortedSet<V>> canMakeQc(Map<K, SortedSet<V>> collection, K key, V value) {
         boolean before = collection.containsKey(key) && collection.get(key).size() >= this.computeQuorumSize();
         collection.computeIfAbsent(key, k -> new TreeSet<>()).add(value);
         boolean after = collection.containsKey(key) && collection.get(key).size() >= this.computeQuorumSize();

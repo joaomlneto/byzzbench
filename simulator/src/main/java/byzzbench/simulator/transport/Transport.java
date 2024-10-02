@@ -17,6 +17,7 @@ import lombok.extern.java.Log;
 import java.io.Serializable;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.stream.Collectors;
 
 /**
  * Transport layer for the simulator.
@@ -443,8 +444,11 @@ public class Transport {
     }
 
     @JsonIgnore
-    public synchronized Set<String> getNodeIds() {
-        return nodes.keySet();
+    public synchronized SortedSet<String> getNodeIds() {
+        return nodes.keySet()
+                .stream()
+                .sorted()
+                .collect(Collectors.toCollection(TreeSet::new));
     }
 
     public synchronized Replica getNode(String nodeId) {
