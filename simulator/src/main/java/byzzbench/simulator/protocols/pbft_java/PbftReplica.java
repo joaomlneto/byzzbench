@@ -5,6 +5,8 @@ import byzzbench.simulator.protocols.pbft_java.message.*;
 import byzzbench.simulator.protocols.pbft_java.pojo.ReplicaRequestKey;
 import byzzbench.simulator.protocols.pbft_java.pojo.ReplicaTicketPhase;
 import byzzbench.simulator.protocols.pbft_java.pojo.ViewChangeResult;
+import byzzbench.simulator.state.LogEntry;
+import byzzbench.simulator.state.SerializableLogEntry;
 import byzzbench.simulator.state.TotalOrderCommitLog;
 import byzzbench.simulator.transport.MessagePayload;
 import byzzbench.simulator.transport.Transport;
@@ -19,7 +21,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 
 @Log
-public class PbftReplica<O extends Serializable, R extends Serializable> extends LeaderBasedProtocolReplica<Serializable> {
+public class PbftReplica<O extends Serializable, R extends Serializable> extends LeaderBasedProtocolReplica {
 
     @Getter
     private final int tolerance;
@@ -51,7 +53,7 @@ public class PbftReplica<O extends Serializable, R extends Serializable> extends
     private volatile boolean disgruntled = false;
 
     public PbftReplica(String replicaId,
-                       Set<String> nodeIds,
+                       SortedSet<String> nodeIds,
                        int tolerance,
                        long timeout,
                        MessageLog messageLog,
@@ -438,7 +440,7 @@ public class PbftReplica<O extends Serializable, R extends Serializable> extends
                 RequestMessage request = ticket.getRequest();
                 if (request != null) {
                     Serializable operation = request.getOperation();
-                    Serializable result = this.compute(operation);
+                    Serializable result = this.compute(new SerializableLogEntry(operation));
 
                     String clientId = request.getClientId();
                     long timestamp = request.getTimestamp();
@@ -663,9 +665,8 @@ public class PbftReplica<O extends Serializable, R extends Serializable> extends
         return this.computePrimaryId(this.getViewNumber(), this.getNodeIds().size());
     }
 
-    public Serializable compute(Serializable operation) {
+    public Serializable compute(LogEntry operation) {
         this.commitOperation(operation);
-
         return operation;
     }
 

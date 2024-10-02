@@ -1,17 +1,15 @@
 package byzzbench.simulator.transport;
 
+import byzzbench.simulator.BaseScenario;
 import byzzbench.simulator.Client;
 import byzzbench.simulator.Replica;
-import byzzbench.simulator.ScenarioExecutor;
 import byzzbench.simulator.faults.Fault;
-import byzzbench.simulator.faults.FaultInput;
+import byzzbench.simulator.faults.FaultContext;
 import byzzbench.simulator.faults.HealNodeNetworkFault;
 import byzzbench.simulator.faults.IsolateProcessNetworkFault;
-import byzzbench.simulator.schedule.Schedule;
-import byzzbench.simulator.service.MessageMutatorService;
-import byzzbench.simulator.service.SchedulesService;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Getter;
+import lombok.Setter;
 import lombok.Synchronized;
 import lombok.ToString;
 import lombok.extern.java.Log;
@@ -26,71 +24,69 @@ import java.util.concurrent.atomic.AtomicLong;
  * This class is responsible for handling events (messages and timeouts).
  * It also provides methods for sending messages, setting timeouts, and applying
  * faults.
- *
- * @param <T> The type of the entries in the commit log of each {@link Replica}.
  */
 @Log
 @ToString
-public class Transport<T extends Serializable> {
-    private final ScenarioExecutor<T> scenario;
-
-    /**
-     * The service for storing and managing schedules.
-     */
-    private final MessageMutatorService messageMutatorService;
-
-    /**
-     * The service for storing and managing schedules.
-     */
-    private final SchedulesService schedulesService;
-
+public class Transport {
     /**
      * The sequence number for events.
      */
     private final AtomicLong eventSeqNum = new AtomicLong(1);
-
     /**
      * Map of node id to the {@link Replica} object.
      */
     @Getter(onMethod_ = {@Synchronized})
     @JsonIgnore
-    private final Map<String, Replica<T>> nodes = new HashMap<>();
+    private final Map<String, Replica> nodes = new HashMap<>();
 
+    /**
+     * Map of network fault id to the {@link Fault} object. This is used to
+     * apply network faults to the system. Network faults are applied
+     * automatically by the transport layer when its predicate is satisfied.
+     */
     @Getter(onMethod_ = {@Synchronized})
-    @JsonIgnore
-    private final Map<String, Fault<T>> networkFaults = new HashMap<>();
-
+    private final Map<String, Fault> networkFaults = new HashMap<>();
     /**
      * Map of client id to the {@link Client} object.
      */
     @Getter(onMethod_ = {@Synchronized})
     @JsonIgnore
-    private final Map<String, Client<T>> clients = new HashMap<>();
-
+    private final Map<String, Client> clients = new HashMap<>();
     /**
      * Map of event ID to the {@link Event} object.
      */
     @Getter(onMethod_ = {@Synchronized})
     @JsonIgnore
     private final Map<Long, Event> events = new TreeMap<>();
-
     /**
      * The router for managing partitions.
      */
     @Getter(onMethod_ = {@Synchronized})
     private final Router router = new Router();
+    /**
+     * List of observers for the transport layer.
+     */
+    private final List<TransportObserver> observers = new ArrayList<>();
+    /**
+     * The scenario executor for the transport layer.
+     */
+    @Setter
+    private BaseScenario scenario;
 
     /**
-     * The schedule of events in order of delivery.
+     * Adds an observer to the transport layer.
+     * @param observer The observer to add.
      */
-    @Getter(onMethod_ = {@Synchronized})
-    private Schedule schedule;
+    public synchronized void addObserver(TransportObserver observer) {
+        this.observers.add(observer);
+    }
 
-    public Transport (ScenarioExecutor<T> scenario, MessageMutatorService messageMutatorService, SchedulesService schedulesService) {
-        this.scenario = scenario;
-        this.messageMutatorService = messageMutatorService;
-        this.schedulesService = schedulesService;
-        this.schedule = this.schedulesService.addSchedule();
+    /**
+     * Removes an observer from the transport layer.
+     * @param observer The observer to remove.
+     */
+    public synchronized void removeObserver(TransportObserver observer) {
+        this.observers.remove(observer);
     }
 
     /**
@@ -98,15 +94,15 @@ public class Transport<T extends Serializable> {
      *
      * @param replica The node to add.
      */
-    public synchronized void addNode(Replica<T> replica) {
+    public synchronized void addNode(Replica replica) {
         nodes.put(replica.getNodeId(), replica);
 
         // for each node, add a IsolateNodeFault and a HealNodeFault
-        this.addNetworkFault(new IsolateProcessNetworkFault<>(replica.getNodeId()));
-        this.addNetworkFault(new HealNodeNetworkFault<>(replica.getNodeId()));
+        this.addNetworkFault(new IsolateProcessNetworkFault(replica.getNodeId()));
+        this.addNetworkFault(new HealNodeNetworkFault(replica.getNodeId()));
     }
 
-    public void addNetworkFault(Fault<T> fault) {
+    public synchronized void addNetworkFault(Fault fault) {
         this.networkFaults.put(fault.getId(), fault);
     }
 
@@ -115,7 +111,7 @@ public class Transport<T extends Serializable> {
      *
      * @param client The client to add.
      */
-    public synchronized void addClient(Client<T> client) {
+    private synchronized void addClient(Client client) {
         clients.put(client.getClientId(), client);
     }
 
@@ -124,9 +120,10 @@ public class Transport<T extends Serializable> {
      *
      * @param numClients The number of clients to create.
      */
-    public synchronized void createClients(int numClients) {
+    public synchronized void setNumClients(int numClients) {
+        clients.clear();
         for (int i = 0; i < numClients; i++) {
-            Client<T> client = new Client<>(String.format("C%d", i), this);
+            Client client = new Client(String.format("C%d", i), this);
             this.addClient(client);
         }
     }
@@ -147,9 +144,13 @@ public class Transport<T extends Serializable> {
             throw new IllegalArgumentException("Replica not found: " + recipient);
         }
 
-        long eventId = this.eventSeqNum.getAndIncrement();
-        Event event = new ClientRequestEvent(eventId, sender, recipient, operation);
-        events.put(eventId, event);
+        Event event = ClientRequestEvent.builder()
+                .eventId(this.eventSeqNum.getAndIncrement())
+                .senderId(sender)
+                .recipientId(recipient)
+                .payload(operation)
+                .build();
+        this.appendEvent(event);
     }
 
     /**
@@ -168,9 +169,13 @@ public class Transport<T extends Serializable> {
             throw new IllegalArgumentException("Client not found: " + recipient);
         }
 
-        long eventId = this.eventSeqNum.getAndIncrement();
-        Event event = new ClientReplyEvent(eventId, sender, recipient, response);
-        events.put(eventId, event);
+        Event event = ClientReplyEvent.builder()
+                .eventId(this.eventSeqNum.getAndIncrement())
+                .senderId(sender)
+                .recipientId(recipient)
+                .payload(response)
+                .build();
+        this.appendEvent(event);
     }
 
     /**
@@ -181,7 +186,7 @@ public class Transport<T extends Serializable> {
      */
     public synchronized void sendMessage(String sender, MessagePayload message,
                             String recipient) {
-        this.multicast(sender, Set.of(recipient), message);
+        this.multicast(sender, new TreeSet<>(Set.of(recipient)), message);
     }
 
     /**
@@ -194,7 +199,6 @@ public class Transport<T extends Serializable> {
         this.router.resetPartitions();
         this.events.clear();
         this.nodes.values().forEach(Replica::initialize);
-        this.schedule = schedulesService.addSchedule();
     }
 
     /**
@@ -209,19 +213,28 @@ public class Transport<T extends Serializable> {
                 .toList();
     }
 
+    private synchronized void appendEvent(Event event) {
+        this.events.put(event.getEventId(), event);
+        this.observers.forEach(o -> o.onEventAdded(event));
+    }
+
     /**
      * Multicasts a message to a set of recipients.
      * @param sender The ID of the sender
      * @param recipients The set of recipient IDs
      * @param payload The payload of the message
      */
-    public synchronized void multicast(String sender, Set<String> recipients,
+    public synchronized void multicast(String sender, SortedSet<String> recipients,
                           MessagePayload payload) {
         for (String recipient : recipients) {
             long messageId = this.eventSeqNum.getAndIncrement();
-            MessageEvent messageEvent =
-                    new MessageEvent(messageId, sender, recipient, payload);
-            events.put(messageId, messageEvent);
+            MessageEvent messageEvent = MessageEvent.builder()
+                    .eventId(messageId)
+                    .senderId(sender)
+                    .recipientId(recipient)
+                    .payload(payload)
+                    .build();
+            this.appendEvent(messageEvent);
 
             // if they don't have connectivity, drop it directly
             if (!router.haveConnectivity(sender, recipient)) {
@@ -251,7 +264,7 @@ public class Transport<T extends Serializable> {
         }
 
         // deliver the event
-        this.schedule.appendEvent(e);
+        this.scenario.getSchedule().appendEvent(e);
         e.setStatus(Event.Status.DELIVERED);
 
         switch (e) {
@@ -272,7 +285,9 @@ public class Transport<T extends Serializable> {
             }
         }
 
-        log.info("Delivered " + e.getEventId() + ": " + e.getSenderId() + "->" + e.getRecipientId());
+        this.observers.forEach(o -> o.onEventDelivered(e));
+
+        log.info("Delivered " + e);
     }
 
     /**
@@ -287,7 +302,8 @@ public class Transport<T extends Serializable> {
             throw new IllegalArgumentException("Event not found or not in QUEUED state");
         }
         e.setStatus(Event.Status.DROPPED);
-        log.info("Dropped: " + e.getSenderId() + "->" + e.getRecipientId());
+        this.observers.forEach(o -> o.onEventDropped(e));
+        log.info("Dropped: " + e);
     }
 
     /**
@@ -329,7 +345,7 @@ public class Transport<T extends Serializable> {
         }
 
         // create input for the fault
-        FaultInput<T> input = new FaultInput<>(this.scenario, e);
+        FaultContext input = new FaultContext(this.scenario, e);
 
         // check if mutator can be applied to the event
         if (!fault.test(input)) {
@@ -342,30 +358,33 @@ public class Transport<T extends Serializable> {
         fault.accept(input);
 
         // create a new event for the mutation
-        Event mutateMessageEvent = new MutateMessageEvent(
-                this.eventSeqNum.getAndIncrement(), m.getSenderId(),
-                m.getRecipientId(), new MutateMessageEventPayload(
-                        eventId, fault.getId()));
-        events.put(mutateMessageEvent.getEventId(), mutateMessageEvent);
+        MutateMessageEvent mutateMessageEvent = MutateMessageEvent.builder()
+                .eventId(this.eventSeqNum.getAndIncrement())
+                .senderId(m.getSenderId())
+                .recipientId(m.getRecipientId())
+                .payload(new MutateMessageEventPayload(eventId, fault.getId()))
+                .build();
+        this.appendEvent(mutateMessageEvent);
 
         // append the event to the schedule
         mutateMessageEvent.setStatus(Event.Status.DELIVERED);
-        this.schedule.appendEvent(mutateMessageEvent);
+        this.scenario.getSchedule().appendEvent(mutateMessageEvent);
+        this.observers.forEach(o -> o.onMessageMutation(mutateMessageEvent.getPayload()));
 
         log.info("Mutated: " + m);
     }
 
-    public void applyFault(String faultId) {
-        Fault<T> fault = this.networkFaults.get(faultId);
+    public synchronized void applyFault(String faultId) {
+        Fault fault = this.networkFaults.get(faultId);
         if (fault == null) {
             throw new IllegalArgumentException("Fault not found: " + faultId);
         }
         this.applyFault(fault);
     }
 
-    public void applyFault(Fault<T> fault) {
+    public synchronized void applyFault(Fault fault) {
         // create input for the fault
-        FaultInput<T> input = new FaultInput<>(this.scenario);
+        FaultContext input = new FaultContext(this.scenario);
 
         // check if fault can be applied
         if (!fault.test(input)) {
@@ -376,24 +395,34 @@ public class Transport<T extends Serializable> {
         fault.accept(input);
 
         // create a new event for the fault and append it to the schedule
-        Event faultEvent = new GenericFaultEvent(this.eventSeqNum.getAndIncrement(),
-                "none", "none", fault);
+        GenericFaultEvent faultEvent = GenericFaultEvent.builder()
+                .eventId(this.eventSeqNum.getAndIncrement())
+                .payload(fault)
+                .build();
         faultEvent.setStatus(Event.Status.DELIVERED);
-        this.schedule.appendEvent(faultEvent);
+        this.scenario.getSchedule().appendEvent(faultEvent);
+        this.observers.forEach(o -> o.onFault(fault));
     }
 
-    public synchronized long setTimeout(Replica<T> replica, Runnable runnable,
+    public synchronized long setTimeout(Replica replica, Runnable runnable,
                            long timeout) {
-        Event e = new TimeoutEvent(this.eventSeqNum.getAndIncrement(),
-                "TIMEOUT", replica.getNodeId(),
-                timeout, runnable);
-        this.events.put(e.getEventId(), e);
+        TimeoutEvent timeoutEvent = TimeoutEvent.builder()
+                .eventId(this.eventSeqNum.getAndIncrement())
+                .description("TIMEOUT")
+                .nodeId(replica.getNodeId())
+                .timeout(timeout)
+                .task(runnable)
+                .build();
+        this.appendEvent(timeoutEvent);
+        this.observers.forEach(o -> o.onTimeout(timeoutEvent));
+
+
         log.info("Timeout set for " + replica.getNodeId() + " in " +
-                timeout + "ms: " + e);
-        return e.getEventId();
+                timeout + "ms: " + timeoutEvent);
+        return timeoutEvent.getEventId();
     }
 
-    public synchronized void clearReplicaTimeouts(Replica<T> replica) {
+    public synchronized void clearReplicaTimeouts(Replica replica) {
         // get all event IDs for timeouts from this replica
         List<Long> eventIds =
                 this.events.values()
@@ -401,7 +430,7 @@ public class Transport<T extends Serializable> {
                         .filter(
                                 e
                                         -> e instanceof TimeoutEvent t &&
-                                        t.getSenderId().equals(replica.getNodeId()) &&
+                                        t.getNodeId().equals(replica.getNodeId()) &&
                                         t.getStatus() == Event.Status.QUEUED)
                         .map(Event::getEventId)
                         .toList();
@@ -409,25 +438,28 @@ public class Transport<T extends Serializable> {
         // remove all event IDs
         for (Long eventId : eventIds) {
             events.get(eventId).setStatus(Event.Status.DROPPED);
+            this.observers.forEach(o -> o.onEventDropped(events.get(eventId)));
         }
     }
 
+    @JsonIgnore
     public synchronized Set<String> getNodeIds() {
         return nodes.keySet();
     }
 
-    public synchronized Replica<T> getNode(String nodeId) {
+    public synchronized Replica getNode(String nodeId) {
         return nodes.get(nodeId);
     }
 
-    public List<Fault<T>> getEnabledNetworkFaults() {
-        FaultInput<T> input = new FaultInput<>(this.scenario);
+    @JsonIgnore
+    public synchronized List<Fault> getEnabledNetworkFaults() {
+        FaultContext input = new FaultContext(this.scenario);
         return this.networkFaults.values().stream()
                 .filter(f -> f.test(input))
                 .toList();
     }
 
-    public Fault<T> getNetworkFault(String faultId) {
+    public synchronized Fault getNetworkFault(String faultId) {
         return this.networkFaults.get(faultId);
     }
 }

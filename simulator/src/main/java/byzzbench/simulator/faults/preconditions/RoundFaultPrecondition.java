@@ -1,6 +1,6 @@
 package byzzbench.simulator.faults.preconditions;
 
-import byzzbench.simulator.faults.FaultInput;
+import byzzbench.simulator.faults.FaultContext;
 import byzzbench.simulator.faults.FaultPredicate;
 import byzzbench.simulator.transport.Event;
 import byzzbench.simulator.transport.MessageEvent;
@@ -10,7 +10,7 @@ import lombok.RequiredArgsConstructor;
 import java.util.Optional;
 
 @RequiredArgsConstructor
-public class RoundFaultPrecondition implements FaultPredicate<MessageEvent> {
+public class RoundFaultPrecondition implements FaultPredicate {
   private final long round;
 
   @Override
@@ -24,7 +24,7 @@ public class RoundFaultPrecondition implements FaultPredicate<MessageEvent> {
   }
 
   @Override
-  public boolean test(FaultInput<MessageEvent> ctx) {
+  public boolean test(FaultContext ctx) {
     Optional<Event> event = ctx.getEvent();
 
     if (event.isEmpty()) {

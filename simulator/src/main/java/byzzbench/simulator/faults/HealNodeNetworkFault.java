@@ -1,12 +1,10 @@
 package byzzbench.simulator.faults;
 
 import byzzbench.simulator.transport.Router;
+import byzzbench.simulator.utils.NonNull;
 import lombok.Getter;
-import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.ToString;
-
-import java.io.Serializable;
 
 /**
  * A pseudo-fault that heals the network completely
@@ -14,7 +12,7 @@ import java.io.Serializable;
 @Getter
 @ToString
 @RequiredArgsConstructor
-public class HealNodeNetworkFault<T extends Serializable> implements Fault<T> {
+public class HealNodeNetworkFault implements Fault {
     @NonNull
     private final String nodeId;
 
@@ -32,7 +30,7 @@ public class HealNodeNetworkFault<T extends Serializable> implements Fault<T> {
      * @return True if the specific node is not in the default partition, false otherwise
      */
     @Override
-    public final boolean test(FaultInput<T> ctx) {
+    public final boolean test(FaultContext ctx) {
         Router router = ctx.getScenario().getTransport().getRouter();
         return router.getNodePartition(nodeId) != Router.DEFAULT_PARTITION;
     }
@@ -42,7 +40,7 @@ public class HealNodeNetworkFault<T extends Serializable> implements Fault<T> {
      * @param state the input argument
      */
     @Override
-    public void accept(FaultInput<T> state) {
+    public void accept(FaultContext state) {
         Router router = state.getScenario().getTransport().getRouter();
         router.healNode(nodeId);
     }

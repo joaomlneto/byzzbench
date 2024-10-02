@@ -2,16 +2,22 @@ package byzzbench.simulator.controller;
 
 import byzzbench.simulator.Client;
 import byzzbench.simulator.Replica;
+import byzzbench.simulator.Scenario;
 import byzzbench.simulator.faults.Fault;
 import byzzbench.simulator.faults.MessageMutationFault;
 import byzzbench.simulator.schedule.Schedule;
-import byzzbench.simulator.service.*;
+import byzzbench.simulator.service.MessageMutatorService;
+import byzzbench.simulator.service.ScenarioService;
+import byzzbench.simulator.service.SchedulerFactoryService;
+import byzzbench.simulator.service.SimulatorService;
 import byzzbench.simulator.state.adob.AdobCache;
 import byzzbench.simulator.transport.Event;
+import byzzbench.simulator.transport.MailboxEvent;
+import com.fasterxml.jackson.databind.JsonNode;
+import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
-import java.io.Serializable;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -26,9 +32,8 @@ import java.util.stream.IntStream;
 @RequiredArgsConstructor
 public class SimulatorController {
     private final MessageMutatorService messageMutatorService;
-    private final SchedulesService schedulesService;
     private final SimulatorService simulatorService;
-    private final ScenarioFactoryService scenarioFactoryService;
+    private final ScenarioService scenarioService;
     private final SchedulerFactoryService schedulerFactoryService;
 
     /**
@@ -46,7 +51,7 @@ public class SimulatorController {
      */
     @GetMapping("/clients")
     public Set<String> getClients() {
-        return simulatorService.getScenarioExecutor()
+        return simulatorService.getScenario()
                 .getTransport()
                 .getClients()
                 .keySet();
@@ -58,39 +63,57 @@ public class SimulatorController {
      * @return The client with the given ID.
      */
     @GetMapping("/client/{clientId}")
-    public Client<? extends Serializable> getClient(@PathVariable String clientId) {
-        return simulatorService.getScenarioExecutor().getTransport().getClients().get(clientId);
+    public Client getClient(@PathVariable String clientId) {
+        return simulatorService.getScenario().getTransport().getClients().get(clientId);
     }
 
+    /**
+     * Get the list of available node IDs in the current scenario.
+     * @return The list of node IDs.
+     */
     @GetMapping("/nodes")
     public Set<String> getNodes() {
-        return simulatorService.getScenarioExecutor()
+        return simulatorService.getScenario()
                 .getTransport()
                 .getNodeIds();
     }
 
+    /**
+     * Get the internal state of the node with the given ID.
+     * @param nodeId The ID of the node to get.
+     * @return The internal state of the node with the given ID.
+     */
     @GetMapping("/node/{nodeId}")
-    public Replica<? extends Serializable> getNode(@PathVariable String nodeId) {
-        return simulatorService.getScenarioExecutor().getTransport().getNode(nodeId);
+    public Replica getNode(@PathVariable String nodeId) {
+        return simulatorService.getScenario().getTransport().getNode(nodeId);
     }
 
+    /**
+     * Get the list of event IDs in the mailbox of the node with the given ID.
+     * @param nodeId The ID of the node to get the mailbox of.
+     * @param type The type of the message to filter by.
+     * @return The list of event IDs in the mailbox of the node with the given ID.
+     */
     @GetMapping("/node/{nodeId}/mailbox")
-    public List<Long>
-    getNodeMailbox(@PathVariable String nodeId,
+    public List<Long> getNodeMailbox(@PathVariable String nodeId,
                    @RequestParam(required = false) String type) {
-        return simulatorService.getScenarioExecutor()
+        return simulatorService.getScenario()
                 .getTransport()
                 .getEventsInState(Event.Status.QUEUED)
                 .stream()
                 .filter(e -> type == null || e.getClass().getSimpleName().equals(type))
-                .filter(e -> e.getRecipientId().equals(nodeId))
+                .filter(e -> e instanceof MailboxEvent me && me.getRecipientId().equals(nodeId))
                 .map(Event::getEventId)
                 .toList();
     }
 
+    /**
+     * Get the list of all event IDs in the scenario.
+     * @return The list of all event IDs in the scenario.
+     */
     @GetMapping("/events")
     public List<Long> getEvents() {
-        return simulatorService.getScenarioExecutor()
+        return simulatorService.getScenario()
                 .getTransport()
                 .getEvents()
                 .keySet()
@@ -98,17 +121,26 @@ public class SimulatorController {
                 .toList();
     }
 
+    /**
+     * Get the event with the given ID.
+     * @param eventId The ID of the event to get.
+     * @return The event with the given ID.
+     */
     @GetMapping("/events/{eventId}")
     public Event getEvent(@PathVariable Long eventId) {
-        return simulatorService.getScenarioExecutor()
+        return simulatorService.getScenario()
                 .getTransport()
                 .getEvents()
                 .get(eventId);
     }
 
+    /**
+     * Get the list of event IDs in the QUEUED state.
+     * @return The list of event IDs in the QUEUED state.
+     */
     @GetMapping("/events/queued")
     public List<Long> getQueuedMessages() {
-        return simulatorService.getScenarioExecutor()
+        return simulatorService.getScenario()
                 .getTransport()
                 .getEventsInState(Event.Status.QUEUED)
                 .stream()
@@ -116,9 +148,13 @@ public class SimulatorController {
                 .toList();
     }
 
+    /**
+     * Get the list of event IDs in the DROPPED state.
+     * @return The list of event IDs in the DROPPED state.
+     */
     @GetMapping("/events/dropped")
     public List<Long> getDroppedMessages() {
-        return simulatorService.getScenarioExecutor()
+        return simulatorService.getScenario()
                 .getTransport()
                 .getEventsInState(Event.Status.DROPPED)
                 .stream()
@@ -126,9 +162,13 @@ public class SimulatorController {
                 .toList();
     }
 
+    /**
+     * Get the list of event IDs in the DELIVERED state.
+     * @return The list of event IDs in the DELIVERED state.
+     */
     @GetMapping("/events/delivered")
     public List<Long> getDeliveredMessages() {
-        return simulatorService.getScenarioExecutor()
+        return simulatorService.getScenario()
                 .getTransport()
                 .getEventsInState(Event.Status.DELIVERED)
                 .stream()
@@ -141,27 +181,62 @@ public class SimulatorController {
      * @return The list of delivered event IDs in order.
      */
     @GetMapping("/schedule")
-    public List<Long> getSchedule() {
-        return simulatorService.getScenarioExecutor()
-                .getTransport()
-                .getSchedule()
-                .getEvents()
-                .stream()
-                .map(Event::getEventId)
-                .toList();
+    public Schedule getSchedule() {
+        return simulatorService.getScenario().getSchedule();
     }
 
+    /**
+     * Materializes a given schedule in a given scenario.
+     * @param schedule The schedule to materialize.
+     */
+    @PutMapping("/schedule")
+    public void materializeSchedule(@RequestBody Schedule schedule) {
+        // FIXME: the deserialization of the schedule is not working
+        System.out.println("Materializing Schedule: " + schedule);
+        throw new UnsupportedOperationException("Materializing schedules is not supported yet.");
+        /*
+        ScenarioExecutor<?> scenarioExecutor = simulatorService.getScenarioExecutor();
+
+        // set scenario
+        simulatorService.changeScenario(schedule.getScenarioId());
+
+        // set schedule
+        for (Event event : schedule.getEvents()) {
+            Event e = scenarioExecutor.getTransport().getEvent(event.getEventId());
+
+            if (e == null) {
+                throw new IllegalArgumentException("Event not found: " + event.getEventId());
+            }
+
+            if (e.getStatus() != Event.Status.QUEUED) {
+                throw new IllegalArgumentException("Event is not in QUEUED state: " + event.getEventId());
+            }
+
+            // TODO: apply the event
+        }*/
+    }
+
+    /**
+     * Get the event with the given ID.
+     * @param eventId The ID of the event to get.
+     * @return The event with the given ID.
+     */
     @GetMapping("/event/{eventId}")
     public Event getMessage(@PathVariable Long eventId) {
-        return simulatorService.getScenarioExecutor()
+        return simulatorService.getScenario()
                 .getTransport()
                 .getEvents()
                 .get(eventId);
     }
 
+    /**
+     * Get the list of mutators that can be applied to the event with the given ID.
+     * @param eventId The ID of the event to get mutators for.
+     * @return The list of mutators that can be applied to the event with the given ID.
+     */
     @GetMapping("/event/{eventId}/mutators")
     public List<String> getMessageMutators(@PathVariable Long eventId) {
-        Event e = simulatorService.getScenarioExecutor()
+        Event e = simulatorService.getScenario()
                 .getTransport()
                 .getEvents()
                 .get(eventId);
@@ -177,14 +252,23 @@ public class SimulatorController {
                 .toList();
     }
 
+    /**
+     * Deliver the event with the given ID.
+     * @param eventId The ID of the event to deliver.
+     * @throws Exception If the event cannot be delivered.
+     */
     @PostMapping("/event/{eventId}/deliver")
     public void deliverMessage(@PathVariable Long eventId) throws Exception {
-        simulatorService.getScenarioExecutor().getTransport().deliverEvent(eventId);
+        simulatorService.getScenario().getTransport().deliverEvent(eventId);
     }
 
+    /**
+     * Drop the event with the given ID.
+     * @param eventId The ID of the event to drop.
+     */
     @PostMapping("/event/{eventId}/drop")
     public void dropMessage(@PathVariable Long eventId) {
-        simulatorService.getScenarioExecutor().getTransport().dropEvent(eventId);
+        simulatorService.getScenario().getTransport().dropEvent(eventId);
     }
 
     /**
@@ -194,10 +278,14 @@ public class SimulatorController {
      */
     @PostMapping("/event/{eventId}/mutate/{mutatorId}")
     public void mutateMessage(@PathVariable Long eventId, @PathVariable String mutatorId) {
-        Fault<?> f = this.messageMutatorService.getMutator(mutatorId);
-        simulatorService.getScenarioExecutor().getTransport().applyMutation(eventId, f);
+        MessageMutationFault mutator = this.messageMutatorService.getMutator(mutatorId);
+        simulatorService.getScenario().getTransport().applyMutation(eventId, mutator);
     }
 
+    /**
+     * Get the list of enabled mutators.
+     * @return The list of enabled mutators.
+     */
     @GetMapping("/mutators")
     public Set<String> getMutators() {
         return messageMutatorService
@@ -205,15 +293,23 @@ public class SimulatorController {
                 .keySet();
     }
 
+    /**
+     * Get the mutator with the given ID.
+     * @param mutatorId The ID of the mutator to get.
+     * @return The mutator with the given ID.
+     */
     @GetMapping("/mutators/{mutatorId}")
-    public MessageMutationFault<? extends Serializable> getMutator(@PathVariable String mutatorId) {
+    public MessageMutationFault getMutator(@PathVariable String mutatorId) {
         return messageMutatorService
                 .getMutator(mutatorId);
     }
 
+    /**
+     * Reset the scenario to its initial state.
+     */
     @PostMapping("/reset")
     public void reset() {
-        simulatorService.getScenarioExecutor().reset();
+        simulatorService.resetScenario();
     }
 
     /**
@@ -228,51 +324,103 @@ public class SimulatorController {
         }
     }
 
+    /**
+     * Get the current distributed system state as per the ADoB oracle.
+     * @return The current distributed system state.
+     */
     @GetMapping("/adob")
     public AdobCache getAdob() {
-        return simulatorService.getScenarioExecutor().getAdobOracle().getRoot();
+        return simulatorService.getScenario().getAdobOracle().getRoot();
     }
 
+    /**
+     * Get the list of caches in the ADoB oracle.
+     * @return The list of caches in the ADoB oracle.
+     */
     @GetMapping("/adob/caches")
     public Collection<AdobCache> getAllAdobCaches() {
-        return simulatorService.getScenarioExecutor().getAdobOracle().getCaches().values();
+        return simulatorService.getScenario().getAdobOracle().getCaches().values();
     }
 
+    /**
+     * Get the cache with the given ID in the ADoB oracle.
+     * @param cacheId The ID of the cache to get.
+     * @return The cache with the given ID in the ADoB oracle.
+     */
     @GetMapping("/adob/caches/{cacheId}")
     public AdobCache getAdobCache(@PathVariable Long cacheId) {
-        return simulatorService.getScenarioExecutor().getAdobOracle().getCaches().get(cacheId);
+        return simulatorService.getScenario().getAdobOracle().getCaches().get(cacheId);
     }
 
+    /**
+     * Get the list of scenarios available in the simulator.
+     * @return The list of scenario IDs.
+     */
     @GetMapping("/scenarios")
     public List<String> getScenarios() {
-        return scenarioFactoryService.getScenarioIds();
+        return scenarioService.getScenarioIds();
     }
 
+    /**
+     * Change the scenario to the one with the given ID.
+     * @param scenarioId The ID of the scenario to change to.
+     */
     @PostMapping("/change-scenario")
-    public void changeScenario(@RequestParam String scenarioId) {
-        simulatorService.changeScenario(scenarioId);
+    public void changeScenario(@RequestParam String scenarioId, @RequestBody JsonNode params) {
+        simulatorService.changeScenario(scenarioId, params);
     }
 
+    /**
+     * Get the ID of the current scenario.
+     * @return The ID of the current scenario.
+     */
     @GetMapping("/current-scenario-id")
     public String getCurrentScenarioId() {
-        return simulatorService.getScenarioExecutor().getId();
+        return simulatorService.getScenario().getId();
     }
 
+    /**
+     * Get the list of schedulers available in the simulator.
+     * @return The list of scheduler IDs.
+     */
     @GetMapping("/schedulers")
     public List<String> getSchedulers() {
         return schedulerFactoryService.getSchedulerIds();
     }
 
+    /**
+     * Get the list of saved schedules.
+     * @return The
+     */
     @GetMapping("/saved-schedules")
     public List<Integer> getNumSavedSchedules() {
-        return IntStream.range(0, schedulesService.getSchedules().size())
+        return IntStream.range(0, scenarioService.getScenarios().size())
                 .boxed()
                 .toList();
     }
 
-    @GetMapping("/saved-schedules/{scheduleId}")
-    public Schedule getSavedSchedule(@PathVariable int scheduleId) {
-        return schedulesService.getSchedules().get(scheduleId);
+    /**
+     * Get the list of saved schedules.
+     * @return The list of saved schedules.
+     */
+    @GetMapping("/saved-schedules/buggy")
+    public List<Integer> getBuggyScheduleIds() {
+        List<Scenario> scenarios = scenarioService.getScenarios();
+        return scenarios.stream()
+                .map(Scenario::getSchedule)
+                .filter(Schedule::isBuggy)
+                .map(scenarios::indexOf)
+                .toList();
+    }
+
+    /**
+     * Get a given saved schedule.
+     * @param scenarioId The ID of the scenario to get the schedule for.
+     * @return The schedule for the scenario with the given ID.
+     */
+    @GetMapping("/scenario/{scenarioId}/schedule")
+    public Schedule getScenarioSchedule(@PathVariable int scenarioId) {
+        return scenarioService.getScenarios().get(scenarioId).getSchedule();
     }
 
     // endpoint to run the current scenario N times
@@ -300,13 +448,13 @@ public class SimulatorController {
 
     @GetMapping("/network-faults")
     public Set<String> getNetworkFaults() {
-        return simulatorService.getScenarioExecutor().getTransport().getNetworkFaults().keySet();
+        return simulatorService.getScenario().getTransport().getNetworkFaults().keySet();
     }
 
     @GetMapping("/enabled-network-faults")
     public Set<String> getEnabledNetworkFaults() {
         return simulatorService
-                .getScenarioExecutor()
+                .getScenario()
                 .getTransport()
                 .getEnabledNetworkFaults()
                 .stream()
@@ -315,20 +463,36 @@ public class SimulatorController {
     }
 
     @GetMapping("/network-faults/{faultId}")
-    public Fault<? extends Serializable> getNetworkFault(@PathVariable String faultId) {
-        return simulatorService.getScenarioExecutor().getTransport().getNetworkFault(faultId);
+    public Fault getNetworkFault(@PathVariable String faultId) {
+        return simulatorService.getScenario().getTransport().getNetworkFault(faultId);
     }
 
     @PostMapping("/network-fault/{faultId}")
     public void enableNetworkFault(@PathVariable String faultId) {
-        simulatorService.getScenarioExecutor().getTransport().applyFault(faultId);
+        simulatorService.getScenario().getTransport().applyFault(faultId);
     }
 
     @GetMapping("/partitions")
     public Map<String, Integer> getPartitions() {
-        return simulatorService.getScenarioExecutor()
+        return simulatorService.getScenario()
                 .getTransport()
                 .getRouter()
                 .getPartitions();
+    }
+
+    @PutMapping("/test")
+    public void testDeserialize(@RequestBody MyThing thing) {
+        System.out.println("thing: " + thing);
+    }
+
+    @GetMapping("/scenario")
+    public Scenario getScenario() {
+        return simulatorService.getScenario();
+    }
+
+    @Data
+    public class MyThing {
+        String name;
+        int age;
     }
 }

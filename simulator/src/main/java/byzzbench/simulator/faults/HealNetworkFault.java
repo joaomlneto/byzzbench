@@ -5,15 +5,13 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.ToString;
 
-import java.io.Serializable;
-
 /**
  * A pseudo-fault that heals the network completely
  */
 @Getter
 @ToString
 @RequiredArgsConstructor
-public class HealNetworkFault<T extends Serializable> implements Fault<T> {
+public class HealNetworkFault implements Fault {
     public String getId() {
         return "HealNetwork";
     }
@@ -28,7 +26,7 @@ public class HealNetworkFault<T extends Serializable> implements Fault<T> {
      * @return True if the network is not already healed, false otherwise
      */
     @Override
-    public final boolean test(FaultInput<T> ctx) {
+    public final boolean test(FaultContext ctx) {
         Router router = ctx.getScenario().getTransport().getRouter();
         return router.hasActivePartitions();
     }
@@ -38,7 +36,7 @@ public class HealNetworkFault<T extends Serializable> implements Fault<T> {
      * @param state the input argument
      */
     @Override
-    public void accept(FaultInput<T> state) {
+    public void accept(FaultContext state) {
         Router router = state.getScenario().getTransport().getRouter();
         router.resetPartitions();
     }

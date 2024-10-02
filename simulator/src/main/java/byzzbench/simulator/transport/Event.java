@@ -1,5 +1,6 @@
 package byzzbench.simulator.transport;
 
+import byzzbench.simulator.utils.NonNull;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import org.springframework.validation.annotation.Validated;
@@ -14,31 +15,18 @@ import java.time.Instant;
 @JsonSubTypes({
         @JsonSubTypes.Type(value = TimeoutEvent.class, name = "Timeout"),
         @JsonSubTypes.Type(value = MessageEvent.class, name = "Message"),
+        @JsonSubTypes.Type(value = ClientRequestEvent.class, name = "ClientRequest"),
+        @JsonSubTypes.Type(value = ClientReplyEvent.class, name = "ClientReply"),
+        @JsonSubTypes.Type(value = MutateMessageEvent.class, name = "MutateMessage"),
+        @JsonSubTypes.Type(value = GenericFaultEvent.class, name = "GenericFault"),
 })
 public interface Event extends Serializable {
     /**
      * Get the eventId
      * @return a long representing the eventId
      */
+    @NonNull
     long getEventId();
-
-    /**
-     * Get the senderId
-     * @return a String representing the senderId
-     */
-    String getSenderId();
-
-    /**
-     * Get the recipientId
-     * @return a String representing the recipientId
-     */
-    String getRecipientId();
-
-    /**
-     * Get a string representation of the event
-     * @return a String representing the event
-     */
-    String toString();
 
     /**
      * Get the time at which the event was created

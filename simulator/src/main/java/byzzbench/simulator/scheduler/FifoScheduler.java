@@ -1,37 +1,34 @@
 package byzzbench.simulator.scheduler;
 
-import byzzbench.simulator.Replica;
+import byzzbench.simulator.Scenario;
 import byzzbench.simulator.service.MessageMutatorService;
-import byzzbench.simulator.state.CommitLog;
 import byzzbench.simulator.transport.Event;
 import byzzbench.simulator.transport.MessageEvent;
-import byzzbench.simulator.transport.Transport;
+import com.fasterxml.jackson.databind.JsonNode;
+import org.springframework.stereotype.Component;
 
-import java.io.Serializable;
 import java.util.Comparator;
 import java.util.Optional;
 
 /**
  * A scheduler that delivers events in the order they were enqueued.
- *
- * @param <T> The type of the entries in the {@link CommitLog} of each {@link
- *     Replica}.
  */
-public class FifoScheduler<T extends Serializable> extends BaseScheduler<T> {
-  public FifoScheduler(MessageMutatorService messageMutatorService, Transport<T> transport) { super("FIFO", messageMutatorService, transport); }
+@Component
+public class FifoScheduler extends BaseScheduler {
+  public FifoScheduler(MessageMutatorService messageMutatorService) { super("FIFO", messageMutatorService); }
 
   @Override
-  public Optional<EventDecision> scheduleNext() throws Exception {
+  public Optional<EventDecision> scheduleNext(Scenario scenario) throws Exception {
     // Get the next event
     Optional<Event> event =
-        getTransport()
+        scenario.getTransport()
             .getEventsInState(Event.Status.QUEUED)
             .stream()
             .filter(MessageEvent.class ::isInstance)
             .min(Comparator.comparingLong(Event::getEventId));
 
     if (event.isPresent()) {
-      this.getTransport().deliverEvent(event.get().getEventId());
+      scenario.getTransport().deliverEvent(event.get().getEventId());
       EventDecision decision = new EventDecision(EventDecision.DecisionType.DELIVERED, event.get().getEventId());
       return Optional.of(decision);
     } else {
@@ -41,7 +38,16 @@ public class FifoScheduler<T extends Serializable> extends BaseScheduler<T> {
 
   @Override
   public void stopDropMessages() {
-    // TODO Auto-generated method stub
-    throw new UnsupportedOperationException("Unimplemented method 'stopDropMessages'");
+    this.dropMessages = false;
+  }
+
+  @Override
+  public void reset() {
+    this.dropMessages = true;
+  }
+
+  @Override
+  public void loadSchedulerParameters(JsonNode parameters) {
+    // no parameters to load
   }
 }

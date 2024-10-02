@@ -1,16 +1,24 @@
 "use client";
 
 import { ClientList } from "@/components/ClientList";
+import { DroppedMessagesList } from "@/components/Events";
 import { ScenarioEnabledFaultsList } from "@/components/FaultsList";
-import {
-  DeliveredMessagesList,
-  DroppedMessagesList,
-} from "@/components/messages";
+import { ImportScheduleButton } from "@/components/ImportScheduleButton";
 import { NodeList } from "@/components/NodeList";
 import { RunningSimulatorStats } from "@/components/RunningSimulatorStats";
-import { ScheduleList } from "@/components/ScheduleList";
-import { useGetMode } from "@/lib/byzzbench-client";
-import { Accordion, Container, Stack } from "@mantine/core";
+import { ScheduleDetails, ScheduleList } from "@/components/Schedule";
+import {
+  useGetMode,
+  useGetScenario,
+  useGetSchedule,
+} from "@/lib/byzzbench-client";
+import {
+  Accordion,
+  Container,
+  JsonInput,
+  ScrollArea,
+  Stack,
+} from "@mantine/core";
 import { useLocalStorage } from "@mantine/hooks";
 import dynamic from "next/dynamic";
 import React from "react";
@@ -32,7 +40,10 @@ export default function Home() {
       defaultValue: ["nodes", "schedule"],
     });
 
+  const { data: schedule } = useGetSchedule();
+
   const mode = useGetMode();
+  const scenarioQuery = useGetScenario();
 
   if (mode.data?.data === "RUNNING") {
     return (
@@ -51,6 +62,17 @@ export default function Home() {
           value={selectedAccordionEntries}
           onChange={setSelectedAccordionEntries}
         >
+          <Accordion.Item key="scenario" value="scenario">
+            <Accordion.Control>Scenario Configuration</Accordion.Control>
+            <Accordion.Panel>
+              <JsonInput
+                value={JSON.stringify(scenarioQuery.data?.data, null, 2)}
+                autosize
+                maxRows={30}
+                readOnly
+              />
+            </Accordion.Panel>
+          </Accordion.Item>
           <Accordion.Item key="clients" value="clients">
             <Accordion.Control>Clients</Accordion.Control>
             <Accordion.Panel>
@@ -60,6 +82,7 @@ export default function Home() {
           <Accordion.Item key="saved_schedules" value="saved_schedules">
             <Accordion.Control>Saved Schedules</Accordion.Control>
             <Accordion.Panel>
+              <ImportScheduleButton />
               <ScheduleList />
             </Accordion.Panel>
           </Accordion.Item>
@@ -72,14 +95,24 @@ export default function Home() {
           <Accordion.Item key="schedule" value="schedule">
             <Accordion.Control>Schedule</Accordion.Control>
             <Accordion.Panel>
-              <DeliveredMessagesList />
+              <ScrollArea h={250} type="auto">
+                {schedule?.data && (
+                  <ScheduleDetails
+                    hideTitle
+                    hideMaterializeButton
+                    hideDownloadButton
+                    hideDetailsButton
+                    hideScenario
+                    title="Current Schedule"
+                    schedule={schedule.data}
+                  />
+                )}
+              </ScrollArea>
             </Accordion.Panel>
           </Accordion.Item>
           <Accordion.Item key="dropped_msgs" value="dropped_msgs">
             <Accordion.Control>Dropped Messages</Accordion.Control>
-            <Accordion.Panel>
-              <DroppedMessagesList />
-            </Accordion.Panel>
+            <Accordion.Panel>{<DroppedMessagesList />}</Accordion.Panel>
           </Accordion.Item>
           <Accordion.Item key="faults" value="faults">
             <Accordion.Control>Network Faults</Accordion.Control>

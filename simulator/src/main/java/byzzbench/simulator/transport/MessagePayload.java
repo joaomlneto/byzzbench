@@ -1,13 +1,16 @@
 package byzzbench.simulator.transport;
 
+import lombok.Getter;
+
 import java.io.Serializable;
 
 /**
  * Interface for the payload of a {@link MessageEvent}.
  */
+@Getter
 public abstract class MessagePayload implements Serializable {
-  public boolean signed;
-  public String signedBy;
+  private boolean signed;
+  private String signedBy;
   public abstract String getType();
 
 

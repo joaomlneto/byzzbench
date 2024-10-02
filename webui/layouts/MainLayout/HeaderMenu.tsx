@@ -1,7 +1,7 @@
 "use client";
 
 import { Button, Menu, rem } from "@mantine/core";
-import { IconBug, IconSearch, IconSettings } from "@tabler/icons-react";
+import { IconBug, IconHome, IconSearch } from "@tabler/icons-react";
 import { useRouter } from "next/navigation";
 import React from "react";
 
@@ -15,12 +15,10 @@ export const HeaderMenu = () => {
 
       <Menu.Dropdown>
         <Menu.Item
-          leftSection={
-            <IconSettings style={{ width: rem(14), height: rem(14) }} />
-          }
+          leftSection={<IconHome style={{ width: rem(14), height: rem(14) }} />}
           onClick={() => router.push("/")}
         >
-          Home
+          Scenario
         </Menu.Item>
         <Menu.Item
           leftSection={

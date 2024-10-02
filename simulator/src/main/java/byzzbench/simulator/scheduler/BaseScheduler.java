@@ -1,30 +1,38 @@
 package byzzbench.simulator.scheduler;
 
-import byzzbench.simulator.Replica;
 import byzzbench.simulator.service.MessageMutatorService;
-import byzzbench.simulator.state.CommitLog;
-import byzzbench.simulator.transport.Transport;
+import byzzbench.simulator.utils.NonNull;
+import com.fasterxml.jackson.databind.JsonNode;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
-import java.io.Serializable;
-import java.util.Optional;
-
 /**
  * Abstract base class for a scheduler.
- *
- * @param <T> The type of the entries in the {@link CommitLog} of each {@link
- *     Replica}.
  */
 @RequiredArgsConstructor
-public abstract class BaseScheduler<T extends Serializable> {
+public abstract class BaseScheduler implements Scheduler {
+  @NonNull @Getter private final String id;
+  @NonNull @Getter(AccessLevel.PROTECTED) private final transient MessageMutatorService messageMutatorService;
   @Getter protected boolean dropMessages = true;
 
-  @Getter private final String id;
-  @Getter(AccessLevel.PROTECTED) private final MessageMutatorService messageMutatorService;
-  @Getter(AccessLevel.PROTECTED) private final Transport<T> transport;
 
-  public abstract Optional<EventDecision> scheduleNext() throws Exception;
-  public abstract void stopDropMessages();
+  /**
+   * Loads the parameters for the scheduler from a JSON object.
+   * @param parameters The JSON object containing the parameters for the scheduler.
+   */
+  public final void loadParameters(JsonNode parameters) {
+    // check if drop messages
+    if (parameters.has("dropMessages")) {
+      this.dropMessages = parameters.get("dropMessages").asBoolean();
+    }
+
+    this.loadSchedulerParameters(parameters);
+  }
+
+  /**
+   * Loads the subclass-specific parameters for the scheduler from a JSON object.
+   * @param parameters The JSON object containing the parameters for the scheduler.
+   */
+  protected abstract void loadSchedulerParameters(JsonNode parameters);
 }

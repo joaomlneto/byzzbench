@@ -1,6 +1,6 @@
 "use client";
 
-import { NodeMailbox } from "@/components/messages/NodeMailbox";
+import { NodeMailbox } from "@/components/Events/NodeMailbox";
 import { NodeStateNavLink } from "@/components/NodeStateNavLink";
 import { useGetNode, useGetPartitions } from "@/lib/byzzbench-client";
 import { Card, Group, Space, Text, Title, Tooltip } from "@mantine/core";
@@ -16,10 +16,16 @@ export const NodeCard = ({ nodeId }: NodeCardProps) => {
 
   const partitionId = useMemo(() => {
     return partitionsQuery.data?.data[nodeId] ?? 0;
-  }, [partitionsQuery.data, nodeId]);
+  }, [nodeId, partitionsQuery.data?.data]);
 
   return (
-    <Card withBorder shadow="sm" padding="xs" m="xs">
+    <Card
+      withBorder
+      shadow="sm"
+      padding="xs"
+      m="xs"
+      style={{ minWidth: 350, maxWidth: 400 }}
+    >
       {data && (
         <NodeStateNavLink
           data={data.data}

@@ -1,31 +1,30 @@
 "use client";
 
-import { useGetSavedSchedule } from "@/lib/byzzbench-client";
-import { JsonInput, Spoiler } from "@mantine/core";
-import React from "react";
+import { ScheduleDetails, ScheduleDetailsProps } from "@/components/Schedule";
+import { useGetScenarioSchedule } from "@/lib/byzzbench-client";
+import React, { memo } from "react";
 
-export type ServerScheduleDetailsProps = {
+export type ServerScheduleDetailsProps = Omit<
+  ScheduleDetailsProps,
+  "schedule" | "title"
+> & {
+  title?: string;
   scheduleId: number;
 };
 
-export const ServerScheduleDetails = ({
-  scheduleId,
-}: ServerScheduleDetailsProps) => {
-  const savedScheduleQuery = useGetSavedSchedule(scheduleId);
-  return (
-    <div>
-      Schedule {scheduleId} event IDs:{" "}
-      {savedScheduleQuery.data?.data.events
-        ?.map((event) => event.eventId)
-        .join(", ")}
-      <Spoiler maxHeight={0} showLabel="Show" hideLabel="Hide">
-        <JsonInput
-          label={`Schedule ${scheduleId}`}
-          value={JSON.stringify(savedScheduleQuery.data?.data, null, 2)}
-          autosize
-          maxRows={30}
+export const ServerScheduleDetails = memo(
+  ({ scheduleId, title, ...otherProps }: ServerScheduleDetailsProps) => {
+    const savedScheduleQuery = useGetScenarioSchedule(scheduleId);
+    return (
+      savedScheduleQuery.data && (
+        <ScheduleDetails
+          title={title ?? `Schedule ${scheduleId}`}
+          schedule={savedScheduleQuery.data?.data}
+          hideSchedule
+          {...otherProps}
         />
-      </Spoiler>
-    </div>
-  );
-};
+      )
+    );
+  },
+);
+ServerScheduleDetails.displayName = "ServerScheduleDetails";

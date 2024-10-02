@@ -1,30 +1,75 @@
 package byzzbench.simulator.schedule;
 
+import byzzbench.simulator.Scenario;
+import byzzbench.simulator.ScenarioPredicate;
 import byzzbench.simulator.transport.Event;
+import byzzbench.simulator.utils.NonNull;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import lombok.Builder;
 import lombok.Getter;
-import lombok.RequiredArgsConstructor;
-import lombok.Setter;
+import lombok.ToString;
+import lombok.extern.jackson.Jacksonized;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 
-@RequiredArgsConstructor
 @Getter
+@Jacksonized
+@Builder
+@JsonIgnoreProperties(ignoreUnknown = true)
+@ToString
 public class Schedule {
     /**
      * The list of events in the schedule.
      */
+    @NonNull
     private final List<Event> events = Collections.synchronizedList(new ArrayList<>());
     /**
-     * Whether the schedule is finalized and can no longer be modified.
+     * The set of invariants that are violated by this schedule.
      */
-    @Setter
-    private boolean isFinalized;
+    @NonNull
+    private final SortedSet<ScenarioPredicate> brokenInvariants = new TreeSet<>();
+
+    @NonNull
+    @JsonIgnore
+    private final Scenario scenario;
+
+    @NonNull
+    @Builder.Default
+    private boolean isFinalized = false;
 
     public void appendEvent(Event event) {
-        assert !isFinalized;
-        System.out.println("appending event with id " + event.getEventId() + ": " + event);
+        if (isFinalized) {
+            throw new IllegalStateException("Cannot append event to a schedule with broken invariants");
+        }
         events.add(event);
+    }
+
+    /**
+     * Marks the schedule as read-only, with the given broken invariants.
+     * @param brokenInvariants the set of broken invariants.
+     */
+    public void finalizeSchedule(Set<ScenarioPredicate> brokenInvariants) {
+        isFinalized = true;
+        this.brokenInvariants.addAll(brokenInvariants);
+    }
+
+    /**
+     * Marks the schedule as read-only, without any broken invariants.
+     */
+    public void finalizeSchedule() {
+        finalizeSchedule(Collections.emptySet());
+    }
+
+    /**
+     * Returns true if the schedule is buggy, i.e., it violates some invariants.
+     * @return true if the schedule is buggy, false otherwise.
+     */
+    public boolean isBuggy() {
+        return !brokenInvariants.isEmpty();
+    }
+
+    public @NonNull String getScenarioId() {
+        return scenario.getId();
     }
 }

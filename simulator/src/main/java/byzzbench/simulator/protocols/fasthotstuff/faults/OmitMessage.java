@@ -1,14 +1,14 @@
 package byzzbench.simulator.protocols.fasthotstuff.faults;
 
 import byzzbench.simulator.faults.Fault;
-import byzzbench.simulator.faults.FaultInput;
+import byzzbench.simulator.faults.FaultContext;
 import byzzbench.simulator.protocols.fasthotstuff.message.Block;
 import byzzbench.simulator.transport.Event;
 import byzzbench.simulator.transport.MessageEvent;
 
 import java.util.Optional;
 
-public class OmitMessage implements Fault<MessageEvent> {
+public class OmitMessage implements Fault {
     private final int round;
     private final String sender;
     private final Class<?> messageType;
@@ -20,12 +20,12 @@ public class OmitMessage implements Fault<MessageEvent> {
     }
 
     @Override
-    public boolean test(FaultInput<MessageEvent> state) {
+    public boolean test(FaultContext state) {
         return false;
     }
 
     @Override
-    public void accept(FaultInput<MessageEvent> ctx) {
+    public void accept(FaultContext ctx) {
         Optional<Event> e = ctx.getEvent();
 
         if (e.isEmpty()) {

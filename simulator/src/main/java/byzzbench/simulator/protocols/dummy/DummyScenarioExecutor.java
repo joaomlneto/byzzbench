@@ -1,28 +1,30 @@
 package byzzbench.simulator.protocols.dummy;
 
+import byzzbench.simulator.BaseScenario;
 import byzzbench.simulator.Replica;
-import byzzbench.simulator.ScenarioExecutor;
 import byzzbench.simulator.TerminationCondition;
 import byzzbench.simulator.protocols.pbft_java.MessageLog;
-import byzzbench.simulator.service.MessageMutatorService;
-import byzzbench.simulator.service.SchedulesService;
+import byzzbench.simulator.scheduler.Scheduler;
+import com.fasterxml.jackson.databind.JsonNode;
 import lombok.extern.java.Log;
-import org.springframework.stereotype.Component;
 
-import java.io.Serializable;
 import java.util.Set;
 import java.util.TreeSet;
 
-@Component
 @Log
-public class DummyScenarioExecutor<T extends Serializable> extends ScenarioExecutor<T> {
+public class DummyScenarioExecutor extends BaseScenario {
 
-    public DummyScenarioExecutor(MessageMutatorService messageMutatorService, SchedulesService schedulesService) throws Exception {
-        super("dummy", messageMutatorService, schedulesService);
+    public DummyScenarioExecutor(Scheduler scheduler) {
+        super("dummy", scheduler);
     }
 
     @Override
-    public void setup() {
+    public void loadScenarioParameters(JsonNode parameters) {
+        // no parameters to load
+    }
+
+    @Override
+    protected void setup() {
         try {
             Set<String> nodeIds = new TreeSet<>();
             for (int i = 0; i < 4; i++) {
@@ -31,7 +33,7 @@ public class DummyScenarioExecutor<T extends Serializable> extends ScenarioExecu
 
             nodeIds.forEach(nodeId -> {
                 MessageLog messageLog = new MessageLog(100, 100, 200);
-                Replica replica = new DummyReplica<String, String>(nodeId, nodeIds, transport);
+                Replica replica = new DummyReplica(nodeId, nodeIds, transport);
                 this.addNode(replica);
             });
         } catch (Exception e) {
