@@ -4,20 +4,20 @@ This document describes the steps to implement a new BFT protocol in ByzzBench.
 
 A BFT Protocol implementation in ByzzBench consists of the following components:
 
-- A protocol replica that *extends* [`Replica<T>`](../simulator/src/main/java/byzzbench/simulator/Replica.java): these
+- A protocol replica that _extends_ [`Replica<T>`](../simulator/src/main/java/byzzbench/simulator/Replica.java): these
   are the nodes that run the protocol and communicate with each other
   via messages. `T` is the type of each of the entries in the commit log (this should be simplified!).
-    - Example: [PBFT-Java Replica](../simulator/src/main/java/byzzbench/simulator/protocols/pbft_java/PbftReplica.java)
-    - The `Replica` constructor requires a `replicaId`, `nodeIds` (set of all replica IDs in the
-      *cluster*), `transport` (the virtualized network instance) and a `commitLog` (instance where all committed
-      operations from the replica are sent to).
+  - Example: [PBFT-Java Replica](../simulator/src/main/java/byzzbench/simulator/protocols/pbft_java/PbftReplica.java)
+  - The `Replica` constructor requires a `replicaId`, `nodeIds` (set of all replica IDs in the
+    _cluster_), `transport` (the virtualized network instance) and a `commitLog` (instance where all committed
+    operations from the replica are sent to).
 - A set of protocol message POJOs that
-  *implement* [`MessagePayload`](../simulator/src/main/java/byzzbench/simulator/transport/MessagePayload.java): these
+  _implement_ [`MessagePayload`](../simulator/src/main/java/byzzbench/simulator/transport/MessagePayload.java): these
   are the messages that are exchanged between
   replicas.
-    - They just need to have a `String getType()` method that returns e.g. that it is a `PREPARE` message.
-    - Examples from
-      PBFT-Java: [Checkpoint](../simulator/src/main/java/byzzbench/simulator/protocols/pbft_java/message/CheckpointMessage.java), [Commit](../simulator/src/main/java/byzzbench/simulator/protocols/pbft_java/message/CommitMessage.java), [NewView](../simulator/src/main/java/byzzbench/simulator/protocols/pbft_java/message/NewViewMessage.java), [Phase](../simulator/src/main/java/byzzbench/simulator/protocols/pbft_java/message/PhaseMessage.java), [Prepare](../simulator/src/main/java/byzzbench/simulator/protocols/pbft_java/message/PrepareMessage.java), [PrePrepare](../simulator/src/main/java/byzzbench/simulator/protocols/pbft_java/message/PrePrepareMessage.java), [Reply](../simulator/src/main/java/byzzbench/simulator/protocols/pbft_java/message/ReplyMessage.java), [Request](../simulator/src/main/java/byzzbench/simulator/protocols/pbft_java/message/RequestMessage.java), [ViewChange](../simulator/src/main/java/byzzbench/simulator/protocols/pbft_java/message/ViewChangeMessage.java)
+  - They just need to have a `String getType()` method that returns e.g. that it is a `PREPARE` message.
+  - Examples from
+    PBFT-Java: [Checkpoint](../simulator/src/main/java/byzzbench/simulator/protocols/pbft_java/message/CheckpointMessage.java), [Commit](../simulator/src/main/java/byzzbench/simulator/protocols/pbft_java/message/CommitMessage.java), [NewView](../simulator/src/main/java/byzzbench/simulator/protocols/pbft_java/message/NewViewMessage.java), [Phase](../simulator/src/main/java/byzzbench/simulator/protocols/pbft_java/message/PhaseMessage.java), [Prepare](../simulator/src/main/java/byzzbench/simulator/protocols/pbft_java/message/PrepareMessage.java), [PrePrepare](../simulator/src/main/java/byzzbench/simulator/protocols/pbft_java/message/PrePrepareMessage.java), [Reply](../simulator/src/main/java/byzzbench/simulator/protocols/pbft_java/message/ReplyMessage.java), [Request](../simulator/src/main/java/byzzbench/simulator/protocols/pbft_java/message/RequestMessage.java), [ViewChange](../simulator/src/main/java/byzzbench/simulator/protocols/pbft_java/message/ViewChangeMessage.java)
 
 ## Communication and Timeouts
 
@@ -52,4 +52,3 @@ check whether safety invariants of distributed consensus are broken.
   many ways:
   - Avoid interfaces and collections that do not guarantee order, such as `Set` or `Map`: use the `OrderedSet` or
     `OrderedMap` interfaces instead, and `TreeSet` or `LinkedHashMap` implementations to ensure order.
-
