@@ -47,7 +47,7 @@ public abstract class MessageMutationFault implements Fault, Comparable<MessageM
      * @return True if the message can be mutated by this mutator, false otherwise
      */
     @Override
-    public final boolean test(FaultInput ctx) {
+    public final boolean test(FaultContext ctx) {
         Optional<Event> event = ctx.getEvent();
         return event.isPresent()
                 && event.get() instanceof MessageEvent messageEvent

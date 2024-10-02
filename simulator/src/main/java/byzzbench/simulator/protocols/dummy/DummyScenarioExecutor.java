@@ -1,24 +1,21 @@
 package byzzbench.simulator.protocols.dummy;
 
+import byzzbench.simulator.BaseScenario;
 import byzzbench.simulator.Replica;
-import byzzbench.simulator.ScenarioExecutor;
 import byzzbench.simulator.TerminationCondition;
 import byzzbench.simulator.protocols.pbft_java.MessageLog;
-import byzzbench.simulator.service.MessageMutatorService;
-import byzzbench.simulator.service.SchedulesService;
+import byzzbench.simulator.scheduler.Scheduler;
 import com.fasterxml.jackson.databind.JsonNode;
 import lombok.extern.java.Log;
-import org.springframework.stereotype.Component;
 
 import java.util.Set;
 import java.util.TreeSet;
 
-@Component
 @Log
-public class DummyScenarioExecutor extends ScenarioExecutor {
+public class DummyScenarioExecutor extends BaseScenario {
 
-    public DummyScenarioExecutor(MessageMutatorService messageMutatorService, SchedulesService schedulesService) {
-        super("dummy", messageMutatorService, schedulesService);
+    public DummyScenarioExecutor(Scheduler scheduler) {
+        super("dummy", scheduler);
     }
 
     @Override
@@ -27,7 +24,7 @@ public class DummyScenarioExecutor extends ScenarioExecutor {
     }
 
     @Override
-    public void setup() {
+    protected void setup() {
         try {
             Set<String> nodeIds = new TreeSet<>();
             for (int i = 0; i < 4; i++) {

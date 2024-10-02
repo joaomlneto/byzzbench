@@ -1,7 +1,7 @@
 package byzzbench.simulator.state;
 
+import byzzbench.simulator.BaseScenario;
 import byzzbench.simulator.Replica;
-import byzzbench.simulator.ScenarioExecutor;
 import byzzbench.simulator.ScenarioPredicate;
 
 import java.util.Collection;
@@ -9,7 +9,7 @@ import java.util.Objects;
 
 public class AgreementPredicate implements ScenarioPredicate {
     @Override
-    public boolean test(ScenarioExecutor scenarioExecutor) {
+    public boolean test(BaseScenario scenarioExecutor) {
         Collection<Replica> replicas = scenarioExecutor.getTransport().getNodes().values();
 
         // get the max length of the commit logs of all replicas

@@ -31,7 +31,12 @@ export const NodeMailboxEntry = memo(({ messageId }: { messageId: number }) => {
           <Text span c="dimmed">
             {message.data.eventId}
           </Text>
-          <Badge size="xs">{message.data.senderId}</Badge>
+          <Badge size="xs">
+            {
+              // @ts-expect-error: senderId is not in all subtypes of Event
+              message.data.senderId
+            }
+          </Badge>
           <Group grow>
             <Text lineClamp={1} w="200px">
               {

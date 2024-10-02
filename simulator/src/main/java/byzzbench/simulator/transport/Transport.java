@@ -1,16 +1,15 @@
 package byzzbench.simulator.transport;
 
+import byzzbench.simulator.BaseScenario;
 import byzzbench.simulator.Client;
 import byzzbench.simulator.Replica;
-import byzzbench.simulator.ScenarioExecutor;
 import byzzbench.simulator.faults.Fault;
-import byzzbench.simulator.faults.FaultInput;
+import byzzbench.simulator.faults.FaultContext;
 import byzzbench.simulator.faults.HealNodeNetworkFault;
 import byzzbench.simulator.faults.IsolateProcessNetworkFault;
-import byzzbench.simulator.schedule.Schedule;
-import byzzbench.simulator.service.SchedulesService;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Getter;
+import lombok.Setter;
 import lombok.Synchronized;
 import lombok.ToString;
 import lombok.extern.java.Log;
@@ -18,6 +17,7 @@ import lombok.extern.java.Log;
 import java.io.Serializable;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.stream.Collectors;
 
 /**
  * Transport layer for the simulator.
@@ -30,20 +30,9 @@ import java.util.concurrent.atomic.AtomicLong;
 @ToString
 public class Transport {
     /**
-     * The scenario
-     */
-    private final ScenarioExecutor scenario;
-
-    /**
-     * The service for storing and managing schedules.
-     */
-    private final SchedulesService schedulesService;
-
-    /**
      * The sequence number for events.
      */
     private final AtomicLong eventSeqNum = new AtomicLong(1);
-
     /**
      * Map of node id to the {@link Replica} object.
      */
@@ -51,24 +40,25 @@ public class Transport {
     @JsonIgnore
     private final Map<String, Replica> nodes = new HashMap<>();
 
+    /**
+     * Map of network fault id to the {@link Fault} object. This is used to
+     * apply network faults to the system. Network faults are applied
+     * automatically by the transport layer when its predicate is satisfied.
+     */
     @Getter(onMethod_ = {@Synchronized})
-    @JsonIgnore
     private final Map<String, Fault> networkFaults = new HashMap<>();
-
     /**
      * Map of client id to the {@link Client} object.
      */
     @Getter(onMethod_ = {@Synchronized})
     @JsonIgnore
     private final Map<String, Client> clients = new HashMap<>();
-
     /**
      * Map of event ID to the {@link Event} object.
      */
     @Getter(onMethod_ = {@Synchronized})
     @JsonIgnore
     private final Map<Long, Event> events = new TreeMap<>();
-
     /**
      * The router for managing partitions.
      */
@@ -79,17 +69,10 @@ public class Transport {
      */
     private final List<TransportObserver> observers = new ArrayList<>();
     /**
-     * The schedule of events in order of delivery.
+     * The scenario executor for the transport layer.
      */
-    @Getter(onMethod_ = {@Synchronized})
-    @JsonIgnore
-    private Schedule schedule;
-
-    public Transport (ScenarioExecutor scenario, SchedulesService schedulesService) {
-        this.scenario = scenario;
-        this.schedulesService = schedulesService;
-        this.schedule = this.schedulesService.addSchedule(scenario);
-    }
+    @Setter
+    private BaseScenario scenario;
 
     /**
      * Adds an observer to the transport layer.
@@ -129,7 +112,7 @@ public class Transport {
      *
      * @param client The client to add.
      */
-    public synchronized void addClient(Client client) {
+    private synchronized void addClient(Client client) {
         clients.put(client.getClientId(), client);
     }
 
@@ -138,7 +121,8 @@ public class Transport {
      *
      * @param numClients The number of clients to create.
      */
-    public synchronized void createClients(int numClients) {
+    public synchronized void setNumClients(int numClients) {
+        clients.clear();
         for (int i = 0; i < numClients; i++) {
             Client client = new Client(String.format("C%d", i), this);
             this.addClient(client);
@@ -216,7 +200,6 @@ public class Transport {
         this.router.resetPartitions();
         this.events.clear();
         this.nodes.values().forEach(Replica::initialize);
-        this.schedule = schedulesService.addSchedule(this.scenario);
     }
 
     /**
@@ -282,7 +265,7 @@ public class Transport {
         }
 
         // deliver the event
-        this.schedule.appendEvent(e);
+        this.scenario.getSchedule().appendEvent(e);
         e.setStatus(Event.Status.DELIVERED);
 
         switch (e) {
@@ -363,7 +346,7 @@ public class Transport {
         }
 
         // create input for the fault
-        FaultInput input = new FaultInput(this.scenario, e);
+        FaultContext input = new FaultContext(this.scenario, e);
 
         // check if mutator can be applied to the event
         if (!fault.test(input)) {
@@ -386,7 +369,7 @@ public class Transport {
 
         // append the event to the schedule
         mutateMessageEvent.setStatus(Event.Status.DELIVERED);
-        this.schedule.appendEvent(mutateMessageEvent);
+        this.scenario.getSchedule().appendEvent(mutateMessageEvent);
         this.observers.forEach(o -> o.onMessageMutation(mutateMessageEvent.getPayload()));
 
         log.info("Mutated: " + m);
@@ -402,7 +385,7 @@ public class Transport {
 
     public synchronized void applyFault(Fault fault) {
         // create input for the fault
-        FaultInput input = new FaultInput(this.scenario);
+        FaultContext input = new FaultContext(this.scenario);
 
         // check if fault can be applied
         if (!fault.test(input)) {
@@ -418,7 +401,7 @@ public class Transport {
                 .payload(fault)
                 .build();
         faultEvent.setStatus(Event.Status.DELIVERED);
-        this.schedule.appendEvent(faultEvent);
+        this.scenario.getSchedule().appendEvent(faultEvent);
         this.observers.forEach(o -> o.onFault(fault));
     }
 
@@ -461,16 +444,20 @@ public class Transport {
     }
 
     @JsonIgnore
-    public synchronized Set<String> getNodeIds() {
-        return nodes.keySet();
+    public synchronized SortedSet<String> getNodeIds() {
+        return nodes.keySet()
+                .stream()
+                .sorted()
+                .collect(Collectors.toCollection(TreeSet::new));
     }
 
     public synchronized Replica getNode(String nodeId) {
         return nodes.get(nodeId);
     }
 
+    @JsonIgnore
     public synchronized List<Fault> getEnabledNetworkFaults() {
-        FaultInput input = new FaultInput(this.scenario);
+        FaultContext input = new FaultContext(this.scenario);
         return this.networkFaults.values().stream()
                 .filter(f -> f.test(input))
                 .toList();

@@ -26,7 +26,7 @@ public class HealNetworkFault implements Fault {
      * @return True if the network is not already healed, false otherwise
      */
     @Override
-    public final boolean test(FaultInput ctx) {
+    public final boolean test(FaultContext ctx) {
         Router router = ctx.getScenario().getTransport().getRouter();
         return router.hasActivePartitions();
     }
@@ -36,7 +36,7 @@ public class HealNetworkFault implements Fault {
      * @param state the input argument
      */
     @Override
-    public void accept(FaultInput state) {
+    public void accept(FaultContext state) {
         Router router = state.getScenario().getTransport().getRouter();
         router.resetPartitions();
     }

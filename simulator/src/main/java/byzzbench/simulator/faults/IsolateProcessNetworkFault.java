@@ -33,7 +33,7 @@ public class IsolateProcessNetworkFault implements Fault {
      * @return True if the node is not already isolated, false otherwise
      */
     @Override
-    public final boolean test(FaultInput ctx) {
+    public final boolean test(FaultContext ctx) {
         Router router = ctx.getScenario().getTransport().getRouter();
         return router.getNodePartition(nodeId) == Router.DEFAULT_PARTITION;
     }
@@ -43,7 +43,7 @@ public class IsolateProcessNetworkFault implements Fault {
      * @param ctx The context of the fault
      */
     @Override
-    public void accept(FaultInput ctx) {
+    public void accept(FaultContext ctx) {
         Router router = ctx.getScenario().getTransport().getRouter();
         router.isolateNode(nodeId);
     }

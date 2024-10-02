@@ -1,23 +1,21 @@
 package byzzbench.simulator;
 
-import byzzbench.simulator.scheduler.BaseScheduler;
-import byzzbench.simulator.scheduler.RandomScheduler;
-import byzzbench.simulator.service.MessageMutatorService;
-import byzzbench.simulator.service.SchedulesService;
+import byzzbench.simulator.schedule.Schedule;
+import byzzbench.simulator.scheduler.Scheduler;
 import byzzbench.simulator.state.AgreementPredicate;
 import byzzbench.simulator.state.LivenessPredicate;
 import byzzbench.simulator.state.adob.AdobDistributedState;
 import byzzbench.simulator.transport.Transport;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.JsonNode;
 import lombok.Getter;
 import lombok.Setter;
+import lombok.Synchronized;
 import lombok.ToString;
 import lombok.extern.java.Log;
 
 import java.util.List;
 import java.util.Set;
-import java.util.function.Predicate;
-import java.util.logging.Level;
 import java.util.stream.Collectors;
 
 /**
@@ -27,7 +25,7 @@ import java.util.stream.Collectors;
 @Getter
 @ToString
 @Log
-public abstract class ScenarioExecutor {
+public abstract class BaseScenario implements Scenario {
     /**
      * The transport layer for the scenario.
      */
@@ -36,10 +34,12 @@ public abstract class ScenarioExecutor {
     /**
      * The scheduler for the scenario.
      */
-    protected final BaseScheduler scheduler;
+    protected final Scheduler scheduler;
     /**
      * The AdoB oracle for the scenario, which keeps track of the distributed state.
      */
+    @ToString.Exclude
+    @JsonIgnore
     protected final AdobDistributedState adobOracle;
     /**
      * A unique identifier for the scenario.
@@ -48,39 +48,34 @@ public abstract class ScenarioExecutor {
     /**
      * The invariants that must be satisfied by the scenario at all times.
      */
-    private final List<Predicate<ScenarioExecutor>> invariants = List.of(new AgreementPredicate(), new LivenessPredicate());
+    private final List<ScenarioPredicate> invariants = List.of(new AgreementPredicate(), new LivenessPredicate());
+    /**
+     * The schedule of events in order of delivery.
+     */
+    @Getter(onMethod_ = {@Synchronized})
+    @JsonIgnore
+    private final Schedule schedule = Schedule.builder().scenario(this).build();
     /**
      * The number of "regular" clients in the scenario.
      */
     @Setter
-    private int numClients = 0;
+    private int numClients = 1;
 
     /**
      * Creates a new scenario executor
      *
      * @param id The unique identifier for the scenario.
-     * @param messageMutatorService The service for mutating messages.
-     * @param schedulesService The service for storing and managing schedules.
+     * @param scheduler The scheduler for the scenario.
      */
-    protected ScenarioExecutor(String id, MessageMutatorService messageMutatorService, SchedulesService schedulesService) {
+    protected BaseScenario(String id, Scheduler scheduler) {
         this.id = id;
-        this.transport = new Transport(this, schedulesService);
-        this.scheduler = new RandomScheduler(messageMutatorService, transport);
-        this.setup();
+        this.scheduler = scheduler;
+        this.transport = new Transport();
+        this.transport.setScenario(this);
+        this.setupScenario();
 
         // AdoB must be initialized after the setup method is called
         this.adobOracle = new AdobDistributedState(this.transport.getNodeIds());
-    }
-
-    /**
-     * Resets the scenario by clearing the transport layer and the set of nodes.
-     */
-    public void reset() {
-        this.transport.reset();
-        this.setupScenario();
-        this.adobOracle.reset();
-        this.runScenario();
-        log.log(Level.INFO,"Scenario reset: %s", this.toString());
     }
 
     /**
@@ -97,7 +92,7 @@ public abstract class ScenarioExecutor {
      * Sets up the scenario by creating the clients and calling the setup method.
      */
     public final void setupScenario() {
-        this.transport.createClients(this.numClients);
+        this.transport.setNumClients(this.numClients);
         this.transport.getNodes().values().forEach(Replica::initialize);
         this.setup();
     }
@@ -107,15 +102,20 @@ public abstract class ScenarioExecutor {
         if (parameters.has("numClients")) {
             this.numClients = parameters.get("numClients").asInt();
         }
+        // get num clients
+        if (parameters.has("scheduler")) {
+            JsonNode schedulerParameters = parameters.get("scheduler");
+            this.scheduler.loadParameters(schedulerParameters);
+        }
 
-        this.loadParameters(parameters);
+        this.loadScenarioParameters(parameters);
     }
 
     /**
      * Loads the parameters for the scenario from a JSON object.
      * @param parameters The JSON object containing the parameters for the scenario.
      */
-    public abstract void loadScenarioParameters(JsonNode parameters);
+    protected abstract void loadScenarioParameters(JsonNode parameters);
 
     /**
      * Logic to set up the scenario - must be implemented by subclasses.
@@ -152,12 +152,12 @@ public abstract class ScenarioExecutor {
      * Returns the invariants that are not satisfied by the scenario in its current state.
      * @return The invariants that are not satisfied by the scenario in its current state.
      */
-    public final Set<Predicate<ScenarioExecutor>> unsatisfiedInvariants() {
+    public final Set<ScenarioPredicate> unsatisfiedInvariants() {
         return this.invariants.stream().filter(invariant -> !invariant.test(this)).collect(Collectors.toSet());
     }
 
     public final void finalizeSchedule() {
-        this.transport.getSchedule().finalizeSchedule(this.unsatisfiedInvariants());
+        this.getSchedule().finalizeSchedule(this.unsatisfiedInvariants());
     }
 
 }

@@ -1,6 +1,6 @@
 package byzzbench.simulator.faults.preconditions;
 
-import byzzbench.simulator.faults.FaultInput;
+import byzzbench.simulator.faults.FaultContext;
 import byzzbench.simulator.faults.FaultPredicate;
 import byzzbench.simulator.transport.Event;
 import byzzbench.simulator.transport.MessageEvent;
@@ -24,7 +24,7 @@ public class RoundFaultPrecondition implements FaultPredicate {
   }
 
   @Override
-  public boolean test(FaultInput ctx) {
+  public boolean test(FaultContext ctx) {
     Optional<Event> event = ctx.getEvent();
 
     if (event.isEmpty()) {
