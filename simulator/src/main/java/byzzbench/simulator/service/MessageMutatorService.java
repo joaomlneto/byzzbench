@@ -19,12 +19,12 @@ public class MessageMutatorService {
      * Map of mutators by id.
      */
     @Getter
-    private final Map<String, MessageMutationFault> mutatorsMap = new HashMap<>();
+    private final SortedMap<String, MessageMutationFault> mutatorsMap = new TreeMap<>();
 
     /**
      * Map of class to the set of mutators that can mutate it.
      */
-    private final Map<Class<? extends Serializable>, SortedSet<MessageMutationFault>> mutatorsByClass = new HashMap<>();
+    private final SortedMap<Class<? extends Serializable>, SortedSet<MessageMutationFault>> mutatorsByClass = new TreeMap<>(Comparator.comparing(Class::getName));
 
     public MessageMutatorService(List<MessageMutationFault> mutators, List<? extends MessageMutatorFactory> mutatorFactories) {
         // add mutators to the map

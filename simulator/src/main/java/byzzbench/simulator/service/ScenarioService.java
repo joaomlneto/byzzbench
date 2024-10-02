@@ -20,7 +20,7 @@ public class ScenarioService {
     /**
      * Map of scenario id to scenario factory bean
      */
-    private final Map<String, ScenarioFactory> scenarioFactories = new HashMap<>();
+    private final SortedMap<String, ScenarioFactory> scenarioFactories = new TreeMap<>();
 
     /**
      * List of scenarios that have been created by this service

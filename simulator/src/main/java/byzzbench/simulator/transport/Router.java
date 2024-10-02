@@ -2,8 +2,8 @@ package byzzbench.simulator.transport;
 
 import lombok.Getter;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.util.SortedMap;
+import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -26,7 +26,7 @@ public class Router {
      * communicate with each other.
      */
     @Getter
-    private final Map<String, Integer> partitions = new HashMap<>();
+    private final SortedMap<String, Integer> partitions = new TreeMap<>();
 
     /**
      * Isolates a node from the rest of the network.

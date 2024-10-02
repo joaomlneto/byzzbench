@@ -8,7 +8,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import java.io.Serializable;
 import java.util.List;
 import java.util.NavigableMap;
-import java.util.Set;
+import java.util.SortedSet;
 
 public interface Scenario extends Serializable {
     /**
@@ -88,5 +88,5 @@ public interface Scenario extends Serializable {
 
     // TODO: refactor the methods below
     TerminationCondition getTerminationCondition();
-    Set<ScenarioPredicate> unsatisfiedInvariants();
+    SortedSet<ScenarioPredicate> unsatisfiedInvariants();
 }

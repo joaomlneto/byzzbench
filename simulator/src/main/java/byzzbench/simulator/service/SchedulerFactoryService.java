@@ -4,13 +4,13 @@ import byzzbench.simulator.scheduler.Scheduler;
 import com.fasterxml.jackson.databind.JsonNode;
 import org.springframework.stereotype.Service;
 
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
+import java.util.SortedMap;
+import java.util.TreeMap;
 
 @Service
 public class SchedulerFactoryService {
-    Map<String, Scheduler> schedulers = new HashMap<>();
+    SortedMap<String, Scheduler> schedulers = new TreeMap<>();
 
     public SchedulerFactoryService(List<? extends Scheduler> schedulerList) {
         for (Scheduler scheduler : schedulerList) {

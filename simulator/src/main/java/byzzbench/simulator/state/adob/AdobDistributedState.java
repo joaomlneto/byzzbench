@@ -10,10 +10,7 @@ import lombok.Synchronized;
 import lombok.extern.java.Log;
 
 import java.io.Serializable;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.TreeSet;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
@@ -32,11 +29,11 @@ public class AdobDistributedState implements ScenarioObserver, ReplicaObserver, 
     /**
      * The vector clocks of each replica.
      */
-    private final Map<String, VectorClock> clocks = new HashMap<>();
+    private final SortedMap<String, VectorClock> clocks = new TreeMap<>();
     /**
      * The last cache that each replica has created/supported.
      */
-    private final Map<String, AdobCache> replicaLastCache = new HashMap<>();
+    private final SortedMap<String, AdobCache> replicaLastCache = new TreeMap<>();
     /**
      * The root cache of the distributed state.
      */
@@ -46,7 +43,7 @@ public class AdobDistributedState implements ScenarioObserver, ReplicaObserver, 
      * The caches that have been created so far.
      */
     @Getter(onMethod_ = {@Synchronized})
-    private final Map<Long, AdobCache> caches = new HashMap<>(Map.of(0L, root));
+    private final SortedMap<Long, AdobCache> caches = new TreeMap<>(Map.of(0L, root));
 
     private AdobCache getReplicaLastCache(Replica r) {
         return replicaLastCache.getOrDefault(r.getNodeId(), root);

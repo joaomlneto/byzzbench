@@ -41,7 +41,7 @@ public class Transport {
      */
     @Getter(onMethod_ = {@Synchronized})
     @JsonIgnore
-    private final Map<Long, Event> events = new TreeMap<>();
+    private final SortedMap<Long, Event> events = new TreeMap<>();
 
     /**
      * Map of network fault id to the {@link Fault} object. This is used to
@@ -49,7 +49,7 @@ public class Transport {
      * automatically by the transport layer when its predicate is satisfied.
      */
     @Getter(onMethod_ = {@Synchronized})
-    private final Map<String, Fault> networkFaults = new HashMap<>();
+    private final SortedMap<String, Fault> networkFaults = new TreeMap<>();
 
     /**
      * The router for managing partitions.

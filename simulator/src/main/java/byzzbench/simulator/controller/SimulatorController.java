@@ -3,6 +3,7 @@ package byzzbench.simulator.controller;
 import byzzbench.simulator.Client;
 import byzzbench.simulator.Replica;
 import byzzbench.simulator.Scenario;
+import byzzbench.simulator.ScenarioPredicate;
 import byzzbench.simulator.faults.Fault;
 import byzzbench.simulator.faults.MessageMutationFault;
 import byzzbench.simulator.schedule.Schedule;
@@ -48,7 +49,7 @@ public class SimulatorController {
      * @return The list of client IDs.
      */
     @GetMapping("/clients")
-    public Set<String> getClients() {
+    public SortedSet<String> getClients() {
         return simulatorService.getScenario()
                 .getClients()
                 .navigableKeySet();
@@ -460,19 +461,22 @@ public class SimulatorController {
     }
 
     @GetMapping("/network-faults")
-    public Set<String> getNetworkFaults() {
-        return simulatorService.getScenario().getTransport().getNetworkFaults().keySet();
+    public SortedSet<String> getNetworkFaults() {
+        return simulatorService.getScenario().getTransport().getNetworkFaults().keySet()
+                .stream()
+                .sorted()
+                .collect(Collectors.toCollection(TreeSet::new));
     }
 
     @GetMapping("/enabled-network-faults")
-    public Set<String> getEnabledNetworkFaults() {
+    public SortedSet<String> getEnabledNetworkFaults() {
         return simulatorService
                 .getScenario()
                 .getTransport()
                 .getEnabledNetworkFaults()
                 .stream()
                 .map(Fault::getId)
-                .collect(Collectors.toSet());
+                .collect(Collectors.toCollection(TreeSet::new));
     }
 
     @GetMapping("/network-faults/{faultId}")
@@ -486,7 +490,7 @@ public class SimulatorController {
     }
 
     @GetMapping("/partitions")
-    public Map<String, Integer> getPartitions() {
+    public SortedMap<String, Integer> getPartitions() {
         return simulatorService.getScenario()
                 .getTransport()
                 .getRouter()
@@ -499,10 +503,10 @@ public class SimulatorController {
     }
 
     @GetMapping("/scenario/predicates")
-    public Map<String, Boolean> getScenarioPredicates() {
-        return simulatorService.getScenario().getInvariants()
+    public SortedMap<String, Boolean> getScenarioPredicates() {
+        return new TreeMap<>(simulatorService.getScenario().getInvariants()
                 .stream()
-                .collect(Collectors.toMap(p -> p.getId(), p -> p.test(simulatorService.getScenario())));
+                .collect(Collectors.toMap(ScenarioPredicate::getId, p -> p.test(simulatorService.getScenario()))));
     }
 
     @PutMapping("/test")

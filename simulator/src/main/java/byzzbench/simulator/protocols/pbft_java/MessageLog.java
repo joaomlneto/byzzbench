@@ -10,7 +10,6 @@ import lombok.NonNull;
 
 import java.io.Serializable;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
@@ -26,11 +25,11 @@ public class MessageLog implements Serializable {
 
     private final Deque<RequestMessage> buffer = new ConcurrentLinkedDeque<>();
 
-    private final Map<ReplicaRequestKey, Ticket<?, ?>> ticketCache = new ConcurrentHashMap<>();
-    private final Map<TicketKey, Ticket<?, ?>> tickets = new ConcurrentHashMap<>();
+    private final SortedMap<ReplicaRequestKey, Ticket<?, ?>> ticketCache = new TreeMap<>();
+    private final SortedMap<TicketKey, Ticket<?, ?>> tickets = new TreeMap<>();
 
-    private final Map<Long, Collection<CheckpointMessage>> checkpoints = new ConcurrentHashMap<>();
-    private final Map<Long, Map<String, ViewChangeMessage>> viewChanges = new ConcurrentHashMap<>();
+    private final SortedMap<Long, Collection<CheckpointMessage>> checkpoints = new TreeMap<>();
+    private final SortedMap<Long, SortedMap<String, ViewChangeMessage>> viewChanges = new TreeMap<>();
 
     private volatile long lowWaterMark;
     private volatile long highWaterMark;
@@ -182,7 +181,7 @@ public class MessageLog implements Serializable {
         }
 
         final int requiredMatches = 2 * tolerance;
-        Map<Long, Collection<IPhaseMessage>> preparedProofs = new HashMap<>();
+        SortedMap<Long, Collection<IPhaseMessage>> preparedProofs = new TreeMap<>();
 
         // Scan through the ticket cache (i.e. the completed tickets)
         for (Ticket<?, ?> ticket : this.ticketCache.values()) {
@@ -233,7 +232,7 @@ public class MessageLog implements Serializable {
          * not multicast a NEW-VIEW message will cause the entire system to
          * stall; therefore I do include the initiating replica here.
          */
-        Map<String, ViewChangeMessage> newViewSet = this.viewChanges.computeIfAbsent(newViewNumber, k -> new ConcurrentHashMap<>());
+        SortedMap<String, ViewChangeMessage> newViewSet = this.viewChanges.computeIfAbsent(newViewNumber, k -> new TreeMap<>());
         newViewSet.put(replicaId, viewChange);
 
         return viewChange;
@@ -261,20 +260,20 @@ public class MessageLog implements Serializable {
         long newViewNumber = viewChange.getNewViewNumber();
         String replicaId = viewChange.getReplicaId();
 
-        Map<String, ViewChangeMessage> newViewSet = this.viewChanges.computeIfAbsent(newViewNumber, k -> new ConcurrentHashMap<>());
+        SortedMap<String, ViewChangeMessage> newViewSet = this.viewChanges.computeIfAbsent(newViewNumber, k -> new TreeMap<>());
         newViewSet.put(replicaId, viewChange);
 
         final int bandwagonSize = tolerance + 1;
 
         int totalVotes = 0;
         long smallestView = Long.MAX_VALUE;
-        for (Map.Entry<Long, Map<String, ViewChangeMessage>> entry : this.viewChanges.entrySet()) {
+        for (SortedMap.Entry<Long, SortedMap<String, ViewChangeMessage>> entry : this.viewChanges.entrySet()) {
             long entryView = entry.getKey();
             if (entryView <= curViewNumber) {
                 continue;
             }
 
-            Map<String, ViewChangeMessage> votes = entry.getValue();
+            SortedMap<String, ViewChangeMessage> votes = entry.getValue();
             int entryVotes = votes.size();
 
             /*
@@ -301,7 +300,7 @@ public class MessageLog implements Serializable {
         return new ViewChangeResult(shouldBandwagon, smallestView, beginNextVote);
     }
 
-    private Collection<PrePrepareMessage> selectPreparedProofs(long newViewNumber, long minS, long maxS, Map<Long, PrePrepareMessage> prePrepareMap) {
+    private Collection<PrePrepareMessage> selectPreparedProofs(long newViewNumber, long minS, long maxS, SortedMap<Long, PrePrepareMessage> prePrepareMap) {
         /*
          * This procedure computes the prepared proofs for the NEW-VIEW message
          * that is sent by the primary when it is elected in accordance with
@@ -352,7 +351,7 @@ public class MessageLog implements Serializable {
          * proofs to the NEW-VIEW message.
          */
 
-        Map<String, ViewChangeMessage> newViewSet = this.viewChanges.get(newViewNumber);
+        SortedMap<String, ViewChangeMessage> newViewSet = this.viewChanges.get(newViewNumber);
         int votes = newViewSet.size();
         boolean hasOwnViewChange = newViewSet.containsKey(replicaId);
         if (hasOwnViewChange) {
@@ -367,7 +366,7 @@ public class MessageLog implements Serializable {
         long minS = Long.MAX_VALUE;
         long maxS = Long.MIN_VALUE;
         Collection<CheckpointMessage> minSProof = null;
-        Map<Long, PrePrepareMessage> prePrepareMap = new HashMap<>();
+        SortedMap<Long, PrePrepareMessage> prePrepareMap = new TreeMap<>();
         for (ViewChangeMessage viewChange : newViewSet.values()) {
             long seqNumber = viewChange.getLastSeqNumber();
             Collection<CheckpointMessage> proofs = viewChange.getCheckpointProofs();

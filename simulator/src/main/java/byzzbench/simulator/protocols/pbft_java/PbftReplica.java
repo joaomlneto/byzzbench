@@ -17,7 +17,6 @@ import lombok.extern.java.Log;
 
 import java.io.Serializable;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 
 @Log
@@ -46,7 +45,7 @@ public class PbftReplica<O extends Serializable, R extends Serializable> extends
      * TODO: This should not be here!!
      */
     @JsonIgnore
-    private final Map<ReplicaRequestKey, LinearBackoff> timeouts = new ConcurrentHashMap<>();
+    private final SortedMap<ReplicaRequestKey, LinearBackoff> timeouts = new TreeMap<>();
 
     @Getter
     @Setter

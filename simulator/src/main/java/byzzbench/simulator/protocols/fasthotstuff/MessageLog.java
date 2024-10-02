@@ -9,13 +9,13 @@ import java.util.*;
 @RequiredArgsConstructor
 public class MessageLog {
     private final FastHotStuffReplica node;
-    private final Set<Object> committed = new HashSet<>();
-    private final Map<Object, Set<Object>> votes = new HashMap<>();
-    private final Map<Object, Set<Object>> newViews = new HashMap<>();
+    private final SortedSet<Object> committed = new TreeSet<>();
+    private final SortedMap<Object, SortedSet<Object>> votes = new TreeMap<>();
+    private final SortedMap<Object, SortedSet<Object>> newViews = new TreeMap<>();
 
-    private Collection<Object> canMakeQc(Map<Object, Set<Object>> collection, Object key, Object value) {
+    private Collection<Object> canMakeQc(SortedMap<Object, SortedSet<Object>> collection, Object key, Object value) {
         boolean before = collection.containsKey(key) && collection.get(key).size() >= computeQuorumSize();
-        collection.computeIfAbsent(key, k -> new HashSet<>()).add(value);
+        collection.computeIfAbsent(key, k -> new TreeSet<>()).add(value);
         boolean after = collection.containsKey(key) && collection.get(key).size() >= computeQuorumSize();
         return after && !before ? collection.get(key) : null;
     }

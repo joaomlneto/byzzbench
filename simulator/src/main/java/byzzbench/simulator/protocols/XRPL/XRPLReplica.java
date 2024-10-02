@@ -18,11 +18,11 @@ import java.util.Map.Entry;
 public class XRPLReplica extends Replica {
 
     private final @Getter List<String> ourUNL;  //The nodeIDs of nodes in our UNL, our "peers"
-    private final @Getter Map<String, Deque<XRPLProposal>> recentPeerPositions; //List of recent proposals made by peers, used for playback
+    private final @Getter SortedMap<String, Deque<XRPLProposal>> recentPeerPositions; //List of recent proposals made by peers, used for playback
     private final @Getter XRPLLedgerTreeNode tree;
     private @Getter List<String> pendingTransactions; //Our candidate set
     private @Getter XRPLReplicaState state;
-    private @Getter Map<String, XRPLProposal> currPeerProposals;
+    private @Getter SortedMap<String, XRPLProposal> currPeerProposals;
     private @Getter XRPLLedger currWorkLedger;
     private @Getter XRPLLedger prevLedger; //lastClosedLedger
     private @Getter XRPLLedger validLedger; //last fully validated ledger
@@ -30,7 +30,7 @@ public class XRPLReplica extends Replica {
     private @Getter long prevRoundTime;
     private @Getter double converge;
     private @Getter XRPLConsensusResult result;
-    private @Getter Map<String, XRPLLedger> validations; //map of last validated ledgers indexed on nodeId
+    private @Getter SortedMap<String, XRPLLedger> validations; //map of last validated ledgers indexed on nodeId
 
     protected XRPLReplica(String nodeId, SortedSet<String> nodeIds, Transport transport, List<String> UNL, XRPLLedger prevLedger_) {
         super(nodeId, nodeIds, transport, new TotalOrderCommitLog());
@@ -41,12 +41,12 @@ public class XRPLReplica extends Replica {
         this.prevRoundTime = 0;
         this.prevLedger = prevLedger_;
         this.pendingTransactions = new ArrayList<>();
-        this.validations = new HashMap<>();
+        this.validations = new TreeMap<>();
         this.validLedger = prevLedger_;
         this.currWorkLedger = this.validLedger;
         this.tree = new XRPLLedgerTreeNode(prevLedger_);
 
-        this.recentPeerPositions = new HashMap<>();
+        this.recentPeerPositions = new TreeMap<>();
         for (String nodeIdString : this.ourUNL) {
             this.recentPeerPositions.put(nodeIdString, new ArrayDeque<>());
         }
@@ -281,7 +281,7 @@ public class XRPLReplica extends Replica {
     private void handleAccept() {
         XRPLLedger tmpL = new XRPLLedger(this.prevLedger.getId(), this.prevLedger.getSeq() + 1, this.result.getTxList());
         if (this.validations == null) {
-            this.validations = new HashMap<>();
+            this.validations = new TreeMap<>();
         }
         tmpL.signLedger(this.getNodeId());
         this.validations.put(this.getNodeId(), tmpL);
@@ -336,10 +336,10 @@ public class XRPLReplica extends Replica {
      * and our peers'.
      */
     private void createDisputes(List<String> txns) {
-        Set<String> symmDiff = computeSymmetricDifference(this.result.getTxList(), txns);
+        SortedSet<String> symmDiff = computeSymmetricDifference(this.result.getTxList(), txns);
         for (String tx : symmDiff) {
             if (!this.result.disputesContain(tx)) {
-                DisputedTx dt = new DisputedTx(tx, this.result.containsTx(tx), 0, 0, new HashMap<>());
+                DisputedTx dt = new DisputedTx(tx, this.result.containsTx(tx), 0, 0, new TreeMap<>());
                 for (String nodeId : this.ourUNL) {
                     if (this.currPeerProposals.get(nodeId) != null) {
                         if (this.currPeerProposals.get(nodeId).containsTx(tx)) {
@@ -357,12 +357,12 @@ public class XRPLReplica extends Replica {
         }
     }
 
-    private Set<String> computeSymmetricDifference(List<String> list1, List<String> list2) {
-        Set<String> set1 = new HashSet<>(list1);
-        Set<String> set2 = new HashSet<>(list2);
-        Set<String> union = new HashSet<>(set1);
+    private SortedSet<String> computeSymmetricDifference(List<String> list1, List<String> list2) {
+        SortedSet<String> set1 = new TreeSet<>(list1);
+        SortedSet<String> set2 = new TreeSet<>(list2);
+        SortedSet<String> union = new TreeSet<>(set1);
         union.addAll(set2);
-        Set<String> intersection = new HashSet<>(set1);
+        SortedSet<String> intersection = new TreeSet<>(set1);
         intersection.retainAll(set2);
         union.removeAll(intersection);
         return union;
@@ -496,7 +496,7 @@ public class XRPLReplica extends Replica {
         this.result.reset();
         this.converge = 0;
         //TODO this.openTime = clock.now();
-        this.currPeerProposals = new HashMap<>();
+        this.currPeerProposals = new TreeMap<>();
         this.playbackProposals();
     }
 

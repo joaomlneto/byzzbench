@@ -15,10 +15,7 @@ import lombok.Synchronized;
 import lombok.ToString;
 import lombok.extern.java.Log;
 
-import java.util.List;
-import java.util.NavigableMap;
-import java.util.Set;
-import java.util.TreeMap;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -212,8 +209,9 @@ public abstract class BaseScenario implements Scenario {
      * Returns the invariants that are not satisfied by the scenario in its current state.
      * @return The invariants that are not satisfied by the scenario in its current state.
      */
-    public final Set<ScenarioPredicate> unsatisfiedInvariants() {
-        return this.invariants.stream().filter(invariant -> !invariant.test(this)).collect(Collectors.toSet());
+    public final SortedSet<ScenarioPredicate> unsatisfiedInvariants() {
+        return this.invariants.stream().filter(invariant -> !invariant.test(this))
+                .collect(Collectors.toCollection(TreeSet::new));
     }
 
     public final void finalizeSchedule() {

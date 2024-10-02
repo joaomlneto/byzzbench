@@ -20,7 +20,7 @@ public class FaultsFactoryService {
     /**
      * Map of fault behaviors by input class.
      */
-    Map<Class<? extends Serializable>, Set<FaultBehavior>> faultBehaviorsByInputClass = new HashMap<>();
+    SortedMap<Class<? extends Serializable>, SortedSet<FaultBehavior>> faultBehaviorsByInputClass = new TreeMap<>();
 
     public FaultsFactoryService(List<? extends FaultBehavior> faultBehaviors) {
         // add fault behaviors to the map
@@ -39,7 +39,7 @@ public class FaultsFactoryService {
                 .forEach(faultBehavior -> {
                     for (Class<? extends Serializable> inputClass : faultBehavior.getInputClasses()) {
                         faultBehaviorsByInputClass
-                                .computeIfAbsent(inputClass, k -> new HashSet<>())
+                                .computeIfAbsent(inputClass, k -> new TreeSet<>())
                                 .add(faultBehavior);
                     }
                 });

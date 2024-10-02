@@ -1,15 +1,15 @@
 package byzzbench.simulator.protocols.XRPL;
 
-import java.util.Map;
+import java.util.SortedMap;
 
 public class DisputedTx {
-    private String tx;
+    private final String tx;
+    SortedMap<String, Boolean> votes;
     private boolean ourVote;
     private int yesVotes;
     private int noVotes;
-    Map<String, Boolean> votes;
 
-    public DisputedTx(String tx_, boolean ourVote_, int yesVotes_, int noVotes_, Map<String, Boolean> votes_) {
+    public DisputedTx(String tx_, boolean ourVote_, int yesVotes_, int noVotes_, SortedMap<String, Boolean> votes_) {
         this.tx = tx_;
         this.ourVote = ourVote_;
         this.yesVotes = yesVotes_;
