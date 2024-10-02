@@ -42,18 +42,7 @@ public class SimulatorService {
 
     @EventListener(ApplicationReadyEvent.class)
     void onStartup() {
-        log.info("Starting the simulator service");
-        this.changeScenario("xrpl");
-        log.info("Simulator service started");
-    }
-
-    /**
-     * Changes the scenario to the scenario with the given ID.
-     *
-     * @param id The ID of the scenario to change to.
-     */
-    public void changeScenario(String id) {
-        this.changeScenario(id, JsonNodeFactory.instance.objectNode());
+        this.changeScenario("xrpl", JsonNodeFactory.instance.objectNode());
     }
 
     /**
@@ -70,7 +59,7 @@ public class SimulatorService {
 
     public void resetScenario() {
         this.scenario = this.scenarioService.generateScenario(this.scenarioId, this.scenarioParams);
-        this.scenario.setupScenario();
+        //this.scenario.setupScenario();
         this.droppedMessageCount = 0;
         this.scenario.runScenario();
     }
@@ -102,7 +91,7 @@ public class SimulatorService {
         this.executor.submit(() -> {
             this.mode = SimulatorServiceMode.RUNNING;
             // reset the scenario to ensure that the scenario is in a clean state
-            this.changeScenario(this.scenario.getId());
+            this.changeScenario(this.getScenarioId(), this.getScenarioParams());
             this.terminationCondition = this.scenario.getTerminationCondition();
 
             int numTerm = 0;
@@ -157,7 +146,6 @@ public class SimulatorService {
                     } */
                     this.resetScenario();
                     this.droppedMessageCount = 0;
-                    this.scenario.getScheduler().reset();
                     this.terminationCondition = this.scenario.getTerminationCondition();
                 }
             } catch (Exception e) {

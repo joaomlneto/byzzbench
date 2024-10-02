@@ -10,8 +10,10 @@ import {
   StopActionIcon,
 } from "@/components/ActionIcon";
 import { ColorSchemeToggle } from "@/components/ColorSchemeToggle";
+import { ImportScheduleButton } from "@/components/ImportScheduleButton";
+import { ScheduleList } from "@/components/Schedule";
 import { HeaderMenu } from "@/layouts/MainLayout/HeaderMenu";
-import { AppShell, Group } from "@mantine/core";
+import { AppShell, Button, Group, Popover, ScrollArea } from "@mantine/core";
 import React, { PropsWithChildren } from "react";
 
 export const MainLayout = ({ children }: PropsWithChildren) => {
@@ -28,6 +30,17 @@ export const MainLayout = ({ children }: PropsWithChildren) => {
           <SaveScheduleActionIcon />
           <StartActionIcon />
           <StopActionIcon />
+          <ImportScheduleButton size="xs" />
+          <Popover>
+            <Popover.Target>
+              <Button size="xs">Saved Schedules</Button>
+            </Popover.Target>
+            <Popover.Dropdown>
+              <ScrollArea h={500}>
+                <ScheduleList />
+              </ScrollArea>
+            </Popover.Dropdown>
+          </Popover>
         </Group>
       </AppShell.Header>
 

@@ -14,6 +14,7 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.List;
 import java.util.SortedSet;
+import java.util.TreeSet;
 
 /**
  * Superclass for all replicas in the system.
@@ -102,11 +103,9 @@ public abstract class Replica implements Serializable {
      * @param message    the message to send
      * @param recipients the recipients of the message
      */
-    protected void multicastMessage(MessagePayload message,
-                                    SortedSet<String> recipients) {
+    protected void multicastMessage(MessagePayload message, SortedSet<String> recipients) {
         message.sign(this.nodeId);
         this.transport.multicast(this.nodeId, recipients, message);
-
     }
 
     /**
@@ -117,10 +116,10 @@ public abstract class Replica implements Serializable {
     protected void broadcastMessage(MessagePayload message) {
         SortedSet<String> otherNodes = this.nodeIds.stream()
                 .filter(otherNodeId -> !otherNodeId.equals(this.nodeId))
-                .collect(java.util.stream.Collectors.toCollection(java.util.TreeSet::new));
+                .collect(java.util.stream.Collectors.toCollection(TreeSet::new));
 
-            message.sign(this.nodeId);
-            this.transport.multicast(this.nodeId, otherNodes, message);
+        message.sign(this.nodeId);
+        this.transport.multicast(this.nodeId, otherNodes, message);
     }
 
     /**
@@ -129,8 +128,8 @@ public abstract class Replica implements Serializable {
      * @param message the message to broadcast
      */
     protected void broadcastMessageIncludingSelf(MessagePayload message) {
-            message.sign(this.nodeId);
-            this.transport.multicast(this.nodeId, this.nodeIds, message);
+        message.sign(this.nodeId);
+        this.transport.multicast(this.nodeId, this.nodeIds, message);
     }
 
     /**

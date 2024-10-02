@@ -5,21 +5,18 @@ import byzzbench.simulator.transport.MessagePayload;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
-import java.io.Serializable;
-
 @Data
 @EqualsAndHashCode(callSuper = true)
 public class Block extends MessagePayload implements PartialOrderLogEntry<String> {
     private final GenericQuorumCertificate qc;
     private final long round;
     private final String author;
-    private final Serializable payload;
+    private final String payload;
 
     @Override
     public String getType() {
         return "BLOCK";
     }
-
 
     @Override
     public String getParentHash() {

@@ -11,6 +11,7 @@ import byzzbench.simulator.service.ScenarioService;
 import byzzbench.simulator.service.SchedulerFactoryService;
 import byzzbench.simulator.service.SimulatorService;
 import byzzbench.simulator.state.adob.AdobCache;
+import byzzbench.simulator.state.adob.AdobDistributedState;
 import byzzbench.simulator.transport.Event;
 import byzzbench.simulator.transport.MailboxEvent;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -47,14 +48,10 @@ public class SimulatorController {
      * @return The list of client IDs.
      */
     @GetMapping("/clients")
-    public SortedSet<String> getClients() {
+    public Set<String> getClients() {
         return simulatorService.getScenario()
-                .getTransport()
                 .getClients()
-                .keySet() // get the set of client IDs
-                .stream()
-                .sorted() // sort the client IDs
-                .collect(Collectors.toCollection(TreeSet::new)); // return a sorted set
+                .navigableKeySet();
     }
 
     /**
@@ -64,7 +61,7 @@ public class SimulatorController {
      */
     @GetMapping("/client/{clientId}")
     public Client getClient(@PathVariable String clientId) {
-        return simulatorService.getScenario().getTransport().getClients().get(clientId);
+        return simulatorService.getScenario().getClients().get(clientId);
     }
 
     /**
@@ -73,12 +70,7 @@ public class SimulatorController {
      */
     @GetMapping("/nodes")
     public SortedSet<String> getNodes() {
-        return simulatorService.getScenario()
-                .getTransport()
-                .getNodeIds()
-                .stream()
-                .sorted()
-                .collect(Collectors.toCollection(TreeSet::new));
+        return simulatorService.getScenario().getNodes().navigableKeySet();
     }
 
     /**
@@ -88,7 +80,7 @@ public class SimulatorController {
      */
     @GetMapping("/node/{nodeId}")
     public Replica getNode(@PathVariable String nodeId) {
-        return simulatorService.getScenario().getTransport().getNode(nodeId);
+        return simulatorService.getScenario().getNode(nodeId);
     }
 
     /**
@@ -336,7 +328,12 @@ public class SimulatorController {
      */
     @GetMapping("/adob")
     public AdobCache getAdob() {
-        return simulatorService.getScenario().getAdobOracle().getRoot();
+        return simulatorService.getScenario().getObservers().stream()
+                .filter(AdobDistributedState.class::isInstance)
+                .map(o -> (AdobDistributedState) o)
+                .findFirst()
+                .orElseThrow(() -> new IllegalStateException("ADoB oracle not found"))
+                .getRoot();
     }
 
     /**
@@ -345,7 +342,12 @@ public class SimulatorController {
      */
     @GetMapping("/adob/caches")
     public Collection<AdobCache> getAllAdobCaches() {
-        return simulatorService.getScenario().getAdobOracle().getCaches().values();
+        AdobDistributedState adob = simulatorService.getScenario().getObservers().stream()
+                .filter(AdobDistributedState.class::isInstance)
+                .map(o -> (AdobDistributedState) o)
+                .findFirst()
+                .orElseThrow(() -> new IllegalStateException("ADoB oracle not found"));
+        return adob.getCaches().values();
     }
 
     /**
@@ -355,7 +357,12 @@ public class SimulatorController {
      */
     @GetMapping("/adob/caches/{cacheId}")
     public AdobCache getAdobCache(@PathVariable Long cacheId) {
-        return simulatorService.getScenario().getAdobOracle().getCaches().get(cacheId);
+        AdobDistributedState adob = simulatorService.getScenario().getObservers().stream()
+                .filter(AdobDistributedState.class::isInstance)
+                .map(o -> (AdobDistributedState) o)
+                .findFirst()
+                .orElseThrow(() -> new IllegalStateException("ADoB oracle not found"));
+        return adob.getCaches().get(cacheId);
     }
 
     /**
@@ -453,23 +460,19 @@ public class SimulatorController {
     }
 
     @GetMapping("/network-faults")
-    public SortedSet<String> getNetworkFaults() {
-        return simulatorService.getScenario().getTransport().getNetworkFaults().keySet()
-                .stream()
-                .sorted()
-                .collect(Collectors.toCollection(TreeSet::new));
+    public Set<String> getNetworkFaults() {
+        return simulatorService.getScenario().getTransport().getNetworkFaults().keySet();
     }
 
     @GetMapping("/enabled-network-faults")
-    public SortedSet<String> getEnabledNetworkFaults() {
+    public Set<String> getEnabledNetworkFaults() {
         return simulatorService
                 .getScenario()
                 .getTransport()
                 .getEnabledNetworkFaults()
                 .stream()
                 .map(Fault::getId)
-                .sorted()
-                .collect(Collectors.toCollection(TreeSet::new));
+                .collect(Collectors.toSet());
     }
 
     @GetMapping("/network-faults/{faultId}")
@@ -490,14 +493,21 @@ public class SimulatorController {
                 .getPartitions();
     }
 
-    @PutMapping("/test")
-    public void testDeserialize(@RequestBody MyThing thing) {
-        System.out.println("thing: " + thing);
-    }
-
     @GetMapping("/scenario")
     public Scenario getScenario() {
         return simulatorService.getScenario();
+    }
+
+    @GetMapping("/scenario/predicates")
+    public Map<String, Boolean> getScenarioPredicates() {
+        return simulatorService.getScenario().getInvariants()
+                .stream()
+                .collect(Collectors.toMap(p -> p.getId(), p -> p.test(simulatorService.getScenario())));
+    }
+
+    @PutMapping("/test")
+    public void testDeserialize(@RequestBody MyThing thing) {
+        System.out.println("thing: " + thing);
     }
 
     @Data

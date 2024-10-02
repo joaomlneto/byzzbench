@@ -1,4 +1,4 @@
-package byzzbench.simulator.faults.preconditions;
+package byzzbench.simulator.faults.predicates;
 
 import byzzbench.simulator.faults.FaultContext;
 import byzzbench.simulator.faults.FaultPredicate;
@@ -10,7 +10,7 @@ import lombok.RequiredArgsConstructor;
 import java.util.Optional;
 
 @RequiredArgsConstructor
-public class RoundFaultPrecondition implements FaultPredicate {
+public class RoundPredicate implements FaultPredicate {
   private final long round;
 
   @Override

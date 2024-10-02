@@ -1,17 +1,13 @@
 package byzzbench.simulator.transport;
 
-import byzzbench.simulator.BaseScenario;
-import byzzbench.simulator.Client;
 import byzzbench.simulator.Replica;
+import byzzbench.simulator.Scenario;
 import byzzbench.simulator.faults.Fault;
 import byzzbench.simulator.faults.FaultContext;
-import byzzbench.simulator.faults.HealNodeNetworkFault;
-import byzzbench.simulator.faults.IsolateProcessNetworkFault;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Getter;
-import lombok.Setter;
+import lombok.RequiredArgsConstructor;
 import lombok.Synchronized;
-import lombok.ToString;
 import lombok.extern.java.Log;
 
 import java.io.Serializable;
@@ -27,18 +23,25 @@ import java.util.stream.Collectors;
  * faults.
  */
 @Log
-@ToString
+@RequiredArgsConstructor
 public class Transport {
+    /**
+     * The scenario executor for the transport layer.
+     */
+    @Getter(onMethod_ = {@Synchronized})
+    private final Scenario scenario;
+
     /**
      * The sequence number for events.
      */
     private final AtomicLong eventSeqNum = new AtomicLong(1);
+
     /**
-     * Map of node id to the {@link Replica} object.
+     * Map of event ID to the {@link Event} object.
      */
     @Getter(onMethod_ = {@Synchronized})
     @JsonIgnore
-    private final Map<String, Replica> nodes = new HashMap<>();
+    private final Map<Long, Event> events = new TreeMap<>();
 
     /**
      * Map of network fault id to the {@link Fault} object. This is used to
@@ -47,32 +50,17 @@ public class Transport {
      */
     @Getter(onMethod_ = {@Synchronized})
     private final Map<String, Fault> networkFaults = new HashMap<>();
-    /**
-     * Map of client id to the {@link Client} object.
-     */
-    @Getter(onMethod_ = {@Synchronized})
-    @JsonIgnore
-    private final Map<String, Client> clients = new HashMap<>();
-    /**
-     * Map of event ID to the {@link Event} object.
-     */
-    @Getter(onMethod_ = {@Synchronized})
-    @JsonIgnore
-    private final Map<Long, Event> events = new TreeMap<>();
+
     /**
      * The router for managing partitions.
      */
     @Getter(onMethod_ = {@Synchronized})
     private final Router router = new Router();
+
     /**
      * List of observers for the transport layer.
      */
     private final List<TransportObserver> observers = new ArrayList<>();
-    /**
-     * The scenario executor for the transport layer.
-     */
-    @Setter
-    private BaseScenario scenario;
 
     /**
      * Adds an observer to the transport layer.
@@ -91,42 +79,11 @@ public class Transport {
     }
 
     /**
-     * Registers a new node in the system.
-     *
-     * @param replica The node to add.
+     * Adds a network fault to the transport layer.
+     * @param fault The fault to add.
      */
-    public synchronized void addNode(Replica replica) {
-        nodes.put(replica.getNodeId(), replica);
-
-        // for each node, add a IsolateNodeFault and a HealNodeFault
-        this.addNetworkFault(new IsolateProcessNetworkFault(replica.getNodeId()));
-        this.addNetworkFault(new HealNodeNetworkFault(replica.getNodeId()));
-    }
-
     public synchronized void addNetworkFault(Fault fault) {
         this.networkFaults.put(fault.getId(), fault);
-    }
-
-    /**
-     * Registers a new client in the system.
-     *
-     * @param client The client to add.
-     */
-    private synchronized void addClient(Client client) {
-        clients.put(client.getClientId(), client);
-    }
-
-    /**
-     * Creates a number of clients in the system.
-     *
-     * @param numClients The number of clients to create.
-     */
-    public synchronized void setNumClients(int numClients) {
-        clients.clear();
-        for (int i = 0; i < numClients; i++) {
-            Client client = new Client(String.format("C%d", i), this);
-            this.addClient(client);
-        }
     }
 
     /**
@@ -137,11 +94,11 @@ public class Transport {
      */
     public synchronized void sendClientRequest(String sender, Serializable operation, String recipient) {
         // assert that the sender exists
-        if (!clients.containsKey(sender)) {
+        if (!this.scenario.getClients().containsKey(sender)) {
             throw new IllegalArgumentException("Client not found: " + sender);
         }
 
-        if (!nodes.containsKey(recipient)) {
+        if (!this.scenario.getNodes().containsKey(recipient)) {
             throw new IllegalArgumentException("Replica not found: " + recipient);
         }
 
@@ -162,11 +119,11 @@ public class Transport {
      */
     public synchronized void sendClientResponse(String sender, Serializable response, String recipient) {
         // assert that the sender exists
-        if (!nodes.containsKey(sender)) {
+        if (!this.scenario.getNodes().containsKey(sender)) {
             throw new IllegalArgumentException("Replica not found: " + sender);
         }
 
-        if (!clients.containsKey(recipient)) {
+        if (!this.scenario.getClients().containsKey(recipient)) {
             throw new IllegalArgumentException("Client not found: " + recipient);
         }
 
@@ -188,18 +145,6 @@ public class Transport {
     public synchronized void sendMessage(String sender, MessagePayload message,
                             String recipient) {
         this.multicast(sender, new TreeSet<>(Set.of(recipient)), message);
-    }
-
-    /**
-     * Resets the transport layer.
-     */
-    public synchronized void reset() {
-        this.eventSeqNum.set(1);
-        this.nodes.clear();
-        this.networkFaults.clear();
-        this.router.resetPartitions();
-        this.events.clear();
-        this.nodes.values().forEach(Replica::initialize);
     }
 
     /**
@@ -270,13 +215,13 @@ public class Transport {
 
         switch (e) {
             case ClientRequestEvent c -> {
-                nodes.get(c.getRecipientId()).handleClientRequest(c.getSenderId(), c.getPayload());
+                this.scenario.getNodes().get(c.getRecipientId()).handleClientRequest(c.getSenderId(), c.getPayload());
             }
             case ClientReplyEvent c -> {
-                clients.get(c.getRecipientId()).handleReply(c.getSenderId(), c.getPayload());
+                this.scenario.getClients().get(c.getRecipientId()).handleReply(c.getSenderId(), c.getPayload());
             }
             case MessageEvent m -> {
-                nodes.get(m.getRecipientId()).handleMessage(m.getSenderId(), m.getPayload());
+                this.scenario.getNodes().get(m.getRecipientId()).handleMessage(m.getSenderId(), m.getPayload());
             }
             case TimeoutEvent t -> {
                 t.getTask().run();
@@ -445,14 +390,14 @@ public class Transport {
 
     @JsonIgnore
     public synchronized SortedSet<String> getNodeIds() {
-        return nodes.keySet()
+        return this.scenario.getNodes().keySet()
                 .stream()
                 .sorted()
                 .collect(Collectors.toCollection(TreeSet::new));
     }
 
     public synchronized Replica getNode(String nodeId) {
-        return nodes.get(nodeId);
+        return this.scenario.getNodes().get(nodeId);
     }
 
     @JsonIgnore

@@ -11,6 +11,7 @@ import lombok.Getter;
 import lombok.ToString;
 import lombok.extern.jackson.Jacksonized;
 
+import java.io.Serializable;
 import java.util.*;
 
 @Getter
@@ -18,7 +19,7 @@ import java.util.*;
 @Builder
 @JsonIgnoreProperties(ignoreUnknown = true)
 @ToString
-public class Schedule {
+public class Schedule implements Serializable {
     /**
      * The list of events in the schedule.
      */

@@ -1,4 +1,4 @@
-package byzzbench.simulator.protocols.XRPL;
+package byzzbench.simulator.protocols.fasthotstuff;
 
 import byzzbench.simulator.BaseScenarioFactory;
 import byzzbench.simulator.Scenario;
@@ -9,20 +9,20 @@ import com.fasterxml.jackson.databind.JsonNode;
 import org.springframework.stereotype.Component;
 
 @Component
-public class XRPLScenarioFactory extends BaseScenarioFactory {
-    public XRPLScenarioFactory(SchedulerFactoryService schedulerFactoryService) {
+public class FastHotStuffScenarioFactory extends BaseScenarioFactory {
+    public FastHotStuffScenarioFactory(SchedulerFactoryService schedulerFactoryService) {
         super(schedulerFactoryService);
     }
 
     @Override
     public String getId() {
-        return "xrpl";
+        return "fasthotstuff";
     }
 
     @Override
     public Scenario createScenario(MessageMutatorService messageMutatorService, JsonNode params) {
         Scheduler scheduler = this.createScheduler(messageMutatorService, params);
-        XRPLScenario scenarioExecutor = new XRPLScenario(scheduler);
+        FastHotStuffScenarioExecutor scenarioExecutor = new FastHotStuffScenarioExecutor(scheduler);
         scenarioExecutor.loadParameters(params);
         return scenarioExecutor;
     }

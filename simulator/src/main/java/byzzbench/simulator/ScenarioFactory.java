@@ -7,5 +7,5 @@ public interface ScenarioFactory {
     default String getId() {
         return this.getClass().getSimpleName();
     }
-    BaseScenario createScenario(MessageMutatorService messageMutatorService, JsonNode params);
+    Scenario createScenario(MessageMutatorService messageMutatorService, JsonNode params);
 }

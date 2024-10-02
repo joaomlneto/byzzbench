@@ -1,14 +1,19 @@
 package byzzbench.simulator.state.adob;
 
+import byzzbench.simulator.Client;
 import byzzbench.simulator.Replica;
 import byzzbench.simulator.ReplicaObserver;
+import byzzbench.simulator.ScenarioObserver;
 import byzzbench.simulator.versioning.VectorClock;
 import lombok.Getter;
 import lombok.Synchronized;
 import lombok.extern.java.Log;
 
 import java.io.Serializable;
-import java.util.*;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.TreeSet;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
@@ -19,7 +24,7 @@ import java.util.concurrent.atomic.AtomicLong;
  * paper</a>
  */
 @Log
-public class AdobDistributedState implements ReplicaObserver, Serializable {
+public class AdobDistributedState implements ScenarioObserver, ReplicaObserver, Serializable {
     /**
      * The maximum cache ID that has been created so far.
      */
@@ -42,12 +47,6 @@ public class AdobDistributedState implements ReplicaObserver, Serializable {
      */
     @Getter(onMethod_ = {@Synchronized})
     private final Map<Long, AdobCache> caches = new HashMap<>(Map.of(0L, root));
-
-    public AdobDistributedState(Collection<String> replicaIds) {
-        for (String id : replicaIds) {
-            replicaLastCache.put(id, root);
-        }
-    }
 
     private AdobCache getReplicaLastCache(Replica r) {
         return replicaLastCache.getOrDefault(r.getNodeId(), root);
@@ -181,5 +180,18 @@ public class AdobDistributedState implements ReplicaObserver, Serializable {
 
         root = new RootCache(0);
         caches.put(0L, root);
+    }
+
+    @Override
+    public void onReplicaAdded(Replica r) {
+        r.addObserver(this);
+        System.out.println("Replica added: " + r.getNodeId());
+        CommitCache cCache = new CommitCache(r.getNodeIds().stream().sorted().toList().indexOf(r.getNodeId()), root);
+        caches.put(cCache.getId(), cCache);
+    }
+
+    @Override
+    public void onClientAdded(Client c) {
+        // do nothing
     }
 }

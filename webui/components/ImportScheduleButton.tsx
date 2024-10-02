@@ -1,12 +1,15 @@
 import { useSavedSchedulesStore } from "@/hooks/useSavedSchedules";
-import { Button, FileButton } from "@mantine/core";
+import { Button, FileButton, FileButtonProps } from "@mantine/core";
 import { showNotification } from "@mantine/notifications";
 
-export const ImportScheduleButton = () => {
+export const ImportScheduleButton = (
+  props: Omit<FileButtonProps, "onChange" | "children">,
+) => {
   const schedules = useSavedSchedulesStore((state) => state.schedules);
   const addSchedule = useSavedSchedulesStore((x) => x.addSchedule);
   return (
     <FileButton
+      {...props}
       onChange={async (file) => {
         // if no file is selected, return
         if (!file) return;
