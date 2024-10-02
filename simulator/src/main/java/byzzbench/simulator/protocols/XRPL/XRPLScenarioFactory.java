@@ -10,20 +10,21 @@ import org.springframework.stereotype.Component;
 
 @Component
 public class XRPLScenarioFactory extends BaseScenarioFactory {
-    public XRPLScenarioFactory(SchedulerFactoryService schedulerFactoryService) {
-        super(schedulerFactoryService);
-    }
+  public XRPLScenarioFactory(SchedulerFactoryService schedulerFactoryService) {
+    super(schedulerFactoryService);
+  }
 
-    @Override
-    public String getId() {
-        return "xrpl";
-    }
+  @Override
+  public String getId() {
+    return "xrpl";
+  }
 
-    @Override
-    public Scenario createScenario(MessageMutatorService messageMutatorService, JsonNode params) {
-        Scheduler scheduler = this.createScheduler(messageMutatorService, params);
-        XRPLScenario scenarioExecutor = new XRPLScenario(scheduler);
-        scenarioExecutor.loadParameters(params);
-        return scenarioExecutor;
-    }
+  @Override
+  public Scenario createScenario(MessageMutatorService messageMutatorService,
+                                 JsonNode params) {
+    Scheduler scheduler = this.createScheduler(messageMutatorService, params);
+    XRPLScenario scenarioExecutor = new XRPLScenario(scheduler);
+    scenarioExecutor.loadParameters(params);
+    return scenarioExecutor;
+  }
 }
