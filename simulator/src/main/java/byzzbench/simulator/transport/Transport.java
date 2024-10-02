@@ -390,14 +390,14 @@ public class Transport {
 
     @JsonIgnore
     public synchronized SortedSet<String> getNodeIds() {
-        return nodes.keySet()
+        return this.scenario.getNodes().keySet()
                 .stream()
                 .sorted()
                 .collect(Collectors.toCollection(TreeSet::new));
     }
 
     public synchronized Replica getNode(String nodeId) {
-        return nodes.get(nodeId);
+        return this.scenario.getNodes().get(nodeId);
     }
 
     @JsonIgnore

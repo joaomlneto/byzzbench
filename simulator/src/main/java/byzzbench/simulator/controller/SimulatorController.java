@@ -285,7 +285,10 @@ public class SimulatorController {
     public SortedSet<String> getMutators() {
         return messageMutatorService
                 .getMutatorsMap()
-                .keySet();
+                .keySet()
+                .stream()
+                .sorted()
+                .collect(Collectors.toCollection(TreeSet::new));
     }
 
     /**
