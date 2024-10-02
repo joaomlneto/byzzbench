@@ -65,3 +65,10 @@ tasks.withType<Test> {
 openApi {
     apiDocsUrl.set("http://localhost:8080/spec")
 }
+
+// fix for https://github.com/springdoc/springdoc-openapi-gradle-plugin/issues/102
+tasks.forkedSpringBootRun {
+    dependsOn("compileAotJava")
+    dependsOn("processAotResources")
+    doNotTrackState("See https://github.com/springdoc/springdoc-openapi-gradle-plugin/issues/102")
+}
