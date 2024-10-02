@@ -45,3 +45,11 @@ Timeouts are implemented via callbacks to a `Runnable`, also handled by the `Tra
 
 Each replica has its own instance of a `CommitLog`: an immutable and total ordered sequence of records. This is used to
 check whether safety invariants of distributed consensus are broken.
+
+## Pitfalls
+
+- **Non-determinism**: For reproducibility we require the removal of any non-determinism! This can manifest itself in
+  many ways:
+  - Avoid interfaces and collections that do not guarantee order, such as `Set` or `Map`: use the `OrderedSet` or
+    `OrderedMap` interfaces instead, and `TreeSet` or `LinkedHashMap` implementations to ensure order.
+

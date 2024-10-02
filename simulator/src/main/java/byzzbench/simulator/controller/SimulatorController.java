@@ -48,7 +48,7 @@ public class SimulatorController {
      * @return The list of client IDs.
      */
     @GetMapping("/clients")
-    public SortedSet<String> getClients() {
+    public Set<String> getClients() {
         return simulatorService.getScenario()
                 .getClients()
                 .navigableKeySet();
@@ -282,7 +282,7 @@ public class SimulatorController {
      * @return The list of enabled mutators.
      */
     @GetMapping("/mutators")
-    public Set<String> getMutators() {
+    public SortedSet<String> getMutators() {
         return messageMutatorService
                 .getMutatorsMap()
                 .keySet();

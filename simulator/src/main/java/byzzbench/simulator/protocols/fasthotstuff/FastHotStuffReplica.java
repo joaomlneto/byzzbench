@@ -22,9 +22,9 @@ public class FastHotStuffReplica extends LeaderBasedProtocolReplica {
     private final AtomicLong lastVotedRound = new AtomicLong(2);
     private final AtomicLong preferredRound = new AtomicLong(1);
     private final AtomicLong highestQcRound = new AtomicLong(2);
-    private final Map<String, SortedSet<VoteMessage>> votes = new HashMap<>();
-    private final Map<Long, SortedSet<NewViewMessage>> newViews = new HashMap<>();
-    private final Map<String, Block> knownBlocks = new HashMap<>();
+    private final SortedMap<String, SortedSet<VoteMessage>> votes = new TreeMap<>();
+    private final SortedMap<Long, SortedSet<NewViewMessage>> newViews = new TreeMap<>();
+    private final SortedMap<String, Block> knownBlocks = new TreeMap<>();
     private GenericQuorumCertificate highestQc = new QuorumCertificate(new ArrayList<>());
 
     public FastHotStuffReplica(String nodeId, SortedSet<String> nodeIds, Transport transport) {

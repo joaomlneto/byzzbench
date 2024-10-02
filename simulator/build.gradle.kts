@@ -1,6 +1,6 @@
 plugins {
     java
-    id("org.springframework.boot") version "3.3.2"
+    id("org.springframework.boot") version "3.3.3"
     id("io.spring.dependency-management") version "1.1.6"
     id("org.graalvm.buildtools.native") version "0.10.2"
     //id("com.vaadin") version "24.4.7"
@@ -25,7 +25,7 @@ repositories {
     mavenCentral()
 }
 
-extra["vaadinVersion"] = "24.4.7"
+extra["vaadinVersion"] = "24.4.11"
 
 dependencies {
     implementation("org.springframework.boot:spring-boot-starter-web")
@@ -60,4 +60,15 @@ dependencyManagement {
 
 tasks.withType<Test> {
     useJUnitPlatform()
+}
+
+openApi {
+    apiDocsUrl.set("http://localhost:8080/spec")
+}
+
+// fix for https://github.com/springdoc/springdoc-openapi-gradle-plugin/issues/102
+tasks.forkedSpringBootRun {
+    dependsOn("compileAotJava")
+    dependsOn("processAotResources")
+    doNotTrackState("See https://github.com/springdoc/springdoc-openapi-gradle-plugin/issues/102")
 }
