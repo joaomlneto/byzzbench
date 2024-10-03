@@ -128,18 +128,7 @@ public class Transport {
             throw new IllegalArgumentException("Client not found: " + recipient);
         }
 
-        // We don't buffer responses to clients. Instead, we deliver them directly.
-        /*
-        Event event = ClientReplyEvent.builder()
-                .eventId(this.eventSeqNum.getAndIncrement())
-                .senderId(sender)
-                .recipientId(recipient)
-                .payload(response)
-                .build();
-        this.appendEvent(event);
-        */
-
-        // deliver the event
+        // deliver the reply directly to the client to handle
         Client c = this.scenario.getClients().get(recipient);
         c.handleReply(sender, response);
     }
@@ -224,9 +213,6 @@ public class Transport {
         switch (e) {
             case ClientRequestEvent c -> {
                 this.scenario.getNodes().get(c.getRecipientId()).handleClientRequest(c.getSenderId(), c.getPayload());
-            }
-            case ClientReplyEvent c -> {
-                this.scenario.getClients().get(c.getRecipientId()).handleReply(c.getSenderId(), c.getPayload());
             }
             case MessageEvent m -> {
                 this.scenario.getNodes().get(m.getRecipientId()).handleMessage(m.getSenderId(), m.getPayload());

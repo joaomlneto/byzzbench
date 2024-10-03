@@ -3,7 +3,10 @@ package byzzbench.simulator.scheduler;
 import byzzbench.simulator.Scenario;
 import byzzbench.simulator.faults.MessageMutationFault;
 import byzzbench.simulator.service.MessageMutatorService;
-import byzzbench.simulator.transport.*;
+import byzzbench.simulator.transport.ClientRequestEvent;
+import byzzbench.simulator.transport.Event;
+import byzzbench.simulator.transport.MessageEvent;
+import byzzbench.simulator.transport.TimeoutEvent;
 import com.fasterxml.jackson.databind.JsonNode;
 import lombok.Getter;
 import lombok.extern.java.Log;
@@ -68,15 +71,13 @@ public class RandomScheduler extends BaseScheduler {
         int eventCount = queuedEvents.size();
         int timeoutEventCount = (int) queuedEvents.stream().filter(TimeoutEvent.class::isInstance).count();
         int clientRequestEventCount = (int) queuedEvents.stream().filter(ClientRequestEvent.class::isInstance).count();
-        int clientReplyEventCount = (int) queuedEvents.stream().filter(ClientReplyEvent.class::isInstance).count();
-        int messageEventCount = eventCount - (timeoutEventCount + clientReplyEventCount + clientRequestEventCount);
+        int messageEventCount = eventCount - (timeoutEventCount + clientRequestEventCount);
 
         double timeoutEventProb = (double) timeoutEventCount / eventCount;
         double clientRequestEventProb = (double) clientRequestEventCount / eventCount;
-        double clientReplyEventProb = (double) clientReplyEventCount / eventCount;
         double messageEventProb = (double) messageEventCount / eventCount;
 
-        assert timeoutEventProb + clientRequestEventProb + clientReplyEventProb + messageEventProb == 1.0;
+        assert timeoutEventProb + clientRequestEventProb + messageEventProb == 1.0;
 
         double dieRoll = random.nextDouble();
 
@@ -162,23 +163,6 @@ public class RandomScheduler extends BaseScheduler {
             EventDecision decision = new EventDecision(EventDecision.DecisionType.DELIVERED, request.getEventId());
             return Optional.of(decision);
         }
-
-        if (dieRoll < timeoutEventProb + messageEventProb + clientRequestEventProb + clientReplyEventProb) {
-            List<Event> queuedClientReplies = queuedEvents.stream().filter(ClientReplyEvent.class::isInstance).toList();
-
-            if (queuedClientReplies.isEmpty()) {
-                return Optional.empty();
-            }
-
-            Event reply = queuedClientReplies.get(random.nextInt(clientReplyEventCount));
-
-            scenario.getTransport().deliverEvent(reply.getEventId());
-
-            EventDecision decision = new EventDecision(EventDecision.DecisionType.DELIVERED, reply.getEventId());
-            return Optional.of(decision);
-        }
-
-
 
         return Optional.empty();
     }

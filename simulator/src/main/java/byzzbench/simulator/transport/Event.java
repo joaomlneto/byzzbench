@@ -16,7 +16,6 @@ import java.time.Instant;
         @JsonSubTypes.Type(value = TimeoutEvent.class, name = "Timeout"),
         @JsonSubTypes.Type(value = MessageEvent.class, name = "Message"),
         @JsonSubTypes.Type(value = ClientRequestEvent.class, name = "ClientRequest"),
-        @JsonSubTypes.Type(value = ClientReplyEvent.class, name = "ClientReply"),
         @JsonSubTypes.Type(value = MutateMessageEvent.class, name = "MutateMessage"),
         @JsonSubTypes.Type(value = GenericFaultEvent.class, name = "GenericFault"),
 })
