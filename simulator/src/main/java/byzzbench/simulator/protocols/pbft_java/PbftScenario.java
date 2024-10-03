@@ -11,11 +11,11 @@ import java.util.SortedSet;
 import java.util.TreeSet;
 
 @Log
-public class PbftScenarioExecutor extends BaseScenario {
+public class PbftScenario extends BaseScenario {
     private final int NUM_NODES = 4;
     private final PbftTerminationCondition terminationCondition;
 
-    public PbftScenarioExecutor(Scheduler scheduler) {
+    public PbftScenario(Scheduler scheduler) {
         super("pbft-java", scheduler);
         this.terminationCondition = new PbftTerminationCondition();
     }
@@ -47,6 +47,7 @@ public class PbftScenarioExecutor extends BaseScenario {
     public synchronized void run() {
         // send a request message to node A
         try {
+            this.setNumClients(1);
             this.transport.sendClientRequest("C0", "123", "A");
         } catch (Exception e) {
             e.printStackTrace();
