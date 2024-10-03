@@ -1,5 +1,6 @@
 package byzzbench.simulator.transport;
 
+import byzzbench.simulator.Client;
 import byzzbench.simulator.Replica;
 import byzzbench.simulator.Scenario;
 import byzzbench.simulator.faults.Fault;
@@ -127,6 +128,8 @@ public class Transport {
             throw new IllegalArgumentException("Client not found: " + recipient);
         }
 
+        // We don't buffer responses to clients. Instead, we deliver them directly.
+        /*
         Event event = ClientReplyEvent.builder()
                 .eventId(this.eventSeqNum.getAndIncrement())
                 .senderId(sender)
@@ -134,6 +137,11 @@ public class Transport {
                 .payload(response)
                 .build();
         this.appendEvent(event);
+        */
+
+        // deliver the event
+        Client c = this.scenario.getClients().get(recipient);
+        c.handleReply(sender, response);
     }
 
     /**
