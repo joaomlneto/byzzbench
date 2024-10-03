@@ -88,7 +88,7 @@ export default function Home() {
       <AppShell.Aside p="md" maw={400}>
         <Stack gap="xs">
           <Title order={5}>Schedule</Title>
-          <ScrollArea mah={250} type="auto">
+          <ScrollArea mah={500} type="auto">
             {schedule?.data && (
               <ScheduleDetails
                 hideTitle

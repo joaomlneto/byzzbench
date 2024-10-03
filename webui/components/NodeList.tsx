@@ -1,12 +1,17 @@
 "use client";
 
 import { useGetNodes } from "@/lib/byzzbench-client";
-import { Grid } from "@mantine/core";
+import { Grid, Loader } from "@mantine/core";
 import React from "react";
 import { NodeCard } from "./NodeCard";
 
 export const NodeList = () => {
-  const { data: nodeIds } = useGetNodes({ query: { retry: true } });
+  const { data: nodeIds, isLoading } = useGetNodes({ query: { retry: true } });
+
+  if (isLoading) {
+    return <Loader />;
+  }
+
   return (
     <Grid gutter="md">
       {nodeIds?.data.map((nodeId) => (

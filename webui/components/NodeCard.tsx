@@ -3,20 +3,28 @@
 import { NodeMailbox } from "@/components/Events/NodeMailbox";
 import { NodeStateNavLink } from "@/components/NodeStateNavLink";
 import { useGetNode, useGetPartitions } from "@/lib/byzzbench-client";
-import { Card, Group, Space, Text, Title, Tooltip } from "@mantine/core";
-import React, { useMemo } from "react";
+import {
+  Card,
+  Group,
+  Loader,
+  Space,
+  Text,
+  Title,
+  Tooltip,
+} from "@mantine/core";
+import React from "react";
 
 export type NodeCardProps = {
   nodeId: string;
 };
 
 export const NodeCard = ({ nodeId }: NodeCardProps) => {
-  const { data } = useGetNode(nodeId);
+  const { data, isLoading } = useGetNode(nodeId);
   const partitionsQuery = useGetPartitions();
 
-  const partitionId = useMemo(() => {
-    return partitionsQuery.data?.data[nodeId] ?? 0;
-  }, [nodeId, partitionsQuery.data?.data]);
+  if (isLoading || partitionsQuery.isLoading) {
+    return <Loader />;
+  }
 
   return (
     <Card
@@ -34,9 +42,11 @@ export const NodeCard = ({ nodeId }: NodeCardProps) => {
               <Tooltip label="Node ID">
                 <Title order={4}>{nodeId}</Title>
               </Tooltip>
-              <Tooltip label="Network partition ID">
-                <Text>P{partitionId}</Text>
-              </Tooltip>
+              {partitionsQuery.data?.data[nodeId] && (
+                <Tooltip label="Network partition ID">
+                  <Text>P{partitionsQuery.data.data[nodeId] ?? 0}</Text>
+                </Tooltip>
+              )}
             </Group>
           }
           defaultOpened

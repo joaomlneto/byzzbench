@@ -4,16 +4,20 @@ import { DeliverMessageActionIcon } from "@/components/ActionIcon";
 import { MutateMessageMenu } from "@/components/Events/MutateMessageMenu";
 import { NodeStateNavLink } from "@/components/NodeStateNavLink";
 import { useGetMessage } from "@/lib/byzzbench-client/generated";
-import { Badge, Card, Collapse, Group, Text } from "@mantine/core";
+import { Badge, Card, Collapse, Group, Loader, Text } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
 import React, { memo } from "react";
 
-export const NodeMailboxEntry = memo(({ messageId }: { messageId: number }) => {
-  const [opened, { toggle }] = useDisclosure(false);
-  const { data: message } = useGetMessage(messageId);
+export type NodeMailboxEntryProps = {
+  messageId: number;
+};
 
-  if (!message?.data) {
-    return null;
+export const NodeMailboxEntry = memo(({ messageId }: NodeMailboxEntryProps) => {
+  const [opened, { toggle }] = useDisclosure(false);
+  const { data: message, isLoading } = useGetMessage(messageId);
+
+  if (isLoading || !message) {
+    return <Loader />;
   }
 
   return (
@@ -54,8 +58,8 @@ export const NodeMailboxEntry = memo(({ messageId }: { messageId: number }) => {
         )}
       </Group>
       <Collapse in={opened}>
-        {Object.entries(message.data ?? {}).map(([key, value]) => (
-          <NodeStateNavLink key={key} label={key} data={value} />
+        {Object.entries(message?.data ?? {}).map(([key, value]) => (
+          <NodeStateNavLink key={key} label={key} data={opened ? value : {}} />
         ))}
       </Collapse>
     </Card>

@@ -1,8 +1,8 @@
 "use client";
 
 import { useGetNodeMailbox } from "@/lib/byzzbench-client";
-import { Stack } from "@mantine/core";
-import React, { memo, useMemo } from "react";
+import { Loader, Stack } from "@mantine/core";
+import React, { memo } from "react";
 import { NodeMailboxEntry } from ".";
 
 export type NodeMailboxProps = {
@@ -10,13 +10,15 @@ export type NodeMailboxProps = {
 };
 
 export const NodeMailbox = memo(({ nodeId }: NodeMailboxProps) => {
-  const { data } = useGetNodeMailbox(nodeId);
+  const { data, isLoading } = useGetNodeMailbox(nodeId);
 
-  const messageIds = useMemo(() => data?.data ?? [], [data?.data]);
+  if (isLoading) {
+    return <Loader />;
+  }
 
   return (
     <Stack gap="xs">
-      {messageIds.map((messageId) => (
+      {data?.data.map((messageId) => (
         <NodeMailboxEntry key={messageId} messageId={messageId} />
       ))}
     </Stack>
