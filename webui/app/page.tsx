@@ -96,6 +96,7 @@ export default function Home() {
                 hideDownloadButton
                 hideDetailsButton
                 hideScenario
+                hideSaveButton
                 title="Current Schedule"
                 schedule={schedule.data}
               />
