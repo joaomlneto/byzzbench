@@ -9,9 +9,9 @@ export type FaultsListProps = {
 
 export const FaultsList = ({ faultIds }: FaultsListProps) => {
   return (
-    <Grid gutter="md">
+    <Grid gutter="xs">
       {faultIds.map((faultId) => (
-        <Grid.Col span="content" key={faultId}>
+        <Grid.Col span="content" p={0} key={faultId}>
           <FaultsListEntry faultId={faultId} />
         </Grid.Col>
       ))}

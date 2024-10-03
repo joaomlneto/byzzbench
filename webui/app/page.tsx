@@ -10,11 +10,13 @@ import { ScheduleDetails } from "@/components/Schedule";
 import { useGetMode, useGetSchedule } from "@/lib/byzzbench-client";
 import {
   Accordion,
+  AppShell,
   Container,
   Group,
   ScrollArea,
   Stack,
   Text,
+  Title,
 } from "@mantine/core";
 import { useLocalStorage } from "@mantine/hooks";
 import dynamic from "next/dynamic";
@@ -74,34 +76,6 @@ export default function Home() {
               <NodeList />
             </Accordion.Panel>
           </Accordion.Item>
-          <Accordion.Item key="schedule" value="schedule">
-            <Accordion.Control>Schedule</Accordion.Control>
-            <Accordion.Panel>
-              <ScrollArea h={250} type="auto">
-                {schedule?.data && (
-                  <ScheduleDetails
-                    hideTitle
-                    hideMaterializeButton
-                    hideDownloadButton
-                    hideDetailsButton
-                    hideScenario
-                    title="Current Schedule"
-                    schedule={schedule.data}
-                  />
-                )}
-              </ScrollArea>
-            </Accordion.Panel>
-          </Accordion.Item>
-          <Accordion.Item key="dropped_msgs" value="dropped_msgs">
-            <Accordion.Control>Discarded Events</Accordion.Control>
-            <Accordion.Panel>{<DroppedMessagesList />}</Accordion.Panel>
-          </Accordion.Item>
-          <Accordion.Item key="faults" value="faults">
-            <Accordion.Control>Network Faults</Accordion.Control>
-            <Accordion.Panel>
-              <ScenarioEnabledFaultsList />
-            </Accordion.Panel>
-          </Accordion.Item>
           <Accordion.Item key="adob" value="adob">
             <Accordion.Control>AdoB State</Accordion.Control>
             <Accordion.Panel>
@@ -110,6 +84,29 @@ export default function Home() {
           </Accordion.Item>
         </Accordion>
       </Stack>
+
+      <AppShell.Aside p="md" maw={400}>
+        <Stack gap="xs">
+          <Title order={5}>Schedule</Title>
+          <ScrollArea mah={250} type="auto">
+            {schedule?.data && (
+              <ScheduleDetails
+                hideTitle
+                hideMaterializeButton
+                hideDownloadButton
+                hideDetailsButton
+                hideScenario
+                title="Current Schedule"
+                schedule={schedule.data}
+              />
+            )}
+          </ScrollArea>
+          <Title order={5}>Trigger Faults</Title>
+          <ScenarioEnabledFaultsList />
+          <Title order={5}>Discarded Events</Title>
+          <DroppedMessagesList />
+        </Stack>
+      </AppShell.Aside>
     </Container>
   );
 }
