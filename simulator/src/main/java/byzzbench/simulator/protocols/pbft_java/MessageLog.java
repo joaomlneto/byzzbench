@@ -44,7 +44,13 @@ public class MessageLog implements Serializable {
     }
 
     public <O extends Serializable, R extends Serializable> Ticket<O, R> getTicketFromCache(ReplicaRequestKey key) {
-        return (Ticket<O, R>) this.ticketCache.get(key);
+        //return (Ticket<O, R>) this.ticketCache.get(key);
+
+        if (this.ticketCache.containsKey(key)) {
+            return (Ticket<O, R>) this.ticketCache.get(key);
+        } else {
+            return null;
+        }
     }
 
     public <O extends Serializable, R extends Serializable> Ticket<O, R> getTicket(long viewNumber, long seqNumber) {

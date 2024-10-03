@@ -1,6 +1,7 @@
 package byzzbench.simulator;
 
 import java.io.Serializable;
+import java.util.Comparator;
 import java.util.function.Predicate;
 
 public interface ScenarioPredicate extends Predicate<Scenario>, Serializable, Comparable<ScenarioPredicate> {
@@ -9,7 +10,7 @@ public interface ScenarioPredicate extends Predicate<Scenario>, Serializable, Co
     }
 
     @Override
-    default int compareTo(ScenarioPredicate o) {
-        return this.getId().compareTo(o.getId());
+    default int compareTo(ScenarioPredicate other) {
+        return Comparator.comparing(ScenarioPredicate::getId).compare(this, other);
     }
 }

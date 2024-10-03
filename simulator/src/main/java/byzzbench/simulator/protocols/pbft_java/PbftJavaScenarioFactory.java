@@ -16,7 +16,7 @@ public class PbftJavaScenarioFactory extends BaseScenarioFactory {
 
     @Override
     public String getId() {
-        return "PBFT-Java";
+        return "pbft-java";
     }
 
     @Override

@@ -10,6 +10,7 @@ import lombok.ToString;
 
 import java.io.Serializable;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.Optional;
 
 /**
@@ -56,6 +57,7 @@ public abstract class MessageMutationFault implements Fault, Comparable<MessageM
 
     @Override
     public int compareTo(MessageMutationFault other) {
-        return id.compareTo(other.id);
+        return Comparator.comparing(MessageMutationFault::getId)
+                .compare(this, other);
     }
 }
