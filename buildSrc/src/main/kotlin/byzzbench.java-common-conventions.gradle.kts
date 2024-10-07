@@ -19,7 +19,7 @@ dependencies {
     }
 
     // Use JUnit Jupiter for testing.
-    testImplementation("org.junit.jupiter:junit-jupiter:5.11.0")
+    testImplementation("org.junit.jupiter:junit-jupiter:5.11.2")
 
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
