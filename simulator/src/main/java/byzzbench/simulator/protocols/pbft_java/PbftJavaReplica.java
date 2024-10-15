@@ -20,7 +20,7 @@ import java.util.*;
 import java.util.concurrent.atomic.AtomicLong;
 
 @Log
-public class PbftReplica<O extends Serializable, R extends Serializable> extends LeaderBasedProtocolReplica {
+public class PbftJavaReplica<O extends Serializable, R extends Serializable> extends LeaderBasedProtocolReplica {
 
     @Getter
     private final int tolerance;
@@ -51,12 +51,12 @@ public class PbftReplica<O extends Serializable, R extends Serializable> extends
     @Setter
     private volatile boolean disgruntled = false;
 
-    public PbftReplica(String replicaId,
-                       SortedSet<String> nodeIds,
-                       int tolerance,
-                       long timeout,
-                       MessageLog messageLog,
-                       Transport transport) {
+    public PbftJavaReplica(String replicaId,
+                           SortedSet<String> nodeIds,
+                           int tolerance,
+                           long timeout,
+                           MessageLog messageLog,
+                           Transport transport) {
         super(replicaId, nodeIds, transport, new TotalOrderCommitLog());
         this.tolerance = tolerance;
         this.timeout = timeout;

@@ -20,24 +20,27 @@ public class PrePrepareMessageMutatorFactory extends MessageMutatorFactory {
     @Override
     public List<MessageMutationFault> mutators() {
         return List.of(
-                new MessageMutationFault("pbft-preprepare-view-inc", "Increment View Number", List.of(PrePrepareMessage.class)) {
-                    @Override
-                    public void accept(FaultContext serializable) {
-                        Optional<Event> event = serializable.getEvent();
-                        if (event.isEmpty()) {
-                            throw invalidMessageTypeException;
-                        }
-                        if (!(event.get() instanceof MessageEvent messageEvent)) {
-                            throw invalidMessageTypeException;
-                        }
-                        if (!(messageEvent.getPayload() instanceof PrePrepareMessage message)) {
-                            throw invalidMessageTypeException;
-                        }
-                        PrePrepareMessage mutatedMessage = message.withViewNumber(message.getViewNumber() + 1);
-                        mutatedMessage.sign(message.getSignedBy());
-                        messageEvent.setPayload(mutatedMessage);
-                    }
-                },
+                new MessageMutationFault(
+                        "pbft-preprepare-view-inc",
+                        "Increment View Number",
+                        List.of(PrePrepareMessage.class)) {
+                            @Override
+                            public void accept(FaultContext serializable) {
+                                Optional<Event> event = serializable.getEvent();
+                                if (event.isEmpty()) {
+                                    throw invalidMessageTypeException;
+                                }
+                                if (!(event.get() instanceof MessageEvent messageEvent)) {
+                                    throw invalidMessageTypeException;
+                                }
+                                if (!(messageEvent.getPayload() instanceof PrePrepareMessage message)) {
+                                    throw invalidMessageTypeException;
+                                }
+                                PrePrepareMessage mutatedMessage = message.withViewNumber(message.getViewNumber() + 1);
+                                mutatedMessage.sign(message.getSignedBy());
+                                messageEvent.setPayload(mutatedMessage);
+                            }
+                        },
                 new MessageMutationFault("pbft-preprepare-view-dec", "Decrement View Number", List.of(PrePrepareMessage.class)) {
                     @Override
                     public void accept(FaultContext serializable) {

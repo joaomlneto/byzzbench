@@ -22,7 +22,7 @@ public class PbftJavaScenarioFactory extends BaseScenarioFactory {
     @Override
     public Scenario createScenario(MessageMutatorService messageMutatorService, JsonNode params) {
         Scheduler scheduler = this.createScheduler(messageMutatorService, params);
-        PbftScenario scenarioExecutor = new PbftScenario(scheduler);
+        PbftJavaScenario scenarioExecutor = new PbftJavaScenario(scheduler);
         scenarioExecutor.loadParameters(params);
         return scenarioExecutor;
     }

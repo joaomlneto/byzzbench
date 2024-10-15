@@ -26,3 +26,4 @@ public class Block extends MessagePayload implements PartialOrderLogEntry<String
         return qc.getVotes().stream().findAny().get().getBlockHash();
     }
 }
+

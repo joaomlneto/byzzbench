@@ -16,6 +16,8 @@ import java.util.Optional;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import static byzzbench.simulator.config.SimulatorConfig.DEFAULT_SCENARIO;
+
 /**
  * Service for running the simulator.
  * <p>
@@ -42,7 +44,7 @@ public class SimulatorService {
 
     @EventListener(ApplicationReadyEvent.class)
     void onStartup() {
-        this.changeScenario("xrpl", JsonNodeFactory.instance.objectNode());
+        this.changeScenario(DEFAULT_SCENARIO, JsonNodeFactory.instance.objectNode());
     }
 
     /**

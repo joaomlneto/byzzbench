@@ -11,6 +11,10 @@ import java.io.Serializable;
 public abstract class MessagePayload implements Serializable {
   private boolean signed;
   private String signedBy;
+
+  /**
+   * A string representation of the message type.
+   */
   public abstract String getType();
 
 
