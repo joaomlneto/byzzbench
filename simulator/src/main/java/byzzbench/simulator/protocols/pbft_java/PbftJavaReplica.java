@@ -1,6 +1,7 @@
 package byzzbench.simulator.protocols.pbft_java;
 
 import byzzbench.simulator.LeaderBasedProtocolReplica;
+import byzzbench.simulator.Timekeeper;
 import byzzbench.simulator.protocols.pbft_java.message.*;
 import byzzbench.simulator.protocols.pbft_java.pojo.ReplicaRequestKey;
 import byzzbench.simulator.protocols.pbft_java.pojo.ReplicaTicketPhase;
@@ -56,8 +57,9 @@ public class PbftJavaReplica<O extends Serializable, R extends Serializable> ext
                            int tolerance,
                            long timeout,
                            MessageLog messageLog,
+                           Timekeeper timekeeper,
                            Transport transport) {
-        super(replicaId, nodeIds, transport, new TotalOrderCommitLog());
+        super(replicaId, nodeIds, transport, timekeeper, new TotalOrderCommitLog());
         this.tolerance = tolerance;
         this.timeout = timeout;
         this.messageLog = messageLog;

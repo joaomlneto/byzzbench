@@ -44,11 +44,6 @@ public class Client implements Serializable {
     private final long maxRequests = 3;
 
     /**
-     * The maximum number of requests that can be sent concurrently by the client.
-     */
-    private final long maxConcurrentRequests = 1;
-
-    /**
      * The replies received by the client.
      */
     private final List<Serializable> replies = new ArrayList<>();
@@ -57,10 +52,8 @@ public class Client implements Serializable {
      * Initializes the client by sending the initial requests.
      */
     public void initializeClient() {
-        // Send the initial requests
-        for (int i = 0; i < this.maxConcurrentRequests; i++) {
-            this.sendRequest();
-        }
+        // Send the initial request
+        this.sendRequest();
     }
 
     /**
@@ -74,8 +67,9 @@ public class Client implements Serializable {
 
     /**
      * Handles a reply received by the client.
+     *
      * @param senderId The ID of the sender of the reply.
-     * @param reply The reply received by the client.
+     * @param reply    The reply received by the client.
      */
     public void handleReply(String senderId, Serializable reply) {
         this.replies.add(reply);

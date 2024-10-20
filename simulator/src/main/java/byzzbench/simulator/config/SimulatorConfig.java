@@ -4,5 +4,5 @@ import org.springframework.context.annotation.Configuration;
 
 @Configuration
 public class SimulatorConfig {
-    public static final String DEFAULT_SCENARIO = "pbft-java";
+    public static final String DEFAULT_SCENARIO = "pbft";
 }

@@ -12,6 +12,7 @@ import lombok.extern.java.Log;
 import java.io.Serializable;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.time.Instant;
 import java.util.List;
 import java.util.SortedSet;
 import java.util.TreeSet;
@@ -64,6 +65,11 @@ public abstract class Replica implements Serializable {
     private final transient Transport transport;
 
     /**
+     * The timekeeper for the scenario.
+     */
+    private final transient Timekeeper timekeeper;
+
+    /**
      * The observers of this replica.
      */
     @JsonIgnore
@@ -77,11 +83,11 @@ public abstract class Replica implements Serializable {
      * @param transport the transport layer
      * @param commitLog the commit log
      */
-    protected Replica(String nodeId, SortedSet<String> nodeIds, Transport transport,
-                      CommitLog commitLog) {
+    protected Replica(String nodeId, SortedSet<String> nodeIds, Transport transport, Timekeeper timekeeper, CommitLog commitLog) {
         this.nodeId = nodeId;
         this.nodeIds = nodeIds;
         this.transport = transport;
+        this.timekeeper = timekeeper;
         this.commitLog = commitLog;
     }
 
@@ -160,8 +166,9 @@ public abstract class Replica implements Serializable {
 
     /**
      * Send a reply to a client.
+     *
      * @param clientId the ID of the client
-     * @param reply the reply payload
+     * @param reply    the reply payload
      */
     public void sendReplyToClient(String clientId, Serializable reply) {
         this.transport.sendClientResponse(this.nodeId, reply, clientId);
@@ -243,6 +250,28 @@ public abstract class Replica implements Serializable {
      */
     public void notifyObserversTimeout() {
         this.observers.forEach(observer -> observer.onTimeout(this));
+    }
+
+    /**
+     * Get the current time from the timekeeper.
+     */
+    protected Instant getCurrentTime() {
+        return this.timekeeper.getTime(this);
+    }
+
+    /**
+     * Compute the difference between two times.
+     *
+     * @param end   the end time
+     * @param start the start time
+     * @return the difference between the two times
+     */
+    protected long diffTime(Instant end, Instant start) {
+        return end.toEpochMilli() - start.toEpochMilli();
+    }
+
+    protected long diffNow(Instant start) {
+        return diffTime(getCurrentTime(), start);
     }
 
 }

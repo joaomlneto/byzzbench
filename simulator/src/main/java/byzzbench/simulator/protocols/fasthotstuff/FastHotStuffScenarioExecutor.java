@@ -32,7 +32,7 @@ public class FastHotStuffScenarioExecutor extends BaseScenario {
             }
 
             nodeIds.forEach(nodeId -> {
-                Replica replica = new FastHotStuffReplica(nodeId, nodeIds, transport);
+                Replica replica = new FastHotStuffReplica(nodeId, nodeIds, transport, timekeeper);
                 this.addNode(replica);
             });
         } catch (Exception e) {

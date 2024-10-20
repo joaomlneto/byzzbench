@@ -1,6 +1,7 @@
 package byzzbench.simulator.protocols.dummy;
 
 import byzzbench.simulator.Replica;
+import byzzbench.simulator.Timekeeper;
 import byzzbench.simulator.state.SerializableLogEntry;
 import byzzbench.simulator.state.TotalOrderCommitLog;
 import byzzbench.simulator.transport.MessagePayload;
@@ -17,8 +18,8 @@ public class DummyReplica extends Replica {
 
     public DummyReplica(String replicaId,
                         SortedSet<String> nodeIds,
-                        Transport transport) {
-        super(replicaId, nodeIds, transport, new TotalOrderCommitLog());
+                        Transport transport, Timekeeper timekeeper) {
+        super(replicaId, nodeIds, transport, timekeeper, new TotalOrderCommitLog());
     }
 
     @Override

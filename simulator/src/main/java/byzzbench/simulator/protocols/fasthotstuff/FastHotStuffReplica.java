@@ -1,6 +1,7 @@
 package byzzbench.simulator.protocols.fasthotstuff;
 
 import byzzbench.simulator.LeaderBasedProtocolReplica;
+import byzzbench.simulator.Timekeeper;
 import byzzbench.simulator.protocols.fasthotstuff.message.*;
 import byzzbench.simulator.state.TotalOrderCommitLog;
 import byzzbench.simulator.transport.MessagePayload;
@@ -27,8 +28,8 @@ public class FastHotStuffReplica extends LeaderBasedProtocolReplica {
     private final SortedMap<String, Block> knownBlocks = new TreeMap<>();
     private GenericQuorumCertificate highestQc = new QuorumCertificate(new ArrayList<>());
 
-    public FastHotStuffReplica(String nodeId, SortedSet<String> nodeIds, Transport transport) {
-        super(nodeId, nodeIds, transport, new TotalOrderCommitLog());
+    public FastHotStuffReplica(String nodeId, SortedSet<String> nodeIds, Transport transport, Timekeeper timekeeper) {
+        super(nodeId, nodeIds, transport, timekeeper, new TotalOrderCommitLog());
     }
 
     @Override

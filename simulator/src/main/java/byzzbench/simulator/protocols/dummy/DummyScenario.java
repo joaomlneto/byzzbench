@@ -39,7 +39,7 @@ public class DummyScenario extends BaseScenario {
                 nodeIds.add(Character.toString((char) ('A' + i)));
             }
             nodeIds.forEach(nodeId -> {
-                Replica replica = new DummyReplica(nodeId, nodeIds, transport);
+                Replica replica = new DummyReplica(nodeId, nodeIds, transport, timekeeper);
                 this.addNode(replica);
             });
             this.setNumClients(2);

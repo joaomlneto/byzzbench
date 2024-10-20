@@ -32,6 +32,11 @@ public abstract class BaseScenario implements Scenario {
     protected final transient Transport transport;
 
     /**
+     * The timekeeper for the scenario.
+     */
+    protected final transient Timekeeper timekeeper;
+
+    /**
      * The scheduler for the scenario.
      */
     protected final Scheduler scheduler;
@@ -76,19 +81,21 @@ public abstract class BaseScenario implements Scenario {
     /**
      * Creates a new scenario with the given unique identifier and scheduler.
      *
-     * @param id The unique identifier for the scenario.
+     * @param id        The unique identifier for the scenario.
      * @param scheduler The scheduler for the scenario.
      */
     protected BaseScenario(String id, Scheduler scheduler) {
         this.id = id;
         this.scheduler = scheduler;
         this.transport = new Transport(this);
+        this.timekeeper = new Timekeeper(this);
         this.setupScenario();
         this.addObserver(new AdobDistributedState());
     }
 
     /**
      * Adds an observer to the scenario.
+     *
      * @param observer The observer to add.
      */
     public void addObserver(ScenarioObserver observer) {
@@ -97,6 +104,7 @@ public abstract class BaseScenario implements Scenario {
 
     /**
      * Removes an observer from the scenario.
+     *
      * @param observer The observer to remove.
      */
     public void removeObserver(ScenarioObserver observer) {
@@ -105,6 +113,7 @@ public abstract class BaseScenario implements Scenario {
 
     /**
      * Sets the number of clients in the scenario.
+     *
      * @param numClients The number of clients to set.
      */
     protected void setNumClients(int numClients) {
@@ -118,6 +127,7 @@ public abstract class BaseScenario implements Scenario {
 
     /**
      * Adds a client to the scenario.
+     *
      * @param client The client to add.
      */
     public void addClient(Client client) {
@@ -175,6 +185,7 @@ public abstract class BaseScenario implements Scenario {
 
     /**
      * Loads the parameters for the scenario from a JSON object.
+     *
      * @param parameters The JSON object containing the parameters for the scenario.
      */
     protected abstract void loadScenarioParameters(JsonNode parameters);
@@ -198,6 +209,7 @@ public abstract class BaseScenario implements Scenario {
 
     /**
      * Checks if the invariants are satisfied by the scenario in its current state.
+     *
      * @return True if the invariants are satisfied, false otherwise.
      */
     @Override
@@ -207,6 +219,7 @@ public abstract class BaseScenario implements Scenario {
 
     /**
      * Returns the invariants that are not satisfied by the scenario in its current state.
+     *
      * @return The invariants that are not satisfied by the scenario in its current state.
      */
     public final SortedSet<ScenarioPredicate> unsatisfiedInvariants() {

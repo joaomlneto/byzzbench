@@ -182,7 +182,7 @@ public class AdobDistributedState implements ScenarioObserver, ReplicaObserver, 
     @Override
     public void onReplicaAdded(Replica r) {
         r.addObserver(this);
-        System.out.println("Replica added: " + r.getNodeId());
+        log.info("Replica added: " + r.getNodeId());
         CommitCache cCache = new CommitCache(r.getNodeIds().stream().sorted().toList().indexOf(r.getNodeId()), root);
         caches.put(cCache.getId(), cCache);
     }

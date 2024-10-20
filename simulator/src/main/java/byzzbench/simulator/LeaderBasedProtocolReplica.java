@@ -14,8 +14,8 @@ public abstract class LeaderBasedProtocolReplica extends Replica {
     private long viewNumber = -1;
     private String leaderId;
 
-    protected LeaderBasedProtocolReplica(String nodeId, SortedSet<String> nodeIds, Transport transport, CommitLog commitLog) {
-        super(nodeId, nodeIds, transport, commitLog);
+    protected LeaderBasedProtocolReplica(String nodeId, SortedSet<String> nodeIds, Transport transport, Timekeeper timekeeper, CommitLog commitLog) {
+        super(nodeId, nodeIds, transport, timekeeper, commitLog);
     }
 
     /**
