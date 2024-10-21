@@ -1,6 +1,7 @@
 package byzzbench.simulator.protocols.pbft.message;
 
 import byzzbench.simulator.protocols.pbft.CertifiableMessage;
+import byzzbench.simulator.protocols.pbft.PbftReplica;
 import byzzbench.simulator.transport.MessagePayload;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -17,9 +18,56 @@ import java.util.BitSet;
 public class StatusMessage extends MessagePayload implements CertifiableMessage {
     public static final String TYPE = "Status";
 
-    public StatusMessage() {
-        // TODO NOT YET IMPLEMENTED
-        throw new UnsupportedOperationException("StatusMessage not yet implemented");
+    /**
+     * Has new view
+     */
+    private boolean hnvi;
+
+    /**
+     * Has new view message
+     */
+    private boolean hnvm;
+
+    /**
+     * View number
+     */
+    private long v;
+
+    /**
+     * Last stable checkpoint sequence number
+     */
+    private long ls;
+
+    /**
+     * Last executed sequence number
+     */
+    private long le;
+
+    /**
+     * Identifier of the replica that generated this message
+     */
+    private String id;
+
+    /**
+     * ???? TODO: Undocumented
+     */
+    private int brsz = 0;
+
+    public StatusMessage(PbftReplica replica, long v, long ls, long le, boolean hnvi, boolean hnvm) {
+        this.v = v;
+        this.ls = ls;
+        this.le = le;
+        this.hnvi = hnvi;
+        this.hnvm = hnvm;
+        this.id = replica.id();
+        this.brsz = 0;
+
+        if (hnvi) {
+            // Initialize bitmaps
+            throw new UnsupportedOperationException("Not yet implemented");
+        } else {
+            throw new UnsupportedOperationException("Not yet implemented2");
+        }
     }
 
     /**
@@ -51,7 +99,7 @@ public class StatusMessage extends MessagePayload implements CertifiableMessage 
      * @param n   seqno of pre-prepare missing big reqs
      * @param brs bitmap with missing big reqs
      */
-    public void add_breqs(long n, long brs) {
+    public void add_breqs(long n, BitSet brs) {
         throw new UnsupportedOperationException("Not yet implemented");
     }
 

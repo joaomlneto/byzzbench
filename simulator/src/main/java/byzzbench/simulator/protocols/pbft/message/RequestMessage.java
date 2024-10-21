@@ -8,6 +8,8 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.With;
 
+import java.io.Serializable;
+
 /**
  * A "Request" message from the Client to the Replicas: see Request.h/cc.
  * <p>
@@ -31,7 +33,7 @@ public class RequestMessage extends MessagePayload {
     /**
      * ID of the client who sends the request. (cid)
      */
-    private final String clientId;
+    private final String cid;
 
     /**
      * ID of replica from which client expects to receive a full reply.
@@ -42,7 +44,7 @@ public class RequestMessage extends MessagePayload {
     /**
      * Unique request identifier (rid).
      */
-    private final long requestId;
+    private final long rid;
 
     /**
      * Whether the request is read-only.
@@ -68,6 +70,45 @@ public class RequestMessage extends MessagePayload {
      * Whether the request is classified as a "big request".
      */
     private final boolean isBigRequest;
+
+    /**
+     * Creates a new signed Request message with an empty command and no authentication.
+     * The methods store_command and authenticate should be used to finish message construction.
+     * "rr" is the identifier of the replica from which the client expects a full reply (if
+     * negative, client expects a full reply from all replicas).
+     *
+     * @param replica The replica that is creating this message.
+     * @param r       The unique request identifier.
+     * @param rr      The identifier of the replica from which the client expects a full reply.
+     */
+    public RequestMessage(PbftReplica replica, long r, String rr) {
+        this.cid = replica.id();
+        this.rid = r;
+        this.replier = rr;
+        this.command = "";
+
+        throw new UnsupportedOperationException("Not done implementing");
+    }
+
+    /**
+     * Creates a new signed Request message with an empty command and no authentication.
+     * The methods store_command and authenticate should be used to finish message construction.
+     * "rr" is the identifier of the replica from which the client expects a full reply (if
+     * negative, client expects a full reply from all replicas).
+     *
+     * @param replica The replica that is creating this message.
+     * @param r       The unique request identifier.
+     */
+    public RequestMessage(PbftReplica replica, long r) {
+        this(replica, r, "-1");
+    }
+
+    /**
+     * Stores the command in the request message.
+     */
+    public void store_command(Serializable cmd) {
+        throw new UnsupportedOperationException("Not implemented");
+    }
 
     @Override
     public String getType() {
@@ -129,7 +170,7 @@ public class RequestMessage extends MessagePayload {
      */
     public boolean verify(PbftReplica node) {
         String nid = node.getNodeId();
-        String cid = this.getClientId();
+        String cid = this.cid;
         Principal p = node.getPrincipal(cid);
         Digest d; // digest
 

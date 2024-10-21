@@ -1,5 +1,8 @@
 package byzzbench.simulator.protocols.pbft.message;
 
+import byzzbench.simulator.protocols.pbft.Digest;
+import byzzbench.simulator.protocols.pbft.PbftReplica;
+import byzzbench.simulator.protocols.pbft.Principal;
 import byzzbench.simulator.transport.MessagePayload;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -16,17 +19,17 @@ public class ReplyStableMessage extends MessagePayload {
     /**
      * Last checkpoint at sending replica
      */
-    private final long lastCheckpoint;
+    private final long lc;
 
     /**
      * Last prepared request at sending replica
      */
-    private final long lastPreparedRequest;
+    private final long lp;
 
     /**
-     * Id of sending replica
+     * Identifier of sending replica
      */
-    private final int replicaId;
+    private final String id;
 
     /**
      * Nonce in query-stable
@@ -36,7 +39,17 @@ public class ReplyStableMessage extends MessagePayload {
     /**
      * MAC
      */
-    private final byte[] mac;
+    private final Digest mac;
+
+    public ReplyStableMessage(PbftReplica replica, long lc, long lp, int n, Principal p) {
+        this.lc = lc;
+        this.lp = lp;
+        this.id = replica.id();
+        this.nonce = n;
+
+        // TODO: p->gen_mac_out()
+        this.mac = null;
+    }
 
     @Override
     public String getType() {

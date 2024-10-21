@@ -46,7 +46,7 @@ public class FetchMessage extends MessagePayload {
     /**
      * Id of the replica that generated the message.
      */
-    private final int replicaId;
+    private final String replicaId;
 
     /**
      * Number of the fragment we are requesting.

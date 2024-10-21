@@ -10,6 +10,7 @@ import lombok.Getter;
 import lombok.extern.java.Log;
 
 import java.io.Serializable;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.*;
 import java.util.function.Function;
@@ -84,10 +85,6 @@ public class PbftReplica extends LeaderBasedProtocolReplica {
      */
     private final boolean has_nv_state;
     /**
-     * Time when last status message was sent
-     */
-    private final long last_status;
-    /**
      * View change timer
      * TODO: Should be an "ITimer" in ByzzBench!
      */
@@ -102,11 +99,6 @@ public class PbftReplica extends LeaderBasedProtocolReplica {
      * FIXME: Change into an "ITimer" in ByzzBench!
      */
     private final Timer rtimer;
-    /**
-     * Message sent for estimation; qs != null iff replica is estimating
-     * the maximum stable checkpoint.
-     */
-    private final QueryStableMessage qs;
     /**
      * Outstanding recovery request or null if there is no outstanding recovery request.
      */
@@ -139,6 +131,15 @@ public class PbftReplica extends LeaderBasedProtocolReplica {
      * Maximum sequence number of a recovery request in state.
      */
     long max_rec_n;
+    /**
+     * Message sent for estimation; qs != null iff replica is estimating
+     * the maximum stable checkpoint.
+     */
+    private QueryStableMessage qs;
+    /**
+     * Time when last status message was sent
+     */
+    private Instant last_status;
     /**
      * True iff moved to new view but did not start vtimer yet.
      */
@@ -258,7 +259,7 @@ public class PbftReplica extends LeaderBasedProtocolReplica {
         this.last_executed = 0;
         this.last_tentative_execute = 0;
 
-        this.last_status = 0;
+        this.last_status = null;
 
         this.limbo = false;
         this.has_nv_state = true;
@@ -658,10 +659,36 @@ public class PbftReplica extends LeaderBasedProtocolReplica {
     /**
      * Execute the protocol steps associated with the arrival of a {@link ReplyMessage}.
      *
+     * @param m    The ReplyMessage.
+     * @param mine True if the message is from this replica, false otherwise.
+     */
+    private void handleReply(ReplyMessage m, boolean mine) {
+        String mid = m.id();
+        long mv = m.getV();
+
+        if (rr != null && rr.getRid() == m.getRid() && (mine || !m.is_tentative())) {
+            // Only accept recovery request replies that are not tentative.
+            boolean added = (mine) ? rr_reps.add_mine(m) : rr_reps.add(m);
+            if (added) {
+                if (rr_views.get(mid) < mv) {
+                    rr_views.put(mid, mv);
+                }
+                if (rr_reps.is_complete()) {
+                    // I have a valid reply to my outstanding recovery request.
+                    // Update recovery point
+                    throw new UnsupportedOperationException("handleReply() not implemented");
+                }
+            }
+        }
+    }
+
+    /**
+     * Execute the protocol steps associated with the arrival of a {@link ReplyMessage}.
+     *
      * @param m The ReplyMessage.
      */
     private void handleReply(ReplyMessage m) {
-        throw new UnsupportedOperationException("handleReply() not implemented");
+        this.handleReply(m, false);
     }
 
     /**
@@ -972,7 +999,10 @@ public class PbftReplica extends LeaderBasedProtocolReplica {
      * @param m The FetchMessage.
      */
     private void handleFetch(FetchMessage m) {
-        throw new UnsupportedOperationException("handleFetch() not implemented");
+        String mid = m.getReplicaId();
+        if (!state.handle(m, last_stable) && last_new_key != null) {
+            this.sendMessage(last_new_key, mid);
+        }
     }
 
     /**
@@ -981,7 +1011,17 @@ public class PbftReplica extends LeaderBasedProtocolReplica {
      * @param m The QueryStableMessage.
      */
     private void handleQueryStable(QueryStableMessage m) {
-        throw new UnsupportedOperationException("handleQueryStable() not implemented");
+        if (m.verify()) {
+            long lc = last_executed / config.getCHECKPOINT_INTERVAL() * config.getCHECKPOINT_INTERVAL();
+            ReplyStableMessage rs = new ReplyStableMessage(this, lc, last_prepared, m.nonce(), getPrincipal(m.id()));
+
+            // TODO: should put a bound on the rate at which I send these messages.
+            this.sendMessage(rs, m.id());
+        } else {
+            if (last_new_key != null) {
+                this.sendMessage(last_new_key, m.id());
+            }
+        }
     }
 
     /**
@@ -990,7 +1030,39 @@ public class PbftReplica extends LeaderBasedProtocolReplica {
      * @param m The ReplyStableMessage.
      */
     private void handleReplyStable(ReplyStableMessage m) {
-        throw new UnsupportedOperationException("handleReplyStable() not implemented");
+        if (qs != null && qs.nonce() == m.getNonce()) {
+            if (se.add(m)) {
+                // Done with estimation
+                qs = null;
+                recovery_point = se.estimate() + config.getMAX_OUT();
+
+                enforce_bound(recovery_point);
+                // STOP_CC(est_time)
+
+                // System.out.printf("sending recovery request\n");
+                // Send recovery request
+                // START_CC(rr_time)
+                RequestMessage rr = new RequestMessage(this, new_rid());
+
+                rr.store_command(recovery_point);
+                rr.sign(0); // FIXME: length?
+                this.sendMessage(rr, primary());
+                // STOP_CC(rr_time)
+
+                // System.out.printf("Starting state checking\n");
+
+                // Stop vtimer while fetching state.
+                // It is restarted when the fetch ends in new_state.
+                vtimer.stop();
+                state.start_check(last_executed);
+
+                // Leave multicast group
+                if (true) throw new UnsupportedOperationException("leave multicast group?!");
+
+                rqueue.clear();
+                ro_rqueue.clear();
+            }
+        }
     }
 
     /**
@@ -999,7 +1071,7 @@ public class PbftReplica extends LeaderBasedProtocolReplica {
      * @param m The MetadataMessage.
      */
     private void handleMetadata(MetadataMessage m) {
-        throw new UnsupportedOperationException("handleMetadata() not implemented");
+        this.state.handle(m);
     }
 
     /**
@@ -1008,7 +1080,7 @@ public class PbftReplica extends LeaderBasedProtocolReplica {
      * @param m The MetadataDigestMessage.
      */
     private void handleMetadataD(MetadataDigestMessage m) {
-        throw new UnsupportedOperationException("handleMetadataD() not implemented");
+        this.state.handle(m);
     }
 
     /**
@@ -1017,7 +1089,7 @@ public class PbftReplica extends LeaderBasedProtocolReplica {
      * @param m The DataMessage.
      */
     private void handleData(DataMessage m) {
-        throw new UnsupportedOperationException("handleData() not implemented");
+        this.state.handle(m);
     }
 
     /**
@@ -1268,7 +1340,47 @@ public class PbftReplica extends LeaderBasedProtocolReplica {
      * @param b The bound
      */
     private void enforce_bound(long b) {
-        throw new UnsupportedOperationException("enforce_bound() not implemented");
+        if (!(recovering && se.estimate() >= 0)) {
+            throw new IllegalStateException("Invalid state");
+        }
+
+        boolean correct = !corrupt && last_stable <= b - config.getMAX_OUT()
+                && seqno <= b && low_bound <= b && last_prepared <= b
+                && last_tentative_execute <= b && last_executed <= b
+                && (last_tentative_execute == last_executed || last_tentative_execute == last_executed + 1);
+
+        for (long i = b + 1; correct && (i <= plog.max_seqno()); i++) {
+            if (!plog.fetch(i).is_empty()) {
+                correct = false;
+            }
+        }
+
+        for (long i = b + 1; correct && (i <= clog.max_seqno()); i++) {
+            if (!clog.fetch(i).is_empty()) {
+                correct = false;
+            }
+        }
+
+        for (long i = b + 1; correct && (i <= elog.max_seqno()); i++) {
+            if (!elog.fetch(i).is_empty()) {
+                correct = false;
+            }
+        }
+
+        long known_stable = se.low_estimate();
+        if (!correct) {
+            System.out.printf("Incorrect state setting low bound to %d%n", known_stable);
+            seqno = last_prepared = low_bound = last_stable = known_stable;
+            last_tentative_execute = last_executed = 0;
+            limbo = false;
+            plog.clear(known_stable + 1);
+            clog.clear(known_stable + 1);
+            elog.clear(known_stable);
+        }
+
+        correct &= vi.enforceBound(b, known_stable, !correct);
+        correct &= state.enforce_bound(b, known_stable, !correct);
+        corrupt = !correct;
     }
 
     /**
@@ -1278,7 +1390,19 @@ public class PbftReplica extends LeaderBasedProtocolReplica {
      * @param rec_view The view number
      */
     private void enforce_view(long rec_view) {
-        throw new UnsupportedOperationException("enforce_view() not implemented");
+        if (!recovering) {
+            throw new IllegalStateException("Invalid state");
+        }
+
+        if (rec_view >= v || vc_recovering || (limbo && rec_view + 1 == v)) {
+            // Replica's view number is reasonable; do nothing
+            return;
+        }
+
+        corrupt = true;
+        vi.clear();
+        v = rec_view - 1;
+        send_view_change();
     }
 
     /**
@@ -1586,7 +1710,57 @@ public class PbftReplica extends LeaderBasedProtocolReplica {
      * Sends a status message
      */
     public void send_status() {
-        throw new UnsupportedOperationException("send_status() not implemented");
+        Instant cur = getCurrentTime();
+        if (Duration.between(cur, last_status).toMillis() < 100) {
+            // Only send new status message if last one was sent more than 100 milliseconds ago
+            last_status = cur;
+
+            if (qs != null) {
+                // Retransmit query stable if I am estimating last stable
+                qs.re_authenticate();
+                this.broadcastMessageIncludingSelf(qs);
+                return;
+            }
+
+            if (rr != null) {
+                // Retransmit recovery request if I am waiting for one.
+                this.broadcastMessageIncludingSelf(rr);
+            }
+
+            // If fetching state, resend last fetch message instead of status.
+            if (state.retrans_fetch(cur)) {
+                state.send_fetch(true);
+                return;
+            }
+
+            StatusMessage s = new StatusMessage(this, v, last_stable, last_executed, has_new_view(), vi.hasNvMessage(v));
+
+            if (has_new_view()) {
+                // Set prepared and committed bitmaps correctly
+                long max = last_stable + config.getMAX_OUT();
+                for (long n = last_executed + 1; n <= max; n++) {
+                    PreparedCertificate pc = plog.fetch(n);
+                    if (pc.is_complete() || state.in_check_state()) { // XXXX added state.in_check_state()
+                        s.mark_prepared(n);
+                        if (clog.fetch(n).is_complete() || state.in_check_state()) {
+                            s.mark_committed(n);
+                        }
+                    } else {
+                        // Ask for missing big requests
+                        if (!pc.is_pp_complete() && pc.pre_prepare().isPresent() && pc.num_correct() >= f()) {
+                            s.add_breqs(n, pc.missing_reqs());
+                        }
+                    }
+                }
+            } else {
+                vi.setReceivedVcs(s);
+                vi.setMissingPps(s);
+            }
+
+            // Multicast status to all replicas.
+            s.authenticate();
+            this.broadcastMessageIncludingSelf(s);
+        }
     }
 
     /**
