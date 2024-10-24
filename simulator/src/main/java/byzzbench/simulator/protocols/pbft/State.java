@@ -4,6 +4,8 @@ import byzzbench.simulator.protocols.pbft.message.DataMessage;
 import byzzbench.simulator.protocols.pbft.message.FetchMessage;
 import byzzbench.simulator.protocols.pbft.message.MetadataDigestMessage;
 import byzzbench.simulator.protocols.pbft.message.MetadataMessage;
+import lombok.Data;
+import lombok.extern.java.Log;
 
 import java.io.Serializable;
 import java.time.Instant;
@@ -16,7 +18,13 @@ import java.util.*;
  * is one of its inverses. The procedures invoked before and after recovery to
  * save and restore extra state information are "shutdown_p" and "restart_p".
  */
+@Log
 public class State implements Serializable {
+    /**
+     * Number of levels in the partition tree
+     */
+    public final static int PLevels = 4;
+
     /**
      * Actual memory holding current state and the number of Blocks in that memory
      * FIXME: Just in BFT mode
@@ -37,114 +45,93 @@ public class State implements Serializable {
      */
     private final BitSet cowb;
     /**
-     * Number of blocks???
-     */
-    private int nb;
-
-    /**
      * Partition tree
      */
-    private List<Part> ptree;
-
+    private final List<Part> ptree = new ArrayList<>();
+    /**
+     * Number of blocks
+     */
+    //private int nb;
+    /**
+     * Checkpoint log
+     */
+    private final SeqNumLog<CheckpointRec> clog;
+    /**
+     * Sequence number of the last checkpoint
+     */
+    private final long lc;
+    /**
+     * True iff replica is fetching missing state
+     */
+    private final boolean fetching;
+    /**
+     * Certificate for partition we are working on
+     */
+    private final MetaDataCertificate cert;
+    /**
+     * ID of last replica we chose as replier
+     */
+    private final String lreplier;
+    /**
+     * Is replica in checking state
+     */
+    private final boolean checking;
+    /**
+     * Queue of partitions whose digests need to be checked.
+     * It can have partitions from different levels.
+     */
+    private final Queue<Object> to_check;
+    /**
+     * Level of ancestor of current partition whose subpartitions
+     * have already been added to to_check.
+     */
+    private final int refetch_level;
+    /**
+     * Queue of out-of-date partitions for each level
+     */
+    private final List<FPart> stalep = new ArrayList<>();
     /**
      * Tree of sums of digests of subpartitions.
      */
     private List<DSum> stree;
-
-    /**
-     * Checkpoint log
-     */
-    private List<CheckpointRec> clog;
-
-    /**
-     * Sequence number of the last checkpoint
-     */
-    private long lc;
-
-    /**
-     * True iff replica is fetching missing state
-     */
-    private boolean fetching;
-
     /**
      * Whether to keep last checkpoints
      */
     private boolean keep_ckpts;
-
     /**
      * Level of state partition info being fetched
      */
     private int flevel;
-
-    /**
-     * Queue of out-of-date partitions for each level
-     */
-    private Object stalep;
-
     /**
      * Set of fetched page sin a fetch operation
      * XXX: #ifndef NO_STATE_TRANSLATION
      */
     private Object fetched_pages;
-
     /**
      * Copies of pages at last checkpoint
      * XXX: #ifndef NO_STATE_TRANSLATION
      */
     private Object pages_lc;
-
-    /**
-     * Certificate for partition we are working on
-     */
-    private Certificate<MetadataMessage> cert;
-
-    /**
-     * ID of last replica we chose as replier
-     */
-    private String lreplier;
-
     /**
      * Time when last fetch was sent
      */
     private Instant last_fetch_t;
-
-    /**
-     * Is replica in checking state
-     */
-    private boolean checking;
-
     /**
      * Last checkpoint sequence number when checking started
      */
     private long check_start;
-
     /**
      * If replica state is known to be corrupt
      */
     private boolean corrupt;
-
     /**
      * Check for messages after digesting this many blocks
      */
     private int poll_cnt;
-
-    /**
-     * Queue of partitions whose digests need to be checked.
-     * It can have partitions from different levels.
-     */
-    private Queue<Object> to_check;
-
     /**
      * Index of last block checked in to_check.high()
      */
     private int lchecked;
-
-    /**
-     * Level of ancestor of current partition whose subpartitions
-     * have already been added to to_check.
-     */
-    private int refetch_level;
-
     /**
      * Total size of object being fetched.
      * XXX: #ifndef NO_STATE_TRANSLATION
@@ -170,16 +157,45 @@ public class State implements Serializable {
      */
     public State(PbftReplica replica) {
         this.replica = replica;
+        // TODO: mem
+        // TODO: nb
+        this.cowb = new BitSet();
+        this.clog = new SeqNumLog<>(replica.getConfig().getMAX_OUT() * 2, CheckpointRec::new);
+        this.lc = 0;
+        // TODO: last_fetch_t
+
+        for (int i = 0; i < PLevels; i++) {
+            this.ptree.add(i, new Part());
+            this.stalep.add(i, new FPart());
+        }
+
+        // TODO: Digest initialization
+
+        this.fetching = false;
+        // TODO: fetched_pages
+        // TODO: pages_lc
+        this.cert = new MetaDataCertificate(replica);
+        this.lreplier = null;
+
+        this.to_check = new LinkedList<>(); // FIXME: not sure about the type
+        this.checking = false;
+        this.refetch_level = 0;
+
 
         // TODO: Specify number of bits
-        this.cowb = new BitSet();
     }
 
     /**
      * Computes a state digest from scratch and a digest for each partition
      */
     public void compute_full_digest() {
-        throw new UnsupportedOperationException("Not implemented");
+        log.warning("compute_full_digest(): digest logic is not implemented");
+
+        Digest d = new Digest("");
+
+        cowb.clear();
+        clog.fetch(0).clear();
+        checkpoint(0);
     }
 
     /**
@@ -431,7 +447,7 @@ public class State implements Serializable {
      * Discards incomplete certificate
      */
     public void mark_stale() {
-        throw new UnsupportedOperationException("Not implemented");
+        this.cert.clear();
     }
 
     /**
@@ -506,9 +522,45 @@ public class State implements Serializable {
     }
 
     /**
+     * Information about a stale partition being fetched
+     */
+    @Data
+    public static class FPart {
+        /**
+         * Index of partition
+         */
+        int index;
+
+        /**
+         * Latest checkpoint sequence number for which partition is up-to-date
+         */
+        long lu;
+
+        /**
+         * Sequence number of last checkpoint that modified partition
+         */
+        long lm;
+
+        /**
+         * Sequence number of checkpoing being fetched
+         */
+        long c;
+
+        /**
+         * Digest of checkpoint being fetched
+         */
+        Digest d;
+
+        /**
+         * Size of leaf object. BASE mode only.
+         */
+        int size;
+    }
+
+    /**
      * Checkpoint Record
      */
-    public class CheckpointRec {
+    public class CheckpointRec implements SeqNumLog.SeqNumLogEntry {
         /**
          * Map for partitions that were modified since this checkpoint was taken and
          * therefore the next checkpoint.
@@ -586,36 +638,6 @@ public class State implements Serializable {
 
         /**
          * Size of object for level 'PLevels-1'
-         */
-        int size;
-    }
-
-    /**
-     * Information about stale partitions being fetched.
-     */
-    public class FPart {
-        /**
-         * Index of partition???
-         */
-        int index;
-        /**
-         * Latest checkpoint seqno for which partition is up-to-date
-         */
-        long lu;
-        /**
-         * Sequence number of last checkpoint that modified partition
-         */
-        long lm;
-        /**
-         * Sequence number of checkpoint being fetched
-         */
-        long c;
-        /**
-         * Digest of checkpoint being fetched
-         */
-        Digest d;
-        /**
-         * Size of leaf object
          */
         int size;
     }

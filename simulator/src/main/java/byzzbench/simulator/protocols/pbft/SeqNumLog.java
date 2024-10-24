@@ -58,7 +58,7 @@ public class SeqNumLog<T extends SeqNumLog.SeqNumLogEntry> implements Serializab
      */
     public T fetch(long seqno) {
         if (!within_range(seqno)) {
-            throw new AssertionError("Invalid argument: " + seqno);
+            throw new AssertionError(String.format("Expected seqno %d to be within range [%d, %d)", seqno, head, head + max_size));
         }
 
         return elems[(int) mod(seqno)];

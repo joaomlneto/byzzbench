@@ -287,7 +287,6 @@ public class ViewInfo {
      * view-change messages sent by this or complete new-view messages.
      */
     public void markStale() {
-        // iterate through the keys in last_vcs
         for (String key : last_vcs.keySet()) {
             if (!this.replica.id().equals(key)) {
                 last_vcs.remove(key);
@@ -296,20 +295,15 @@ public class ViewInfo {
                 }
             }
 
-            // FIXME: might not be a full clear?
-            my_vacks.clear();
-
             ViewChangeMessage vc = last_nvs.get(key).mark_stale(this.replica.id());
             if (vc != null && vc.getViewNumber() == view()) {
                 last_vcs.put(this.replica.id(), vc);
-            } else {
-                // delete vc;
             }
-
-            vacks.remove(key);
         }
 
-        throw new UnsupportedOperationException("Not implemented");
+        // FIXME: might not be a full clear?
+        my_vacks.clear();
+        vacks.clear();
     }
 
     /**

@@ -1478,8 +1478,6 @@ public class PbftReplica extends LeaderBasedProtocolReplica {
 
         vi.markStale();
         state.mark_stale();
-
-        throw new UnsupportedOperationException("send_new_key() not implemented");
     }
 
     /**
