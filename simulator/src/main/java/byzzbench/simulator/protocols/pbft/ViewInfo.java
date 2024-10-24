@@ -24,7 +24,7 @@ public class ViewInfo {
      * replica such that "vn >= v" and there is no new-view message for
      * "vn". It is indexed by replica ID.
      */
-    private final SortedMap<String, ViewChange> last_vcs = new TreeMap<>();
+    private final SortedMap<String, ViewChangeMessage> last_vcs = new TreeMap<>();
     /**
      * Highest view numbers in view-changes received from each replica.
      * It is indexed by replica id.
@@ -287,8 +287,26 @@ public class ViewInfo {
      * view-change messages sent by this or complete new-view messages.
      */
     public void markStale() {
-        for (int i = 0; i < this.replica.n(); i++) {
+        // iterate through the keys in last_vcs
+        for (String key : last_vcs.keySet()) {
+            if (!this.replica.id().equals(key)) {
+                last_vcs.remove(key);
+                if (last_views.containsKey(key) && last_views.get(key) >= v) {
+                    last_views.put(key, v);
+                }
+            }
 
+            // FIXME: might not be a full clear?
+            my_vacks.clear();
+
+            ViewChangeMessage vc = last_nvs.get(key).mark_stale(this.replica.id());
+            if (vc != null && vc.getViewNumber() == view()) {
+                last_vcs.put(this.replica.id(), vc);
+            } else {
+                // delete vc;
+            }
+
+            vacks.remove(key);
         }
 
         throw new UnsupportedOperationException("Not implemented");

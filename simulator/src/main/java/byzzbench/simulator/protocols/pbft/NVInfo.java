@@ -1,7 +1,6 @@
 package byzzbench.simulator.protocols.pbft;
 
-import byzzbench.simulator.protocols.pbft.message.NewViewMessage;
-import byzzbench.simulator.protocols.pbft.message.ViewChangeMessage;
+import byzzbench.simulator.protocols.pbft.message.*;
 import lombok.Data;
 
 import java.time.Instant;
@@ -17,80 +16,267 @@ public class NVInfo {
     /**
      * The view number
      */
-    private long v;
+    private final long v;
     /**
      * The new view message
      */
-    private NewViewMessage nv;
+    private final NewViewMessage nv;
     /**
      * Number of view-change messages in nv
      */
-    private int vc_target;
+    private final int vc_target;
     /**
      * Number of view-change messages already matched with target
      */
-    private int vc_cur;
+    private final int vc_cur;
     /**
      * Buffer for view changes associated with "nv" and their acks
      */
-    private List<VCInfo> vcs;
+    private final List<VCInfo> vcs;
 
     /**
      * Array of candidate checkpoints
      */
-    private List<CkptSum> ckpts;
+    private final List<CkptSum> ckpts;
 
     /**
      * Index of chosen checkpoint (-1 if no checkpoint chosen.)
      */
-    private int chosen_ckpt;
+    private final int chosen_ckpt;
 
     /**
      * Sequence number of chosen checkpoint
      */
-    private long min;
+    private final long min;
 
     /**
      * All requests that will propagate to the next view have
      * sequence number less than max
      */
-    private long max;
+    private final long max;
 
     /**
      * reqs and comp_reqs are indexed by sequence number minus base
      */
-    private long base;
+    private final long base;
 
     /**
      * An array for each sequence number above min and less than or equal to max
      */
-    private List<List<ReqSum>> reqs;
+    private final List<List<ReqSum>> reqs;
 
     /**
      * For each row index in reqs, contains either -1 if no request with complete
      * information for that index or the column index of the complete Req_sum
      */
-    private List<Integer> comp_reqs;
+    private final List<Integer> comp_reqs;
 
     /**
      * Number of complete entries with seqnos between min and max
      */
-    private int n_complete;
+    private final int n_complete;
 
     /**
      * Pointer to parent view-info
      */
-    private ViewInfo vi;
+    private final ViewInfo vi;
 
     /**
      * True iff contains all the necessary information for a new-view
      */
-    private boolean is_complete;
+    private final boolean is_complete;
 
     /**
      * Time at which my new-view was last sent
      */
-    private Instant nv_sent;
+    private final Instant nv_sent;
+
+    /**
+     * Creates an empty NVInfo object
+     */
+    public NVInfo() {
+        throw new UnsupportedOperationException("Not implemented");
+    }
+
+    /**
+     * Makes this empty — deletes all contained messages and sets view() == 0
+     */
+    public void clear() {
+        throw new UnsupportedOperationException("Not implemented");
+    }
+
+    /**
+     * If "is_complete()", does nothing. Otherwise, deletes all messages contained in this
+     * and sets view() == 0. Except that it does not delete and it returns any view-change
+     * message from replica "id".
+     *
+     * @param id the identifier of the replica
+     * @return the view-change message from replica "id"
+     */
+    public ViewChangeMessage mark_stale(String id) {
+        throw new UnsupportedOperationException("Not implemented");
+    }
+
+    /**
+     * If there is a new-view message stored in "this", returns it. Otherwise, returns null
+     *
+     * @return the new-view message stored in "this" or null
+     */
+    public NewViewMessage new_view() {
+        throw new UnsupportedOperationException("Not implemented");
+    }
+
+    /**
+     * If there is any view-change message from replica "id" stored in this, returns it.
+     * Otherwise, returns null.
+     *
+     * @param id the identifier of the replica
+     * @return the view-change message from replica "id" or null
+     */
+    public ViewChangeMessage view_change(String id) {
+        throw new UnsupportedOperationException("Not implemented");
+    }
+
+    /**
+     * Returns the view number of the messages currently stored on this, or 0 if
+     * this is empty (i.e., if it does not contain any new-view message).
+     *
+     * @return the view number of the messages currently stored on this
+     */
+    public long view() {
+        return v;
+    }
+
+    /**
+     * Returns true iff this contains all the necessary information to move to the new-view.
+     *
+     * @return true if this contains all the necessary information to move to the new-view. False otherwise.
+     */
+    public boolean complete() {
+        return is_complete;
+    }
+
+    /**
+     * Mark this as complete in view "v".
+     *
+     * @param v the view number
+     */
+    public void make_complete(long v) {
+        throw new UnsupportedOperationException("Not implemented");
+    }
+
+    /**
+     * If "nv-view() <= view(), it does not modify this and deletes "nv".
+     * Otherwise, it adds "nv" to this and if "view() != 0", it deletes any new-view
+     * and view-change messages stored in this.
+     * Requires "nv.verify() || node->id() == node->primary(nv->view())"
+     *
+     * @param nv     the new-view message
+     * @param parent the parent view-info
+     * @return true iff it adds "nv" to this
+     */
+    public boolean add(NewViewMessage nv, ViewInfo parent) {
+        throw new UnsupportedOperationException("Not implemented");
+    }
+
+    /**
+     * If "vc" is one of the messages reference in the new-view message contained
+     * in this and is valid, add "vc" to this and return true.
+     * Otherwise, do nothing and return false.
+     * Requires "vc->view() == view()" and "verified == vc->verify()"
+     *
+     * @param vc       the view-change message
+     * @param verified true if the view-change message is verified; otherwise, false
+     * @return true if the view-change message is added; otherwise, false
+     */
+    public boolean add(ViewChangeMessage vc, boolean verified) {
+        throw new UnsupportedOperationException("Not implemented");
+    }
+
+    /**
+     * If there is no view-change corresponding to "vca" in this or referenced by a
+     * new-view in this, returns false. Otherwise, it inserts "vca" in this (if its
+     * digest matches the view-change's) or deletes vca (otherwise) and returns true.
+     *
+     * @param vca the view-change acknowledgement message
+     * @return true if the view-change acknowledgement message is added; otherwise, false
+     */
+    public boolean add(ViewChangeAcknowledgementMessage vca) {
+        throw new UnsupportedOperationException("Not implemented");
+    }
+
+    /**
+     * Sets "d" to the digest of the request with sequence number "n". If enough information
+     * to make a pre-prepare is available, it returns an appropriate pre-prepare.
+     * Otherwise, returns null.
+     *
+     * @param n the sequence number of the request
+     * @param d the digest of the request
+     * @return the pre-prepare message if available; otherwise, null
+     */
+    public PrePrepareMessage fetch_request(long n, Digest d) {
+        throw new UnsupportedOperationException("Not implemented");
+    }
+
+    /**
+     * Checks if "pp" is a pre-prepare that is needed to complete a view-change. If it is,
+     * stores "pp", otherwise deletes "pp".
+     *
+     * @param pp the pre-prepare message
+     */
+    public void add_missing(PrePrepareMessage pp) {
+        throw new UnsupportedOperationException("Not implemented");
+    }
+
+    /**
+     * Records that the big request with digest "rd" that is referenced by a
+     * pre-prepare with sequence number "n" as the i-th big request is cached.
+     *
+     * @param rd the digest of the big request
+     * @param n  the sequence number of the request
+     * @param i  the index of the request in the sequence number
+     */
+    public void add_missing(Digest rd, long n, int i) {
+        throw new UnsupportedOperationException("Not implemented");
+    }
+
+    /**
+     * Checks if "p" is a prepare that is needed to complete a view-change.
+     * If it is, stores "pp".
+     *
+     * @param p the prepare message
+     */
+    public void add_missing(PrepareMessage p) {
+        throw new UnsupportedOperationException("Not implemented");
+    }
+
+    /**
+     * Mutates "m" to record which view change messages were accepted in the
+     * current view or are not needed to complete new-view.
+     *
+     * @param m the status message
+     */
+    public void set_received_vcs(StatusMessage m) {
+        throw new UnsupportedOperationException("Not implemented");
+    }
+
+    /**
+     * Mutates "m" to record which pre-prepares are missing
+     *
+     * @param m the status message
+     */
+    public void set_missing_pps(StatusMessage m) {
+        throw new UnsupportedOperationException("Not implemented");
+    }
+
+    /**
+     * Informs "this" that checkpoint sequence number "ls" is stable
+     *
+     * @param ls the sequence number of the checkpoint
+     */
+    public void mark_stable(long ls) {
+        throw new UnsupportedOperationException("Not implemented");
+    }
 
     /**
      * Summarizes the information in "vc" and combines it with
