@@ -2,6 +2,7 @@ package byzzbench.simulator.protocols.pbft;
 
 import byzzbench.simulator.protocols.pbft.message.ReplyMessage;
 
+import java.io.Serializable;
 import java.util.List;
 import java.util.Queue;
 import java.util.SortedMap;
@@ -10,7 +11,7 @@ import java.util.TreeMap;
 /**
  * Holds the last replies sent to each principal
  */
-public class RepInfo {
+public class RepInfo implements Serializable {
     /**
      * MAX_REP_SIZE
      */

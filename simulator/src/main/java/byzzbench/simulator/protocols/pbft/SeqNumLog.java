@@ -1,14 +1,13 @@
 package byzzbench.simulator.protocols.pbft;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.io.Serializable;
 
 /**
  * Log of T ordered by sequence number.
  * Request that T has a method: void clear().
  */
-public class SeqNumLog<T extends SeqNumLog.SeqNumLogEntry> {
-    private final List<T> elems;
+public class SeqNumLog<T extends SeqNumLog.SeqNumLogEntry> implements Serializable {
+    private final T[] elems;
     private final int max_size;
     private long head;
 
@@ -21,7 +20,7 @@ public class SeqNumLog<T extends SeqNumLog.SeqNumLogEntry> {
      * @param h  the head of the log
      */
     public SeqNumLog(int sz, long h) {
-        elems = new ArrayList<>(sz);
+        elems = (T[]) new SeqNumLogEntry[sz];
         head = h;
         max_size = sz;
     }
@@ -58,7 +57,7 @@ public class SeqNumLog<T extends SeqNumLog.SeqNumLogEntry> {
             throw new AssertionError("Invalid argument: " + seqno);
         }
 
-        return elems.get((int) mod(seqno));
+        return elems[(int) mod(seqno)];
     }
 
     /**
@@ -77,7 +76,7 @@ public class SeqNumLog<T extends SeqNumLog.SeqNumLogEntry> {
         }
 
         for (; i < max; i++) {
-            elems.get((int) mod(i)).clear();
+            elems[(int) mod(i)].clear();
         }
 
         head = new_head;
@@ -124,7 +123,7 @@ public class SeqNumLog<T extends SeqNumLog.SeqNumLogEntry> {
     /**
      * A log entry.
      */
-    public interface SeqNumLogEntry {
+    public interface SeqNumLogEntry extends Serializable {
         void clear();
     }
 }

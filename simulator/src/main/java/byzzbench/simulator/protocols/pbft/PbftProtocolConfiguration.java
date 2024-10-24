@@ -32,7 +32,7 @@ public class PbftProtocolConfiguration {
      */
     private final int CHECKPOINT_INTERVAL = 128;
     /**
-     * Maximum number of messages for which protocol can be simultanesouly
+     * Maximum number of messages for which protocol can be simultaneously
      * in progress, i.e., messages with sequence number
      * higher than last_stable+max_out are ignored. It is required that
      * max_out > checkpoint_interval. Otherwise, the algorithm will be

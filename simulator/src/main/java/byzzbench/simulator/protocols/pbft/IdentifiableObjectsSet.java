@@ -1,5 +1,6 @@
 package byzzbench.simulator.protocols.pbft;
 
+import java.io.Serializable;
 import java.util.Optional;
 import java.util.SortedMap;
 import java.util.SortedSet;
@@ -12,7 +13,7 @@ import java.util.TreeMap;
  *
  * @param <T> the type of the elements in the set
  */
-public class IdentifiableObjectsSet<T extends IdentifiableObject> {
+public class IdentifiableObjectsSet<T extends IdentifiableObject> implements Serializable {
     /**
      * The maximum number of elements in the set
      */

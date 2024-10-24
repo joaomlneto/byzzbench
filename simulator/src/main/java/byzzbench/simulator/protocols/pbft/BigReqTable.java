@@ -4,13 +4,14 @@ import byzzbench.simulator.protocols.pbft.message.PrePrepareMessage;
 import byzzbench.simulator.protocols.pbft.message.RequestMessage;
 import lombok.Data;
 
+import java.io.Serializable;
 import java.util.*;
 
-public class BigReqTable {
+public class BigReqTable implements Serializable {
     /**
      * The replica that owns this big request table
      */
-    private final PbftReplica replica;
+    private final transient PbftReplica replica;
 
     /**
      * Maximum number of entries allowed in the table

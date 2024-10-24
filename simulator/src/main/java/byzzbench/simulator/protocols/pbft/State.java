@@ -5,6 +5,7 @@ import byzzbench.simulator.protocols.pbft.message.FetchMessage;
 import byzzbench.simulator.protocols.pbft.message.MetadataDigestMessage;
 import byzzbench.simulator.protocols.pbft.message.MetadataMessage;
 
+import java.io.Serializable;
 import java.time.Instant;
 import java.util.*;
 
@@ -15,7 +16,7 @@ import java.util.*;
  * is one of its inverses. The procedures invoked before and after recovery to
  * save and restore extra state information are "shutdown_p" and "restart_p".
  */
-public class State {
+public class State implements Serializable {
     /**
      * Actual memory holding current state and the number of Blocks in that memory
      * FIXME: Just in BFT mode
@@ -29,7 +30,7 @@ public class State {
     /**
      * Parent replica object.
      */
-    private final PbftReplica replica;
+    private final transient PbftReplica replica;
     /**
      * Bitmap with a bit for each block in the memory region indicating whether the block should be copied the next time
      * it is written; blocks should be copied iff their bit is 0.
