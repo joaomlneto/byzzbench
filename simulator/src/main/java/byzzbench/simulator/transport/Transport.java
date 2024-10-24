@@ -12,6 +12,7 @@ import lombok.Synchronized;
 import lombok.extern.java.Log;
 
 import java.io.Serializable;
+import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
@@ -65,6 +66,7 @@ public class Transport {
 
     /**
      * Adds an observer to the transport layer.
+     *
      * @param observer The observer to add.
      */
     public synchronized void addObserver(TransportObserver observer) {
@@ -73,6 +75,7 @@ public class Transport {
 
     /**
      * Removes an observer from the transport layer.
+     *
      * @param observer The observer to remove.
      */
     public synchronized void removeObserver(TransportObserver observer) {
@@ -81,6 +84,7 @@ public class Transport {
 
     /**
      * Adds a network fault to the transport layer.
+     *
      * @param fault The fault to add.
      */
     public synchronized void addNetworkFault(Fault fault) {
@@ -89,7 +93,8 @@ public class Transport {
 
     /**
      * Sends a request from a client to a replica.
-     * @param sender The ID of the client sending the request
+     *
+     * @param sender    The ID of the client sending the request
      * @param operation The operation to send
      * @param recipient The ID of the replica receiving the request
      */
@@ -114,8 +119,9 @@ public class Transport {
 
     /**
      * Sends a response from a replica to a client.
-     * @param sender The ID of the replica sending the response
-     * @param response The response to send
+     *
+     * @param sender    The ID of the replica sending the response
+     * @param response  The response to send
      * @param recipient The ID of the client receiving the response
      */
     public synchronized void sendClientResponse(String sender, Serializable response, String recipient) {
@@ -135,17 +141,19 @@ public class Transport {
 
     /**
      * Sends a message between two replicas.
-     * @param sender The ID of the replica sending the message
-     * @param message The payload of the message to send
+     *
+     * @param sender    The ID of the replica sending the message
+     * @param message   The payload of the message to send
      * @param recipient The ID of the replica receiving the message
      */
     public synchronized void sendMessage(String sender, MessagePayload message,
-                            String recipient) {
+                                         String recipient) {
         this.multicast(sender, new TreeSet<>(Set.of(recipient)), message);
     }
 
     /**
      * Gets all events in a given state.
+     *
      * @param status The state to filter by
      * @return A list of events in the given state
      */
@@ -163,12 +171,13 @@ public class Transport {
 
     /**
      * Multicasts a message to a set of recipients.
-     * @param sender The ID of the sender
+     *
+     * @param sender     The ID of the sender
      * @param recipients The set of recipient IDs
-     * @param payload The payload of the message
+     * @param payload    The payload of the message
      */
     public synchronized void multicast(String sender, SortedSet<String> recipients,
-                          MessagePayload payload) {
+                                       MessagePayload payload) {
         for (String recipient : recipients) {
             long messageId = this.eventSeqNum.getAndIncrement();
             MessageEvent messageEvent = MessageEvent.builder()
@@ -232,6 +241,7 @@ public class Transport {
 
     /**
      * Drops a message from the network.
+     *
      * @param eventId The ID of the message to drop.
      */
     public synchronized void dropEvent(long eventId) {
@@ -248,6 +258,7 @@ public class Transport {
 
     /**
      * Gets an event by ID.
+     *
      * @param eventId The ID of the event to get.
      * @return The event with the given ID.
      */
@@ -257,8 +268,9 @@ public class Transport {
 
     /**
      * Applies a mutation to a message and appends the fault event to the schedule.
+     *
      * @param eventId The ID of the message to mutate.
-     * @param fault The fault to apply.
+     * @param fault   The fault to apply.
      */
     public synchronized void applyMutation(long eventId, Fault fault) {
         Event e = events.get(eventId);
@@ -344,8 +356,16 @@ public class Transport {
         this.observers.forEach(o -> o.onFault(fault));
     }
 
+    /**
+     * Creates a new timeout event
+     *
+     * @param replica  The replica that created the timeout
+     * @param runnable The task to execute when the timeout occurs
+     * @param timeout  The timeout duration
+     * @return The ID of the newly-created timeout event
+     */
     public synchronized long setTimeout(Replica replica, Runnable runnable,
-                           long timeout) {
+                                        Duration timeout) {
         TimeoutEvent timeoutEvent = TimeoutEvent.builder()
                 .eventId(this.eventSeqNum.getAndIncrement())
                 .description("TIMEOUT")
@@ -362,6 +382,35 @@ public class Transport {
         return timeoutEvent.getEventId();
     }
 
+    /**
+     * Clears a timeout event.
+     *
+     * @param eventId The ID of the event to clear.
+     */
+    public synchronized void clearTimeout(Replica replica, long eventId) {
+        Event e = events.get(eventId);
+        
+        if (e == null) {
+            throw new IllegalArgumentException("Event not found: " + eventId);
+        }
+
+        if (!(e instanceof TimeoutEvent timeoutEvent)) {
+            throw new IllegalArgumentException("Event is not a timeout: " + eventId);
+        }
+
+        if (!timeoutEvent.getNodeId().equals(replica.getNodeId())) {
+            throw new IllegalArgumentException("Timeout does not belong to this replica!");
+        }
+
+        timeoutEvent.setStatus(Event.Status.DROPPED);
+        this.observers.forEach(o -> o.onEventDropped(timeoutEvent));
+    }
+
+    /**
+     * Clears all timeouts for a given replica.
+     *
+     * @param replica The replica to clear timeouts for.
+     */
     public synchronized void clearReplicaTimeouts(Replica replica) {
         // get all event IDs for timeouts from this replica
         List<Long> eventIds =
@@ -377,8 +426,9 @@ public class Transport {
 
         // remove all event IDs
         for (Long eventId : eventIds) {
-            events.get(eventId).setStatus(Event.Status.DROPPED);
-            this.observers.forEach(o -> o.onEventDropped(events.get(eventId)));
+            Event e = events.get(eventId);
+            e.setStatus(Event.Status.DROPPED);
+            this.observers.forEach(o -> o.onEventDropped(e));
         }
     }
 

@@ -12,6 +12,7 @@ import lombok.extern.java.Log;
 import java.io.Serializable;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 import java.util.SortedSet;
@@ -197,16 +198,26 @@ public abstract class Replica implements Serializable {
     /**
      * Set a timeout for this replica.
      *
+     * @param name    a name for the timeout
      * @param r       the runnable to execute when the timeout occurs
-     * @param timeout the timeout in milliseconds
-     * @return the timeout ID
+     * @param timeout the timeout duration
+     * @return the timer object
      */
-    public long setTimeout(Runnable r, long timeout) {
+    public long setTimeout(String name, Runnable r, Duration timeout) {
         Runnable wrapper = () -> {
             this.notifyObserversTimeout();
             r.run();
         };
         return this.transport.setTimeout(this, wrapper, timeout);
+    }
+
+    /**
+     * Clear a timeout for this replica.
+     *
+     * @param eventId the event ID of the timeout to clear
+     */
+    public void clearTimeout(long eventId) {
+        this.transport.clearTimeout(this, eventId);
     }
 
     /**
