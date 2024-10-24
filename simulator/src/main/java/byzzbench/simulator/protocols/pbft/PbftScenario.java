@@ -41,7 +41,7 @@ public class PbftScenario extends BaseScenario {
 
             nodeIds.forEach(nodeId -> {
                 MessageLog messageLog = new MessageLog(100, 100, 200);
-                Replica replica = new PbftReplica(nodeId, nodeIds, transport);
+                Replica replica = new PbftReplica(nodeId, nodeIds, transport, timekeeper);
                 this.addNode(replica);
             });
         } catch (Exception e) {

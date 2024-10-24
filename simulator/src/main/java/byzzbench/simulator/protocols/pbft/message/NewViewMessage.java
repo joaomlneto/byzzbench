@@ -62,4 +62,34 @@ public class NewViewMessage extends MessagePayload implements CertifiableMessage
     public String getType() {
         return TYPE;
     }
+
+    @Override
+    public boolean match(CertifiableMessage other) {
+        throw new UnsupportedOperationException("Not implemented");
+    }
+
+    @Override
+    public String id() {
+        throw new UnsupportedOperationException("Not implemented");
+    }
+
+    @Override
+    public boolean verify() {
+        throw new UnsupportedOperationException("Not implemented");
+    }
+
+    @Override
+    public boolean full() {
+        throw new UnsupportedOperationException("Not implemented");
+    }
+
+    @Override
+    public boolean encode() {
+        throw new UnsupportedOperationException("Not implemented");
+    }
+
+    @Override
+    public boolean decode() {
+        throw new UnsupportedOperationException("Not implemented");
+    }
 }

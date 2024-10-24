@@ -4,6 +4,7 @@ import byzzbench.simulator.protocols.pbft.Digest;
 import byzzbench.simulator.protocols.pbft.PbftReplica;
 import byzzbench.simulator.protocols.pbft.Principal;
 import byzzbench.simulator.transport.MessagePayload;
+import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.With;
@@ -14,32 +15,33 @@ import lombok.With;
 @Data
 @EqualsAndHashCode(callSuper = true)
 @With
+@AllArgsConstructor
 public class ReplyStableMessage extends MessagePayload {
     public static final String TYPE = "ReplyStable";
     /**
      * Last checkpoint at sending replica
      */
-    private final long lc;
+    private long lc;
 
     /**
      * Last prepared request at sending replica
      */
-    private final long lp;
+    private long lp;
 
     /**
      * Identifier of sending replica
      */
-    private final String id;
+    private String id;
 
     /**
      * Nonce in query-stable
      */
-    private final int nonce;
+    private int nonce;
 
     /**
      * MAC
      */
-    private final Digest mac;
+    private Digest mac;
 
     public ReplyStableMessage(PbftReplica replica, long lc, long lp, int n, Principal p) {
         this.lc = lc;

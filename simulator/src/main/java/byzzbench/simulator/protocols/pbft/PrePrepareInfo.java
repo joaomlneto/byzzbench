@@ -70,7 +70,7 @@ public class PrePrepareInfo {
      * @return the pre-prepare message if it exists, null otherwise.
      */
     public Optional<PrePrepareMessage> pre_prepare() {
-        return this.pp;
+        return Optional.ofNullable(pp);
     }
 
     /**

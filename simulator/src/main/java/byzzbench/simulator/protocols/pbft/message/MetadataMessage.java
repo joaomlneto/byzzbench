@@ -1,5 +1,6 @@
 package byzzbench.simulator.protocols.pbft.message;
 
+import byzzbench.simulator.protocols.pbft.CertifiableMessage;
 import byzzbench.simulator.transport.MessagePayload;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -14,7 +15,7 @@ import java.io.Serializable;
 @Data
 @EqualsAndHashCode(callSuper = true)
 @With
-public class MetadataMessage extends MessagePayload {
+public class MetadataMessage extends MessagePayload implements CertifiableMessage {
     public static final String TYPE = "Metadata";
     /**
      * The timestamp of the fetch request (rid)
@@ -64,6 +65,36 @@ public class MetadataMessage extends MessagePayload {
     @Override
     public String getType() {
         return TYPE;
+    }
+
+    @Override
+    public boolean match(CertifiableMessage other) {
+        throw new UnsupportedOperationException("Not implemented");
+    }
+
+    @Override
+    public String id() {
+        throw new UnsupportedOperationException("Not implemented");
+    }
+
+    @Override
+    public boolean verify() {
+        throw new UnsupportedOperationException("Not implemented");
+    }
+
+    @Override
+    public boolean full() {
+        throw new UnsupportedOperationException("Not implemented");
+    }
+
+    @Override
+    public boolean encode() {
+        throw new UnsupportedOperationException("Not implemented");
+    }
+
+    @Override
+    public boolean decode() {
+        throw new UnsupportedOperationException("Not implemented");
     }
 
     @Data

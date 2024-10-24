@@ -5,6 +5,7 @@ import byzzbench.simulator.protocols.pbft.Digest;
 import byzzbench.simulator.protocols.pbft.PbftMessagePayloadWithSequenceNumber;
 import byzzbench.simulator.protocols.pbft.ReqQueue;
 import byzzbench.simulator.transport.MessagePayload;
+import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.With;
@@ -31,6 +32,7 @@ import java.util.Optional;
 @EqualsAndHashCode(callSuper = true)
 @With
 @Log
+@AllArgsConstructor
 public class PrePrepareMessage extends MessagePayload implements PbftMessagePayloadWithSequenceNumber, CertifiableMessage {
     public static final String TYPE = "PrePrepare";
     /**
@@ -100,7 +102,7 @@ public class PrePrepareMessage extends MessagePayload implements PbftMessagePayl
             } else {
                 // Big requests are sent offline and their digests are sent with pre-prepare message
                 if (big_req_ds.size() < big_req_max && this.requests.size() < max_reqs) {
-                    big_req_ds.add(pn.r.getDigest());
+                    big_req_ds.add(pn.r.digest());
 
                     // Add request to replica's big reqs table
                     Optional<RequestMessage> req = reqs.remove();
@@ -156,7 +158,32 @@ public class PrePrepareMessage extends MessagePayload implements PbftMessagePayl
     }
 
     @Override
+    public boolean match(CertifiableMessage other) {
+        throw new UnsupportedOperationException("Not implemented");
+    }
+
+    @Override
+    public String id() {
+        throw new UnsupportedOperationException("Not implemented");
+    }
+
+    @Override
     public boolean verify() {
+        throw new UnsupportedOperationException("Not implemented");
+    }
+
+    @Override
+    public boolean full() {
+        throw new UnsupportedOperationException("Not implemented");
+    }
+
+    @Override
+    public boolean encode() {
+        throw new UnsupportedOperationException("Not implemented");
+    }
+
+    @Override
+    public boolean decode() {
         throw new UnsupportedOperationException("Not implemented");
     }
 

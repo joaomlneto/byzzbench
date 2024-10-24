@@ -4,6 +4,7 @@ import byzzbench.simulator.protocols.pbft.Digest;
 import byzzbench.simulator.protocols.pbft.PbftReplica;
 import byzzbench.simulator.protocols.pbft.Principal;
 import byzzbench.simulator.transport.MessagePayload;
+import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.With;
@@ -23,6 +24,7 @@ import java.io.Serializable;
 @Data
 @EqualsAndHashCode(callSuper = true)
 @With
+@AllArgsConstructor
 public class RequestMessage extends MessagePayload {
     public static final String TYPE = "Request";
     /**
@@ -49,17 +51,17 @@ public class RequestMessage extends MessagePayload {
     /**
      * Whether the request is read-only.
      */
-    private final boolean isReadOnly;
+    private final boolean isReadOnly = false;
 
     /**
      * Whether the request is signed.
      */
-    private final boolean isSigned;
+    private final boolean isSigned = false;
 
     /**
      * Digest of requestId (rid), clientId (cid) and operation (command).
      */
-    private final Digest digest;
+    private final Digest od = null;
 
     /**
      * The command to be executed
@@ -69,7 +71,7 @@ public class RequestMessage extends MessagePayload {
     /**
      * Whether the request is classified as a "big request".
      */
-    private final boolean isBigRequest;
+    private final boolean isBigRequest = false;
 
     /**
      * Creates a new signed Request message with an empty command and no authentication.
@@ -101,6 +103,14 @@ public class RequestMessage extends MessagePayload {
      */
     public RequestMessage(PbftReplica replica, long r) {
         this(replica, r, "-1");
+    }
+
+    // XXX: workaround constructor for the clients to call, since they're not PbftReplicas.
+    public RequestMessage(String cid, long r, String rr, String command) {
+        this.cid = cid;
+        this.rid = r;
+        this.replier = rr;
+        this.command = command;
     }
 
     /**
@@ -184,6 +194,10 @@ public class RequestMessage extends MessagePayload {
     public RequestRep rep() {
         throw new UnsupportedOperationException("Not implemented");
         //return new RequestRep(digest, replier, clientId, requestId, command, "_AUTHENTICATOR_");
+    }
+
+    public Digest digest() {
+        return this.od;
     }
 
     @Data

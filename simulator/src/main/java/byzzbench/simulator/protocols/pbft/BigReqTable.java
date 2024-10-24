@@ -44,7 +44,7 @@ public class BigReqTable {
      * @param v the view number
      */
     public void add_pre_prepare(RequestMessage r, long n, long v) {
-        Digest rd = r.getDigest();
+        Digest rd = r.digest();
         if (breqs.containsKey(rd)) {
             BigReqEntry bre = breqs.get(rd);
             remove_unmatched(bre);
@@ -206,7 +206,7 @@ public class BigReqTable {
             if (bre.r == null) {
                 throw new IllegalStateException("Big request entry has no request");
             }
-            this.unmatched.remove(bre.r.getClientId());
+            this.unmatched.remove(bre.r.getCid());
         }
     }
 

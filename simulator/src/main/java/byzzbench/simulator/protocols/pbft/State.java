@@ -80,7 +80,93 @@ public class State {
      */
     private Object stalep;
 
+    /**
+     * Set of fetched page sin a fetch operation
+     * XXX: #ifndef NO_STATE_TRANSLATION
+     */
+    private Object fetched_pages;
 
+    /**
+     * Copies of pages at last checkpoint
+     * XXX: #ifndef NO_STATE_TRANSLATION
+     */
+    private Object pages_lc;
+
+    /**
+     * Certificate for partition we are working on
+     */
+    private Certificate<MetadataMessage> cert;
+
+    /**
+     * ID of last replica we chose as replier
+     */
+    private String lreplier;
+
+    /**
+     * Time when last fetch was sent
+     */
+    private Instant last_fetch_t;
+
+    /**
+     * Is replica in checking state
+     */
+    private boolean checking;
+
+    /**
+     * Last checkpoint sequence number when checking started
+     */
+    private long check_start;
+
+    /**
+     * If replica state is known to be corrupt
+     */
+    private boolean corrupt;
+
+    /**
+     * Check for messages after digesting this many blocks
+     */
+    private int poll_cnt;
+
+    /**
+     * Queue of partitions whose digests need to be checked.
+     * It can have partitions from different levels.
+     */
+    private Queue<Object> to_check;
+
+    /**
+     * Index of last block checked in to_check.high()
+     */
+    private int lchecked;
+
+    /**
+     * Level of ancestor of current partition whose subpartitions
+     * have already been added to to_check.
+     */
+    private int refetch_level;
+
+    /**
+     * Total size of object being fetched.
+     * XXX: #ifndef NO_STATE_TRANSLATION
+     */
+    private int total_size;
+
+    /**
+     * Next fragment number to be fetched.
+     * XXX: #ifndef NO_STATE_TRANSLATION
+     */
+    private int next_chunk;
+
+    /**
+     * Buffer for reassembling the fragments.
+     * XXX: #ifndef NO_STATE_TRANSLATION
+     */
+    private String reassemb;
+
+    /**
+     * Creates a new state object for replica "replica"
+     *
+     * @param replica the parent replica object
+     */
     public State(PbftReplica replica) {
         this.replica = replica;
 
@@ -108,12 +194,105 @@ public class State {
     }
 
     /**
+     * Sets "d" to the current digest of partition "(l,i)"
+     *
+     * @param d digest to set
+     * @param l level
+     * @param i index
+     * @return size of object in partition (l,i)
+     */
+    private int digest(Digest d, int l, int i) {
+        throw new UnsupportedOperationException("Not implemented");
+    }
+
+    /**
+     * Sets "d" to MD5(i#lm#(data,size))
+     *
+     * @param d    digest to set
+     * @param i    index
+     * @param lm   sequence number of last checkpoint that modified partition
+     * @param data data to digest
+     * @param size size of data
+     */
+    private void digest(Digest d, int i, long lm, String data, int size) {
+        throw new UnsupportedOperationException("Not implemented");
+    }
+
+    /**
+     * Checks if the digest of the partition in "m" is "d"
+     *
+     * @param d digest to check
+     * @param m metadata message
+     * @return true if the digest of the partition in "m" is "d", otherwise false
+     */
+    private boolean check_digest(Digest d, MetadataMessage m) {
+        throw new UnsupportedOperationException("Not implemented");
+    }
+
+    /**
+     * It decrements flevel and, if parent is consistent, removes parent.
+     * If the queue of parent becomes empty it calls itself recursively.
+     * Unless there is no parent, in which case it sets in_fetch_state_to
+     * false and updates state accordingly.
+     * Requires flevel has an empty out-of-date queue.
+     */
+    private void done_with_level() {
+        throw new UnsupportedOperationException("Not implemented");
+    }
+
+    /**
+     * Updates the digests of the blocks whose cow bits were reset since the last
+     * checkpoint and computes a new state digest using the state digest computed
+     * during the last checkpoint.
+     *
+     * @param n sequence number of last checkpoint
+     */
+    private void update_ptree(long n) {
+        throw new UnsupportedOperationException("Not implemented");
+    }
+
+    /**
+     * If there is a checkpoint with sequence number "c" in this, returns
+     * the data for block index "i" at checkpoint "c".
+     *
+     * @param c sequence number of checkpoint
+     * @param i index of block
+     * @return data for block index "i" at checkpoint "c"
+     */
+    private String get_data(long c, int i) {
+        throw new UnsupportedOperationException("Not implemented");
+    }
+
+    /**
+     * Returns a pointer to the information for partition "(l,i)" at checkpoint "c".
+     * Requires there is a checkpoint with sequence number "c" in this.
+     *
+     * @param c sequence number of checkpoint
+     * @param l level
+     * @param i index
+     * @return information for partition "(l,i)" at checkpoint "c"
+     */
+    private String get_meta_data(long c, int l, int i) {
+        throw new UnsupportedOperationException("Not implemented");
+    }
+
+    /**
+     * Checks whether the actual digest of block "i" and its digest in the ptree match.
+     *
+     * @param i index of block
+     * @return true if the actual digest of block "i" and its digest in the ptree match, otherwise false
+     */
+    private boolean check_data(int i) {
+        throw new UnsupportedOperationException("Not implemented");
+    }
+
+    /**
      * Check if replica is fetching missing state
      *
      * @return true if replica is fetching missing state, otherwise false
      */
     public boolean in_fetch_state() {
-        throw new UnsupportedOperationException("Not implemented");
+        return this.fetching;
     }
 
     /**
@@ -268,8 +447,8 @@ public class State {
      * @return true if fetch should be retransmitted, otherwise false
      */
     public boolean retrans_fetch(Instant cur) {
-        // FIXME: cur should be a ByzzBench timer!
-        throw new UnsupportedOperationException("Not implemented");
+        // FIXME: Magic number
+        return fetching && cur.isAfter(last_fetch_t.plusMillis(100));
     }
 
     /**

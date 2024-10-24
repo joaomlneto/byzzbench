@@ -118,7 +118,7 @@ public abstract class Certificate<T extends CertifiableMessage> implements SeqNu
      * @return the correct message value for this certificate or 0 if this value is not known
      */
     public T cvalue() {
-        return null;
+        throw new UnsupportedOperationException("Not implemented");
     }
 
     /**

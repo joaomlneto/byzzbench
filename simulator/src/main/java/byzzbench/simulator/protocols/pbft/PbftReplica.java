@@ -2,6 +2,7 @@ package byzzbench.simulator.protocols.pbft;
 
 import byzzbench.simulator.LeaderBasedProtocolReplica;
 import byzzbench.simulator.Timekeeper;
+import byzzbench.simulator.Timer;
 import byzzbench.simulator.protocols.pbft.message.*;
 import byzzbench.simulator.state.TotalOrderCommitLog;
 import byzzbench.simulator.transport.MessagePayload;
@@ -14,6 +15,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.*;
 import java.util.function.Function;
+import java.util.logging.Level;
 
 /**
  * A replica implementing the Practical Byzantine Fault Tolerance (PBFT) protocol,
@@ -22,16 +24,17 @@ import java.util.function.Function;
  */
 @Log
 public class PbftReplica extends LeaderBasedProtocolReplica {
+    private static final Duration AUTHENTICATION_TIMEOUT = Duration.ofSeconds(1);
     /**
      * JC: This controls batching, and is the maximum number of messages that can be outstanding
      * at any one time. i.e. with CW=1, can't send a pp unless a previous operation has executed.
      */
     private static final int congestion_window = 1;
     /**
-     * Configuration for the PBFT protocol.
+     * Configuration for the PBFT protocol. FIXME: Should be configurable!
      */
     @Getter
-    private final PbftProtocolConfiguration config;
+    private final PbftProtocolConfiguration config = new PbftProtocolConfiguration();
     /**
      * View-info abstraction manages information about view changes
      */
@@ -73,14 +76,6 @@ public class PbftReplica extends LeaderBasedProtocolReplica {
      */
     private final State state = new State(this);
     /**
-     * Sequence number of last stable state.
-     */
-    private final long last_stable;
-    /**
-     * Low bound on request sequence numbers that may be accepted in current view.
-     */
-    private final long low_bound;
-    /**
      * True iff replica's last_stable is sufficient to start processing requests in new view.
      */
     private final boolean has_nv_state;
@@ -100,17 +95,9 @@ public class PbftReplica extends LeaderBasedProtocolReplica {
      */
     private final Timer rtimer;
     /**
-     * Outstanding recovery request or null if there is no outstanding recovery request.
-     */
-    private final RequestMessage rr;
-    /**
      * Views in recovery replies.
      */
     private final Map<String, Long> rr_views;
-    /**
-     * True iff replica is recovering
-     */
-    private final boolean recovering;
     /**
      * Timer to trigger transmission of null requests when system is idle
      */
@@ -119,6 +106,10 @@ public class PbftReplica extends LeaderBasedProtocolReplica {
      * FIXME: Undocumented
      */
     private final Runnable exec_command;
+    /**
+     * Authentication timer. FIXME: Should be an "ITimer" in ByzzBench!
+     */
+    private final Timer atimer;
     /**
      * Map from principal identifiers to Principal.
      */
@@ -131,6 +122,22 @@ public class PbftReplica extends LeaderBasedProtocolReplica {
      * Maximum sequence number of a recovery request in state.
      */
     long max_rec_n;
+    /**
+     * Sequence number of last stable state.
+     */
+    private long last_stable;
+    /**
+     * Low bound on request sequence numbers that may be accepted in current view.
+     */
+    private long low_bound;
+    /**
+     * True iff replica is recovering
+     */
+    private boolean recovering;
+    /**
+     * Outstanding recovery request or null if there is no outstanding recovery request.
+     */
+    private RequestMessage rr;
     /**
      * Message sent for estimation; qs != null iff replica is estimating
      * the maximum stable checkpoint.
@@ -181,10 +188,6 @@ public class PbftReplica extends LeaderBasedProtocolReplica {
      */
     private boolean rec_ready;
     /**
-     * Authentication timer. FIXME: Should be an "ITimer" in ByzzBench!
-     */
-    private Timer atimer;
-    /**
      * FIXME: Undocumented
      */
     private Runnable non_det_choices;
@@ -233,8 +236,34 @@ public class PbftReplica extends LeaderBasedProtocolReplica {
     public PbftReplica(String nodeId, SortedSet<String> nodeIds, Transport transport, Timekeeper timekeeper) {
         super(nodeId, nodeIds, transport, timekeeper, new TotalOrderCommitLog());
 
-        // FIXME: Should be configurable!
-        this.config = new PbftProtocolConfiguration();
+        /**
+         * Node.cc constructor below
+         */
+        // Initialize random number generator
+        //random_init(); // should be done automatically by ByzzBench
+
+        // TODO: Private key and public key should be provided by ByzzBench
+        // Read-config-file and Networking stuff skipped…
+
+        // Initialize current view number and primary
+        this.v = 0;
+        this.cur_primary = getPrimaryForView(this.v);
+
+        // ...
+
+        // Compute new timestamp for cur_rid
+        new_tstamp();
+
+        last_new_key = null;
+
+        atimer = new Timer(this, "Authentication Timeout", AUTHENTICATION_TIMEOUT, () -> {
+            throw new UnsupportedOperationException("Authentication timeout not implemented");
+        });
+
+        /**
+         * Replica.cc constructor below
+         */
+
         // TODO: set config_file
         // TODO: set config_priv
         // TODO: set port -- not required in byzzbench!
@@ -308,9 +337,6 @@ public class PbftReplica extends LeaderBasedProtocolReplica {
                 .forEach(otherNodeId ->
                         principals.put(otherNodeId, new Principal(otherNodeId, ""))
                 );
-
-        this.v = 0;
-        this.cur_primary = getPrimaryForView(this.v);
 
         this.initialize();
     }
@@ -460,6 +486,15 @@ public class PbftReplica extends LeaderBasedProtocolReplica {
     }
 
     /**
+     * Returns this replica's principal.
+     *
+     * @return This replica's principal.
+     */
+    public Principal getPrincipal() {
+        return getPrincipal(id());
+    }
+
+    /**
      * Checks whether the given ID is that of a replica.
      *
      * @param id The ID to check.
@@ -475,9 +510,9 @@ public class PbftReplica extends LeaderBasedProtocolReplica {
      * @param m The RequestMessage from the client.
      */
     private void handleRequest(RequestMessage m) {
-        String cid = m.getClientId();
+        String cid = m.getCid();
         boolean ro = m.isReadOnly();
-        long rid = m.getRequestId();
+        long rid = m.getRid();
 
         if (has_new_view() && m.verify(this)) {
             // Replica's requests must be signed and cannot be read-only
@@ -676,10 +711,73 @@ public class PbftReplica extends LeaderBasedProtocolReplica {
                 if (rr_reps.is_complete()) {
                     // I have a valid reply to my outstanding recovery request.
                     // Update recovery point
-                    throw new UnsupportedOperationException("handleReply() not implemented");
+                    String rep = rr_reps.cvalue().getReply();
+                    // XXX: add assert len == sizeof(long)
+                    long rec_seqno = Long.parseLong(rep);
+                    long new_rp = rec_seqno / config.getCHECKPOINT_INTERVAL() * config.getCHECKPOINT_INTERVAL() + config.getMAX_OUT();
+                    if (new_rp > recovery_point) {
+                        recovery_point = new_rp;
+                    }
+
+                    // System.out.printf("XXX Complete rec reply with seqno %qd rec_point=%qd\n",rec_seqno, recovery_point);
+
+                    // Update view number
+                    long rec_view = K_max(f() + 1, rr_views, Long.MAX_VALUE);
+                    enforce_view(rec_view);
+
+                    try_end_recovery();
+
+                    this.rr = null;
                 }
             }
         }
+    }
+
+    /**
+     * Returns a value "r" of "T" such that there are "k" values greater than or equal to "r" in vector.
+     * It works well for small "n" and "k" and when there are many elements with the value being selected.
+     * These conditions are all expected to hold.
+     * Requires the vector to have "n" elements and "tmax" is the maximum value for type T
+     *
+     * @param k    The number of values greater than or equal to "r" in vector.
+     * @param m    The collection of values.
+     * @param tmax The maximum value for type T.
+     * @return A value "r" of "T" such that there are "k" values greater than or equal to "r" in vector.
+     */
+    public long K_max(int k, Map<String, Long> m, long tmax) {
+        long n = m.size();
+        if (k > n) {
+            return tmax;
+        }
+
+        Long last_max = tmax;
+        int last_count = 0;
+
+        long cur_max = -1;
+        int cur_count = 0;
+
+        while (last_count < k) {
+            for (Map.Entry<String, Long> entry : m.entrySet()) {
+                long cv = entry.getValue();
+                if (cv == cur_max) {
+                    cur_count++;
+                    continue;
+                }
+
+                if (cv > cur_max) {
+                    if (cv < last_max) {
+                        cur_count = 1;
+                        cur_max = cv;
+                    }
+                }
+            }
+            last_max = cur_max;
+            last_count += cur_count;
+            cur_max = 0;
+            cur_count = 0;
+        }
+
+        return last_max;
     }
 
     /**
@@ -1143,7 +1241,26 @@ public class PbftReplica extends LeaderBasedProtocolReplica {
      * Send a pre-prepare with a null request if the system is idle
      */
     private void send_null() {
-        throw new UnsupportedOperationException("send_null() not implemented");
+        if (!primary().equals(id())) {
+            throw new IllegalStateException("Non-primary called send_null");
+        }
+
+        long max_rec_point = config.getMAX_OUT() + (max_rec_n + config.getCHECKPOINT_INTERVAL() - 1) / config.getCHECKPOINT_INTERVAL() * config.getCHECKPOINT_INTERVAL();
+
+        if (max_rec_n != 0 && max_rec_point > last_stable && has_new_view()) {
+            if (rqueue.size() == 0 && seqno <= last_executed && seqno + 1 <= config.getMAX_OUT() + last_stable) {
+                seqno++;
+                ReqQueue empty = new ReqQueue(this);
+                PrePrepareMessage pp = new PrePrepareMessage(view(), seqno, empty);
+                this.broadcastMessageIncludingSelf(pp);
+                plog.fetch(seqno).add_mine(pp);
+            }
+        }
+        ntimer.restart();
+
+        // TODO: backups should force view change if primary does not send null requests
+        // to allow recoveries ot complete
+
     }
 
     /**
@@ -1331,6 +1448,37 @@ public class PbftReplica extends LeaderBasedProtocolReplica {
      * Calls the Node's send_new_key, adjusts timer and cleans up stale messages.
      */
     private void send_new_key() {
+        /* From Node.cc */
+        // Multicast new key to all replicas
+        last_new_key = new NewKeyMessage(this);
+        this.broadcastMessageIncludingSelf(last_new_key);
+
+        // Stop timer if not expired and then restart it
+        atimer.stop();
+        atimer.restart();
+
+        /* From Replica.cc */
+        // Cleanup messages in incomplete certificates that are authenticated with the old keys
+        long max = last_stable + config.getMAX_OUT();
+        long min = last_stable + 1;
+        for (long n = min; n < max; n++) {
+            if (n % config.getCHECKPOINT_INTERVAL() == 0) {
+                elog.fetch(n).mark_stale();
+            }
+        }
+
+        if (last_executed > last_stable) {
+            min = last_executed + 1;
+        }
+
+        for (long n = min; n <= max; n++) {
+            plog.fetch(n).mark_stale();
+            clog.fetch(n).mark_stale();
+        }
+
+        vi.markStale();
+        state.mark_stale();
+
         throw new UnsupportedOperationException("send_new_key() not implemented");
     }
 
@@ -1429,20 +1577,34 @@ public class PbftReplica extends LeaderBasedProtocolReplica {
      * Enables receipt of messages sent to replica group
      */
     private void join_mcast_group() {
-        throw new UnsupportedOperationException("join_mcast_group() not implemented");
+        // FIXME: Not implemented (lack of support on the framework)
+        log.log(Level.SEVERE, "join_mcast_group() not implemented");
     }
 
     /**
      * Disables receipt of messages sent to replica group
      */
     private void leave_mcast_group() {
-        throw new UnsupportedOperationException("leave_mcast_group() not implemented");
+        // FIXME: Not implemented (lack of support on the framework)
+        log.log(Level.SEVERE, "leave_mcast_group() not implemented");
     }
 
     /**
      * Ends recovery if all the conditions are satisfied
      */
     private void try_end_recovery() {
+        if (recovering && last_stable >= recovery_point && !state.in_check_state() && rr_reps.is_complete()) {
+            // Done with recovery.
+            // END_REC_STATS();
+            // TODO: join_mcast_group()
+            recovering = false;
+
+            // Execute any buffered read-only requests
+            for (Optional<RequestMessage> m = ro_rqueue.remove(); m.isPresent(); m = ro_rqueue.remove()) {
+                execute_read_only(m.get());
+            }
+        }
+
         throw new UnsupportedOperationException("try_end_recovery() not implemented");
     }
 
@@ -1522,8 +1684,12 @@ public class PbftReplica extends LeaderBasedProtocolReplica {
         return ++cur_rid;
     }
 
+    /**
+     * Computes a new timestamp for rid
+     */
     public void new_tstamp() {
-        throw new UnsupportedOperationException("new_tstamp() not implemented");
+        Instant t = getCurrentTime();
+        cur_rid = t.toEpochMilli();
     }
 
     /**
@@ -1821,6 +1987,7 @@ public class PbftReplica extends LeaderBasedProtocolReplica {
         if (config.NO_STATE_TRANSLATION()) {
             throw new AssertionError("Only available in BASE");
         }
+
         throw new UnsupportedOperationException("get_cached_obj() not implemented");
     }
 

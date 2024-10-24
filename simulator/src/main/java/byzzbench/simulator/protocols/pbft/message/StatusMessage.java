@@ -3,6 +3,7 @@ package byzzbench.simulator.protocols.pbft.message;
 import byzzbench.simulator.protocols.pbft.CertifiableMessage;
 import byzzbench.simulator.protocols.pbft.PbftReplica;
 import byzzbench.simulator.transport.MessagePayload;
+import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.With;
@@ -15,6 +16,7 @@ import java.util.BitSet;
 @Data
 @EqualsAndHashCode(callSuper = true)
 @With
+@AllArgsConstructor
 public class StatusMessage extends MessagePayload implements CertifiableMessage {
     public static final String TYPE = "Status";
 

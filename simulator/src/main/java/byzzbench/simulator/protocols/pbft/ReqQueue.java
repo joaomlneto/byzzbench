@@ -46,14 +46,14 @@ public class ReqQueue {
      * @return true if the request was appended, false otherwise
      */
     public boolean append(RequestMessage r) {
-        String cid = r.getClientId();
-        long rid = r.getRequestId();
+        String cid = r.getCid();
+        long rid = r.getRid();
         PNode cn = this.get(cid);
 
         // Check if there is a request from the same client in the queue
         if (cn.r != null) {
             // There is a request from cid in reqs.
-            if (rid > cn.r.getRequestId()) {
+            if (rid > cn.r.getRid()) {
                 // The request in reqs is older than r so remove it.
                 // rid > cn.r->request_id()
                 this.remove(cid, rid);
@@ -104,7 +104,7 @@ public class ReqQueue {
     public boolean remove(String cid, long rid) {
         boolean ret = false;
         PNode cn = this.get(cid);
-        if (cn.r != null && cn.r.getRequestId() <= rid) {
+        if (cn.r != null && cn.r.getRid() <= rid) {
             cn.r = null;
 
             // if the first request in the queue is removed

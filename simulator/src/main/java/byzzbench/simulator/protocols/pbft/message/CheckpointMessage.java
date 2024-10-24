@@ -5,6 +5,7 @@ import byzzbench.simulator.protocols.pbft.Digest;
 import byzzbench.simulator.protocols.pbft.IdentifiableObject;
 import byzzbench.simulator.protocols.pbft.PbftReplica;
 import byzzbench.simulator.transport.MessagePayload;
+import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.With;
@@ -15,6 +16,7 @@ import lombok.With;
 @Data
 @EqualsAndHashCode(callSuper = true)
 @With
+@AllArgsConstructor
 public class CheckpointMessage extends MessagePayload implements CertifiableMessage, IdentifiableObject {
     public static final String TYPE = "Checkpoint";
     /**

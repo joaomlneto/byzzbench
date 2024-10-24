@@ -3,15 +3,21 @@ package byzzbench.simulator.protocols.pbft;
 import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 
+import java.io.Serializable;
+
 /**
  * A digest of a request
  */
 @Getter
-public class Digest implements Comparable<Digest> {
+public class Digest implements Serializable, Comparable<Digest> {
     private final byte[] value;
 
     public Digest(byte[] value) {
         this.value = value;
+    }
+
+    public Digest(String value) {
+        this.value = value.getBytes();
     }
 
     @Override
