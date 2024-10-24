@@ -7,7 +7,7 @@ import java.util.*;
  * A Certificate is a set of "matching" messages from different replicas.
  * The implementation assumes "correct > 0" and "complete > correct".
  */
-public abstract class Certificate<T extends CertifiableMessage> implements SeqNumLog.SeqNumLogEntry {
+public class Certificate<T extends CertifiableMessage> implements SeqNumLog.SeqNumLogEntry {
     /**
      * The parent replica object.
      */

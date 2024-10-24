@@ -268,9 +268,9 @@ public class PbftReplica extends LeaderBasedProtocolReplica {
         // TODO: set config_priv
         // TODO: set port -- not required in byzzbench!
 
-        this.plog = new SeqNumLog<>(config.getMAX_OUT());
-        this.clog = new SeqNumLog<>(config.getMAX_OUT());
-        this.elog = new SeqNumLog<>(config.getMAX_OUT() * 2);
+        this.plog = new SeqNumLog<>(config.getMAX_OUT(), () -> new PreparedCertificate(PbftReplica.this));
+        this.clog = new SeqNumLog<>(config.getMAX_OUT(), () -> new Certificate<>(PbftReplica.this));
+        this.elog = new SeqNumLog<>(config.getMAX_OUT() * 2, () -> new Certificate<>(PbftReplica.this));
         this.sset = new IdentifiableObjectsSet<>(nodeIds);
 
         // TODO: replies should have a size of num_principals in BASE, (mem, num_principals) in BFT

@@ -1,6 +1,7 @@
 package byzzbench.simulator.protocols.pbft;
 
 import java.io.Serializable;
+import java.util.function.Supplier;
 
 /**
  * Log of T ordered by sequence number.
@@ -19,8 +20,11 @@ public class SeqNumLog<T extends SeqNumLog.SeqNumLogEntry> implements Serializab
      * @param sz the size of the log
      * @param h  the head of the log
      */
-    public SeqNumLog(int sz, long h) {
-        elems = (T[]) new SeqNumLogEntry[sz];
+    public SeqNumLog(int sz, long h, Supplier<T> supplier) {
+        elems = (T[]) new SeqNumLog.SeqNumLogEntry[sz];
+        for (int i = 0; i < sz; i++) {
+            elems[i] = supplier.get();
+        }
         head = h;
         max_size = sz;
     }
@@ -30,8 +34,8 @@ public class SeqNumLog<T extends SeqNumLog.SeqNumLogEntry> implements Serializab
      *
      * @param sz the size of the log
      */
-    public SeqNumLog(int sz) {
-        this(sz, 1);
+    public SeqNumLog(int sz, Supplier<T> supplier) {
+        this(sz, 1, supplier);
     }
 
     /**
