@@ -10,6 +10,7 @@ import lombok.Getter;
 import lombok.extern.java.Log;
 
 import java.io.Serializable;
+import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
@@ -17,7 +18,7 @@ import java.util.stream.Collectors;
 @Log
 @Getter
 public class FastHotStuffReplica extends LeaderBasedProtocolReplica {
-    public static final int TIMEOUT_DELAY = 15000; // 15 seconds
+    public static final Duration TIMEOUT_DELAY = Duration.ofSeconds(15);
 
     private final AtomicLong round = new AtomicLong(3);
     private final AtomicLong lastVotedRound = new AtomicLong(2);
@@ -249,7 +250,7 @@ public class FastHotStuffReplica extends LeaderBasedProtocolReplica {
 
     public void resetTimeout() {
         this.clearAllTimeouts();
-        this.setTimeout(this::handleTimeout, TIMEOUT_DELAY);
+        this.setTimeout("Timeout", this::handleTimeout, TIMEOUT_DELAY);
     }
 
 

@@ -1,6 +1,7 @@
 package byzzbench.simulator.protocols.XRPL;
 
 import byzzbench.simulator.Replica;
+import byzzbench.simulator.Timekeeper;
 import byzzbench.simulator.protocols.XRPL.messages.XRPLProposeMessage;
 import byzzbench.simulator.protocols.XRPL.messages.XRPLSubmitMessage;
 import byzzbench.simulator.protocols.XRPL.messages.XRPLTxMessage;
@@ -11,6 +12,7 @@ import byzzbench.simulator.transport.Transport;
 import lombok.Getter;
 
 import java.io.Serializable;
+import java.time.Duration;
 import java.util.*;
 import java.util.Map.Entry;
 
@@ -32,8 +34,8 @@ public class XRPLReplica extends Replica {
     private @Getter XRPLConsensusResult result;
     private @Getter SortedMap<String, XRPLLedger> validations; //map of last validated ledgers indexed on nodeId
 
-    protected XRPLReplica(String nodeId, SortedSet<String> nodeIds, Transport transport, List<String> UNL, XRPLLedger prevLedger_) {
-        super(nodeId, nodeIds, transport, new TotalOrderCommitLog());
+    protected XRPLReplica(String nodeId, SortedSet<String> nodeIds, Transport transport, Timekeeper timekeeper, List<String> UNL, XRPLLedger prevLedger_) {
+        super(nodeId, nodeIds, transport, timekeeper, new TotalOrderCommitLog());
         this.ourUNL = UNL;
         this.result = new XRPLConsensusResult();
         this.state = null;  //set to open with first heartbeat
@@ -169,7 +171,7 @@ public class XRPLReplica extends Replica {
         if (this.state == XRPLReplicaState.ACCEPT) {
             //Nothing to do if we are validating a ledger
             Runnable r = new XRPLHeartbeatRunnable(this);
-            this.setTimeout(r, 5000);
+            this.setTimeout("Heartbeat Timeout", r, Duration.ofSeconds(5));
             return;
         }
 
@@ -185,7 +187,7 @@ public class XRPLReplica extends Replica {
         if (this.state == null) {
             startConsensus();
             Runnable r = new XRPLHeartbeatRunnable(this);
-            this.setTimeout(r, 5000);
+            this.setTimeout("Heartbeat Timeout", r, Duration.ofSeconds(5));
             return;
         }
         switch (this.state) {
@@ -210,7 +212,7 @@ public class XRPLReplica extends Replica {
 
         }
         Runnable r = new XRPLHeartbeatRunnable(this);
-        this.setTimeout(r, 5000);
+        this.setTimeout("Heartbeat Timeout", r, Duration.ofSeconds(5));
 
     }
 
@@ -304,7 +306,7 @@ public class XRPLReplica extends Replica {
             total += 1;
         }
 
-        for ( Entry<String, XRPLProposal> entry : this.currPeerProposals.entrySet()) {
+        for (Entry<String, XRPLProposal> entry : this.currPeerProposals.entrySet()) {
             if (entry.getValue().isTxListEqual(this.result.getTxList())) {
                 agree += 1;
             }
@@ -389,7 +391,7 @@ public class XRPLReplica extends Replica {
         } else {
             for (XRPLLedgerTreeNode tmp : n.getChildren()) {
                 XRPLLedgerTreeNode tmp2 = findInTree(ledgerHash, tmp);
-                if ( tmp2 != null) return tmp2;
+                if (tmp2 != null) return tmp2;
             }
             return null;
         }
@@ -437,7 +439,7 @@ public class XRPLReplica extends Replica {
         XRPLLedgerTreeNode ret = null;
         for (XRPLLedgerTreeNode child : node.getChildren()) {
             int curr = support(child.getLedger().getId());
-            if ( curr > max) {
+            if (curr > max) {
                 ret = child;
                 max = curr;
             }
@@ -452,7 +454,7 @@ public class XRPLReplica extends Replica {
         for (XRPLLedgerTreeNode child : node.getChildren()) {
             if (!child.getLedger().getId().equals(actualMax.getLedger().getId())) {
                 int curr = support(child.getLedger().getId());
-                if ( curr > max) {
+                if (curr > max) {
                     ret = child;
                     max = curr;
                 }
