@@ -11,7 +11,7 @@ public class Certificate<T extends CertifiableMessage> implements SeqNumLog.SeqN
     /**
      * The parent replica object.
      */
-    private final PbftReplica replica;
+    protected final PbftReplica replica;
 
     /**
      * Certificate is complete if "num_correct() >= complete"
@@ -27,7 +27,7 @@ public class Certificate<T extends CertifiableMessage> implements SeqNumLog.SeqN
     /**
      * The distinct message values in this certificate.
      */
-    private final List<T> vals = new LinkedList<>();
+    private final List<MessageVal<T>> vals = new LinkedList<>();
 
     /**
      * Maximum number of elements in vals, f+1
@@ -42,7 +42,7 @@ public class Certificate<T extends CertifiableMessage> implements SeqNumLog.SeqN
     /**
      * Correct certificate value, if known.
      */
-    private final MessageVal<T> c = new MessageVal<>();
+    private MessageVal<T> c = new MessageVal<>();
 
     /**
      * My message in this, or null if I have no message in this
@@ -118,7 +118,7 @@ public class Certificate<T extends CertifiableMessage> implements SeqNumLog.SeqN
      * @return the correct message value for this certificate or 0 if this value is not known
      */
     public T cvalue() {
-        throw new UnsupportedOperationException("Not implemented");
+        return c != null ? c.m : null;
     }
 
     /**
@@ -138,7 +138,7 @@ public class Certificate<T extends CertifiableMessage> implements SeqNumLog.SeqN
      * @return the number of messages with the correct value in this
      */
     public int num_correct() {
-        throw new UnsupportedOperationException("Not implemented");
+        return c != null ? c.count : 0;
     }
 
     /**
@@ -147,28 +147,58 @@ public class Certificate<T extends CertifiableMessage> implements SeqNumLog.SeqN
      * @return true iff the certificate is complete
      */
     public boolean is_complete() {
-        throw new UnsupportedOperationException("Not implemented");
+        return num_correct() >= complete;
     }
 
     /**
      * If cvalue() is not null, makes the certificate complete.
      */
     public void make_complete() {
-        throw new UnsupportedOperationException("Not implemented");
+        if (c != null) {
+            c.count = complete;
+        }
     }
 
     /**
      * Discards all messages in certificate except mine.
      */
     public void mark_stale() {
-        throw new UnsupportedOperationException("Not implemented");
+        if (!is_complete()) {
+            int i = 0;
+            int old_cur_size = vals.size();
+            if (mym != null) {
+                if (!(mym.equals(c.m))) {
+                    throw new IllegalStateException("Broken invariant");
+                }
+                c.m = null;
+                c.count = 0;
+                c = vals.get(0); // FIXME: might be wrong?!?
+                c.m = mym;
+                c.count = 1;
+                i = 1;
+            } else {
+                c = null;
+            }
+            //cur_size = i; // FIXME: this should be automatically updated by the List
+
+            for (; i < old_cur_size; i++) {
+                vals.get(i).clear();
+            }
+            bmap.clear();
+        }
     }
 
     /**
      * Discards all messages in certificate.
      */
     public void clear() {
-        throw new UnsupportedOperationException("Not implemented");
+        for (MessageVal<T> val : vals) {
+            val.clear();
+        }
+        bmap.clear();
+        c = null;
+        mym = null;
+        t_sent = null;
     }
 
     /**
@@ -177,7 +207,7 @@ public class Certificate<T extends CertifiableMessage> implements SeqNumLog.SeqN
      * @return true iff the certificate is empty
      */
     public boolean is_empty() {
-        throw new UnsupportedOperationException("Not implemented");
+        return bmap.isEmpty();
     }
 
     /**

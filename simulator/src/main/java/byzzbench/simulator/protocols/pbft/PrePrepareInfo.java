@@ -60,7 +60,7 @@ public class PrePrepareInfo {
      * @param rd the digest of the big request
      * @param i  the index of the reference
      */
-    public void add(Digest rd, int i) {
+    public void add(Digest rd, long i) {
         throw new UnsupportedOperationException("Not implemented");
     }
 

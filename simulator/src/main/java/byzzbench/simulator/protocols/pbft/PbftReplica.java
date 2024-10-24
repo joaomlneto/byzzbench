@@ -1208,7 +1208,7 @@ public class PbftReplica extends LeaderBasedProtocolReplica {
             PrepareMessage p = new PrepareMessage(this, v, pp.seqno(), pp.getDigest());
             // FIXME: check if also need to include self
             this.broadcastMessageIncludingSelf(p);
-            pc.addMine(p);
+            pc.add_mine(p);
         }
     }
 

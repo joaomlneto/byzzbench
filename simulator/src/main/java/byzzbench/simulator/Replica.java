@@ -266,7 +266,7 @@ public abstract class Replica implements Serializable {
     /**
      * Get the current time from the timekeeper.
      */
-    protected Instant getCurrentTime() {
+    public Instant getCurrentTime() {
         return this.timekeeper.getTime(this);
     }
 
