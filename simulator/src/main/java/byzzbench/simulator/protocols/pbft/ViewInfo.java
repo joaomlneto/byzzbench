@@ -1,27 +1,59 @@
 package byzzbench.simulator.protocols.pbft;
 
 import byzzbench.simulator.protocols.pbft.message.*;
+import lombok.Data;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
+import java.time.Instant;
+import java.util.*;
 
 /**
  * Holds information for the PBFT view-change protocol
  */
 public class ViewInfo {
     /**
+     * The parent replica object
+     */
+    private final PbftReplica replica;
+
+    /**
      * View number (v)
      */
     private final long v;
-
+    /**
+     * View-change messages with the highest view number "vn" for each
+     * replica such that "vn >= v" and there is no new-view message for
+     * "vn". It is indexed by replica ID.
+     */
+    private final SortedMap<String, ViewChange> last_vcs = new TreeMap<>();
+    /**
+     * Highest view numbers in view-changes received from each replica.
+     * It is indexed by replica id.
+     */
+    private final SortedMap<String, Long> last_views = new TreeMap();
+    /**
+     * Log of pre-prepare/prepare messages corresponding to requests that
+     * prepared or pre-prepared in previous views
+     */
+    private final SeqNumLog<OReqInfo> oplog;
+    /**
+     * View-change acks sent in the current view by this replica
+     */
+    private final List<ViewChangeAcknowledgementMessage> my_vacks = new ArrayList<>();
+    /**
+     * Buffered acknowledgements from other replica
+     */
+    private final List<VCAInfo> vacks = new ArrayList<>();
+    /**
+     * New-view messages with the highest view number "vn" for each replica (such that "vn >= v")
+     * and associated view-change messages. It is indexed by replica ID.
+     */
+    private final SortedMap<String, NVInfo> last_nvs = new TreeMap<>();
+    /**
+     * Time at which my view-change was last sent
+     */
+    private Instant vc_sent;
     /**
      * Last sequence number known to be stable
-     */
-    private final String id;
-
-    /**
-     * Last stable checkpoint
      */
     private long last_stable;
 
@@ -29,12 +61,13 @@ public class ViewInfo {
     /**
      * Constructor for the ViewInfo class
      *
-     * @param id replica ID
-     * @param v  view number
+     * @param replica replica
+     * @param v       view number
      */
-    public ViewInfo(String id, long v) {
+    public ViewInfo(PbftReplica replica, long v) {
+        this.replica = replica;
         this.v = v;
-        this.id = id;
+        this.oplog = new SeqNumLog<>(replica.getConfig().getMAX_OUT(), OReqInfo::new);
     }
 
     /**
@@ -254,6 +287,10 @@ public class ViewInfo {
      * view-change messages sent by this or complete new-view messages.
      */
     public void markStale() {
+        for (int i = 0; i < this.replica.n(); i++) {
+
+        }
+
         throw new UnsupportedOperationException("Not implemented");
     }
 
@@ -357,6 +394,10 @@ public class ViewInfo {
         throw new UnsupportedOperationException("Not implemented");
     }
 
+    /**
+     * ODigestInfo holds the view and digest of a request that was prepared
+     */
+    @Data
     private class ODigestInfo {
         private final long v = -1;
         private Digest d;
@@ -381,14 +422,32 @@ public class ViewInfo {
      * - no request prepared globally with sequence number "n" in any view
      * "v' <= lv".
      */
-    private class OReqInfo {
-        long lv;
-        long v;
-        Digest d;
-        List<PrePrepareMessage> m = new ArrayList<>();
-        List<ODigestInfo> ods = new ArrayList<>();
+    @Data
+    private class OReqInfo implements SeqNumLog.SeqNumLogEntry {
+        private long lv;
+        private long v;
+        private Digest d;
+        private List<PrePrepareMessage> m = new ArrayList<>();
+        private List<ODigestInfo> ods = new ArrayList<>();
 
         public void clear() {
+            throw new UnsupportedOperationException("Not implemented");
+        }
+    }
+
+    /**
+     * Acknowledgements from other replicas
+     */
+    @Data
+    private class VCAInfo {
+        private long v;
+        private List<ViewChangeAcknowledgementMessage> vacks = new ArrayList<>();
+
+        public VCAInfo() {
+            throw new UnsupportedOperationException("Not implemented");
+        }
+
+        void clear() {
             throw new UnsupportedOperationException("Not implemented");
         }
     }

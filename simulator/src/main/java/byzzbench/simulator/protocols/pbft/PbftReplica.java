@@ -277,7 +277,7 @@ public class PbftReplica extends LeaderBasedProtocolReplica {
 
         // TODO: state!
 
-        this.vi = new ViewInfo(nodeId, 0);
+        this.vi = new ViewInfo(this, 0);
         // TODO: this.n_mem_blocks = num_objs; // constructor argument; BASE-only
 
         this.seqno = 0;

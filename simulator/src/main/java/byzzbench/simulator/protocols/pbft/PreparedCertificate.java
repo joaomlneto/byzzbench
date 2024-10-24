@@ -9,6 +9,10 @@ import java.util.Optional;
 
 public class PreparedCertificate extends Certificate<CertifiableMessage> implements SeqNumLog.SeqNumLogEntry {
     /**
+     * Prepare certificate
+     */
+    private final Certificate<PrepareMessage> pc;
+    /**
      * Pre-prepare info
      */
     PrePrepareInfo pi;
@@ -20,16 +24,13 @@ public class PreparedCertificate extends Certificate<CertifiableMessage> impleme
      * True iff pp was added with add_mine
      */
     boolean primary;
-    /**
-     * Prepare certificate
-     */
-    private Certificate<PrepareMessage> pc;
 
     /**
      * Creates an empty prepared certificate.
      */
     public PreparedCertificate(PbftReplica replica) {
         super(replica);
+        this.pc = new Certificate<>(replica, replica.f() * 2);
     }
 
     /**
@@ -157,8 +158,7 @@ public class PreparedCertificate extends Certificate<CertifiableMessage> impleme
      * @return number of prepares in certificate that are known to be correct
      */
     public int num_correct() {
-        // FIXME: THERE IS ALREADY A METHOD IN SUPER()!
-        throw new UnsupportedOperationException("Not implemented");
+        return pc.num_correct();
     }
 
     /**
@@ -167,7 +167,7 @@ public class PreparedCertificate extends Certificate<CertifiableMessage> impleme
      * @return true iff the pre-prepare-info is complete, false otherwise
      */
     public boolean is_pp_complete() {
-        throw new UnsupportedOperationException("Not implemented");
+        return pi.is_complete();
     }
 
     /**
