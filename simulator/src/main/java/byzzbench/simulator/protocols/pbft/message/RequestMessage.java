@@ -8,6 +8,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.With;
+import lombok.extern.java.Log;
 
 import java.io.Serializable;
 
@@ -24,6 +25,7 @@ import java.io.Serializable;
 @Data
 @EqualsAndHashCode(callSuper = true)
 @With
+@Log
 @AllArgsConstructor
 public class RequestMessage extends MessagePayload {
     public static final String TYPE = "Request";
@@ -179,12 +181,8 @@ public class RequestMessage extends MessagePayload {
      * @return true if the message is properly authenticated, false otherwise.
      */
     public boolean verify(PbftReplica node) {
-        String nid = node.getNodeId();
-        String cid = this.cid;
-        Principal p = node.getPrincipal(cid);
-        Digest d; // digest
-
-        throw new UnsupportedOperationException("Not implemented");
+        log.severe("RequestMessage::verify(): Not implemented");
+        return true;
     }
 
     public Digest computeDigest() {

@@ -68,6 +68,7 @@ public abstract class Replica implements Serializable {
     /**
      * The timekeeper for the scenario.
      */
+    @JsonIgnore
     private final transient Timekeeper timekeeper;
 
     /**

@@ -48,7 +48,7 @@ public class RepInfo implements Serializable {
      * @return the timestamp
      */
     public long req_id(String pid) {
-        throw new UnsupportedOperationException("Not implemented");
+        return reps.get(pid).request_id();
     }
 
     /**

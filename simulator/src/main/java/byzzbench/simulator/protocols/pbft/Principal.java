@@ -1,11 +1,16 @@
 package byzzbench.simulator.protocols.pbft;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import lombok.Getter;
+
+import java.io.Serializable;
 import java.time.Instant;
 
 /**
  * Principal class.
  */
-public class Principal {
+@Getter
+public class Principal implements Serializable {
     /**
      * Principal identifier.
      */
@@ -19,27 +24,33 @@ public class Principal {
     /**
      * Signature size.
      */
+    @JsonIgnore
     private final int ssize;
 
     /**
      * last timestamp in a new-key message from this principal.
      */
+    @JsonIgnore
     private long tstamp;
     /**
      * Session key for outgoing messages to this principal.
      */
+    @JsonIgnore
     private int[] kout;
     /**
      * My timestamp.
      */
+    @JsonIgnore
     private Instant my_tstamp;
     /**
      * Session key for incoming messages from this principal.
      */
+    @JsonIgnore
     private int[] kin;
     /**
      * Last request identifier in a fetch message from this principal.
      */
+    @JsonIgnore
     private long last_fetch;
 
     /**

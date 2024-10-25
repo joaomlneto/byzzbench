@@ -62,6 +62,8 @@ public class NewKeyMessage extends MessagePayload {
     }
 
     public boolean verify() {
-        throw new UnsupportedOperationException("Not implemented");
+        log.severe("NewKeyMessage::verify(): Not implemented");
+        return true;
+        //throw new UnsupportedOperationException("Not implemented");
     }
 }
