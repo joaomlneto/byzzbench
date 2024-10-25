@@ -24,6 +24,25 @@ public class State implements Serializable {
      * Number of levels in the partition tree
      */
     public final static int PLevels = 4;
+    /**
+     * Number of children for non-leaf partitions
+     */
+    public final static int PChildren = 256;
+
+    /**
+     * Number of siblings at each level
+     */
+    public final static int[] PSize = {1, PChildren, PChildren, PChildren};
+
+    /**
+     * Number of partitions at each level
+     */
+    public final static int[] PLevelSize = {1, PChildren, PChildren * PChildren, PChildren * PChildren * PChildren};
+
+    /**
+     * Number of blocks in a partition at each level
+     */
+    public final static int[] PBlocks = {PChildren * PChildren * PChildren, PChildren * PChildren, PChildren, 1};
 
     /**
      * Actual memory holding current state and the number of Blocks in that memory
@@ -57,10 +76,6 @@ public class State implements Serializable {
      */
     private final SeqNumLog<CheckpointRec> clog;
     /**
-     * Sequence number of the last checkpoint
-     */
-    private final long lc;
-    /**
      * True iff replica is fetching missing state
      */
     private final boolean fetching;
@@ -90,6 +105,10 @@ public class State implements Serializable {
      * Queue of out-of-date partitions for each level
      */
     private final List<FPart> stalep = new ArrayList<>();
+    /**
+     * Sequence number of the last checkpoint
+     */
+    private long lc;
     /**
      * Tree of sums of digests of subpartitions.
      */
@@ -194,7 +213,7 @@ public class State implements Serializable {
         Digest d = new Digest("");
 
         cowb.clear();
-        clog.fetch(0).clear();
+        //clog.fetch(0).clear(); // FIXME: not sure about this
         checkpoint(0);
     }
 
@@ -265,7 +284,18 @@ public class State implements Serializable {
      * @param n sequence number of last checkpoint
      */
     private void update_ptree(long n) {
-        throw new UnsupportedOperationException("Not implemented");
+        log.severe("update_ptree(): not implemented");
+        /*
+        BitSet[] mods = new BitSet[PLevels];
+        for (int l = 0; l < PLevels - 1; l++) {
+            mods[l] = new BitSet(PLevelSize[l]);
+        }
+        mods[PLevels - 1] = cowb;
+
+
+        //CheckpointRec cr = clog.fetch(lc);
+
+        throw new UnsupportedOperationException("Not implemented");*/
     }
 
     /**
@@ -496,7 +526,13 @@ public class State implements Serializable {
      * @param seqno sequence number of checkpoint
      */
     public void checkpoint(long seqno) {
-        throw new UnsupportedOperationException("Not implemented");
+        update_ptree(seqno);
+
+        this.lc = seqno;
+        CheckpointRec nr = clog.fetch(seqno);
+        nr.sd = new Digest(""); // TODO: Digests not implemented
+
+        this.cowb.clear();
     }
 
     /**
@@ -567,6 +603,11 @@ public class State implements Serializable {
          * FIXME: The key type may be wrong!!
          */
         private final SortedMap<String, Part> parts = new TreeMap<>();
+
+        /**
+         * State digest at time the checkpoint is taken
+         */
+        private Digest sd;
 
         /**
          * Deletes all parts in record and removes them

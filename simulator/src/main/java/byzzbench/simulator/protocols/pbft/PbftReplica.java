@@ -306,8 +306,14 @@ public class PbftReplica extends LeaderBasedProtocolReplica {
 
         // TODO: Create timers and randomize times to avoid collisions.
         // srand48(getpid());
-        this.vtimer = null; // FIXME
-        this.stimer = null; // FIXME
+        // FIXME: The duration should be (vt + rand()) % 100
+        this.vtimer = new Timer(this, "View Change Timer", Duration.ofSeconds(1), () -> {
+            throw new UnsupportedOperationException("View change timeout not implemented");
+        });
+        // FIXME: The duration should be (st + rand()) % 100
+        this.stimer = new Timer(this, "Status Timer", Duration.ofSeconds(1), () -> {
+            throw new UnsupportedOperationException("Status timeout not implemented");
+        });
 
         // Skew recoveries. It is important for nodes to recover in the reverse order
         // of their node ids to avoid a view-change every recovery which would degrade
@@ -316,7 +322,10 @@ public class PbftReplica extends LeaderBasedProtocolReplica {
         this.rec_ready = false;
         //this.rtimer.start() // FIXME
 
-        this.ntimer = null; // FIXME
+        // FIXME: should remove this one - no need for it on ByzzBench
+        this.ntimer = new Timer(this, "Null Request Timer", Duration.ofMillis(30000 / config.getMAX_OUT()), () -> {
+            throw new UnsupportedOperationException("Null request timeout not implemented");
+        });
 
         this.recovering = false;
         this.qs = null;
@@ -355,7 +364,8 @@ public class PbftReplica extends LeaderBasedProtocolReplica {
         this.send_new_key();
 
         // Compute digest of initial state and first checkpoint.
-        this.state.compute_full_digest();
+        // FIXME: UNCOMMENT THIS!
+        //this.state.compute_full_digest();
 
         // Start status and authentication freshness timers
         this.stimer.start();
