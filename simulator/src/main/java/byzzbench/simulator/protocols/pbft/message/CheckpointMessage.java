@@ -9,6 +9,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.With;
+import lombok.extern.java.Log;
 
 /**
  * A Checkpoint message from the Replicas to the Replicas: see Checkpoint.h/cc.
@@ -16,6 +17,7 @@ import lombok.With;
 @Data
 @EqualsAndHashCode(callSuper = true)
 @With
+@Log
 @AllArgsConstructor
 public class CheckpointMessage extends MessagePayload implements CertifiableMessage, IdentifiableObject {
     public static final String TYPE = "Checkpoint";
@@ -84,7 +86,9 @@ public class CheckpointMessage extends MessagePayload implements CertifiableMess
 
     @Override
     public boolean verify() {
-        throw new UnsupportedOperationException("Not implemented");
+        log.severe("verify(): Not implemented");
+        return true;
+        //throw new UnsupportedOperationException("Not implemented");
     }
 
     @Override

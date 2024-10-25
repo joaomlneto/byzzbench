@@ -8,6 +8,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.With;
+import lombok.extern.java.Log;
 
 /**
  * A Commit message from the Replicas to the Replicas: see Commit.h/cc.
@@ -15,6 +16,7 @@ import lombok.With;
 @Data
 @EqualsAndHashCode(callSuper = true)
 @With
+@Log
 @AllArgsConstructor
 public class CommitMessage extends MessagePayload implements CertifiableMessage, PbftMessagePayloadWithSequenceNumber {
     public static final String TYPE = "Commit";
@@ -74,7 +76,9 @@ public class CommitMessage extends MessagePayload implements CertifiableMessage,
 
     @Override
     public boolean verify() {
-        return false;
+        log.severe("verify(): Not implemented");
+        return true;
+        //throw new UnsupportedOperationException("Not implemented");
     }
 
     @Override

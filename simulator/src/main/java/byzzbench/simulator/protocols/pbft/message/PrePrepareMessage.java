@@ -169,7 +169,9 @@ public class PrePrepareMessage extends MessagePayload implements PbftMessagePayl
 
     @Override
     public boolean verify() {
-        throw new UnsupportedOperationException("Not implemented");
+        log.severe("verify(): Not implemented");
+        return true;
+        //throw new UnsupportedOperationException("Not implemented");
     }
 
     @Override

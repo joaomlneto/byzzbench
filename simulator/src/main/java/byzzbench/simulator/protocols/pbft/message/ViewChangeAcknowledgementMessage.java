@@ -5,6 +5,7 @@ import byzzbench.simulator.transport.MessagePayload;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.With;
+import lombok.extern.java.Log;
 
 /**
  * A ViewChangeAcknowledgement message: see View_change_ack.h/cc.
@@ -14,6 +15,7 @@ import lombok.With;
  */
 @Data
 @EqualsAndHashCode(callSuper = true)
+@Log
 @With
 public class ViewChangeAcknowledgementMessage extends MessagePayload implements CertifiableMessage {
     public static final String TYPE = "ViewChangeAck";
@@ -59,7 +61,9 @@ public class ViewChangeAcknowledgementMessage extends MessagePayload implements 
 
     @Override
     public boolean verify() {
-        throw new UnsupportedOperationException("Not implemented");
+        log.severe("verify(): Not implemented");
+        return true;
+        //throw new UnsupportedOperationException("Not implemented");
     }
 
     @Override

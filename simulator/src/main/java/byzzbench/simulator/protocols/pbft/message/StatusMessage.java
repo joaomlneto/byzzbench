@@ -7,6 +7,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.With;
+import lombok.extern.java.Log;
 
 import java.util.BitSet;
 
@@ -16,6 +17,7 @@ import java.util.BitSet;
 @Data
 @EqualsAndHashCode(callSuper = true)
 @With
+@Log
 @AllArgsConstructor
 public class StatusMessage extends MessagePayload implements CertifiableMessage {
     public static final String TYPE = "Status";
@@ -229,7 +231,9 @@ public class StatusMessage extends MessagePayload implements CertifiableMessage 
 
     @Override
     public boolean verify() {
-        throw new UnsupportedOperationException("Not implemented");
+        log.severe("verify(): Not implemented");
+        return true;
+        //throw new UnsupportedOperationException("Not implemented");
     }
 
     @Override

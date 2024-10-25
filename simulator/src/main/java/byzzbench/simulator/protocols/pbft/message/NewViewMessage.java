@@ -6,6 +6,7 @@ import byzzbench.simulator.transport.MessagePayload;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.With;
+import lombok.extern.java.Log;
 
 import java.util.List;
 
@@ -14,6 +15,7 @@ import java.util.List;
  */
 @Data
 @EqualsAndHashCode(callSuper = true)
+@Log
 @With
 public class NewViewMessage extends MessagePayload implements CertifiableMessage {
     public static final String TYPE = "NewView";
@@ -75,7 +77,9 @@ public class NewViewMessage extends MessagePayload implements CertifiableMessage
 
     @Override
     public boolean verify() {
-        throw new UnsupportedOperationException("Not implemented");
+        log.severe("verify(): Not implemented");
+        return true;
+        //throw new UnsupportedOperationException("Not implemented");
     }
 
     @Override

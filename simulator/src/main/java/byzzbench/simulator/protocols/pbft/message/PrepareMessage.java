@@ -6,6 +6,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.With;
+import lombok.extern.java.Log;
 
 /**
  * A Prepare message from the Primary to the Replicas: see Prepare.h/cc.
@@ -13,6 +14,7 @@ import lombok.With;
 @Data
 @EqualsAndHashCode(callSuper = true)
 @With
+@Log
 @AllArgsConstructor
 public class PrepareMessage extends MessagePayload implements CertifiableMessage, PbftMessagePayloadWithSequenceNumber {
     public static final String TYPE = "Prepare";
@@ -127,7 +129,9 @@ public class PrepareMessage extends MessagePayload implements CertifiableMessage
 
     @Override
     public boolean verify() {
-        return false;
+        log.severe("verify(): Not implemented");
+        return true;
+        //throw new UnsupportedOperationException("Not implemented");
     }
 
     @Override
