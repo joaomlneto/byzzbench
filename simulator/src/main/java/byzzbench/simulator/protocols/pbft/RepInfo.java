@@ -1,9 +1,11 @@
 package byzzbench.simulator.protocols.pbft;
 
 import byzzbench.simulator.protocols.pbft.message.ReplyMessage;
+import lombok.AllArgsConstructor;
+import lombok.Data;
 
 import java.io.Serializable;
-import java.util.List;
+import java.time.Instant;
 import java.util.Queue;
 import java.util.SortedMap;
 import java.util.TreeMap;
@@ -16,14 +18,22 @@ public class RepInfo implements Serializable {
      * MAX_REP_SIZE
      */
     private static final int MAX_REP_SIZE = 8192;
+    /**
+     * The parent replica object
+     */
+    private final PbftReplica replica;
+    /**
+     * ireps
+     */
+    private final SortedMap<String, Rinfo> ireps = new TreeMap<>();
 
     /**
-     * nps
+     * Number of principals — DO NOT USE! Derive its value from somewhere else!
      */
     int nps;
 
     /**
-     * mem
+     * mem: An array of some size to use as memory — DO NOT USE! This isn't the 90s!
      */
     String mem;
 
@@ -33,9 +43,27 @@ public class RepInfo implements Serializable {
     SortedMap<String, ReplyMessage> reps = new TreeMap<>();
 
     /**
-     * ireps
+     * Creates a new RepInfo object
      */
-    private List<Rinfo> ireps;
+    public RepInfo(PbftReplica replica) {
+        this.replica = replica;
+        Rinfo ri = new Rinfo(true, Instant.from(Instant.MIN));
+
+        // Initialize the reps list
+        for (String pid : replica.getNodeIds()) {
+            ReplyMessage rr = new ReplyMessage(0, 0, pid);
+            reps.put(pid, rr);
+        }
+    }
+
+    /**
+     * Creates a new RepInfo object with the given previous state
+     *
+     * @param prevState the previous state
+     */
+    public RepInfo(Object prevState) {
+        throw new UnsupportedOperationException("Not implemented");
+    }
 
     public int size() {
         throw new UnsupportedOperationException("Not implemented");
@@ -48,7 +76,10 @@ public class RepInfo implements Serializable {
      * @return the timestamp
      */
     public long req_id(String pid) {
-        return reps.get(pid).request_id();
+        System.out.println(reps);
+        System.out.println("Returning request id for " + pid);
+        // FIXME: inserting a default value if the key is not found
+        return reps.computeIfAbsent(pid, k -> new ReplyMessage(0, 0, pid)).request_id();
     }
 
     /**
@@ -137,7 +168,41 @@ public class RepInfo implements Serializable {
      * @param tentative true if last reply is tentative and was not committed
      */
     public void send_reply(String pid, long v, String id, boolean tentative) {
-        throw new UnsupportedOperationException("Not implemented");
+        ReplyMessage r = reps.computeIfAbsent(pid, k -> new ReplyMessage(0, 0, pid));
+        ReplyMessage rr = new ReplyMessage(r);
+
+        if (rr.isReadOnly || rr.isSigned || rr.getV() != 0 /*|| rr.getReplica() != null*/) {
+            throw new IllegalStateException("Invalid state");
+        }
+
+        if (!tentative && ireps.get(pid).tentative) {
+            ireps.get(pid).tentative = false;
+            ireps.get(pid).lsent = Instant.MIN;
+        }
+
+        Instant cur;
+        Instant lsent = ireps.computeIfAbsent(pid, k -> new Rinfo(false, Instant.MIN)).lsent;
+
+        if (!lsent.equals(Instant.MIN)) {
+            cur = replica.getCurrentTime();
+            if (cur.isAfter(lsent.plusMillis(10))) { // FIXME: magic constant
+                return;
+            }
+            ireps.get(pid).lsent = cur;
+        }
+
+        if (ireps.get(pid).tentative) r.setReadOnly(true);
+        rr.setV(v);
+        rr.setReplica(id);
+        Principal p = replica.getPrincipal(pid); // TODO: use this to sign message
+
+        replica.sendMessage(r, pid);
+
+        // Undo changes - not needed; to be garbage collected!
+        rr.setReadOnly(false);
+        rr.setSigned(false);
+        rr.setV(0);
+        rr.setReplica(null);
     }
 
     /**
@@ -165,12 +230,13 @@ public class RepInfo implements Serializable {
     }
 
     /**
-     * Creates a new RepInfo object
-     *
-     * @param tentative true if last reply is tentative and was not committed
-     * @param lsent     time at which reply was last sent
+     * Reply information
      */
-    public record Rinfo(boolean tentative, long lsent) {
+    @Data
+    @AllArgsConstructor
+    public class Rinfo {
+        private boolean tentative;
+        private Instant lsent;
     }
 
 }

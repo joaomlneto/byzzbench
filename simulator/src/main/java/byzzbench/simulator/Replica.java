@@ -99,7 +99,7 @@ public abstract class Replica implements Serializable {
      * @param message   the message to send
      * @param recipient the recipient of the message
      */
-    protected void sendMessage(MessagePayload message, String recipient) {
+    public void sendMessage(MessagePayload message, String recipient) {
         message.sign(this.nodeId);
         this.transport.sendMessage(this.nodeId, message, recipient);
 
@@ -111,7 +111,7 @@ public abstract class Replica implements Serializable {
      * @param message    the message to send
      * @param recipients the recipients of the message
      */
-    protected void multicastMessage(MessagePayload message, SortedSet<String> recipients) {
+    public void multicastMessage(MessagePayload message, SortedSet<String> recipients) {
         message.sign(this.nodeId);
         this.transport.multicast(this.nodeId, recipients, message);
     }
@@ -121,7 +121,7 @@ public abstract class Replica implements Serializable {
      *
      * @param message the message to broadcast
      */
-    protected void broadcastMessage(MessagePayload message) {
+    public void broadcastMessage(MessagePayload message) {
         SortedSet<String> otherNodes = this.nodeIds.stream()
                 .filter(otherNodeId -> !otherNodeId.equals(this.nodeId))
                 .collect(java.util.stream.Collectors.toCollection(TreeSet::new));
@@ -135,7 +135,7 @@ public abstract class Replica implements Serializable {
      *
      * @param message the message to broadcast
      */
-    protected void broadcastMessageIncludingSelf(MessagePayload message) {
+    public void broadcastMessageIncludingSelf(MessagePayload message) {
         message.sign(this.nodeId);
         this.transport.multicast(this.nodeId, this.nodeIds, message);
     }
@@ -278,12 +278,18 @@ public abstract class Replica implements Serializable {
      * @param start the start time
      * @return the difference between the two times
      */
-    protected long diffTime(Instant end, Instant start) {
-        return end.toEpochMilli() - start.toEpochMilli();
+    public Duration diffTime(Instant end, Instant start) {
+        return Duration.between(start, end);
     }
 
-    protected long diffNow(Instant start) {
-        return diffTime(getCurrentTime(), start);
+    /**
+     * Compute the difference between the current time and a start time.
+     *
+     * @param start the start time
+     * @return the difference between the current time and the start time
+     */
+    public Duration diffNow(Instant start) {
+        return this.diffTime(this.getCurrentTime(), start);
     }
 
 }

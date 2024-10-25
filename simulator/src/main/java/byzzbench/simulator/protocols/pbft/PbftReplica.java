@@ -81,7 +81,7 @@ public class PbftReplica extends LeaderBasedProtocolReplica {
      * Last replies sent to each principal
      */
     @JsonIgnore
-    private final RepInfo replies = new RepInfo();
+    private final RepInfo replies;
     /**
      * State abstraction manages state checkpointing and digesting
      */
@@ -276,6 +276,7 @@ public class PbftReplica extends LeaderBasedProtocolReplica {
     public PbftReplica(String nodeId, SortedSet<String> nodeIds, Transport transport, Timekeeper timekeeper) {
         super(nodeId, nodeIds, transport, timekeeper, new TotalOrderCommitLog());
 
+        replies = new RepInfo(this);
         /**
          * Node.cc constructor below
          */
@@ -1067,7 +1068,7 @@ public class PbftReplica extends LeaderBasedProtocolReplica {
                     Instant t;
                     MessageWithTime<CommitMessage> myClogEntry = clog.fetch(last_executed).mine();
                     t = myClogEntry.time();
-                    late &= diffNow(t) > 200000; // FIXME: magic numbers!
+                    late &= diffNow(t).toMillis() > 200000; // FIXME: magic numbers!
                 }
 
                 if (!late) {

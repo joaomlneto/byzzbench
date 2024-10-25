@@ -19,30 +19,33 @@ import lombok.With;
 public class ReplyMessage extends MessagePayload implements CertifiableMessage {
     public static final String TYPE = "Reply";
     /**
-     * Current view (v)
-     */
-    private final long v;
-
-    /**
      * Unique request identifier (rid).
      */
     private final long rid;
-
+    /**
+     * Is read only (extra & 1)
+     */
+    public boolean isReadOnly;
+    /**
+     * Is signed (extra & 2)
+     */
+    public boolean isSigned;
+    /**
+     * Current view (v)
+     */
+    private long v;
     /**
      * Digest of reply
      */
     private Digest digest;
-
     /**
      * The ID of the replica sending the reply
      */
     private String replica;
-
     /**
      * The reply
      */
     private String reply;
-
     /**
      * MAC
      */
@@ -75,6 +78,22 @@ public class ReplyMessage extends MessagePayload implements CertifiableMessage {
      */
     public ReplyMessage(long view, long req, String replica, Digest d, Principal p, boolean tentative) {
         throw new UnsupportedOperationException("Not implemented");
+    }
+
+    /**
+     * Create a new reply message with the same state as this
+     *
+     * @param r the reply message to copy
+     */
+    public ReplyMessage(ReplyMessage r) {
+        this.v = r.v;
+        this.rid = r.rid;
+        this.replica = r.replica;
+        this.reply = r.reply;
+        this.digest = r.digest;
+        this.mac = r.mac;
+        this.isReadOnly = r.isReadOnly;
+        this.isSigned = r.isSigned;
     }
 
     /**

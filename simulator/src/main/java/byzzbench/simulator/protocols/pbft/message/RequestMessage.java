@@ -49,31 +49,26 @@ public class RequestMessage extends MessagePayload {
      * Unique request identifier (rid).
      */
     private final long rid;
-
-    /**
-     * Whether the request is read-only.
-     */
-    private final boolean isReadOnly = false;
-
-    /**
-     * Whether the request is signed.
-     */
-    private final boolean isSigned = false;
-
-    /**
-     * Digest of requestId (rid), clientId (cid) and operation (command).
-     */
-    private final Digest od = null;
-
     /**
      * The command to be executed
      */
     private final String command;
-
+    /**
+     * Whether the request is read-only.
+     */
+    private boolean isReadOnly = false;
+    /**
+     * Whether the request is signed.
+     */
+    private boolean isSigned = false;
+    /**
+     * Digest of requestId (rid), clientId (cid) and operation (command).
+     */
+    private Digest od = null;
     /**
      * Whether the request is classified as a "big request".
      */
-    private final boolean isBigRequest = false;
+    private boolean isBigRequest = false;
 
     /**
      * Creates a new signed Request message with an empty command and no authentication.
