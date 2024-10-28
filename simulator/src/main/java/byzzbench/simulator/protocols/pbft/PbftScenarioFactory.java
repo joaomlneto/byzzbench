@@ -6,9 +6,8 @@ import byzzbench.simulator.scheduler.Scheduler;
 import byzzbench.simulator.service.MessageMutatorService;
 import byzzbench.simulator.service.SchedulerFactoryService;
 import com.fasterxml.jackson.databind.JsonNode;
-import org.springframework.stereotype.Component;
 
-@Component
+//@Component
 public class PbftScenarioFactory extends BaseScenarioFactory {
     public PbftScenarioFactory(SchedulerFactoryService schedulerFactoryService) {
         super(schedulerFactoryService);
