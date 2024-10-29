@@ -1,4 +1,4 @@
-package byzzbench.simulator.protocols.pbft_java.pojo;
+package byzzbench.simulator.protocols.pbft_java;
 
 import java.io.Serializable;
 

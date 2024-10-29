@@ -1,10 +1,6 @@
 package byzzbench.simulator.protocols.pbft_java;
 
 import byzzbench.simulator.protocols.pbft_java.message.*;
-import byzzbench.simulator.protocols.pbft_java.pojo.ReplicaRequestKey;
-import byzzbench.simulator.protocols.pbft_java.pojo.ReplicaTicketPhase;
-import byzzbench.simulator.protocols.pbft_java.pojo.TicketKey;
-import byzzbench.simulator.protocols.pbft_java.pojo.ViewChangeResult;
 import lombok.Getter;
 import lombok.NonNull;
 

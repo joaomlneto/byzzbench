@@ -1,4 +1,4 @@
-package byzzbench.simulator.protocols.pbft_java.pojo;
+package byzzbench.simulator.protocols.pbft_java;
 
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
