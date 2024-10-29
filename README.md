@@ -26,18 +26,9 @@ brew install openjdk@17 node pnpm
 
 For other operating systems, please refer to the respective installation instructions.
 
-## Building
+## Benchmark Suite
 
-To install dependencies and build the benchmarking suite, run the following commands:
-
-```
-./gradlew build
-(cd webui && pnpm install)
-```
-
-## Running
-
-To run the benchmarking suite, run the following command:
+To build and run the benchmarking suite, run the following command:
 
 ```
 ./gradlew bootRun
@@ -45,16 +36,28 @@ To run the benchmarking suite, run the following command:
 
 ## Web Interface
 
-To run the web interface, run the following command:
+The web UI is a simple React application (using NextJS/TypeScript) that allows you to interact with the simulator. It is
+a work in progress, but provides useful insights into the behavior of the protocols.
+
+To build the web interface, run the following command **while the simulator is running**:
 
 ```
-(cd webui && pnpm run kubb:generate && pnpm run dev)
+(cd webui && pnpm install && pnpm run kubb:generate && pnpm run build)
 ```
 
 > [!NOTE]
 > The simulator must be running for `kubb:generate` to succeed.
 
-The UI should then be available at http://localhost:3000.
+The above command will generate the necessary TypeScript bindings for the simulator and build the web interface. You
+only need to run it once.
+
+Then, to start the web server, run the following command:
+
+```
+(cd webui && pnpm run start)
+```
+
+The UI should then be available at http://localhost:3000
 
 ## Running Benchmarks
 
