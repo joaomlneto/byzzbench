@@ -12,8 +12,8 @@ import java.util.TreeSet;
 
 @Log
 public class PbftJavaScenario extends BaseScenario {
-    private final int NUM_NODES = 4;
     private final PbftTerminationCondition terminationCondition;
+    private final int numReplicas = 4;
 
     public PbftJavaScenario(Scheduler scheduler) {
         super("pbft-java", scheduler);
@@ -29,7 +29,7 @@ public class PbftJavaScenario extends BaseScenario {
     protected void setup() {
         try {
             SortedSet<String> nodeIds = new TreeSet<>();
-            for (int i = 0; i < NUM_NODES; i++) {
+            for (int i = 0; i < numReplicas; i++) {
                 nodeIds.add(Character.toString((char) ('A' + i)));
             }
 
@@ -38,6 +38,8 @@ public class PbftJavaScenario extends BaseScenario {
                 Replica replica = new PbftJavaReplica<String, String>(nodeId, nodeIds, 1, 1000, messageLog, timekeeper, transport);
                 this.addNode(replica);
             });
+
+            this.setNumClients(1);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -45,14 +47,7 @@ public class PbftJavaScenario extends BaseScenario {
 
     @Override
     public synchronized void run() {
-        // send a request message to node A
-        try {
-            this.setNumClients(1);
-            this.transport.sendClientRequest("C0", "123", "A");
-        } catch (Exception e) {
-            e.printStackTrace();
-            throw new RuntimeException(e);
-        }
+        // nothing to do
     }
 
     @Override

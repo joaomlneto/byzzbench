@@ -22,6 +22,11 @@ import java.util.concurrent.atomic.AtomicLong;
 
 @Log
 public class PbftJavaReplica<O extends Serializable, R extends Serializable> extends LeaderBasedProtocolReplica {
+    /**
+     * The log of received messages for the replica.
+     */
+    @Getter
+    protected final MessageLog messageLog;
 
     @Getter
     private final int tolerance;
@@ -33,13 +38,6 @@ public class PbftJavaReplica<O extends Serializable, R extends Serializable> ext
      * The current sequence number for the replica.
      */
     private final AtomicLong seqCounter = new AtomicLong(1);
-
-    /**
-     * The log of received messages for the replica.
-     */
-    @Getter
-    @JsonIgnore
-    private final MessageLog messageLog;
 
     /**
      * The set of timeouts for the replica?
@@ -72,15 +70,31 @@ public class PbftJavaReplica<O extends Serializable, R extends Serializable> ext
         this.setView(1);
     }
 
+    /**
+     * Set the view number and the primary ID for the replica.
+     *
+     * @param viewNumber The view number
+     */
     private void setView(long viewNumber) {
         String leaderId = this.computePrimaryId(viewNumber, this.getNodeIds().size());
         this.setView(viewNumber, leaderId);
     }
 
+    /**
+     * Check the active timers for the replica.
+     *
+     * @return The active timers
+     */
     public Collection<ReplicaRequestKey> activeTimers() {
         return Collections.unmodifiableCollection(this.timeouts.keySet());
     }
 
+    /**
+     * Check the timeout for a given request.
+     *
+     * @param key The key for the request
+     * @return The remaining time for the timeout
+     */
     public long checkTimeout(ReplicaRequestKey key) {
         LinearBackoff backoff = this.timeouts.get(key);
         if (backoff == null) {
@@ -129,6 +143,12 @@ public class PbftJavaReplica<O extends Serializable, R extends Serializable> ext
         }
     }
 
+    /**
+     * Resend the reply to the client.
+     *
+     * @param clientId The client ID
+     * @param ticket   The ticket to resend
+     */
     private void resendReply(String clientId, Ticket<O, R> ticket) {
         ticket.getResult().thenAccept(result -> {
             long viewNumber = ticket.getViewNumber();
@@ -146,6 +166,12 @@ public class PbftJavaReplica<O extends Serializable, R extends Serializable> ext
         });
     }
 
+    /**
+     * Receive a request from a client and attempt to process it.
+     *
+     * @param request            The request message
+     * @param wasRequestBuffered Whether the request was buffered
+     */
     private void recvRequest(RequestMessage request, boolean wasRequestBuffered) {
         String clientId = request.getClientId();
         long timestamp = request.getTimestamp();
@@ -244,7 +270,7 @@ public class PbftJavaReplica<O extends Serializable, R extends Serializable> ext
         this.sendMessage(request, replicaId);
     }
 
-    private boolean verifyPhaseMessage(IPhaseMessage message) {
+    protected boolean verifyPhaseMessage(IPhaseMessage message) {
         /*
          * The 3 phases specified by PBFT 4.2 have a common verification
          * procedure which is extracted to this method. If this procedure fails,
@@ -372,6 +398,11 @@ public class PbftJavaReplica<O extends Serializable, R extends Serializable> ext
         return ticket;
     }
 
+    /**
+     * Receive a prepare message from a replica.
+     *
+     * @param prepare The prepare message
+     */
     public void recvPrepare(PrepareMessage prepare) {
         Ticket<O, R> ticket = this.recvPhaseMessage(prepare);
 
@@ -382,6 +413,11 @@ public class PbftJavaReplica<O extends Serializable, R extends Serializable> ext
         }
     }
 
+    /**
+     * Receive a commit message from a replica.
+     *
+     * @param commit The commit message
+     */
     public void recvCommit(CommitMessage commit) {
         Ticket<O, R> ticket = this.recvPhaseMessage(commit);
 
@@ -392,7 +428,13 @@ public class PbftJavaReplica<O extends Serializable, R extends Serializable> ext
         }
     }
 
-    private void tryAdvanceState(Ticket<O, R> ticket, IPhaseMessage message) {
+    /**
+     * Attempt to advance the state of the replica.
+     *
+     * @param ticket  The ticket for the replica
+     * @param message The message to advance the state
+     */
+    protected void tryAdvanceState(Ticket<O, R> ticket, IPhaseMessage message) {
         long currentViewNumber = message.getViewNumber();
         long seqNumber = message.getSequenceNumber();
         byte[] digest = message.getDigest();
@@ -485,6 +527,9 @@ public class PbftJavaReplica<O extends Serializable, R extends Serializable> ext
         }
     }
 
+    /**
+     * Handle the next buffered request in the message log.
+     */
     private void handleNextBufferedRequest() {
         RequestMessage bufferedRequest = messageLog.popBuffer();
 
@@ -494,6 +539,12 @@ public class PbftJavaReplica<O extends Serializable, R extends Serializable> ext
         }
     }
 
+    /**
+     * Send a reply to the client.
+     *
+     * @param clientId The client ID
+     * @param reply    The reply message
+     */
     public void sendReply(String clientId, ReplyMessage reply) {
         //this.sendMessage(reply, clientId);
         this.sendReplyToClient(clientId, reply);
@@ -503,6 +554,12 @@ public class PbftJavaReplica<O extends Serializable, R extends Serializable> ext
         this.handleNextBufferedRequest();
     }
 
+    /**
+     * Receive a checkpoint message from a replica.
+     * FIXME: Not implemented
+     *
+     * @param checkpoint The checkpoint message
+     */
     public void recvCheckpoint(CheckpointMessage checkpoint) {
         /*
          * Per PBFT 4.3, upon reception of a checkpoint message, check for
@@ -512,11 +569,22 @@ public class PbftJavaReplica<O extends Serializable, R extends Serializable> ext
         messageLog.appendCheckpoint(checkpoint, this.tolerance);
     }
 
+    /**
+     * Send a checkpoint message to all replicas.
+     * FIXME: Not implemented
+     *
+     * @param checkpoint The checkpoint message
+     */
     public void sendCheckpoint(CheckpointMessage checkpoint) {
         // PBFT 4.3 - Multicast checkpoint
         this.broadcastMessage(checkpoint);
     }
 
+    /**
+     * Enter a new view number.
+     *
+     * @param newViewNumber The new view number
+     */
     private void enterNewView(long newViewNumber) {
         /*
          * Enter new view by resetting the disgruntled state, updating the
@@ -528,13 +596,18 @@ public class PbftJavaReplica<O extends Serializable, R extends Serializable> ext
         this.timeouts.clear();
     }
 
+    /**
+     * Receive a view change message from a replica.
+     *
+     * @param viewChange The view change message
+     */
     public void recvViewChange(ViewChangeMessage viewChange) {
         /*
          * A replica sends a view change to vote out the primary when it
          * becomes disgruntled due to a (or many) timeouts in accordance with
          * PBFT 4.4.
          *
-         * When the the view change is recorded to the message log, it will
+         * When the view change is recorded to the message log, it will
          * determine firstly whether it should bandwagon the next view change
          * and then secondly whether it should start the next view change
          * timer in accordance with PBFT 4.5.2.
@@ -659,7 +732,7 @@ public class PbftJavaReplica<O extends Serializable, R extends Serializable> ext
 
     private String computePrimaryId(long viewNumber, int numReplicas) {
         List<String> knownReplicas = this.getNodeIds().stream().sorted().toList();
-        return knownReplicas.get((int) viewNumber % numReplicas);
+        return knownReplicas.get((int) (viewNumber - 1) % numReplicas);
     }
 
     private String getPrimaryId() {
@@ -680,20 +753,13 @@ public class PbftJavaReplica<O extends Serializable, R extends Serializable> ext
 
     @Override
     public void handleMessage(String sender, MessagePayload m) {
-        if (m instanceof RequestMessage request) {
-            recvRequest(request);
-            return;
-        } else if (m instanceof PrePrepareMessage prePrepare) {
-            recvPrePrepare(prePrepare);
-            return;
-        } else if (m instanceof PrepareMessage prepare) {
-            recvPrepare(prepare);
-            return;
-        } else if (m instanceof CommitMessage commit) {
-            recvCommit(commit);
-            return;
+        switch (m) {
+            case RequestMessage request -> recvRequest(request);
+            case PrePrepareMessage prePrepare -> recvPrePrepare(prePrepare);
+            case PrepareMessage prepare -> recvPrepare(prepare);
+            case CommitMessage commit -> recvCommit(commit);
+            case null, default -> throw new IllegalArgumentException("Unknown message type");
         }
-        throw new RuntimeException("Unknown message type");
     }
 
     private boolean verifyPhase(long messageViewNumber, long messageSequenceNumber) {
