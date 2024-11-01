@@ -18,11 +18,62 @@ For the user interface to work, you need to have the following installed on your
 - Node.js
 - pnpm
 
+### MacOS
+
 Installing everything on macOS using HomeBrew can be done with the following commands:
 
 ```
 brew install openjdk@17 node pnpm
 ```
+
+### Windows
+
+Installing JDK:
+
+1. Through Eclipse Adoptium:
+    - Download the version you need (at least JDK-17)
+    - When installing, select "Set or override JAVA_HOME variable"
+
+2. Through Windows Package Manager - "winget":
+
+```
+// Eclipse Temurin from Eclipse Adoptium
+winget install EclipseAdoptium.Temurin.17.JDK
+
+// from Microsoft Build
+winget install Microsoft.OpenJDK.17
+```
+> [!NOTE]
+> You might need to set a PATH and JAVA_HOME!
+
+Installing Node.js:
+
+1. Through installer: https://nodejs.org/en/download/prebuilt-installer
+2. Through package managers: https://nodejs.org/en/download/package-manager
+
+To install pnpm, you can use npm package manager (installed alongside Node.js):
+
+```
+npm install -g pnpm
+```
+
+or Corepack:
+
+```
+corepack enable pnpm
+```
+
+or PowerShell:
+
+```
+Invoke-WebRequest https://get.pnpm.io/install.ps1 -UseBasicParsing | Invoke-Expression
+```
+> [!WARNING]
+> Windows Defender may block this option!
+> 
+> Using npm or Corepack is the recommended way!
+
+Reference: https://pnpm.io/installation
 
 For other operating systems, please refer to the respective installation instructions.
 
