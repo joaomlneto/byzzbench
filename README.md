@@ -46,6 +46,14 @@ winget install Microsoft.OpenJDK.17
 > [!NOTE]
 > You might need to set a PATH and JAVA_HOME!
 
+To verify the installation execute the following in cmd (should match the installed version):
+
+```
+java -version
+```
+> [!NOTE]
+> If it displays a different version, then the PATH or JAVA_HOME could be set incorrectly (pointing to another version)!
+
 Installing Node.js:
 
 1. Through installer: https://nodejs.org/en/download/prebuilt-installer
