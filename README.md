@@ -31,8 +31,9 @@ brew install openjdk@17 node pnpm
 Installing JDK:
 
 1. Through Eclipse Adoptium:
-    - Download the version you need (at least JDK-17)
-    - When installing, select "Set or override JAVA_HOME variable"
+
+   - Download the version you need (at least JDK-17)
+   - When installing, select "Set or override JAVA_HOME variable"
 
 2. Through Windows Package Manager - "winget":
 
@@ -43,6 +44,7 @@ winget install EclipseAdoptium.Temurin.17.JDK
 // from Microsoft Build
 winget install Microsoft.OpenJDK.17
 ```
+
 > [!NOTE]
 > You might need to set a PATH and JAVA_HOME!
 
@@ -51,6 +53,7 @@ To verify the installation execute the following in cmd (should match the instal
 ```
 java -version
 ```
+
 > [!NOTE]
 > If it displays a different version, then the PATH or JAVA_HOME could be set incorrectly (pointing to another version)!
 
@@ -76,9 +79,10 @@ or PowerShell:
 ```
 Invoke-WebRequest https://get.pnpm.io/install.ps1 -UseBasicParsing | Invoke-Expression
 ```
+
 > [!WARNING]
 > Windows Defender may block this option!
-> 
+>
 > Using npm or Corepack is the recommended way!
 
 Reference: https://pnpm.io/installation
