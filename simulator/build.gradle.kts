@@ -25,7 +25,7 @@ repositories {
     mavenCentral()
 }
 
-extra["vaadinVersion"] = "24.5.2"
+extra["vaadinVersion"] = "24.5.3"
 
 dependencies {
     implementation("org.springframework.boot:spring-boot-starter-web")
