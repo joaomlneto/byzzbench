@@ -1,6 +1,6 @@
 package byzzbench.simulator.protocols.hbft.message;
 
-import java.util.Collection;
+import byzzbench.simulator.protocols.hbft.SpeculativeHistory;
 
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -14,11 +14,10 @@ public class CommitMessage extends IPhaseMessage {
     private final long sequenceNumber;
     private final byte[] digest;
     // Might not be needed
-    private final String message;
+    private final RequestMessage request;
     private final String replicaId;
-    private final String clientId;
     // Speculative execution history
-    private final Collection<RequestMessage> speculativeHistory;
+    private final SpeculativeHistory speculativeHistory;
 
     @Override
     public String getType() {

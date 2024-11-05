@@ -15,7 +15,6 @@ public class PrepareMessage extends IPhaseMessage {
     private final byte[] digest;
     // Might not be needed
     //private final String message;
-    private final String clientId;
     private RequestMessage request;
 
     @Override

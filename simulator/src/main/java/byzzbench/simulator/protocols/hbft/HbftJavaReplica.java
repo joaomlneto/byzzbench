@@ -5,6 +5,7 @@ import byzzbench.simulator.protocols.hbft.message.*;
 import byzzbench.simulator.protocols.hbft.pojo.ReplicaRequestKey;
 import byzzbench.simulator.protocols.hbft.pojo.ReplicaTicketPhase;
 import byzzbench.simulator.protocols.hbft.pojo.ViewChangeResult;
+import byzzbench.simulator.protocols.pbft_java.message.PrePrepareMessage;
 import byzzbench.simulator.state.LogEntry;
 import byzzbench.simulator.state.SerializableLogEntry;
 import byzzbench.simulator.state.TotalOrderCommitLog;
@@ -20,7 +21,7 @@ import java.util.*;
 import java.util.concurrent.atomic.AtomicLong;
 
 @Log
-public class PbftJavaReplica<O extends Serializable, R extends Serializable> extends LeaderBasedProtocolReplica {
+public class HbftJavaReplica<O extends Serializable, R extends Serializable> extends LeaderBasedProtocolReplica {
 
     @Getter
     private final int tolerance;
@@ -41,6 +42,13 @@ public class PbftJavaReplica<O extends Serializable, R extends Serializable> ext
     private final MessageLog messageLog;
 
     /**
+     * The speculative execution history for the replica.
+     */
+    @Getter
+    @JsonIgnore
+    private final SpeculativeHistory speculativeHistory;
+
+    /**
      * The set of timeouts for the replica?
      * TODO: This should not be here!!
      */
@@ -51,7 +59,7 @@ public class PbftJavaReplica<O extends Serializable, R extends Serializable> ext
     @Setter
     private volatile boolean disgruntled = false;
 
-    public PbftJavaReplica(String replicaId,
+    public HbftJavaReplica(String replicaId,
                            SortedSet<String> nodeIds,
                            int tolerance,
                            long timeout,
@@ -61,6 +69,7 @@ public class PbftJavaReplica<O extends Serializable, R extends Serializable> ext
         this.tolerance = tolerance;
         this.timeout = timeout;
         this.messageLog = messageLog;
+        this.speculativeHistory = new SpeculativeHistory();
     }
 
     @Override
@@ -132,12 +141,15 @@ public class PbftJavaReplica<O extends Serializable, R extends Serializable> ext
             long viewNumber = ticket.getViewNumber();
             RequestMessage request = ticket.getRequest();
             long timestamp = request.getTimestamp();
+            long sequenceNumber = ticket.getSeqNumber();
             ReplyMessage reply = new ReplyMessage(
                     viewNumber,
                     timestamp,
+                    sequenceNumber,
                     clientId,
                     this.getNodeId(),
-                    result);
+                    result,
+                    this.getSpeculativeHistory());
             this.sendReply(clientId, reply);
         }).exceptionally(t -> {
             throw new RuntimeException(t);
@@ -156,7 +168,7 @@ public class PbftJavaReplica<O extends Serializable, R extends Serializable> ext
          *
          * If the ticket is not null, then it indicates that the request has
          * already been fulfilled by this replica, so we resend the reply in
-         * accordance with PBFT 4.1.
+         * accordance with hBFT 4.1.
          */
         ReplicaRequestKey key = new ReplicaRequestKey(clientId, timestamp);
         Ticket<O, R> cachedTicket = messageLog.getTicketFromCache(key);
@@ -165,12 +177,12 @@ public class PbftJavaReplica<O extends Serializable, R extends Serializable> ext
             return;
         }
 
-        // Start the timer for this request per PBFT 4.4
+        // Start the timer for this request per hBFT 4.4
         this.timeouts.computeIfAbsent(key, k -> new LinearBackoff(this.getViewNumber(), this.timeout));
 
         String primaryId = this.getPrimaryId();
 
-        // PBFT 4.1 - If the request is received by a non-primary replica
+        // hBFT 4.1 - If the request is received by a non-primary replica
         // send the request to the actual primary
         if (!this.getNodeId().equals(primaryId)) {
             this.sendRequest(primaryId, request);
@@ -208,24 +220,24 @@ public class PbftJavaReplica<O extends Serializable, R extends Serializable> ext
         ticket.append(request);
 
         /*
-         * Non-standard behavior - PBFT 4.2 specifies that requests are not to
-         * be sent with PRE-PREPARE, but I leave it up to the transport to
-         * decide how messages are sent and encoded and use the PRE-PREPARE
+         * Non-standard behavior - hBFT 4.2 specifies that requests are not to
+         * be sent with PREPARE, but I leave it up to the transport to
+         * decide how messages are sent and encoded and use the PREPARE
          * message to hold the request as well.
          *
-         * Replica has accepted the request, multicast a PRE-PREPARE per PBFT
+         * Replica has accepted the request, multicast a PREPARE per hBFT
          * 4.2 which contains the view, the sequence number, request digest,
          * and the request message that was received.
          */
-        PrePrepareMessage prePrepare = new PrePrepareMessage(
+        PrepareMessage prepare = new PrepareMessage(
                 currentViewNumber,
                 seqNumber,
                 this.digest(request),
                 request);
-        this.broadcastMessage(prePrepare);
+        this.broadcastMessage(prepare);
 
-        // PBFT 4.2 - Append PRE-PREPARE
-        ticket.append(prePrepare);
+        // hBFT 4.2 - Append PREPARE
+        ticket.append(prepare);
     }
 
     public void recvRequest(RequestMessage request) {
@@ -234,7 +246,7 @@ public class PbftJavaReplica<O extends Serializable, R extends Serializable> ext
             return;
         }
 
-        // PBFT 4.2 - Attempt to process non-bufferred request
+        // hBFT 4.2 - Attempt to process non-bufferred request
         this.recvRequest(request, false);
     }
 
@@ -264,78 +276,6 @@ public class PbftJavaReplica<O extends Serializable, R extends Serializable> ext
 
         long seqNumber = message.getSequenceNumber();
         return messageLog.isBetweenWaterMarks(seqNumber);
-    }
-
-    public void recvPrePrepare(PrePrepareMessage prePrepare) {
-        if (!this.verifyPhaseMessage(prePrepare)) {
-            return;
-        }
-
-        long currentViewNumber = this.getViewNumber();
-        byte[] digest = prePrepare.getDigest();
-        RequestMessage request = prePrepare.getRequest();
-        long seqNumber = prePrepare.getSequenceNumber();
-
-        // PBFT 4.2 - Verify request digest
-        byte[] computedDigest = this.digest(request);
-        if (!Arrays.equals(digest, computedDigest)) {
-            return;
-        }
-
-        /*
-         * PBFT 4.2 specifies that given a valid PRE-PREPARE (matching
-         * signature, view and valid sequence number), the replica must only
-         * accept a PRE-PREPARE given that no other PRE-PREPARE has been
-         * received OR that the new PRE-PREPARE matches the digest of the one
-         * that was already received.
-         *
-         * Upon accepting the PRE-PREPARE, the replica adds it to the log and
-         * multicasts a PREPARE to all other replicas and adding the PREPARE to
-         * its log.
-         */
-        Ticket<O, R> ticket = messageLog.getTicket(currentViewNumber, seqNumber);
-        if (ticket != null) {
-            // PRE-PREPARE has previously been inserted into the log for this
-            // sequence number - verify the digests match per PBFT 4.2
-            for (Object message : ticket.getMessages()) {
-                if (!(message instanceof PrePrepareMessage prevPrePrepare)) {
-                    continue;
-                }
-
-                byte[] prevDigest = prevPrePrepare.getDigest();
-                if (!Arrays.equals(prevDigest, digest)) {
-                    return;
-                }
-            }
-        } else {
-            // PRE-PREPARE is the first - create a new ticket for it in this
-            // replica (see #recvRequest(ReplicaRequest, boolean) for why the
-            // message log is structured this way)
-            ticket = messageLog.newTicket(currentViewNumber, seqNumber);
-        }
-
-        // PBFT 4.2 - Add PRE-PREPARE along with its REQUEST to the log
-        ticket.append(prePrepare);
-
-        // PBFT 4.2 - Multicast PREPARE to other replicas
-        PrepareMessage prepare = new PrepareMessage(
-                currentViewNumber,
-                seqNumber,
-                digest,
-                this.getNodeId());
-        this.broadcastMessage(prepare);
-
-        // PBFT 4.2 - Add PREPARE to the log
-        ticket.append(prepare);
-
-        /*
-         * Per PBFT 4.2, this replica stasfies the prepared predicate IF it has
-         * valid PRE-PREPARE, REQUEST and PREPARE messages. Since processing is
-         * done asynchronously, the replica state is checked when PRE-PREPARE
-         * is accepted in case it arrives later than the corresponding PREPARE
-         * messages.
-         */
-        this.tryAdvanceState(ticket, prePrepare);
     }
 
     private Ticket<O, R> recvPhaseMessage(IPhaseMessage message) {
@@ -371,13 +311,95 @@ public class PbftJavaReplica<O extends Serializable, R extends Serializable> ext
     }
 
     public void recvPrepare(PrepareMessage prepare) {
-        Ticket<O, R> ticket = this.recvPhaseMessage(prepare);
-
-        if (ticket != null) {
-            // PBFT 4.2 - Attempt to advance the state upon reception of
-            // PREPARE to check if enough messages have been received to COMMIT
-            this.tryAdvanceState(ticket, prepare);
+        if (!this.verifyPhaseMessage(prepare)) {
+            return;
         }
+
+        long currentViewNumber = this.getViewNumber();
+        byte[] digest = prepare.getDigest();
+        RequestMessage request = prepare.getRequest();
+        long seqNumber = prepare.getSequenceNumber();
+
+        // hBFT 4.1 - Verify request digest
+        byte[] computedDigest = this.digest(request);
+        if (!Arrays.equals(digest, computedDigest)) {
+            return;
+        }
+
+        /*
+         * PBFT 4.2 specifies that given a valid PREPARE (matching
+         * signature, view and valid sequence number), the replica must only
+         * accept a PREPARE given that no other PREPARE has been
+         * received OR that the new PRE-PREPARE matches the digest of the one
+         * that was already received.
+         *
+         * Upon accepting the PRE-PREPARE, the replica adds it to the log and
+         * multicasts a PREPARE to all other replicas and adding the PREPARE to
+         * its log.
+         */
+        Ticket<O, R> ticket = messageLog.getTicket(currentViewNumber, seqNumber);
+        if (ticket != null) {
+            // PREPARE has previously been inserted into the log for this
+            // sequence number - verify the digests match per PBFT 4.1
+            for (Object message : ticket.getMessages()) {
+                if (!(message instanceof PrepareMessage prevPrepare)) {
+                    continue;
+                }
+
+                byte[] prevDigest = prevPrepare.getDigest();
+                if (!Arrays.equals(prevDigest, digest)) {
+                    return;
+                }
+            }
+        } else {
+            // PREPARE is the first - create a new ticket for it in this
+            // replica (see #recvRequest(ReplicaRequest, boolean) for why the
+            // message log is structured this way)
+            ticket = messageLog.newTicket(currentViewNumber, seqNumber);
+        }
+
+        // hBFT 4.1 - Add PREPARE along with its REQUEST to the log
+        ticket.append(prepare);
+
+        Serializable operation = request.getOperation();
+        Serializable result = this.compute(new SerializableLogEntry(operation));
+    
+        String clientId = request.getClientId();
+        long timestamp = request.getTimestamp();
+
+        ReplyMessage reply = new ReplyMessage(
+                currentViewNumber,
+                timestamp,
+                seqNumber,
+                clientId,
+                this.getNodeId(),
+                result,
+                this.getSpeculativeHistory());
+
+        this.sendReply(clientId, reply);
+
+        // hBFT 4.1 - Multicast COMMIT to other replicas
+        CommitMessage commit = new CommitMessage(
+                currentViewNumber,
+                seqNumber,
+                digest,
+                request,
+                this.getNodeId(),
+                this.getSpeculativeHistory());
+        this.broadcastMessage(commit);
+
+        // hBFT 4.1 - Add COMMIT to the log
+        ticket.append(commit);
+
+        // Move to COMMIT phase
+        ReplicaTicketPhase phase = ticket.getPhase();
+        ticket.casPhase(phase, ReplicaTicketPhase.COMMIT);
+        
+        /*
+         * Per hBFT 4.1, this replica stasfies the prepared predicate IF it has
+         * valid REQUEST and PREPARE messages. 
+         */
+        this.tryAdvanceState(ticket, commit);
     }
 
     public void recvCommit(CommitMessage commit) {
@@ -396,89 +418,77 @@ public class PbftJavaReplica<O extends Serializable, R extends Serializable> ext
         byte[] digest = message.getDigest();
 
         ReplicaTicketPhase phase = ticket.getPhase();
-        if (phase == ReplicaTicketPhase.PRE_PREPARE) {
-            /*
-             * PRE_PREPARE state, formally prior to the prepared predicate
-             * becomes true for this replica.
-             *
-             * Upon receiving 2*f (where f is the maximum faulty nodes) PREPARE
-             * messages and validating them, attempt to CAS the phase to
-             * indicate that the prepared predicate has become true and COMMIT
-             * in accordance with PBFT 4.2.
-             */
-            if (ticket.isPrepared(this.tolerance) && ticket.casPhase(phase, ReplicaTicketPhase.PREPARE)) {
-                CommitMessage commit = new CommitMessage(
-                        currentViewNumber,
-                        seqNumber,
-                        digest,
-                        this.getNodeId());
-                this.broadcastMessage(commit);
-
-                // PBFT 4.2 - Add own commit to the log
-                ticket.append(commit);
-            }
-        }
-
-        // Re-check the phase again to ensure that out-of-order COMMIT and
-        // PREPARE messages do not prevent the replica from making progress
-        phase = ticket.getPhase();
 
         if (phase == ReplicaTicketPhase.PREPARE) {
             /*
-             * Per PBFT 4.2, committed-local is true only when committed is true
-             * so the committed predicate is ignored. Committed-local is
-             * achieved when 2*f + 1 COMMIT messages have been logged. CAS the
-             * phase to indicate committed-local and perform the computation
-             * synchronously.
-             *
-             * The computation may be performed asynchronously if the
-             * implementer so wishes, as long as the cleanup is performed in a
-             * callback of some sort.
+             * Per hBFT 4.1 if the replica is in PREPARE phase, waiting for a PREPARE message,
+             * then if it has f + 1 COMMIT messages in the log it can also COMMIT and REPLY
+             */
+            if (ticket.isCommittedPrepare(this.tolerance) && ticket.casPhase(phase, ReplicaTicketPhase.COMMIT)) {
+                RequestMessage request = ticket.getRequest();
+                if (request != null) {
+                    Serializable operation = request.getOperation();
+                    Serializable result = this.compute(new SerializableLogEntry(operation));
+                
+                    String clientId = request.getClientId();
+                    long timestamp = request.getTimestamp();
+
+                    ReplyMessage reply = new ReplyMessage(
+                            currentViewNumber,
+                            timestamp,
+                            seqNumber,
+                            clientId,
+                            this.getNodeId(),
+                            result,
+                            this.getSpeculativeHistory());
+
+                    this.sendReply(clientId, reply);
+
+                    // After sending a reply to the client, send a COMMIT to other replicas
+                    CommitMessage commit = new CommitMessage(
+                        currentViewNumber,
+                        seqNumber,
+                        digest,
+                        request,
+                        this.getNodeId(),
+                        this.getSpeculativeHistory());
+                    
+                    // Send to self as well in order to trigger the check for 2f + 1 COMMIT messages
+                    this.broadcastMessageIncludingSelf(commit);
+
+                    // hBFT 4.1 - Add PREPARE along with its REQUEST to the log
+                    ticket.append(commit);
+                }
+            }
+        }
+    
+        if (phase == ReplicaTicketPhase.COMMIT) {
+            /*
+             * Per hBFT 4.1 if the replica is in COMMIT phase
+             * if it gets 2f + 1 COMMIT messages then completes the request
+             * and adds it to its speculative execution history
+             * if it gets f + 1 conflicting COMMIT messages with its PREPARE
+             * then it sends a view change message
              */
             if (ticket.isCommittedLocal(this.tolerance) && ticket.casPhase(phase, ReplicaTicketPhase.COMMIT)) {
                 RequestMessage request = ticket.getRequest();
                 if (request != null) {
                     Serializable operation = request.getOperation();
-                    Serializable result = this.compute(new SerializableLogEntry(operation));
-
+                    Serializable result = ticket.getReply().getResult();
+                
                     String clientId = request.getClientId();
                     long timestamp = request.getTimestamp();
-                    ReplyMessage reply = new ReplyMessage(
-                            currentViewNumber,
-                            timestamp,
-                            clientId,
-                            this.getNodeId(),
-                            result);
+
+                    // Add the execution to the speculative execution history
+                    this.speculativeHistory.addEntry(seqNumber, clientId, operation, result);
 
                     ReplicaRequestKey key = new ReplicaRequestKey(clientId, timestamp);
                     messageLog.completeTicket(key, currentViewNumber, seqNumber);
-                    this.sendReply(clientId, reply);
 
                     this.timeouts.remove(key);
                 }
-
-                /*
-                 * Checkpointing is specified by PBFT 4.3. A checkpoint is
-                 * reached every time the sequence number mod the interval
-                 * reaches 0, in which case a CHECKPOINT message is sent
-                 * containing the current sequence number, the digest of the
-                 * current state and this replica's ID.
-                 *
-                 * This replica implementation is stateless with respect to the
-                 * requests made by the client (i.e. clients do not change the
-                 * state of the replica, only the state of the protocol), and so
-                 * the digest method simply returns an empty array.
-                 */
-                if (seqNumber % messageLog.getCheckpointInterval() == 0) {
-                    CheckpointMessage checkpoint = new CheckpointMessage(
-                            seqNumber,
-                            this.digest(this),
-                            this.getNodeId());
-                    this.sendCheckpoint(checkpoint);
-
-                    // Log own checkpoint in accordance to PBFT 4.3
-                    messageLog.appendCheckpoint(checkpoint, this.tolerance);
-                }
+            } else if (ticket.isCommittedConflicting(this.tolerance) && ticket.casPhase(phase, ReplicaTicketPhase.COMMIT)) {
+                // TODO: Implement VIEW-CHANGE message
             }
         }
     }
@@ -503,15 +513,57 @@ public class PbftJavaReplica<O extends Serializable, R extends Serializable> ext
 
     public void recvCheckpoint(CheckpointMessage checkpoint) {
         /*
-         * Per PBFT 4.3, upon reception of a checkpoint message, check for
-         * 2*f + 1 checkpoint messages and perform GC if the checkpoint is
-         * stable.
+         * Per hBFT 4.2, there is a 3 phase checkpoint subprotocol,
+         * where the protocol starts with the primary sending Checkpoint-I message, 
+         * then upon receiving this the replicas send a Checkpoint-II message, 
+         * upon receiving 2f+1 Checkpoint-II messages,
+         * replicas send Checkpoint-III messages, and upon receiving 2f+1
+         * perform GC if the checkpoint is stable.
          */
-        messageLog.appendCheckpoint(checkpoint, this.tolerance);
+        String primaryId = this.getPrimaryId();
+        
+        if (checkpoint instanceof CheckpointIMessage) {
+            // Only primary can send checkpoint-I, else send View-Change
+            if (primaryId.equals(checkpoint.getReplicaId())) {
+                messageLog.appendCheckpoint(checkpoint, this.tolerance);
+            } else {
+                // TODO: Send View-change message
+            }
+        } else if (checkpoint instanceof CheckpointIIMessage) {
+            // Digest and speculative execution history should match
+            if (Arrays.equals(checkpoint.getDigest(), this.digest(speculativeHistory))) {
+                messageLog.appendCheckpoint(checkpoint, this.tolerance);
+                
+                // Check whether 2f + 1 Checkpoint-II messages have been seen
+                // If yes then send Checkpoint-III
+                boolean isCER1 = messageLog.isCER1(checkpoint, tolerance);
+                if (isCER1) {
+                    CheckpointMessage checkpointIII = new CheckpointIIIMessage(
+                        checkpoint.getLastSeqNumber(),
+                        this.digest(this.speculativeHistory),
+                        this.getNodeId()
+                    );
+
+                    // I add it to the log as the sendCheckpoint doesnt include self
+                    messageLog.appendCheckpoint(checkpointIII, this.tolerance);
+                    this.sendCheckpoint(checkpointIII);
+                }
+            } else {
+                // TODO: Send View-change message
+            }
+        } else if (checkpoint instanceof CheckpointIIIMessage) {
+            // Digest and speculative execution history should match
+            if (Arrays.equals(checkpoint.getDigest(), this.digest(speculativeHistory))) {
+                // GC will execute once 2f + 1 is received
+                messageLog.appendCheckpoint(checkpoint, this.tolerance);
+            } else {
+                // TODO: Send View-change message
+            }
+        }
     }
 
     public void sendCheckpoint(CheckpointMessage checkpoint) {
-        // PBFT 4.3 - Multicast checkpoint
+        // hBFT 4.2 - Multicast checkpoint
         this.broadcastMessage(checkpoint);
     }
 

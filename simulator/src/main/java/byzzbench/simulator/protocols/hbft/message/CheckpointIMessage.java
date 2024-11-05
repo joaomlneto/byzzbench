@@ -1,6 +1,5 @@
 package byzzbench.simulator.protocols.hbft.message;
 
-import byzzbench.simulator.transport.MessagePayload;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.With;
@@ -8,7 +7,7 @@ import lombok.With;
 @Data
 @EqualsAndHashCode(callSuper = true)
 @With
-public class CheckpointIMessage extends MessagePayload {
+public class CheckpointIMessage extends CheckpointMessage {
     private final long lastSeqNumber;
     // Digest of speculative execution history
     private final byte[] digest;

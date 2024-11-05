@@ -28,7 +28,9 @@ public class MessageLog implements Serializable {
     private final SortedMap<ReplicaRequestKey, Ticket<?, ?>> ticketCache = new TreeMap<>();
     private final SortedMap<TicketKey, Ticket<?, ?>> tickets = new TreeMap<>();
 
-    private final SortedMap<Long, Collection<CheckpointMessage>> checkpoints = new TreeMap<>();
+    private final SortedMap<Long, Collection<CheckpointMessage>> checkpointsI = new TreeMap<>();
+    private final SortedMap<Long, Collection<CheckpointMessage>> checkpointsII = new TreeMap<>();
+    private final SortedMap<Long, Collection<CheckpointMessage>> checkpointsIII = new TreeMap<>();
     private final SortedMap<Long, SortedMap<String, ViewChangeMessage>> viewChanges = new TreeMap<>();
 
     private volatile long lowWaterMark;
@@ -74,12 +76,12 @@ public class MessageLog implements Serializable {
 
     private void gcCheckpoint(long checkpoint) {
         /*
-         * Procedure used to discard all PRE-PREPARE, PREPARE and COMMIT
+         * Procedure used to discard all CHECKPOINT, PREPARE, COMMIT, REQUEST and REPLY
          * messages with sequence number less than or equal the in addition to
-         * any prior checkpoint proof per PBFT 4.3.
+         * any prior checkpoint proof per hBFT 4.2.
          *
          * A stable checkpoint then allows the water marks to slide over to
-         * the checkpoint < x <= checkpoint + watermarkInterval per PBFT 4.3.
+         * the checkpoint < x <= checkpoint + watermarkInterval per hBFT 4.2.
          */
         for (Map.Entry<ReplicaRequestKey, Ticket<?, ?>> entry : this.ticketCache.entrySet()) {
             Ticket<?, ?> ticket = entry.getValue();
@@ -88,9 +90,21 @@ public class MessageLog implements Serializable {
             }
         }
 
-        for (Long seqNumber : this.checkpoints.keySet()) {
+        for (Long seqNumber : this.checkpointsI.keySet()) {
             if (seqNumber < checkpoint) {
-                this.checkpoints.remove(seqNumber);
+                this.checkpointsI.remove(seqNumber);
+            }
+        }
+
+        for (Long seqNumber : this.checkpointsII.keySet()) {
+            if (seqNumber < checkpoint) {
+                this.checkpointsII.remove(seqNumber);
+            }
+        }
+
+        for (Long seqNumber : this.checkpointsIII.keySet()) {
+            if (seqNumber < checkpoint) {
+                this.checkpointsIII.remove(seqNumber);
             }
         }
 
@@ -100,15 +114,49 @@ public class MessageLog implements Serializable {
 
     public void appendCheckpoint(CheckpointMessage checkpoint, int tolerance) {
         /*
-         * Per PBFT 4.3, each time a checkpoint is generated or received, it
-         * gets stored in the log until 2f + 1 are accumulated that have
+         * Per hBFT 4.2, each time a checkpoint-III is generated or received, it
+         * gets stored in the log until 2f + 1 are accumulated (CER2(M,v)) that have
          * matching digests to the checkpoint that was added to the log, in
          * which case the garbage collection occurs (see #gcCheckpoint(long)).
          */
         long seqNumber = checkpoint.getLastSeqNumber();
-        Collection<CheckpointMessage> checkpointProofs = this.checkpoints.computeIfAbsent(seqNumber, k -> new ConcurrentLinkedQueue<>());
-        checkpointProofs.add(checkpoint);
 
+        if (checkpoint instanceof CheckpointIMessage) {
+            Collection<CheckpointMessage> checkpointProofs = this.checkpointsI.computeIfAbsent(seqNumber, k -> new ConcurrentLinkedQueue<>());
+            checkpointProofs.add(checkpoint);
+        }
+
+        if (checkpoint instanceof CheckpointIIMessage) {
+            Collection<CheckpointMessage> checkpointProofs = this.checkpointsII.computeIfAbsent(seqNumber, k -> new ConcurrentLinkedQueue<>());
+            checkpointProofs.add(checkpoint);
+        }
+
+        if (checkpoint instanceof CheckpointIIIMessage) {
+            Collection<CheckpointMessage> checkpointProofs = this.checkpointsIII.computeIfAbsent(seqNumber, k -> new ConcurrentLinkedQueue<>());
+            checkpointProofs.add(checkpoint);
+
+            final int stableCount = 2 * tolerance + 1;
+            int matching = 0;
+
+            // Use a loop here to avoid the linked list being traversed in its
+            // entirety
+            for (CheckpointMessage proof : checkpointProofs) {
+                if (Arrays.equals(proof.getDigest(), checkpoint.getDigest())) {
+                    matching++;
+
+                    if (matching == stableCount) {
+                        this.gcCheckpoint(seqNumber);
+                        return;
+                    }
+                }
+            }
+        }
+    }
+
+    public boolean isCER1(CheckpointMessage checkpoint, int tolerance) {
+        long seqNumber = checkpoint.getLastSeqNumber();
+        Collection<CheckpointMessage> checkpointProofs = this.checkpointsII.computeIfAbsent(seqNumber, k -> new ConcurrentLinkedQueue<>());
+        
         final int stableCount = 2 * tolerance + 1;
         int matching = 0;
 
@@ -119,13 +167,15 @@ public class MessageLog implements Serializable {
                 matching++;
 
                 if (matching == stableCount) {
-                    this.gcCheckpoint(seqNumber);
-                    return;
+                    return true;
                 }
             }
         }
+
+        return false;
     }
 
+    // Probably not needed
     private Collection<IPhaseMessage> selectPreparedProofs(Ticket<?, ?> ticket, int requiredMatches) {
         /*
          * Selecting the proofs of PRE-PREPARE and PREPARE messages for the
@@ -168,7 +218,7 @@ public class MessageLog implements Serializable {
 
     public ViewChangeMessage produceViewChange(long newViewNumber, String replicaId, int tolerance) {
         /*
-         * Produces a VIEW-CHANGE vote message in accordance with PBFT 4.4.
+         * Produces a VIEW-CHANGE vote message in accordance with hBFT 4.3.
          *
          * The last stable checkpoint is defined as the low water mark for the
          * message log. The checkpoint proofs are provided each time the
@@ -181,14 +231,14 @@ public class MessageLog implements Serializable {
         long checkpoint = this.lowWaterMark;
 
         Collection<CheckpointMessage> checkpointProofs = checkpoint == 0 ?
-                Collections.emptyList() : this.checkpoints.get(checkpoint);
+                Collections.emptyList() : this.checkpointsIII.get(checkpoint);
         if (checkpointProofs == null) {
             throw new IllegalStateException("Checkpoint has diverged without any proof");
         }
 
         final int requiredMatches = 2 * tolerance;
         SortedMap<Long, Collection<IPhaseMessage>> preparedProofs = new TreeMap<>();
-
+ 
         // Scan through the ticket cache (i.e. the completed tickets)
         for (Ticket<?, ?> ticket : this.ticketCache.values()) {
             long seqNumber = ticket.getSeqNumber();

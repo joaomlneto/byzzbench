@@ -1,12 +1,12 @@
 package byzzbench.simulator.protocols.hbft.message;
 
 import byzzbench.simulator.transport.MessagePayload;
+import byzzbench.simulator.protocols.hbft.SpeculativeHistory;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.With;
 
 import java.io.Serializable;
-import java.util.Collection;
 
 @Data
 @EqualsAndHashCode(callSuper = true)
@@ -19,7 +19,7 @@ public class ReplyMessage extends MessagePayload {
     private final String replicaId;
     private final Serializable result;
     // Speculative execution history
-    private final Collection<RequestMessage> speculativeHistory;
+    private final SpeculativeHistory speculativeHistory;
 
     @Override
     public String getType() {
