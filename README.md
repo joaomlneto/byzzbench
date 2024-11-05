@@ -32,17 +32,17 @@ Installing JDK:
 
 1. Through Eclipse Adoptium:
 
-   - Download the version you need (at least JDK-17)
+   - Download the version you need (JDK-21)
    - When installing, select "Set or override JAVA_HOME variable"
 
 2. Through Windows Package Manager - "winget":
 
 ```
 // Eclipse Temurin from Eclipse Adoptium
-winget install EclipseAdoptium.Temurin.17.JDK
+winget install EclipseAdoptium.Temurin.21.JDK
 
 // from Microsoft Build
-winget install Microsoft.OpenJDK.17
+winget install Microsoft.OpenJDK.21
 ```
 
 > [!NOTE]
