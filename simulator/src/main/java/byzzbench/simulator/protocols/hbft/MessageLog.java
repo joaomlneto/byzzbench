@@ -33,6 +33,10 @@ public class MessageLog implements Serializable {
     private final SortedMap<Long, Collection<CheckpointMessage>> checkpointsIII = new TreeMap<>();
     private final SortedMap<Long, SortedMap<String, ViewChangeMessage>> viewChanges = new TreeMap<>();
 
+    private SpeculativeHistory historyOfCheckpointI;
+    private SpeculativeHistory certificate1;
+    private SpeculativeHistory certificate2;
+
     private volatile long lowWaterMark;
     private volatile long highWaterMark;
 
@@ -121,9 +125,10 @@ public class MessageLog implements Serializable {
          */
         long seqNumber = checkpoint.getLastSeqNumber();
 
-        if (checkpoint instanceof CheckpointIMessage) {
+        if (checkpoint instanceof CheckpointIMessage checkpointI) {
             Collection<CheckpointMessage> checkpointProofs = this.checkpointsI.computeIfAbsent(seqNumber, k -> new ConcurrentLinkedQueue<>());
             checkpointProofs.add(checkpoint);
+            this.historyOfCheckpointI = checkpointI.getSpeculativeHistory();
         }
 
         if (checkpoint instanceof CheckpointIIMessage) {
@@ -131,7 +136,7 @@ public class MessageLog implements Serializable {
             checkpointProofs.add(checkpoint);
         }
 
-        if (checkpoint instanceof CheckpointIIIMessage) {
+        if (checkpoint instanceof CheckpointIIIMessage checkpointIII) {
             Collection<CheckpointMessage> checkpointProofs = this.checkpointsIII.computeIfAbsent(seqNumber, k -> new ConcurrentLinkedQueue<>());
             checkpointProofs.add(checkpoint);
 
@@ -145,6 +150,7 @@ public class MessageLog implements Serializable {
                     matching++;
 
                     if (matching == stableCount) {
+                        this.certificate2 = checkpointIII.getSpeculativeHistory();
                         this.gcCheckpoint(seqNumber);
                         return;
                     }
@@ -153,7 +159,7 @@ public class MessageLog implements Serializable {
         }
     }
 
-    public boolean isCER1(CheckpointMessage checkpoint, int tolerance) {
+    public boolean isCER1(CheckpointIIMessage checkpoint, int tolerance) {
         long seqNumber = checkpoint.getLastSeqNumber();
         Collection<CheckpointMessage> checkpointProofs = this.checkpointsII.computeIfAbsent(seqNumber, k -> new ConcurrentLinkedQueue<>());
         
@@ -167,6 +173,7 @@ public class MessageLog implements Serializable {
                 matching++;
 
                 if (matching == stableCount) {
+                    this.certificate1 = checkpoint.getSpeculativeHistory();
                     return true;
                 }
             }
@@ -175,46 +182,46 @@ public class MessageLog implements Serializable {
         return false;
     }
 
-    // Probably not needed
-    private Collection<IPhaseMessage> selectPreparedProofs(Ticket<?, ?> ticket, int requiredMatches) {
-        /*
-         * Selecting the proofs of PRE-PREPARE and PREPARE messages for the
-         * VIEW-CHANGE vote per PBFT 4.4.
-         *
-         * This procedure is designed to be run over each ReplicaTicket and
-         * collects the PRE-PREPARE for the ticket and the required PREPARE
-         * messages, otherwise returning null if there were not enough
-         * PREPARE messages or PRE-PREPARE has not been received yet.
-         */
-        Collection<IPhaseMessage> proof = new ArrayList<>();
-        for (Object prePrepareObject : ticket.getMessages()) {
-            if (!(prePrepareObject instanceof PrePrepareMessage prePrepare)) {
-                continue;
-            }
+    // // Probably not needed
+    // private Collection<IPhaseMessage> selectPreparedProofs(Ticket<?, ?> ticket, int requiredMatches) {
+    //     /*
+    //      * Selecting the proofs of PRE-PREPARE and PREPARE messages for the
+    //      * VIEW-CHANGE vote per PBFT 4.4.
+    //      *
+    //      * This procedure is designed to be run over each ReplicaTicket and
+    //      * collects the PRE-PREPARE for the ticket and the required PREPARE
+    //      * messages, otherwise returning null if there were not enough
+    //      * PREPARE messages or PRE-PREPARE has not been received yet.
+    //      */
+    //     Collection<IPhaseMessage> proof = new ArrayList<>();
+    //     for (Object prePrepareObject : ticket.getMessages()) {
+    //         if (!(prePrepareObject instanceof PrePrepareMessage prePrepare)) {
+    //             continue;
+    //         }
 
-            proof.add(prePrepare);
+    //         proof.add(prePrepare);
 
-            int matchingPrepares = 0;
-            for (Object prepareObject : ticket.getMessages()) {
-                if (!(prepareObject instanceof PrepareMessage prepare)) {
-                    continue;
-                }
+    //         int matchingPrepares = 0;
+    //         for (Object prepareObject : ticket.getMessages()) {
+    //             if (!(prepareObject instanceof PrepareMessage prepare)) {
+    //                 continue;
+    //             }
 
-                if (!Arrays.equals(prePrepare.getDigest(), prepare.getDigest())) {
-                    continue;
-                }
+    //             if (!Arrays.equals(prePrepare.getDigest(), prepare.getDigest())) {
+    //                 continue;
+    //             }
 
-                matchingPrepares++;
-                proof.add(prepare);
+    //             matchingPrepares++;
+    //             proof.add(prepare);
 
-                if (matchingPrepares == requiredMatches) {
-                    return proof;
-                }
-            }
-        }
+    //             if (matchingPrepares == requiredMatches) {
+    //                 return proof;
+    //             }
+    //         }
+    //     }
 
-        return null;
-    }
+    //     return null;
+    // }
 
     public ViewChangeMessage produceViewChange(long newViewNumber, String replicaId, int tolerance) {
         /*
@@ -237,44 +244,12 @@ public class MessageLog implements Serializable {
         }
 
         final int requiredMatches = 2 * tolerance;
-        SortedMap<Long, Collection<IPhaseMessage>> preparedProofs = new TreeMap<>();
- 
-        // Scan through the ticket cache (i.e. the completed tickets)
-        for (Ticket<?, ?> ticket : this.ticketCache.values()) {
-            long seqNumber = ticket.getSeqNumber();
-            if (seqNumber > checkpoint) {
-                Collection<IPhaseMessage> proofs = this.selectPreparedProofs(ticket, requiredMatches);
-                if (proofs == null) {
-                    continue;
-                }
-
-                preparedProofs.put(seqNumber, proofs);
-            }
-        }
-
-        // Scan through the currently active tickets
-        for (Ticket<?, ?> ticket : this.tickets.values()) {
-            ReplicaTicketPhase phase = ticket.getPhase();
-            if (phase == ReplicaTicketPhase.PRE_PREPARE) {
-                continue;
-            }
-
-            long seqNumber = ticket.getSeqNumber();
-            if (seqNumber > checkpoint) {
-                Collection<IPhaseMessage> proofs = this.selectPreparedProofs(ticket, requiredMatches);
-                if (proofs == null) {
-                    continue;
-                }
-
-                preparedProofs.put(seqNumber, proofs);
-            }
-        }
 
         ViewChangeMessage viewChange = new ViewChangeMessage(
                 newViewNumber,
-                checkpoint,
-                checkpointProofs,
-                preparedProofs,
+                certificate1,
+                historyOfCheckpointI,
+                
                 replicaId);
 
         /*
@@ -356,38 +331,38 @@ public class MessageLog implements Serializable {
         return new ViewChangeResult(shouldBandwagon, smallestView, beginNextVote);
     }
 
-    private Collection<PrePrepareMessage> selectPreparedProofs(long newViewNumber, long minS, long maxS, SortedMap<Long, PrePrepareMessage> prePrepareMap) {
-        /*
-         * This procedure computes the prepared proofs for the NEW-VIEW message
-         * that is sent by the primary when it is elected in accordance with
-         * PBFT 4.4. It adds messages in between the min-s and max-s sequences,
-         * including any missing messages by using a no-op PRE-PREPARE message.
-         *
-         * Non-standard behavior - PBFT 4.4 specifies that PRE-PREPARE messages
-         * are to be sent without their requests, but again, this is up to the
-         * transport to decide how to work. For simplicity, the default
-         * implementation sends the request along with the PRE-PREPARE as
-         * explained in DefaultReplica.
-         */
-        Collection<PrePrepareMessage> sequenceProofs = new ArrayList<>();
-        for (long i = minS; minS != maxS && i <= maxS; i++) {
-            PrePrepareMessage prePrepareProofMessage = prePrepareMap.get(i);
-            if (prePrepareProofMessage == null) {
-                prePrepareProofMessage = new PrePrepareMessage(
-                        newViewNumber,
-                        i,
-                        NULL_DIGEST,
-                        NULL_REQ);
-            }
+    // private Collection<PrePrepareMessage> selectPreparedProofs(long newViewNumber, long minS, long maxS, SortedMap<Long, PrePrepareMessage> prePrepareMap) {
+    //     /*
+    //      * This procedure computes the prepared proofs for the NEW-VIEW message
+    //      * that is sent by the primary when it is elected in accordance with
+    //      * PBFT 4.4. It adds messages in between the min-s and max-s sequences,
+    //      * including any missing messages by using a no-op PRE-PREPARE message.
+    //      *
+    //      * Non-standard behavior - PBFT 4.4 specifies that PRE-PREPARE messages
+    //      * are to be sent without their requests, but again, this is up to the
+    //      * transport to decide how to work. For simplicity, the default
+    //      * implementation sends the request along with the PRE-PREPARE as
+    //      * explained in DefaultReplica.
+    //      */
+    //     Collection<PrePrepareMessage> sequenceProofs = new ArrayList<>();
+    //     for (long i = minS; minS != maxS && i <= maxS; i++) {
+    //         PrePrepareMessage prePrepareProofMessage = prePrepareMap.get(i);
+    //         if (prePrepareProofMessage == null) {
+    //             prePrepareProofMessage = new PrePrepareMessage(
+    //                     newViewNumber,
+    //                     i,
+    //                     NULL_DIGEST,
+    //                     NULL_REQ);
+    //         }
 
-            sequenceProofs.add(prePrepareProofMessage);
+    //         sequenceProofs.add(prePrepareProofMessage);
 
-            Ticket<Serializable, Serializable> ticket = this.newTicket(newViewNumber, i);
-            ticket.append(prePrepareProofMessage);
-        }
+    //         Ticket<Serializable, Serializable> ticket = this.newTicket(newViewNumber, i);
+    //         ticket.append(prePrepareProofMessage);
+    //     }
 
-        return sequenceProofs;
-    }
+    //     return sequenceProofs;
+    // }
 
     public NewViewMessage produceNewView(long newViewNumber, String replicaId, int tolerance) {
         /*

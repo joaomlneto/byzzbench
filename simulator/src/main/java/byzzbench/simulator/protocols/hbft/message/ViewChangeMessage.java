@@ -14,9 +14,9 @@ import byzzbench.simulator.protocols.hbft.SpeculativeHistory;
 @With
 public class ViewChangeMessage extends MessagePayload {
     private final long newViewNumber;
-    private final Collection<CheckpointIMessage> qExecutions;
-    private final Collection<CheckpointIIMessage> pExecutions;
-    private final SpeculativeHistory speculativeHistory;
+    private final SpeculativeHistory speculativeHistoryP;
+    private final SpeculativeHistory speculativeHistoryQ;
+    private final SpeculativeHistory speculativeHistoryR;
     private final String replicaId;
 
     @Override

@@ -1,5 +1,6 @@
 package byzzbench.simulator.protocols.hbft.message;
 
+import byzzbench.simulator.protocols.hbft.SpeculativeHistory;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.With;
@@ -12,6 +13,7 @@ public class CheckpointIIIMessage extends CheckpointMessage {
     // Digest of speculative execution history
     private final byte[] digest;
     private final String replicaId;
+    private final SpeculativeHistory speculativeHistory;
 
     @Override
     public String getType() {
