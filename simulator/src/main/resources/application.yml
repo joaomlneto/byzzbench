@@ -1,0 +1,39 @@
+# Spring Boot configuration
+spring:
+  application:
+    name: byzzbench-simulator
+  jackson:
+    mapper:
+      sort-properties-alphabetically: true
+  devtools:
+    livereload:
+      enabled: false
+springdoc:
+  swagger-ui:
+    path: /
+  api-docs:
+    path: /spec
+
+# ByzzBench configuration
+byzzbench:
+  generateScenariosOnStartup: false
+  scheduler:
+    id: "byzzfuzz"
+    params:
+      numRoundsWithProcessFaults: 2
+      numRoundsWithNetworkFaults: 4
+      numRoundsWithFaults: 5
+  scenario:
+    id: pbft-java
+    scheduler: byzzfuzz
+    schedulerParams:
+      numRoundsWithProcessFaults: 44
+      numRoundsWithNetworkFaults: 55
+      numRoundsWithFaults: 66
+      mutations:
+        - predicate: mypred1
+          behavior: mybehavior1
+        - predicate: mypred2
+          behavior: mybehavior2
+        - predicate: mypred3
+          behavior: mybehavior3
