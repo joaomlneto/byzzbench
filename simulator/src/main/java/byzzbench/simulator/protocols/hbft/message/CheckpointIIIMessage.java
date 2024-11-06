@@ -13,7 +13,6 @@ public class CheckpointIIIMessage extends CheckpointMessage {
     // Digest of speculative execution history
     private final byte[] digest;
     private final String replicaId;
-    private final SpeculativeHistory speculativeHistory;
 
     @Override
     public String getType() {

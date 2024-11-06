@@ -2,7 +2,6 @@ package byzzbench.simulator.protocols.hbft;
 
 import byzzbench.simulator.protocols.hbft.message.*;
 import byzzbench.simulator.protocols.hbft.pojo.ReplicaRequestKey;
-import byzzbench.simulator.protocols.hbft.pojo.ReplicaTicketPhase;
 import byzzbench.simulator.protocols.hbft.pojo.TicketKey;
 import byzzbench.simulator.protocols.hbft.pojo.ViewChangeResult;
 import lombok.Getter;
@@ -36,6 +35,11 @@ public class MessageLog implements Serializable {
     private SpeculativeHistory historyOfCheckpointI;
     private SpeculativeHistory certificate1;
     private SpeculativeHistory certificate2;
+
+    // Feel like this is a better way of storing the certificates
+    // (seqNumber, speculativeHistory)
+    // private SortedMap<Long, Collection<SpeculativeHistory>> cer1 = new TreeMap<>();
+    // private SortedMap<Long, Collection<SpeculativeHistory>> cer2 = new TreeMap<>();
 
     private volatile long lowWaterMark;
     private volatile long highWaterMark;
@@ -116,7 +120,7 @@ public class MessageLog implements Serializable {
         this.lowWaterMark = checkpoint;
     }
 
-    public void appendCheckpoint(CheckpointMessage checkpoint, int tolerance) {
+    public void appendCheckpoint(CheckpointMessage checkpoint, int tolerance, SpeculativeHistory history) {
         /*
          * Per hBFT 4.2, each time a checkpoint-III is generated or received, it
          * gets stored in the log until 2f + 1 are accumulated (CER2(M,v)) that have
@@ -125,10 +129,10 @@ public class MessageLog implements Serializable {
          */
         long seqNumber = checkpoint.getLastSeqNumber();
 
-        if (checkpoint instanceof CheckpointIMessage checkpointI) {
+        if (checkpoint instanceof CheckpointIMessage) {
             Collection<CheckpointMessage> checkpointProofs = this.checkpointsI.computeIfAbsent(seqNumber, k -> new ConcurrentLinkedQueue<>());
             checkpointProofs.add(checkpoint);
-            this.historyOfCheckpointI = checkpointI.getSpeculativeHistory();
+            this.historyOfCheckpointI = history;
         }
 
         if (checkpoint instanceof CheckpointIIMessage) {
@@ -136,7 +140,7 @@ public class MessageLog implements Serializable {
             checkpointProofs.add(checkpoint);
         }
 
-        if (checkpoint instanceof CheckpointIIIMessage checkpointIII) {
+        if (checkpoint instanceof CheckpointIIIMessage) {
             Collection<CheckpointMessage> checkpointProofs = this.checkpointsIII.computeIfAbsent(seqNumber, k -> new ConcurrentLinkedQueue<>());
             checkpointProofs.add(checkpoint);
 
@@ -150,7 +154,7 @@ public class MessageLog implements Serializable {
                     matching++;
 
                     if (matching == stableCount) {
-                        this.certificate2 = checkpointIII.getSpeculativeHistory();
+                        this.certificate2 = history;
                         this.gcCheckpoint(seqNumber);
                         return;
                     }
@@ -159,7 +163,7 @@ public class MessageLog implements Serializable {
         }
     }
 
-    public boolean isCER1(CheckpointIIMessage checkpoint, int tolerance) {
+    public boolean isCER1(CheckpointMessage checkpoint, int tolerance, SpeculativeHistory history) {
         long seqNumber = checkpoint.getLastSeqNumber();
         Collection<CheckpointMessage> checkpointProofs = this.checkpointsII.computeIfAbsent(seqNumber, k -> new ConcurrentLinkedQueue<>());
         
@@ -173,7 +177,7 @@ public class MessageLog implements Serializable {
                 matching++;
 
                 if (matching == stableCount) {
-                    this.certificate1 = checkpoint.getSpeculativeHistory();
+                    this.certificate1 = history;
                     return true;
                 }
             }
@@ -182,58 +186,12 @@ public class MessageLog implements Serializable {
         return false;
     }
 
-    // // Probably not needed
-    // private Collection<IPhaseMessage> selectPreparedProofs(Ticket<?, ?> ticket, int requiredMatches) {
-    //     /*
-    //      * Selecting the proofs of PRE-PREPARE and PREPARE messages for the
-    //      * VIEW-CHANGE vote per PBFT 4.4.
-    //      *
-    //      * This procedure is designed to be run over each ReplicaTicket and
-    //      * collects the PRE-PREPARE for the ticket and the required PREPARE
-    //      * messages, otherwise returning null if there were not enough
-    //      * PREPARE messages or PRE-PREPARE has not been received yet.
-    //      */
-    //     Collection<IPhaseMessage> proof = new ArrayList<>();
-    //     for (Object prePrepareObject : ticket.getMessages()) {
-    //         if (!(prePrepareObject instanceof PrePrepareMessage prePrepare)) {
-    //             continue;
-    //         }
-
-    //         proof.add(prePrepare);
-
-    //         int matchingPrepares = 0;
-    //         for (Object prepareObject : ticket.getMessages()) {
-    //             if (!(prepareObject instanceof PrepareMessage prepare)) {
-    //                 continue;
-    //             }
-
-    //             if (!Arrays.equals(prePrepare.getDigest(), prepare.getDigest())) {
-    //                 continue;
-    //             }
-
-    //             matchingPrepares++;
-    //             proof.add(prepare);
-
-    //             if (matchingPrepares == requiredMatches) {
-    //                 return proof;
-    //             }
-    //         }
-    //     }
-
-    //     return null;
-    // }
-
-    public ViewChangeMessage produceViewChange(long newViewNumber, String replicaId, int tolerance) {
+    public ViewChangeMessage produceViewChange(long newViewNumber, String replicaId, int tolerance, SpeculativeHistory history) {
         /*
          * Produces a VIEW-CHANGE vote message in accordance with hBFT 4.3.
          *
          * The last stable checkpoint is defined as the low water mark for the
-         * message log. The checkpoint proofs are provided each time the
-         * checkpoint advances, or could possibly be empty if the checkpoint
-         * is still at 0 (i.e. starting state).
-         *
-         * Proofs are gathered through #selectPreparedProofs(...) with 2f
-         * required PREPARE messages.
+         * message log.
          */
         long checkpoint = this.lowWaterMark;
 
@@ -243,14 +201,18 @@ public class MessageLog implements Serializable {
             throw new IllegalStateException("Checkpoint has diverged without any proof");
         }
 
-        final int requiredMatches = 2 * tolerance;
+        /* 
+         * Speculatively executed requests with sequence number higher,
+         * than the last accepted checkpoint (lowWaterMark)
+         */
+        SpeculativeHistory filteredHistory = history.getHistory(lowWaterMark);
 
         ViewChangeMessage viewChange = new ViewChangeMessage(
-                newViewNumber,
-                certificate1,
-                historyOfCheckpointI,
-                
-                replicaId);
+            newViewNumber,
+            certificate1,
+            historyOfCheckpointI,
+            filteredHistory,
+            replicaId);
 
         /*
          * Potentially non-standard behavior - PBFT 4.5.2 does not specify
@@ -331,55 +293,10 @@ public class MessageLog implements Serializable {
         return new ViewChangeResult(shouldBandwagon, smallestView, beginNextVote);
     }
 
-    // private Collection<PrePrepareMessage> selectPreparedProofs(long newViewNumber, long minS, long maxS, SortedMap<Long, PrePrepareMessage> prePrepareMap) {
-    //     /*
-    //      * This procedure computes the prepared proofs for the NEW-VIEW message
-    //      * that is sent by the primary when it is elected in accordance with
-    //      * PBFT 4.4. It adds messages in between the min-s and max-s sequences,
-    //      * including any missing messages by using a no-op PRE-PREPARE message.
-    //      *
-    //      * Non-standard behavior - PBFT 4.4 specifies that PRE-PREPARE messages
-    //      * are to be sent without their requests, but again, this is up to the
-    //      * transport to decide how to work. For simplicity, the default
-    //      * implementation sends the request along with the PRE-PREPARE as
-    //      * explained in DefaultReplica.
-    //      */
-    //     Collection<PrePrepareMessage> sequenceProofs = new ArrayList<>();
-    //     for (long i = minS; minS != maxS && i <= maxS; i++) {
-    //         PrePrepareMessage prePrepareProofMessage = prePrepareMap.get(i);
-    //         if (prePrepareProofMessage == null) {
-    //             prePrepareProofMessage = new PrePrepareMessage(
-    //                     newViewNumber,
-    //                     i,
-    //                     NULL_DIGEST,
-    //                     NULL_REQ);
-    //         }
-
-    //         sequenceProofs.add(prePrepareProofMessage);
-
-    //         Ticket<Serializable, Serializable> ticket = this.newTicket(newViewNumber, i);
-    //         ticket.append(prePrepareProofMessage);
-    //     }
-
-    //     return sequenceProofs;
-    // }
-
     public NewViewMessage produceNewView(long newViewNumber, String replicaId, int tolerance) {
         /*
          * Produces the NEW-VIEW message to notify the other replicas of the
          * elected primary in accordance with PBFT 4.4.
-         *
-         * If there is not a quorum of votes for this replica to become the
-         * primary excluding this replica's own vote, then do not proceed.
-         *
-         * This scans through all VIEW-CHANGE votes for their checkpoint proofs
-         * and their prepared proofs to look for the min and max sequence
-         * numbers to generate the final PREPARE proofs
-         * (see #selectPrepareProofs(...)). These values are also used to
-         * update the water marks and passed through the proof map.
-         *
-         * The VIEW-CHANGE votes are then added in addition to the PREPARE
-         * proofs to the NEW-VIEW message.
          */
 
         SortedMap<String, ViewChangeMessage> newViewSet = this.viewChanges.get(newViewNumber);
@@ -394,57 +311,42 @@ public class MessageLog implements Serializable {
             return null;
         }
 
-        long minS = Long.MAX_VALUE;
-        long maxS = Long.MIN_VALUE;
-        Collection<CheckpointMessage> minSProof = null;
-        SortedMap<Long, PrePrepareMessage> prePrepareMap = new TreeMap<>();
+        // Rule A: Find a valid execution history M from the view-change messages
+        SpeculativeHistory selectedHistoryM = null;
+        Collection<CheckpointMessage> checkpointProofs = null;
+        long minSeqNum = Long.MAX_VALUE;
+        long maxSeqNum = Long.MIN_VALUE;
+
+        long certificateTolerance = 2 * tolerance + 1;
+
         for (ViewChangeMessage viewChange : newViewSet.values()) {
-            long seqNumber = viewChange.getLastSeqNumber();
-            Collection<CheckpointMessage> proofs = viewChange.getCheckpointProofs();
-            if (seqNumber < minS) {
-                minS = seqNumber;
-                minSProof = proofs;
-            }
+            SpeculativeHistory speculativeP = viewChange.getSpeculativeHistoryP();
 
-            if (seqNumber > maxS) {
-                maxS = seqNumber;
-            }
-
-            for (Map.Entry<Long, Collection<IPhaseMessage>> entry : viewChange.getPreparedProofs().entrySet()) {
-                long prePrepareSeqNumber = entry.getKey();
-                if (prePrepareSeqNumber > maxS) {
-                    maxS = prePrepareSeqNumber;
-                }
-
-                for (IPhaseMessage phaseMessage : entry.getValue()) {
-                    if (!(phaseMessage instanceof PrePrepareMessage)) {
-                        continue;
-                    }
-
-                    prePrepareMap.put(prePrepareSeqNumber, (PrePrepareMessage) phaseMessage);
-                    break;
-                }
+            // Rule A1: Check if speculative history M has CER1(M, v) from at least 2f + 1 replicas
+            if (isValidExecutionHistory(speculativeP, tolerance)) {
+                selectedHistoryM = speculativeP;
+                checkpointProofs = this.getCheckpointProofs(viewChange);
+                break;
             }
         }
 
-        this.gcNewView(newViewNumber);
-        if (minS > this.lowWaterMark) {
-            this.checkpoints.put(minS, minSProof);
-            this.gcCheckpoint(minS);
+        // Rule B: If no history was found in the view changes, select last stable checkpoint
+        if (selectedHistoryM == null) {
+            selectedHistoryM = this.getLastStableCheckpoint();
         }
 
+        // Collect the required view-change proofs for the new view
         Collection<ViewChangeMessage> viewChangeProofs = new ArrayList<>(newViewSet.values());
-        viewChangeProofs.addAll(newViewSet.values());
         if (!hasOwnViewChange) {
             viewChangeProofs.add(this.produceViewChange(newViewNumber, replicaId, tolerance));
         }
 
-        Collection<PrePrepareMessage> preparedProofs = this.selectPreparedProofs(newViewNumber, minS, maxS, prePrepareMap);
 
+        // Construct the New-View message with V, X (selected checkpoint), and M (speculative history)
         return new NewViewMessage(
                 newViewNumber,
                 viewChangeProofs,
-                preparedProofs);
+                selectedHistoryM);
     }
 
     private void gcNewView(long newViewNumber) {

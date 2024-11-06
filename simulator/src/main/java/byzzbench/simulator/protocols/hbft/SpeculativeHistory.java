@@ -4,9 +4,13 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
 
+import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 @Data
+@AllArgsConstructor
+@NoArgsConstructor
 public class SpeculativeHistory implements Serializable {
     private Collection<SpeculativeEntry> history = new ArrayList<>();
 
@@ -14,8 +18,9 @@ public class SpeculativeHistory implements Serializable {
         history.add(new SpeculativeEntry(sequenceNumber, clientId, operation, result));
     }
 
-    public Collection<SpeculativeEntry> getHistory(long sequenceNumber) {
-        return history.stream().filter(entry -> entry.getSequenceNumber() < sequenceNumber).toList();
+    public SpeculativeHistory getHistory(long sequenceNumber) {
+        Collection<SpeculativeEntry> filteredHistory = history.stream().filter(entry -> entry.getSequenceNumber() > sequenceNumber).toList();
+        return new SpeculativeHistory(filteredHistory);
     }
 
     @Data

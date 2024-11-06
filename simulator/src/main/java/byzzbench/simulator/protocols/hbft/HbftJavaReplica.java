@@ -5,7 +5,6 @@ import byzzbench.simulator.protocols.hbft.message.*;
 import byzzbench.simulator.protocols.hbft.pojo.ReplicaRequestKey;
 import byzzbench.simulator.protocols.hbft.pojo.ReplicaTicketPhase;
 import byzzbench.simulator.protocols.hbft.pojo.ViewChangeResult;
-import byzzbench.simulator.protocols.pbft_java.message.PrePrepareMessage;
 import byzzbench.simulator.state.LogEntry;
 import byzzbench.simulator.state.SerializableLogEntry;
 import byzzbench.simulator.state.TotalOrderCommitLog;
@@ -219,16 +218,6 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
         // PBFT 4.2 - Append REQUEST
         ticket.append(request);
 
-        /*
-         * Non-standard behavior - hBFT 4.2 specifies that requests are not to
-         * be sent with PREPARE, but I leave it up to the transport to
-         * decide how messages are sent and encoded and use the PREPARE
-         * message to hold the request as well.
-         *
-         * Replica has accepted the request, multicast a PREPARE per hBFT
-         * 4.2 which contains the view, the sequence number, request digest,
-         * and the request message that was received.
-         */
         PrepareMessage prepare = new PrepareMessage(
                 currentViewNumber,
                 seqNumber,
@@ -236,8 +225,26 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
                 request);
         this.broadcastMessage(prepare);
 
+        Serializable operation = request.getOperation();
+        Serializable result = this.compute(new SerializableLogEntry(operation));
+
+        ReplyMessage reply = new ReplyMessage(
+                currentViewNumber,
+                timestamp,
+                seqNumber,
+                clientId,
+                this.getNodeId(),
+                result,
+                this.getSpeculativeHistory());
+
+        this.sendReply(clientId, reply);
+
         // hBFT 4.2 - Append PREPARE
         ticket.append(prepare);
+
+        // Move to COMMIT phase
+        ReplicaTicketPhase phase = ticket.getPhase();
+        ticket.casPhase(phase, ReplicaTicketPhase.COMMIT);
     }
 
     public void recvRequest(RequestMessage request) {
@@ -524,19 +531,20 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
         
         if (checkpoint instanceof CheckpointIMessage) {
             // Only primary can send checkpoint-I, else send View-Change
-            if (primaryId.equals(checkpoint.getReplicaId())) {
-                messageLog.appendCheckpoint(checkpoint, this.tolerance);
+            if (primaryId.equals(checkpoint.getReplicaId()) && Arrays.equals(checkpoint.getDigest(), this.digest(speculativeHistory))) {
+                messageLog.appendCheckpoint(checkpoint, this.tolerance, this.speculativeHistory);
             } else {
-                // TODO: Send View-change message
+                ViewChangeMessage viewChangeMessage = messageLog.produceViewChange(this.getViewNumber() + 1, this.getNodeId(), tolerance, speculativeHistory);
+                this.broadcastMessage(viewChangeMessage);
             }
         } else if (checkpoint instanceof CheckpointIIMessage) {
             // Digest and speculative execution history should match
             if (Arrays.equals(checkpoint.getDigest(), this.digest(speculativeHistory))) {
-                messageLog.appendCheckpoint(checkpoint, this.tolerance);
+                messageLog.appendCheckpoint(checkpoint, this.tolerance, this.speculativeHistory);
                 
                 // Check whether 2f + 1 Checkpoint-II messages have been seen
                 // If yes then send Checkpoint-III
-                boolean isCER1 = messageLog.isCER1(checkpoint, tolerance);
+                boolean isCER1 = messageLog.isCER1(checkpoint, tolerance, this.speculativeHistory);
                 if (isCER1) {
                     CheckpointMessage checkpointIII = new CheckpointIIIMessage(
                         checkpoint.getLastSeqNumber(),
@@ -545,19 +553,21 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
                     );
 
                     // I add it to the log as the sendCheckpoint doesnt include self
-                    messageLog.appendCheckpoint(checkpointIII, this.tolerance);
+                    messageLog.appendCheckpoint(checkpointIII, this.tolerance, this.speculativeHistory);
                     this.sendCheckpoint(checkpointIII);
                 }
             } else {
-                // TODO: Send View-change message
+                ViewChangeMessage viewChangeMessage = messageLog.produceViewChange(this.getViewNumber() + 1, this.getNodeId(), tolerance, speculativeHistory);
+                this.broadcastMessage(viewChangeMessage);
             }
         } else if (checkpoint instanceof CheckpointIIIMessage) {
             // Digest and speculative execution history should match
             if (Arrays.equals(checkpoint.getDigest(), this.digest(speculativeHistory))) {
                 // GC will execute once 2f + 1 is received
-                messageLog.appendCheckpoint(checkpoint, this.tolerance);
+                messageLog.appendCheckpoint(checkpoint, this.tolerance, this.speculativeHistory);
             } else {
-                // TODO: Send View-change message
+                ViewChangeMessage viewChangeMessage = messageLog.produceViewChange(this.getViewNumber() + 1, this.getNodeId(), tolerance, speculativeHistory);
+                this.broadcastMessage(viewChangeMessage);
             }
         }
     }
@@ -579,80 +589,60 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
     }
 
     public void recvViewChange(ViewChangeMessage viewChange) {
-        /*
-         * A replica sends a view change to vote out the primary when it
-         * becomes disgruntled due to a (or many) timeouts in accordance with
-         * PBFT 4.4.
-         *
-         * When the the view change is recorded to the message log, it will
-         * determine firstly whether it should bandwagon the next view change
-         * and then secondly whether it should start the next view change
-         * timer in accordance with PBFT 4.5.2.
-         */
         long curViewNumber = this.getViewNumber();
         long newViewNumber = viewChange.getNewViewNumber();
         String newPrimaryId = this.computePrimaryId(newViewNumber, this.getNodeIds().size());
-
-        // PBFT 4.5.2 - Determine whether to bandwagon on the lowest view change
-        ViewChangeResult result = messageLog.acceptViewChange(viewChange,
-                this.getNodeId(),
-                curViewNumber,
-                this.tolerance);
+    
+        // TODO:
+        // hBFT-Specific: Determine if hPANIC triggered this view change
+        // if (viewChange.isTriggeredByPanic()) {
+        //     this.messageLog.append(viewChange); 
+        // }
+    
+        // Checkpoint Synchronization: Make sure speculative history matches
+        if (!localDigest.equals(viewChange.getCheckpointDigest())) {
+            this.sendViewChange(new ViewChangeMessage(newViewNumber, curViewNumber, localDigest, this.getNodeId()));
+            return;
+        }
+    
+        // hBFT: Process view change acceptance
+        ViewChangeResult result = messageLog.acceptViewChange(viewChange, this.getNodeId(), curViewNumber, this.tolerance);
         if (result.isShouldBandwagon()) {
             ViewChangeMessage bandwagonViewChange = messageLog.produceViewChange(
-                    result.getBandwagonViewNumber(),
-                    this.getNodeId(),
-                    this.tolerance);
+                    result.getBandwagonViewNumber(), this.getNodeId(), this.tolerance, this.speculativeHistory);
             this.sendViewChange(bandwagonViewChange);
         }
-
-        // PBFT 4.5.2 - Start the timers that will vote for newViewNumber + 1.
+    
+        // Start timer to vote for next view, if applicable
         if (result.isBeginNextVote()) {
             for (LinearBackoff backoff : this.timeouts.values()) {
                 synchronized (backoff) {
-                    long timerViewNumber = backoff.getNewViewNumber();
-                    if (newViewNumber + 1 == timerViewNumber) {
+                    if (newViewNumber + 1 == backoff.getNewViewNumber()) {
                         backoff.beginNextTimer();
                     }
                 }
             }
         }
-
+    
+        // If this replica is the new primary, multicast NEW-VIEW and update state
         if (newPrimaryId.equals(this.getNodeId())) {
-            /*
-             * Per PBFT 4.4, if this is the replica being voted as the new
-             * primary, then when it receives 2*f votes, it will multicast a
-             * NEW-VIEW message to notify the other replicas and perform the
-             * necessary procedures to enter the new view.
-             */
             NewViewMessage newView = messageLog.produceNewView(newViewNumber, this.getNodeId(), this.tolerance);
+    
+            // If new-view certificate (CER2) is valid, broadcast the NEW-VIEW message
             if (newView != null) {
                 this.broadcastMessage(newView);
-
-                /*
-                 * Possibly non-standard behavior - there is actually no
-                 * mention of sequence number synchronization, but clearly this
-                 * must be done because the NEW-VIEW may possibly update the
-                 * checkpoint past the current sequence number; therefore, the
-                 * new primary has to ensure that any subsequent requests being
-                 * dispatched after the view change occurs must have a
-                 * sufficiently high sequence number to pass the watermark test.
-                 */
-                Collection<PrePrepareMessage> preparedProofs = newView.getPreparedProofs();
-                for (PrePrepareMessage prePrepare : preparedProofs) {
-                    long seqNumber = prePrepare.getSequenceNumber();
-                    if (this.seqCounter.get() < seqNumber) {
-                        this.seqCounter.set(seqNumber + 1);
-                    }
-                }
-
                 this.enterNewView(newViewNumber);
+                
+                // as of hBFT 4.3 checkpoint protocol is called after a new-view message
+                CheckpointMessage checkpoint = new CheckpointIMessage(seqCounter.get(), this.digest(this.getSpeculativeHistory()), this.getNodeId());
+                this.messageLog.appendCheckpoint(checkpoint, tolerance, speculativeHistory);
+                this.broadcastMessage(checkpoint);
             }
         }
     }
 
     public void sendViewChange(ViewChangeMessage viewChange) {
-        // PBFT 4.4 - Multicast VIEW-CHANGE vote
+        // hBFT 4.3 - Multicast VIEW-CHANGE vote
         this.broadcastMessage(viewChange);
     }
 
