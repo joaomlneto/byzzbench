@@ -34,6 +34,7 @@ dependencies {
     annotationProcessor("org.projectlombok:lombok")
     testImplementation("org.springframework.boot:spring-boot-starter-test")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+    implementation("org.springframework.boot:spring-boot-starter-validation")
 
     //implementation("org.springdoc:springdoc-openapi-ui:1.8.0")
     // either API (just documentation) or API + UI (documentation + Swagger UI)
