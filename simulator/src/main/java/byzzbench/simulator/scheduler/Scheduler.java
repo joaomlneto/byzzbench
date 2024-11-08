@@ -14,12 +14,14 @@ public interface Scheduler extends Serializable {
 
     /**
      * Loads the parameters for the scheduler from a JSON object.
+     *
      * @param parameters The JSON object containing the parameters for the scheduler.
      */
     void loadParameters(JsonNode parameters);
 
     /**
      * Schedules the next event to be delivered.
+     *
      * @return The decision made by the scheduler.
      * @throws Exception if an error occurs while scheduling the next event.
      */
@@ -31,13 +33,14 @@ public interface Scheduler extends Serializable {
     void reset();
 
     /**
-     * Checks if the scheduler is currently dropping messages.
+     * Checks if the scheduler is currently dropping messages. FIXME: refactor
+     *
      * @return true if the scheduler is currently dropping messages, false otherwise.
      */
     boolean isDropMessages();
 
     /**
-     * Stops the scheduler from dropping messages.
+     * Stops the scheduler from dropping messages. FIXME: refactor
      */
     void stopDropMessages();
 }

@@ -1,7 +1,7 @@
 package byzzbench.simulator.scheduler;
 
 import byzzbench.simulator.Scenario;
-import byzzbench.simulator.faults.MessageMutationFault;
+import byzzbench.simulator.faults.faults.MessageMutationFault;
 import byzzbench.simulator.service.MessageMutatorService;
 import byzzbench.simulator.transport.ClientRequestEvent;
 import byzzbench.simulator.transport.Event;
