@@ -1,7 +1,10 @@
 package byzzbench.simulator;
 
-import byzzbench.simulator.faults.HealNodeNetworkFault;
-import byzzbench.simulator.faults.IsolateProcessNetworkFault;
+import byzzbench.simulator.faults.Fault;
+import byzzbench.simulator.faults.FaultContext;
+import byzzbench.simulator.faults.factories.ByzzFuzzScenarioFaultFactory;
+import byzzbench.simulator.faults.faults.HealNodeNetworkFault;
+import byzzbench.simulator.faults.faults.IsolateProcessNetworkFault;
 import byzzbench.simulator.schedule.Schedule;
 import byzzbench.simulator.scheduler.Scheduler;
 import byzzbench.simulator.state.AgreementPredicate;
@@ -30,53 +33,53 @@ public abstract class BaseScenario implements Scenario {
      */
     @ToString.Exclude
     protected final transient Transport transport;
-
     /**
      * The timekeeper for the scenario.
      */
     protected final transient Timekeeper timekeeper;
-
     /**
      * The scheduler for the scenario.
      */
     protected final Scheduler scheduler;
-
     /**
      * Map of node id to the {@link Replica} object.
      */
     @Getter(onMethod_ = {@Synchronized})
     @JsonIgnore
     private final NavigableMap<String, Replica> nodes = new TreeMap<>();
-
     /**
      * Map of client id to the {@link Client} object.
      */
     @Getter(onMethod_ = {@Synchronized})
     @JsonIgnore
     private final NavigableMap<String, Client> clients = new TreeMap<>();
-
     /**
      * A unique identifier for the scenario.
      */
     private final String id;
-
     /**
      * The invariants that must be satisfied by the scenario at all times.
      */
     private final List<ScenarioPredicate> invariants = List.of(new AgreementPredicate(), new LivenessPredicate());
-
     /**
      * The schedule of events in order of delivery.
      */
     @Getter(onMethod_ = {@Synchronized})
     @JsonIgnore
     private final Schedule schedule = Schedule.builder().scenario(this).build();
-
     /**
      * The observers of this scenario.
      */
     @JsonIgnore
     private final transient List<ScenarioObserver> observers = new java.util.ArrayList<>();
+    /**
+     * The termination condition for the scenario.
+     */
+    protected ScenarioPredicate terminationCondition;
+    /**
+     * Pseudo-random number generator for the scenario.
+     */
+    Random rand;
 
     /**
      * Creates a new scenario with the given unique identifier and scheduler.
@@ -100,15 +103,6 @@ public abstract class BaseScenario implements Scenario {
      */
     public void addObserver(ScenarioObserver observer) {
         this.observers.add(observer);
-    }
-
-    /**
-     * Removes an observer from the scenario.
-     *
-     * @param observer The observer to remove.
-     */
-    public void removeObserver(ScenarioObserver observer) {
-        this.observers.remove(observer);
     }
 
     /**
@@ -146,8 +140,12 @@ public abstract class BaseScenario implements Scenario {
         getNodes().put(replica.getNodeId(), replica);
 
         // for each node, add a IsolateNodeFault and a HealNodeFault
-        this.transport.addNetworkFault(new IsolateProcessNetworkFault(replica.getNodeId()));
-        this.transport.addNetworkFault(new HealNodeNetworkFault(replica.getNodeId()));
+        this.transport.addFault(new IsolateProcessNetworkFault(replica.getNodeId()), false);
+        this.transport.addFault(new HealNodeNetworkFault(replica.getNodeId()), false);
+
+        // inject byzzfuzz faults
+        List<Fault> byzzFuzzFaults = (new ByzzFuzzScenarioFaultFactory()).generateFaults(new FaultContext(this));
+        byzzFuzzFaults.forEach(fault -> this.transport.addFault(fault, true));
 
         // notify the observers
         this.observers.forEach(o -> o.onReplicaAdded(replica));
@@ -227,8 +225,12 @@ public abstract class BaseScenario implements Scenario {
                 .collect(Collectors.toCollection(TreeSet::new));
     }
 
+    @Override
+    public boolean isTerminated() {
+        return this.terminationCondition.test(this);
+    }
+
     public final void finalizeSchedule() {
         this.getSchedule().finalizeSchedule(this.unsatisfiedInvariants());
     }
-
 }
