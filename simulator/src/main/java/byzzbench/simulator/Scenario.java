@@ -99,12 +99,26 @@ public interface Scenario extends Serializable {
      */
     void setupScenario();
 
+    /**
+     * Check whether the scenario is finished, according to the termination condition.
+     *
+     * @return True if the scenario is finished, false otherwise.
+     */
+    boolean isTerminated();
+
+    /**
+     * Get the unsatisfied invariants for the scenario.
+     *
+     * @return The unsatisfied invariants for the scenario.
+     */
+    SortedSet<ScenarioPredicate> unsatisfiedInvariants();
+
+    /**
+     * Check whether the invariants hold for the scenario.
+     *
+     * @return True if the invariants hold, false otherwise.
+     */
     default boolean invariantsHold() {
         return unsatisfiedInvariants().isEmpty();
     }
-
-    // TODO: refactor the methods below
-    TerminationCondition getTerminationCondition();
-
-    SortedSet<ScenarioPredicate> unsatisfiedInvariants();
 }
