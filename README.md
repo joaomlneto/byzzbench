@@ -73,7 +73,7 @@ We currently have the following protocols implemented:
   the [Fast-HotStuff paper](https://arxiv.org/abs/2010.11454);
 - [XRPL](simulator/src/main/java/byzzbench/simulator/protocols/xrpl/XRPLReplica.java): [XRP Ledger Consensus Protocol](https://xrpl.org/docs/concepts/consensus-protocol/consensus-research.html)
   implementation;
-- *Your protocol here?* :-)
+- _Your protocol here?_ :-)
 
 ## Documentation
 
