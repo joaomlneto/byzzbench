@@ -1,4 +1,11 @@
-package byzzbench.simulator.faults;
+package byzzbench.simulator.faults.factories;
+
+import byzzbench.simulator.faults.Fault;
+import byzzbench.simulator.faults.FaultContext;
+import byzzbench.simulator.faults.FaultFactory;
+import byzzbench.simulator.faults.faults.HealNetworkFault;
+import byzzbench.simulator.faults.faults.HealNodeNetworkFault;
+import byzzbench.simulator.faults.faults.IsolateProcessNetworkFault;
 
 import java.util.ArrayList;
 import java.util.List;

@@ -1,5 +1,7 @@
-package byzzbench.simulator.faults;
+package byzzbench.simulator.faults.faults;
 
+import byzzbench.simulator.faults.Fault;
+import byzzbench.simulator.faults.FaultContext;
 import byzzbench.simulator.transport.Event;
 import byzzbench.simulator.transport.MessageEvent;
 import byzzbench.simulator.utils.NonNull;
@@ -31,6 +33,7 @@ public abstract class MessageMutationFault implements Fault, Comparable<MessageM
 
     /**
      * Checks if this mutator can be applied to the target class
+     *
      * @param targetClass the target class to check
      * @return True if the mutator can be applied to the target class, false otherwise
      */
@@ -44,6 +47,7 @@ public abstract class MessageMutationFault implements Fault, Comparable<MessageM
 
     /**
      * Checks if the event can be mutated by this mutator
+     *
      * @param ctx The context of the fault
      * @return True if the message can be mutated by this mutator, false otherwise
      */

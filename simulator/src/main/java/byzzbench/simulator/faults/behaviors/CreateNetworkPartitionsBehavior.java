@@ -48,12 +48,17 @@ public class CreateNetworkPartitionsBehavior implements FaultBehavior {
 
     @Override
     public String getId() {
-        return "createnetworkpartitions(%s)".formatted(Arrays.toString(this.partitions));
+        return "createnetworkpartitions-%s".formatted(Arrays.toString(this.partitions));
     }
 
     @Override
     public String getName() {
-        return "Create network partitions for node %s".formatted(Arrays.toString(this.partitions));
+        // convert the array of arrays into a string
+        String partitions = Arrays.stream(this.partitions)
+                .map(Arrays::toString)
+                .reduce("", (a, b) -> a + b);
+
+        return "Create partition %s".formatted(partitions);
     }
 
     @Override

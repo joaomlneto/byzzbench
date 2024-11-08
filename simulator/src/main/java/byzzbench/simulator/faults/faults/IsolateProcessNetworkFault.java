@@ -1,5 +1,6 @@
-package byzzbench.simulator.faults;
+package byzzbench.simulator.faults.faults;
 
+import byzzbench.simulator.faults.BaseFault;
 import byzzbench.simulator.faults.behaviors.IsolateNodeBehavior;
 import byzzbench.simulator.faults.predicates.NodeInPartitionPredicate;
 import byzzbench.simulator.transport.Router;

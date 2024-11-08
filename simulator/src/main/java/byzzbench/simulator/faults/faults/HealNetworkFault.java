@@ -1,5 +1,7 @@
-package byzzbench.simulator.faults;
+package byzzbench.simulator.faults.faults;
 
+import byzzbench.simulator.faults.Fault;
+import byzzbench.simulator.faults.FaultContext;
 import byzzbench.simulator.transport.Router;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -22,6 +24,7 @@ public class HealNetworkFault implements Fault {
 
     /**
      * Checks if the network is not already healed
+     *
      * @param ctx the input argument
      * @return True if the network is not already healed, false otherwise
      */
@@ -33,6 +36,7 @@ public class HealNetworkFault implements Fault {
 
     /**
      * Heal the network completely
+     *
      * @param state the input argument
      */
     @Override

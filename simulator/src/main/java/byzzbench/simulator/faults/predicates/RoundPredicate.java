@@ -4,7 +4,7 @@ import byzzbench.simulator.faults.FaultContext;
 import byzzbench.simulator.faults.FaultPredicate;
 import byzzbench.simulator.transport.Event;
 import byzzbench.simulator.transport.MessageEvent;
-import byzzbench.simulator.transport.messages.RoundMessagePayload;
+import byzzbench.simulator.transport.messages.MessageWithRound;
 import lombok.RequiredArgsConstructor;
 
 import java.util.Optional;
@@ -38,7 +38,7 @@ public class RoundPredicate implements FaultPredicate {
             return false;
         }
 
-        return message.getPayload() instanceof RoundMessagePayload roundMessage
+        return message.getPayload() instanceof MessageWithRound roundMessage
                 && roundMessage.getRound() == round;
     }
 }

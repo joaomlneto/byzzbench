@@ -1,5 +1,6 @@
-package byzzbench.simulator.faults;
+package byzzbench.simulator.faults.faults;
 
+import byzzbench.simulator.faults.BaseFault;
 import byzzbench.simulator.faults.behaviors.CreateNetworkPartitionsBehavior;
 import byzzbench.simulator.faults.predicates.RoundPredicate;
 
@@ -20,7 +21,7 @@ public class ByzzFuzzNetworkFault extends BaseFault {
      */
     public ByzzFuzzNetworkFault(Set<String> partition, int round) {
         super(
-                "byzzfuzznetworkfault(%s,%d)".formatted(partition, round),
+                "byzzfuzznetworkfault-%d-%s".formatted(round, String.join("-", partition)),
                 new RoundPredicate(round),
                 new CreateNetworkPartitionsBehavior(partition)
         );

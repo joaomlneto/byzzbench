@@ -1,5 +1,7 @@
-package byzzbench.simulator.faults;
+package byzzbench.simulator.faults.faults;
 
+import byzzbench.simulator.faults.Fault;
+import byzzbench.simulator.faults.FaultContext;
 import byzzbench.simulator.transport.Router;
 import byzzbench.simulator.utils.NonNull;
 import lombok.Getter;
@@ -26,6 +28,7 @@ public class HealNodeNetworkFault implements Fault {
 
     /**
      * Checks if the specific node is not in the default partition
+     *
      * @param ctx the input argument
      * @return True if the specific node is not in the default partition, false otherwise
      */
@@ -37,6 +40,7 @@ public class HealNodeNetworkFault implements Fault {
 
     /**
      * Re-joins the specific node to the rest of the network
+     *
      * @param state the input argument
      */
     @Override
