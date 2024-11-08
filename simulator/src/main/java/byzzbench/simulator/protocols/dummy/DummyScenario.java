@@ -2,7 +2,8 @@ package byzzbench.simulator.protocols.dummy;
 
 import byzzbench.simulator.BaseScenario;
 import byzzbench.simulator.Replica;
-import byzzbench.simulator.TerminationCondition;
+import byzzbench.simulator.Scenario;
+import byzzbench.simulator.ScenarioPredicate;
 import byzzbench.simulator.scheduler.Scheduler;
 import com.fasterxml.jackson.databind.JsonNode;
 import lombok.Getter;
@@ -14,9 +15,9 @@ import java.util.TreeSet;
 @Getter
 @Log
 public class DummyScenario extends BaseScenario {
-    private final TerminationCondition terminationCondition = new TerminationCondition() {
+    private final ScenarioPredicate terminationCondition = new ScenarioPredicate() {
         @Override
-        public boolean shouldTerminate() {
+        public boolean test(Scenario scenario) {
             return false;
         }
     };

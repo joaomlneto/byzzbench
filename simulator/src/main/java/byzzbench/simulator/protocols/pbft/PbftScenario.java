@@ -2,9 +2,8 @@ package byzzbench.simulator.protocols.pbft;
 
 import byzzbench.simulator.BaseScenario;
 import byzzbench.simulator.Replica;
-import byzzbench.simulator.TerminationCondition;
 import byzzbench.simulator.protocols.pbft_java.MessageLog;
-import byzzbench.simulator.protocols.pbft_java.PbftTerminationCondition;
+import byzzbench.simulator.protocols.pbft_java.PbftTerminationPredicate;
 import byzzbench.simulator.scheduler.Scheduler;
 import com.fasterxml.jackson.databind.JsonNode;
 import lombok.extern.java.Log;
@@ -15,11 +14,11 @@ import java.util.TreeSet;
 @Log
 public class PbftScenario extends BaseScenario {
     private final int NUM_NODES = 4;
-    private final PbftTerminationCondition terminationCondition;
+    private final PbftTerminationPredicate terminationCondition;
 
     public PbftScenario(Scheduler scheduler) {
         super("pbft", scheduler);
-        this.terminationCondition = new PbftTerminationCondition();
+        this.terminationCondition = new PbftTerminationPredicate();
     }
 
     @Override
@@ -52,10 +51,5 @@ public class PbftScenario extends BaseScenario {
     @Override
     public synchronized void run() {
         //getClients().values().forEach(Client::initializeClient);
-    }
-
-    @Override
-    public TerminationCondition getTerminationCondition() {
-        return this.terminationCondition;
     }
 }

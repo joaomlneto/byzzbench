@@ -2,7 +2,6 @@ package byzzbench.simulator.protocols.XRPL;
 
 import byzzbench.simulator.BaseScenario;
 import byzzbench.simulator.Client;
-import byzzbench.simulator.TerminationCondition;
 import byzzbench.simulator.scheduler.Scheduler;
 import com.fasterxml.jackson.databind.JsonNode;
 
@@ -16,7 +15,6 @@ public class XRPLScenario extends BaseScenario {
 
 
     private List<XRPLReplica> replica_list;
-    private XRPLTerminationCondition terminationCondition;
 
     public XRPLScenario(Scheduler scheduler) {
         super("xrpl", scheduler);
@@ -159,11 +157,6 @@ public class XRPLScenario extends BaseScenario {
         for (XRPLReplica xrplReplica : replica_list) {
             xrplReplica.onHeartbeat();
         }
-    }
-
-    @Override
-    public TerminationCondition getTerminationCondition() {
-        return this.terminationCondition;
     }
 
 }

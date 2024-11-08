@@ -2,7 +2,6 @@ package byzzbench.simulator.protocols.pbft_java;
 
 import byzzbench.simulator.BaseScenario;
 import byzzbench.simulator.Replica;
-import byzzbench.simulator.TerminationCondition;
 import byzzbench.simulator.scheduler.Scheduler;
 import com.fasterxml.jackson.databind.JsonNode;
 import lombok.extern.java.Log;
@@ -10,14 +9,18 @@ import lombok.extern.java.Log;
 import java.util.SortedSet;
 import java.util.TreeSet;
 
+/**
+ * A scenario for running the PBFT-Java protocol, an implementation of the PBFT protocol in Java:
+ * https://github.com/caojohnny/pbft-java
+ */
 @Log
 public class PbftJavaScenario extends BaseScenario {
-    private final PbftTerminationCondition terminationCondition;
+    private final PbftTerminationPredicate terminationCondition;
     private final int numReplicas = 4;
 
     public PbftJavaScenario(Scheduler scheduler) {
         super("pbft-java", scheduler);
-        this.terminationCondition = new PbftTerminationCondition();
+        this.terminationCondition = new PbftTerminationPredicate();
     }
 
     @Override
@@ -48,10 +51,5 @@ public class PbftJavaScenario extends BaseScenario {
     @Override
     public synchronized void run() {
         // nothing to do
-    }
-
-    @Override
-    public TerminationCondition getTerminationCondition() {
-        return this.terminationCondition;
     }
 }

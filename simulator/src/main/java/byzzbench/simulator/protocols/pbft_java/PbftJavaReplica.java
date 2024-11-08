@@ -63,18 +63,7 @@ public class PbftJavaReplica<O extends Serializable, R extends Serializable> ext
     @Override
     public void initialize() {
         System.out.println("Initializing replica " + this.getNodeId());
-
         this.setView(1);
-    }
-
-    /**
-     * Set the view number and the primary ID for the replica.
-     *
-     * @param viewNumber The view number
-     */
-    private void setView(long viewNumber) {
-        String leaderId = this.computePrimaryId(viewNumber, this.getNodeIds().size());
-        this.setView(viewNumber, leaderId);
     }
 
     /**
@@ -193,7 +182,7 @@ public class PbftJavaReplica<O extends Serializable, R extends Serializable> ext
         // Start the timer for this request per PBFT 4.4
         this.timeouts.computeIfAbsent(key, k -> new LinearBackoff(this.getViewNumber(), this.timeout));
 
-        String primaryId = this.getPrimaryId();
+        String primaryId = this.getRoundRobinPrimaryId();
 
         // PBFT 4.1 - If the request is received by a non-primary replica
         // send the request to the actual primary
@@ -611,7 +600,7 @@ public class PbftJavaReplica<O extends Serializable, R extends Serializable> ext
          */
         long curViewNumber = this.getViewNumber();
         long newViewNumber = viewChange.getNewViewNumber();
-        String newPrimaryId = this.computePrimaryId(newViewNumber, this.getNodeIds().size());
+        String newPrimaryId = this.getRoundRobinPrimaryId(newViewNumber);
 
         // PBFT 4.5.2 - Determine whether to bandwagon on the lowest view change
         ViewChangeResult result = messageLog.acceptViewChange(viewChange,
@@ -725,15 +714,6 @@ public class PbftJavaReplica<O extends Serializable, R extends Serializable> ext
         }
 
         this.enterNewView(newViewNumber);
-    }
-
-    private String computePrimaryId(long viewNumber, int numReplicas) {
-        List<String> knownReplicas = this.getNodeIds().stream().sorted().toList();
-        return knownReplicas.get((int) (viewNumber - 1) % numReplicas);
-    }
-
-    private String getPrimaryId() {
-        return this.computePrimaryId(this.getViewNumber(), this.getNodeIds().size());
     }
 
     public Serializable compute(LogEntry operation) {
