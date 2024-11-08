@@ -1,23 +1,24 @@
 package byzzbench.simulator.protocols.hbft;
 
+import java.util.SortedSet;
+import java.util.TreeSet;
+
+import com.fasterxml.jackson.databind.JsonNode;
+
 import byzzbench.simulator.BaseScenario;
 import byzzbench.simulator.Replica;
 import byzzbench.simulator.TerminationCondition;
 import byzzbench.simulator.scheduler.Scheduler;
-import com.fasterxml.jackson.databind.JsonNode;
 import lombok.extern.java.Log;
 
-import java.util.SortedSet;
-import java.util.TreeSet;
-
 @Log
-public class PbftJavaScenario extends BaseScenario {
+public class HbftJavaScenario extends BaseScenario {
     private final int NUM_NODES = 4;
-    private final PbftTerminationCondition terminationCondition;
+    private final HbftTerminationCondition terminationCondition;
 
-    public PbftJavaScenario(Scheduler scheduler) {
+    public HbftJavaScenario(Scheduler scheduler) {
         super("pbft-java", scheduler);
-        this.terminationCondition = new PbftTerminationCondition();
+        this.terminationCondition = new HbftTerminationCondition();
     }
 
     @Override

@@ -4,7 +4,7 @@ import java.util.Random;
 
 import byzzbench.simulator.TerminationCondition;
 
-public class PbftTerminationCondition extends TerminationCondition {
+public class HbftTerminationCondition extends TerminationCondition {
 
     Random random = new Random();
 

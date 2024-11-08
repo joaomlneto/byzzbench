@@ -8,6 +8,7 @@ import lombok.With;
 import java.util.Collection;
 
 import byzzbench.simulator.protocols.hbft.SpeculativeHistory;
+import byzzbench.simulator.protocols.hbft.utils.Checkpoint;
 
 @Data
 @EqualsAndHashCode(callSuper = true)
@@ -15,7 +16,7 @@ import byzzbench.simulator.protocols.hbft.SpeculativeHistory;
 public class NewViewMessage extends MessagePayload {
     private final long newViewNumber;
     private final Collection<ViewChangeMessage> viewChangeProofs;
-    private final Collection<CheckpointIMessage> checkpointMessages;
+    private final Checkpoint checkpoint;
     private final SpeculativeHistory speculativeHistory;
 
     @Override

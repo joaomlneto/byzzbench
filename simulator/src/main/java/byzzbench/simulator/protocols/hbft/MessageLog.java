@@ -1,16 +1,32 @@
 package byzzbench.simulator.protocols.hbft;
 
-import byzzbench.simulator.protocols.hbft.message.*;
+import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Deque;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.SortedMap;
+import java.util.TreeMap;
+import java.util.concurrent.ConcurrentLinkedDeque;
+import java.util.concurrent.ConcurrentLinkedQueue;
+
+import byzzbench.simulator.protocols.hbft.message.CheckpointIIIMessage;
+import byzzbench.simulator.protocols.hbft.message.CheckpointIIMessage;
+import byzzbench.simulator.protocols.hbft.message.CheckpointIMessage;
+import byzzbench.simulator.protocols.hbft.message.CheckpointMessage;
+import byzzbench.simulator.protocols.hbft.message.NewViewMessage;
+import byzzbench.simulator.protocols.hbft.message.RequestMessage;
+import byzzbench.simulator.protocols.hbft.message.ViewChangeMessage;
 import byzzbench.simulator.protocols.hbft.pojo.ReplicaRequestKey;
 import byzzbench.simulator.protocols.hbft.pojo.TicketKey;
 import byzzbench.simulator.protocols.hbft.pojo.ViewChangeResult;
+import byzzbench.simulator.protocols.hbft.utils.Checkpoint;
 import lombok.Getter;
 import lombok.NonNull;
 
-import java.io.Serializable;
-import java.util.*;
-import java.util.concurrent.ConcurrentLinkedDeque;
-import java.util.concurrent.ConcurrentLinkedQueue;
 
 public class MessageLog implements Serializable {
     private static final byte[] NULL_DIGEST = new byte[0];
@@ -30,16 +46,13 @@ public class MessageLog implements Serializable {
     private final SortedMap<Long, Collection<CheckpointMessage>> checkpointsI = new TreeMap<>();
     private final SortedMap<Long, Collection<CheckpointMessage>> checkpointsII = new TreeMap<>();
     private final SortedMap<Long, Collection<CheckpointMessage>> checkpointsIII = new TreeMap<>();
+    // Stored as (viewNumber, (replicaId, message))
     private final SortedMap<Long, SortedMap<String, ViewChangeMessage>> viewChanges = new TreeMap<>();
 
-    private SpeculativeHistory historyOfCheckpointI;
-    private SpeculativeHistory certificate1;
-    private SpeculativeHistory certificate2;
+    private Checkpoint lastStableCheckpoint;
 
-    // Feel like this is a better way of storing the certificates
-    // (seqNumber, speculativeHistory)
-    // private SortedMap<Long, Collection<SpeculativeHistory>> cer1 = new TreeMap<>();
-    // private SortedMap<Long, Collection<SpeculativeHistory>> cer2 = new TreeMap<>();
+    private SortedMap<Long, Collection<SpeculativeHistory>> cer1 = new TreeMap<>();
+    private SortedMap<Long, Collection<SpeculativeHistory>> cer2 = new TreeMap<>();
 
     private volatile long lowWaterMark;
     private volatile long highWaterMark;
@@ -82,7 +95,7 @@ public class MessageLog implements Serializable {
         return ticket != null;
     }
 
-    private void gcCheckpoint(long checkpoint) {
+    private void gcCheckpoint(long checkpoint, SpeculativeHistory history) {
         /*
          * Procedure used to discard all CHECKPOINT, PREPARE, COMMIT, REQUEST and REPLY
          * messages with sequence number less than or equal the in addition to
@@ -116,11 +129,17 @@ public class MessageLog implements Serializable {
             }
         }
 
+        // Reset the certificates
+        this.cer1 = new TreeMap<>();
+        this.cer2 = new TreeMap<>();
+
+        this.lastStableCheckpoint = new Checkpoint(checkpoint, history);
+
         this.highWaterMark = checkpoint + this.watermarkInterval;
         this.lowWaterMark = checkpoint;
     }
 
-    public void appendCheckpoint(CheckpointMessage checkpoint, int tolerance, SpeculativeHistory history) {
+    public void appendCheckpoint(CheckpointMessage checkpoint, int tolerance, SpeculativeHistory history, long viewNumber) {
         /*
          * Per hBFT 4.2, each time a checkpoint-III is generated or received, it
          * gets stored in the log until 2f + 1 are accumulated (CER2(M,v)) that have
@@ -132,30 +151,47 @@ public class MessageLog implements Serializable {
         if (checkpoint instanceof CheckpointIMessage) {
             Collection<CheckpointMessage> checkpointProofs = this.checkpointsI.computeIfAbsent(seqNumber, k -> new ConcurrentLinkedQueue<>());
             checkpointProofs.add(checkpoint);
-            this.historyOfCheckpointI = history;
         }
 
         if (checkpoint instanceof CheckpointIIMessage) {
             Collection<CheckpointMessage> checkpointProofs = this.checkpointsII.computeIfAbsent(seqNumber, k -> new ConcurrentLinkedQueue<>());
             checkpointProofs.add(checkpoint);
+
+            // Can produce duplicates
+            Collection<SpeculativeHistory> cer1History = this.cer1.computeIfAbsent(viewNumber, k -> new ConcurrentLinkedQueue<>());
+            cer1History.add(history);
+
+            // final int stableCount = 2 * tolerance + 1;
+            // int matching = 0;
+
+            // for (CheckpointMessage proof : checkpointProofs) {
+            //     if (Arrays.equals(proof.getDigest(), checkpoint.getDigest())) {
+            //         matching++;
+
+            //         if (matching == stableCount) {
+            //             return;
+            //         }
+            //     }
+            // }
         }
 
         if (checkpoint instanceof CheckpointIIIMessage) {
             Collection<CheckpointMessage> checkpointProofs = this.checkpointsIII.computeIfAbsent(seqNumber, k -> new ConcurrentLinkedQueue<>());
             checkpointProofs.add(checkpoint);
 
+            // Can produce duplicates
+            Collection<SpeculativeHistory> cer2History = this.cer2.computeIfAbsent(viewNumber, k -> new ConcurrentLinkedQueue<>());
+            cer2History.add(history);
+
             final int stableCount = 2 * tolerance + 1;
             int matching = 0;
 
-            // Use a loop here to avoid the linked list being traversed in its
-            // entirety
             for (CheckpointMessage proof : checkpointProofs) {
                 if (Arrays.equals(proof.getDigest(), checkpoint.getDigest())) {
                     matching++;
 
                     if (matching == stableCount) {
-                        this.certificate2 = history;
-                        this.gcCheckpoint(seqNumber);
+                        this.gcCheckpoint(seqNumber, history);
                         return;
                     }
                 }
@@ -170,14 +206,11 @@ public class MessageLog implements Serializable {
         final int stableCount = 2 * tolerance + 1;
         int matching = 0;
 
-        // Use a loop here to avoid the linked list being traversed in its
-        // entirety
         for (CheckpointMessage proof : checkpointProofs) {
             if (Arrays.equals(proof.getDigest(), checkpoint.getDigest())) {
                 matching++;
 
                 if (matching == stableCount) {
-                    this.certificate1 = history;
                     return true;
                 }
             }
@@ -205,13 +238,13 @@ public class MessageLog implements Serializable {
          * Speculatively executed requests with sequence number higher,
          * than the last accepted checkpoint (lowWaterMark)
          */
-        SpeculativeHistory filteredHistory = history.getHistory(lowWaterMark);
+        SpeculativeHistory requestsR = history.getHistory(checkpoint);
 
         ViewChangeMessage viewChange = new ViewChangeMessage(
             newViewNumber,
-            certificate1,
-            historyOfCheckpointI,
-            filteredHistory,
+            this.cer1.get(newViewNumber - 1).iterator().next(),
+            this.lastStableCheckpoint.getHistory(),
+            requestsR,
             replicaId);
 
         /*
@@ -269,11 +302,6 @@ public class MessageLog implements Serializable {
             SortedMap<String, ViewChangeMessage> votes = entry.getValue();
             int entryVotes = votes.size();
 
-            /*
-             * See #produceViewChange(...)
-             * Subtract the current replica's vote to obtain the votes from the
-             * other replicas
-             */
             if (votes.containsKey(curReplicaId)) {
                 entryVotes--;
             }
@@ -296,7 +324,7 @@ public class MessageLog implements Serializable {
     public NewViewMessage produceNewView(long newViewNumber, String replicaId, int tolerance) {
         /*
          * Produces the NEW-VIEW message to notify the other replicas of the
-         * elected primary in accordance with PBFT 4.4.
+         * elected primary in accordance with hBFT 4.3.
          */
 
         SortedMap<String, ViewChangeMessage> newViewSet = this.viewChanges.get(newViewNumber);
@@ -311,43 +339,112 @@ public class MessageLog implements Serializable {
             return null;
         }
 
+        boolean ruleASatisfied = false;
+
         // Rule A: Find a valid execution history M from the view-change messages
         SpeculativeHistory selectedHistoryM = null;
-        Collection<CheckpointMessage> checkpointProofs = null;
-        long minSeqNum = Long.MAX_VALUE;
-        long maxSeqNum = Long.MIN_VALUE;
-
         long certificateTolerance = 2 * tolerance + 1;
+        Map<SpeculativeHistory, Integer> historyMap = new HashMap<>();
 
-        for (ViewChangeMessage viewChange : newViewSet.values()) {
-            SpeculativeHistory speculativeP = viewChange.getSpeculativeHistoryP();
+        // Replica needs all the possibly executed requests for later
+        Map<Long, Integer> requestMap = new HashMap<>();
+        Collection<SortedMap<Long, RequestMessage>> allRequests = new ArrayList<>();
 
-            // Rule A1: Check if speculative history M has CER1(M, v) from at least 2f + 1 replicas
-            if (isValidExecutionHistory(speculativeP, tolerance)) {
-                selectedHistoryM = speculativeP;
-                checkpointProofs = this.getCheckpointProofs(viewChange);
-                break;
+        // Rule A1: Check if speculative history M has CER1(M, v) from at least 2f + 1 replicas
+        // Loop through the view-change messages and try to find 2f + 1 matching P history
+        for (ViewChangeMessage viewChangePerReplica : newViewSet.values()) {
+            SpeculativeHistory pHistory = viewChangePerReplica.getSpeculativeHistoryP();
+            SortedMap<Long, RequestMessage> requests = viewChangePerReplica.getRequestsR().getRequests();
+            allRequests.add(requests);
+
+            for (long seqNum : requests.keySet()) {
+                requestMap.put(seqNum, requestMap.getOrDefault(seqNum, 0) + 1);
+            }
+            
+            // We tackle the empty history later in rule B
+            if (pHistory.isEmpty()) {
+                continue;
+            }
+
+            historyMap.put(pHistory, historyMap.getOrDefault(pHistory, 0) + 1);
+        }
+
+        for (Map.Entry<SpeculativeHistory, Integer> entry : historyMap.entrySet()) {
+            if (entry.getValue() >= certificateTolerance) {
+                selectedHistoryM = entry.getKey();
             }
         }
 
-        // Rule B: If no history was found in the view changes, select last stable checkpoint
-        if (selectedHistoryM == null) {
-            selectedHistoryM = this.getLastStableCheckpoint();
+        // Rule A2: At least f + 1 replicas accepted Checkpoint-I in view v' > v
+        if (selectedHistoryM != null) {
+            final int stableCount = tolerance + 1;
+            int matching = 0;
+
+            for (Long key : this.cer1.keySet()) {
+                if (key > newViewNumber - 1) {
+                    matching += this.cer1.get(key).size();
+                }
+
+                if (matching >= stableCount) {
+                    // Get first element, should all be the same history
+                    ruleASatisfied = true;
+                    break;
+                }
+            }
+        }
+        
+        // If rule A fails, primary tries rule B
+        if (!ruleASatisfied) {
+            int counter = 0;
+            for (ViewChangeMessage viewChangePerReplica : newViewSet.values()) {
+                SpeculativeHistory pHistory = viewChangePerReplica.getSpeculativeHistoryP();
+
+                if (pHistory.isEmpty()) {
+                    counter++;
+                }
+            }
+
+            if (counter >= certificateTolerance) {
+                if (this.lastStableCheckpoint == null) {
+                    selectedHistoryM = null;
+                } else {
+                    selectedHistoryM = this.lastStableCheckpoint.getHistory();
+                }
+            } else {
+                // TODO: Either fallback or start a new view-change protocol
+            }
         }
 
-        // Collect the required view-change proofs for the new view
-        Collection<ViewChangeMessage> viewChangeProofs = new ArrayList<>(newViewSet.values());
-        if (!hasOwnViewChange) {
-            viewChangeProofs.add(this.produceViewChange(newViewNumber, replicaId, tolerance));
+        SpeculativeHistory sortedRequests = new SpeculativeHistory();
+
+        /*  
+         * I have zero clue if this is correct
+         * Idea is that we need to check every view-change's requests
+         * and if the seq number is present at least f + 1 times\
+         * we add it for the New-view
+         */
+        for (SortedMap<Long, RequestMessage> requests : allRequests) {
+            for (Map.Entry<Long, RequestMessage> request : requests.entrySet()) {
+                if (requestMap.get(request.getKey()) >= tolerance + 1) {
+                    sortedRequests.addEntry(request.getKey(), request.getValue());
+                }
+            }
         }
 
+        if (selectedHistoryM != null) {
+            SortedMap<Long, RequestMessage> historyMRequests = selectedHistoryM.getRequests();
+            for (long seqNumber : selectedHistoryM.getRequests().keySet()) {
+                sortedRequests.addEntry(seqNumber, historyMRequests.get(seqNumber));
+            }
+        }
 
         // Construct the New-View message with V, X (selected checkpoint), and M (speculative history)
         return new NewViewMessage(
-                newViewNumber,
-                viewChangeProofs,
-                selectedHistoryM);
-    }
+            newViewNumber,
+            newViewSet.values(),
+            this.lastStableCheckpoint,
+            sortedRequests);
+}
 
     private void gcNewView(long newViewNumber) {
         /*
@@ -381,16 +478,15 @@ public class MessageLog implements Serializable {
                 return false;
             }
 
-            long seqNumber = viewChange.getLastSeqNumber();
+            long seqNumber = viewChange.getSpeculativeHistoryQ().getGreatesSeqNumber();
             if (seqNumber < minS) {
                 minS = seqNumber;
-                checkpointProofs = viewChange.getCheckpointProofs();
             }
         }
 
         if (this.lowWaterMark < minS) {
-            this.checkpoints.put(minS, checkpointProofs);
-            this.gcCheckpoint(minS);
+            this.checkpointsI.put(minS, checkpointProofs);
+            this.gcCheckpoint(minS, newView.getSpeculativeHistory());
         }
 
         return true;

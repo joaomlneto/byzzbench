@@ -118,7 +118,8 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
                 ViewChangeMessage viewChange = messageLog.produceViewChange(
                         newViewNumber,
                         this.getNodeId(),
-                        this.tolerance);
+                        this.tolerance,
+                        this.speculativeHistory);
                 this.sendViewChange(viewChange);
 
                 /*
@@ -219,23 +220,23 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
         ticket.append(request);
 
         PrepareMessage prepare = new PrepareMessage(
-                currentViewNumber,
-                seqNumber,
-                this.digest(request),
-                request);
+            currentViewNumber,
+            seqNumber,
+            this.digest(request),
+            request);
         this.broadcastMessage(prepare);
 
         Serializable operation = request.getOperation();
         Serializable result = this.compute(new SerializableLogEntry(operation));
 
         ReplyMessage reply = new ReplyMessage(
-                currentViewNumber,
-                timestamp,
-                seqNumber,
-                clientId,
-                this.getNodeId(),
-                result,
-                this.getSpeculativeHistory());
+            currentViewNumber,
+            timestamp,
+            seqNumber,
+            clientId,
+            this.getNodeId(),
+            result,
+            this.getSpeculativeHistory());
 
         this.sendReply(clientId, reply);
 
@@ -311,7 +312,7 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
             ticket = messageLog.newTicket(currentViewNumber, seqNumber);
         }
 
-        // PBFT 4.2 - PREPARE and COMMIT messages are appended to the log
+        // hBFT 4.1 - PREPARE and COMMIT messages are appended to the log
         // provided that they pass validation
         ticket.append(message);
         return ticket;
@@ -334,15 +335,11 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
         }
 
         /*
-         * PBFT 4.2 specifies that given a valid PREPARE (matching
+         * hBFT 4.1 specifies that given a valid PREPARE (matching
          * signature, view and valid sequence number), the replica must only
          * accept a PREPARE given that no other PREPARE has been
          * received OR that the new PRE-PREPARE matches the digest of the one
          * that was already received.
-         *
-         * Upon accepting the PRE-PREPARE, the replica adds it to the log and
-         * multicasts a PREPARE to all other replicas and adding the PREPARE to
-         * its log.
          */
         Ticket<O, R> ticket = messageLog.getTicket(currentViewNumber, seqNumber);
         if (ticket != null) {
@@ -373,6 +370,9 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
     
         String clientId = request.getClientId();
         long timestamp = request.getTimestamp();
+
+        // we have the set the local seqNumber to the prepares sequence number
+        this.seqCounter.set(seqNumber);
 
         ReplyMessage reply = new ReplyMessage(
                 currentViewNumber,
@@ -440,6 +440,8 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
                     String clientId = request.getClientId();
                     long timestamp = request.getTimestamp();
 
+                    this.seqCounter.set(seqNumber);
+
                     ReplyMessage reply = new ReplyMessage(
                             currentViewNumber,
                             timestamp,
@@ -480,14 +482,11 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
             if (ticket.isCommittedLocal(this.tolerance) && ticket.casPhase(phase, ReplicaTicketPhase.COMMIT)) {
                 RequestMessage request = ticket.getRequest();
                 if (request != null) {
-                    Serializable operation = request.getOperation();
-                    Serializable result = ticket.getReply().getResult();
-                
                     String clientId = request.getClientId();
                     long timestamp = request.getTimestamp();
 
                     // Add the execution to the speculative execution history
-                    this.speculativeHistory.addEntry(seqNumber, clientId, operation, result);
+                    this.speculativeHistory.addEntry(seqNumber, request);
 
                     ReplicaRequestKey key = new ReplicaRequestKey(clientId, timestamp);
                     messageLog.completeTicket(key, currentViewNumber, seqNumber);
@@ -495,7 +494,8 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
                     this.timeouts.remove(key);
                 }
             } else if (ticket.isCommittedConflicting(this.tolerance) && ticket.casPhase(phase, ReplicaTicketPhase.COMMIT)) {
-                // TODO: Implement VIEW-CHANGE message
+                ViewChangeMessage viewChangeMessage = this.messageLog.produceViewChange(seqNumber, this.getNodeId(), tolerance, this.speculativeHistory);
+                this.broadcastMessage(viewChangeMessage);
             }
         }
     }
@@ -523,24 +523,31 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
          * Per hBFT 4.2, there is a 3 phase checkpoint subprotocol,
          * where the protocol starts with the primary sending Checkpoint-I message, 
          * then upon receiving this the replicas send a Checkpoint-II message, 
-         * upon receiving 2f+1 Checkpoint-II messages,
-         * replicas send Checkpoint-III messages, and upon receiving 2f+1
-         * perform GC if the checkpoint is stable.
+         * upon receiving 2f+1 Checkpoint-II messages it creates a CER1(M, v) and,
+         * replicas send Checkpoint-III messages, and upon receiving 2f+1 create CER2(M, v)
+         * and perform GC if the checkpoint is stable.
          */
         String primaryId = this.getPrimaryId();
         
         if (checkpoint instanceof CheckpointIMessage) {
-            // Only primary can send checkpoint-I, else send View-Change
-            if (primaryId.equals(checkpoint.getReplicaId()) && Arrays.equals(checkpoint.getDigest(), this.digest(speculativeHistory))) {
-                messageLog.appendCheckpoint(checkpoint, this.tolerance, this.speculativeHistory);
+            /* 
+             * Only primary can send checkpoint-I, else send View-Change
+             * TODO: Implement some different logic if CheckpointIMessage
+             * is not from primary, maybe let a few through and initatie a view change
+             * after f + 1 messages
+             */
+            if (primaryId.equals(checkpoint.getReplicaId()) 
+                && Arrays.equals(checkpoint.getDigest(), this.digest(speculativeHistory)) 
+                && checkpoint.getLastSeqNumber() == this.seqCounter.get()) {
+                messageLog.appendCheckpoint(checkpoint, this.tolerance, this.speculativeHistory, this.getViewNumber());
             } else {
                 ViewChangeMessage viewChangeMessage = messageLog.produceViewChange(this.getViewNumber() + 1, this.getNodeId(), tolerance, speculativeHistory);
                 this.broadcastMessage(viewChangeMessage);
             }
         } else if (checkpoint instanceof CheckpointIIMessage) {
             // Digest and speculative execution history should match
-            if (Arrays.equals(checkpoint.getDigest(), this.digest(speculativeHistory))) {
-                messageLog.appendCheckpoint(checkpoint, this.tolerance, this.speculativeHistory);
+            if (Arrays.equals(checkpoint.getDigest(), this.digest(speculativeHistory)) && checkpoint.getLastSeqNumber() == this.seqCounter.get()) {
+                messageLog.appendCheckpoint(checkpoint, this.tolerance, this.speculativeHistory, this.getViewNumber());
                 
                 // Check whether 2f + 1 Checkpoint-II messages have been seen
                 // If yes then send Checkpoint-III
@@ -553,18 +560,15 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
                     );
 
                     // I add it to the log as the sendCheckpoint doesnt include self
-                    messageLog.appendCheckpoint(checkpointIII, this.tolerance, this.speculativeHistory);
+                    messageLog.appendCheckpoint(checkpointIII, this.tolerance, this.speculativeHistory, this.getViewNumber());
                     this.sendCheckpoint(checkpointIII);
                 }
-            } else {
-                ViewChangeMessage viewChangeMessage = messageLog.produceViewChange(this.getViewNumber() + 1, this.getNodeId(), tolerance, speculativeHistory);
-                this.broadcastMessage(viewChangeMessage);
             }
         } else if (checkpoint instanceof CheckpointIIIMessage) {
             // Digest and speculative execution history should match
             if (Arrays.equals(checkpoint.getDigest(), this.digest(speculativeHistory))) {
                 // GC will execute once 2f + 1 is received
-                messageLog.appendCheckpoint(checkpoint, this.tolerance, this.speculativeHistory);
+                messageLog.appendCheckpoint(checkpoint, this.tolerance, this.speculativeHistory, this.getViewNumber());
             } else {
                 ViewChangeMessage viewChangeMessage = messageLog.produceViewChange(this.getViewNumber() + 1, this.getNodeId(), tolerance, speculativeHistory);
                 this.broadcastMessage(viewChangeMessage);
@@ -600,10 +604,10 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
         // }
     
         // Checkpoint Synchronization: Make sure speculative history matches
-        if (!localDigest.equals(viewChange.getCheckpointDigest())) {
-            this.sendViewChange(new ViewChangeMessage(newViewNumber, curViewNumber, localDigest, this.getNodeId()));
-            return;
-        }
+        // if (!localDigest.equals(viewChange.getCheckpointDigest())) {
+        //     this.sendViewChange(new ViewChangeMessage(newViewNumber, curViewNumber, localDigest, this.getNodeId()));
+        //     return;
+        // }
     
         // hBFT: Process view change acceptance
         ViewChangeResult result = messageLog.acceptViewChange(viewChange, this.getNodeId(), curViewNumber, this.tolerance);
@@ -635,7 +639,7 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
                 
                 // as of hBFT 4.3 checkpoint protocol is called after a new-view message
                 CheckpointMessage checkpoint = new CheckpointIMessage(seqCounter.get(), this.digest(this.getSpeculativeHistory()), this.getNodeId());
-                this.messageLog.appendCheckpoint(checkpoint, tolerance, speculativeHistory);
+                this.messageLog.appendCheckpoint(checkpoint, tolerance, speculativeHistory, newView.getNewViewNumber());
                 this.broadcastMessage(checkpoint);
             }
         }
@@ -646,56 +650,56 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
         this.broadcastMessage(viewChange);
     }
 
-    public void recvNewView(NewViewMessage newView) {
-        /*
-         * Per PBFT 4.4, upon reception of a NEW-VIEW message, a replica
-         * verifies that the VIEW-CHANGE votes all match the new view number.
-         * If this is not the case, then the message is disregarded as it is
-         * from a faulty replica.
-         *
-         * The set of PRE-PREPARE messages is then verified using their digests
-         * and then dispatches the pre-prepares to itself by multicasting a
-         * PREPARE message for each PRE-PREPARE.
-         */
-        if (!messageLog.acceptNewView(newView)) {
-            return;
-        }
+    // public void recvNewView(NewViewMessage newView) {
+    //     /*
+    //      * Per PBFT 4.4, upon reception of a NEW-VIEW message, a replica
+    //      * verifies that the VIEW-CHANGE votes all match the new view number.
+    //      * If this is not the case, then the message is disregarded as it is
+    //      * from a faulty replica.
+    //      *
+    //      * The set of PRE-PREPARE messages is then verified using their digests
+    //      * and then dispatches the pre-prepares to itself by multicasting a
+    //      * PREPARE message for each PRE-PREPARE.
+    //      */
+    //     if (!messageLog.acceptNewView(newView)) {
+    //         return;
+    //     }
 
-        long newViewNumber = newView.getNewViewNumber();
-        Collection<PrePrepareMessage> preparedProofs = newView.getPreparedProofs();
-        for (PrePrepareMessage prePrepare : preparedProofs) {
-            RequestMessage request = prePrepare.getRequest();
-            Serializable operation = request.getOperation();
+    //     long newViewNumber = newView.getNewViewNumber();
+    //     Collection<PrePrepareMessage> preparedProofs = newView.getPreparedProofs();
+    //     for (PrePrepareMessage prePrepare : preparedProofs) {
+    //         RequestMessage request = prePrepare.getRequest();
+    //         Serializable operation = request.getOperation();
 
-            // PBFT 4.4 - No-op request used to fulfill the NEW-VIEW constraints
-            if (operation == null) {
-                continue;
-            }
+    //         // PBFT 4.4 - No-op request used to fulfill the NEW-VIEW constraints
+    //         if (operation == null) {
+    //             continue;
+    //         }
 
-            // PBFT 4.4 - Verify digests of each PRE-PREPARE
-            byte[] digest = prePrepare.getDigest();
-            if (!Arrays.equals(digest, this.digest(request))) {
-                continue;
-            }
+    //         // PBFT 4.4 - Verify digests of each PRE-PREPARE
+    //         byte[] digest = prePrepare.getDigest();
+    //         if (!Arrays.equals(digest, this.digest(request))) {
+    //             continue;
+    //         }
 
-            // PBFT 4.2 - Append the PRE-PREPARE to the log
-            long seqNumber = prePrepare.getSequenceNumber();
-            Ticket<O, R> ticket = messageLog.newTicket(newViewNumber, seqNumber);
-            ticket.append(prePrepare);
+    //         // PBFT 4.2 - Append the PRE-PREPARE to the log
+    //         long seqNumber = prePrepare.getSequenceNumber();
+    //         Ticket<O, R> ticket = messageLog.newTicket(newViewNumber, seqNumber);
+    //         ticket.append(prePrepare);
 
-            PrepareMessage prepare = new PrepareMessage(
-                    newViewNumber,
-                    seqNumber,
-                    digest,
-                    this.getNodeId());
-            this.broadcastMessage(prepare);
+    //         PrepareMessage prepare = new PrepareMessage(
+    //                 newViewNumber,
+    //                 seqNumber,
+    //                 digest,
+    //                 this.getNodeId());
+    //         this.broadcastMessage(prepare);
 
-            // PBFT 4.4 - Append the PREPARE message to the log
-            ticket.append(prepare);
-        }
+    //         // PBFT 4.4 - Append the PREPARE message to the log
+    //         ticket.append(prepare);
+    //     }
 
-        this.enterNewView(newViewNumber);
-    }
+    //     this.enterNewView(newViewNumber);
+    // }
 
     private String computePrimaryId(long viewNumber, int numReplicas) {
         List<String> knownReplicas = this.getNodeIds().stream().sorted().toList();
@@ -722,9 +726,6 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
     public void handleMessage(String sender, MessagePayload m) {
         if (m instanceof RequestMessage request) {
             recvRequest(request);
-            return;
-        } else if (m instanceof PrePrepareMessage prePrepare) {
-            recvPrePrepare(prePrepare);
             return;
         } else if (m instanceof PrepareMessage prepare) {
             recvPrepare(prepare);
