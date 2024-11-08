@@ -46,9 +46,15 @@ public class Transport {
     private final SortedMap<Long, Event> events = new TreeMap<>();
 
     /**
+     * Map of automatic fault id to the {@link Fault} object. This is used to
+     * apply faulty behaviors automatically  to the system whenever their predicate is satisfied.
+     */
+    @Getter(onMethod_ = {@Synchronized})
+    private final SortedMap<String, Fault> automaticFaults = new TreeMap<>();
+
+    /**
      * Map of network fault id to the {@link Fault} object. This is used to
-     * apply network faults to the system. Network faults are applied
-     * automatically by the transport layer when its predicate is satisfied.
+     * apply network faults to the system. These faults are NOT applied automatically.
      */
     @Getter(onMethod_ = {@Synchronized})
     private final SortedMap<String, Fault> networkFaults = new TreeMap<>();
@@ -87,8 +93,12 @@ public class Transport {
      *
      * @param fault The fault to add.
      */
-    public synchronized void addNetworkFault(Fault fault) {
-        this.networkFaults.put(fault.getId(), fault);
+    public synchronized void addFault(Fault fault, boolean triggerAutomatically) {
+        if (triggerAutomatically) {
+            this.automaticFaults.put(fault.getId(), fault);
+        } else {
+            this.networkFaults.put(fault.getId(), fault);
+        }
     }
 
     /**
@@ -164,7 +174,17 @@ public class Transport {
                 .toList();
     }
 
+    /**
+     * Append an event to the transport layer.
+     *
+     * @param event The event to append
+     */
     private synchronized void appendEvent(Event event) {
+        // apply automatic faults
+        this.automaticFaults.values().stream()
+                .filter(f -> f.test(new FaultContext(this.scenario, event)))
+                .forEach(f -> f.accept(new FaultContext(this.scenario, event)));
+
         this.events.put(event.getEventId(), event);
         this.observers.forEach(o -> o.onEventAdded(event));
     }
@@ -389,7 +409,7 @@ public class Transport {
      */
     public synchronized void clearTimeout(Replica replica, long eventId) {
         Event e = events.get(eventId);
-        
+
         if (e == null) {
             throw new IllegalArgumentException("Event not found: " + eventId);
         }
