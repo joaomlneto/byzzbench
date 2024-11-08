@@ -1,7 +1,8 @@
 package byzzbench.simulator.service;
 
 import byzzbench.simulator.Scenario;
-import byzzbench.simulator.TerminationCondition;
+import byzzbench.simulator.ScenarioPredicate;
+import byzzbench.simulator.config.ByzzBenchConfig;
 import byzzbench.simulator.scheduler.EventDecision;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
@@ -16,8 +17,6 @@ import java.util.Optional;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-import static byzzbench.simulator.config.SimulatorConfig.DEFAULT_SCENARIO;
-
 /**
  * Service for running the simulator.
  * <p>
@@ -29,6 +28,9 @@ import static byzzbench.simulator.config.SimulatorConfig.DEFAULT_SCENARIO;
 @RequiredArgsConstructor
 @Log
 public class SimulatorService {
+
+    private final ByzzBenchConfig byzzBenchConfig;
+
     private final int MAX_EVENTS_FOR_RUN = SimulatorConfig.MAX_EVENTS_FOR_RUN;
     private final int MAX_DROPPED_MESSAGES = SimulatorConfig.MAX_DROPPED_MESSAGES;
     private final int CHECK_TERMINATION_FREQ = SimulatorConfig.CHECK_TERMINATION_FREQ;
@@ -38,20 +40,20 @@ public class SimulatorService {
     private SimulatorServiceMode mode = SimulatorServiceMode.STOPPED;
     private boolean shouldStop = false;
     private Scenario scenario;
-    private TerminationCondition terminationCondition;
+    private ScenarioPredicate terminationCondition;
     private String scenarioId;
     private JsonNode scenarioParams;
 
     @EventListener(ApplicationReadyEvent.class)
     void onStartup() {
-        this.changeScenario(DEFAULT_SCENARIO, JsonNodeFactory.instance.objectNode());
+        this.changeScenario(byzzBenchConfig.getScenario().getId(), JsonNodeFactory.instance.objectNode());
     }
 
     /**
      * Changes the scenario to the scenario with the given ID.
      *
      * @param scenarioId The ID of the scenario to change to.
-     * @param params The parameters for the scenario.
+     * @param params     The parameters for the scenario.
      */
     public void changeScenario(String scenarioId, JsonNode params) {
         this.scenarioId = scenarioId;
@@ -94,7 +96,6 @@ public class SimulatorService {
             this.mode = SimulatorServiceMode.RUNNING;
             // reset the scenario to ensure that the scenario is in a clean state
             this.changeScenario(this.getScenarioId(), this.getScenarioParams());
-            this.terminationCondition = this.scenario.getTerminationCondition();
 
             int numTerm = 0;
             int numMaxedOut = 0;
@@ -108,38 +109,38 @@ public class SimulatorService {
                     System.out.println("Running scenario #" + scenarioId);
 
                     boolean flag = true;
-                        try {
-                            while (flag) {
-                                this.invokeScheduleNext();
-                                num_events += 1;
+                    try {
+                        while (flag) {
+                            this.invokeScheduleNext();
+                            num_events += 1;
 
-                                if ((num_events % CHECK_TERMINATION_FREQ == 0 && this.terminationCondition.shouldTerminate())) {
-                                    log.info("Termination condition has been satisfied for this run, terminating. . .");
-                                    flag = false;
-                                    numTerm += 1;
-                                }
-
-                                // if the invariants do not hold, terminate the run
-                                if (!this.scenario.invariantsHold()) {
-                                    log.info("Invariants do not hold, terminating. . .");
-                                    var unsatisfiedInvariants = this.scenario.unsatisfiedInvariants();
-                                    this.scenario.getSchedule().finalizeSchedule(unsatisfiedInvariants);
-                                    break;
-                                }
-
-                                if (num_events > MAX_EVENTS_FOR_RUN) {
-                                    log.info("Reached max # of actions for this run, terminating. . .");
-                                    flag = false;
-                                    numMaxedOut += 1;
-                                }
+                            if ((num_events % CHECK_TERMINATION_FREQ == 0 && this.terminationCondition.test(this.scenario))) {
+                                log.info("Termination condition has been satisfied for this run, terminating. . .");
+                                flag = false;
+                                numTerm += 1;
                             }
 
-                        } catch (Exception e) {
-                            System.out.println("Error in schedule " + scenarioId + ": " + e);
-                            e.printStackTrace();
-                            flag = false;
-                            numErr += 1;
+                            // if the invariants do not hold, terminate the run
+                            if (!this.scenario.invariantsHold()) {
+                                log.info("Invariants do not hold, terminating. . .");
+                                var unsatisfiedInvariants = this.scenario.unsatisfiedInvariants();
+                                this.scenario.getSchedule().finalizeSchedule(unsatisfiedInvariants);
+                                break;
+                            }
+
+                            if (num_events > MAX_EVENTS_FOR_RUN) {
+                                log.info("Reached max # of actions for this run, terminating. . .");
+                                flag = false;
+                                numMaxedOut += 1;
+                            }
                         }
+
+                    } catch (Exception e) {
+                        System.out.println("Error in schedule " + scenarioId + ": " + e);
+                        e.printStackTrace();
+                        flag = false;
+                        numErr += 1;
+                    }
 
                     // run the scenario for the given number of events
                    /*  for (int i = 1; i < numActionsPerRun; i++) {
@@ -148,7 +149,6 @@ public class SimulatorService {
                     } */
                     this.resetScenario();
                     this.droppedMessageCount = 0;
-                    this.terminationCondition = this.scenario.getTerminationCondition();
                 }
             } catch (Exception e) {
                 throw new RuntimeException(e);
@@ -170,7 +170,7 @@ public class SimulatorService {
                 this.droppedMessageCount += 1;
             }
 
-            if (this.scenario.getScheduler().isDropMessages() && this.droppedMessageCount >= MAX_DROPPED_MESSAGES ) {
+            if (this.scenario.getScheduler().isDropMessages() && this.droppedMessageCount >= MAX_DROPPED_MESSAGES) {
                 this.scenario.getScheduler().stopDropMessages();
             }
         } else {
