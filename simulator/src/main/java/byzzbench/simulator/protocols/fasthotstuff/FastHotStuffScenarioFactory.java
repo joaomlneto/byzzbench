@@ -12,20 +12,24 @@ import org.springframework.stereotype.Component;
 
 @Component
 public class FastHotStuffScenarioFactory extends BaseScenarioFactory {
-    public FastHotStuffScenarioFactory(SchedulerFactoryService schedulerFactoryService, ByzzBenchConfig byzzBenchConfig, ObjectMapper objectMapper) {
-        super(schedulerFactoryService, byzzBenchConfig, objectMapper);
-    }
+  public FastHotStuffScenarioFactory(
+      SchedulerFactoryService schedulerFactoryService,
+      ByzzBenchConfig byzzBenchConfig, ObjectMapper objectMapper) {
+    super(schedulerFactoryService, byzzBenchConfig, objectMapper);
+  }
 
-    @Override
-    public String getId() {
-        return "fasthotstuff";
-    }
+  @Override
+  public String getId() {
+    return "fasthotstuff";
+  }
 
-    @Override
-    public Scenario createScenario(MessageMutatorService messageMutatorService, JsonNode params) {
-        Scheduler scheduler = this.createScheduler(messageMutatorService, params);
-        FastHotStuffScenarioExecutor scenarioExecutor = new FastHotStuffScenarioExecutor(scheduler);
-        scenarioExecutor.loadParameters(params);
-        return scenarioExecutor;
-    }
+  @Override
+  public Scenario createScenario(MessageMutatorService messageMutatorService,
+                                 JsonNode params) {
+    Scheduler scheduler = this.createScheduler(messageMutatorService, params);
+    FastHotStuffScenarioExecutor scenarioExecutor =
+        new FastHotStuffScenarioExecutor(scheduler);
+    scenarioExecutor.loadParameters(params);
+    return scenarioExecutor;
+  }
 }

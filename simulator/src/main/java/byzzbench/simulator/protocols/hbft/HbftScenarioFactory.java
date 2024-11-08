@@ -12,20 +12,23 @@ import org.springframework.stereotype.Component;
 
 @Component
 public class HbftScenarioFactory extends BaseScenarioFactory {
-    public HbftScenarioFactory(SchedulerFactoryService schedulerFactoryService, ByzzBenchConfig byzzBenchConfig, ObjectMapper objectMapper) {
-        super(schedulerFactoryService, byzzBenchConfig, objectMapper);
-    }
+  public HbftScenarioFactory(SchedulerFactoryService schedulerFactoryService,
+                             ByzzBenchConfig byzzBenchConfig,
+                             ObjectMapper objectMapper) {
+    super(schedulerFactoryService, byzzBenchConfig, objectMapper);
+  }
 
-    @Override
-    public String getId() {
-        return "hbft";
-    }
+  @Override
+  public String getId() {
+    return "hbft";
+  }
 
-    @Override
-    public Scenario createScenario(MessageMutatorService messageMutatorService, JsonNode params) {
-        Scheduler scheduler = this.createScheduler(messageMutatorService, params);
-        HbftScenario scenarioExecutor = new HbftScenario(scheduler);
-        scenarioExecutor.loadParameters(params);
-        return scenarioExecutor;
-    }
+  @Override
+  public Scenario createScenario(MessageMutatorService messageMutatorService,
+                                 JsonNode params) {
+    Scheduler scheduler = this.createScheduler(messageMutatorService, params);
+    HbftScenario scenarioExecutor = new HbftScenario(scheduler);
+    scenarioExecutor.loadParameters(params);
+    return scenarioExecutor;
+  }
 }

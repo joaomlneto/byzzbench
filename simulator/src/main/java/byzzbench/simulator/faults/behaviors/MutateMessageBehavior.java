@@ -9,18 +9,18 @@ import lombok.RequiredArgsConstructor;
  */
 @RequiredArgsConstructor
 public class MutateMessageBehavior implements FaultBehavior {
-    @Override
-    public String getId() {
-        return "mutatemessage";
-    }
+  @Override
+  public String getId() {
+    return "mutatemessage";
+  }
 
-    @Override
-    public String getName() {
-        return "Apply random message mutation";
-    }
+  @Override
+  public String getName() {
+    return "Apply random message mutation";
+  }
 
-    @Override
-    public void accept(FaultContext context) {
-        throw new UnsupportedOperationException("Not implemented");
-    }
+  @Override
+  public void accept(FaultContext context) {
+    throw new UnsupportedOperationException("Not implemented");
+  }
 }

@@ -12,20 +12,23 @@ import org.springframework.stereotype.Component;
 
 @Component
 public class PbftJavaScenarioFactory extends BaseScenarioFactory {
-    public PbftJavaScenarioFactory(SchedulerFactoryService schedulerFactoryService, ByzzBenchConfig byzzBenchConfig, ObjectMapper objectMapper) {
-        super(schedulerFactoryService, byzzBenchConfig, objectMapper);
-    }
+  public PbftJavaScenarioFactory(
+      SchedulerFactoryService schedulerFactoryService,
+      ByzzBenchConfig byzzBenchConfig, ObjectMapper objectMapper) {
+    super(schedulerFactoryService, byzzBenchConfig, objectMapper);
+  }
 
-    @Override
-    public String getId() {
-        return "pbft-java";
-    }
+  @Override
+  public String getId() {
+    return "pbft-java";
+  }
 
-    @Override
-    public Scenario createScenario(MessageMutatorService messageMutatorService, JsonNode params) {
-        Scheduler scheduler = this.createScheduler(messageMutatorService, params);
-        PbftJavaScenario scenarioExecutor = new PbftJavaScenario(scheduler);
-        scenarioExecutor.loadParameters(params);
-        return scenarioExecutor;
-    }
+  @Override
+  public Scenario createScenario(MessageMutatorService messageMutatorService,
+                                 JsonNode params) {
+    Scheduler scheduler = this.createScheduler(messageMutatorService, params);
+    PbftJavaScenario scenarioExecutor = new PbftJavaScenario(scheduler);
+    scenarioExecutor.loadParameters(params);
+    return scenarioExecutor;
+  }
 }

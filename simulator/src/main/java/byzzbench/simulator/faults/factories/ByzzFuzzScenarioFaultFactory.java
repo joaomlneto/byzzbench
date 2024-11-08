@@ -8,55 +8,59 @@ import byzzbench.simulator.faults.faults.ByzzFuzzNetworkFault;
 import byzzbench.simulator.faults.faults.ByzzFuzzProcessFault;
 import byzzbench.simulator.scheduler.ByzzFuzzScheduler;
 import byzzbench.simulator.utils.SetSubsets;
-import org.springframework.stereotype.Component;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 import java.util.Set;
+import org.springframework.stereotype.Component;
 
 /**
  * Fault factory that generates faults for a given scenario.
  */
 @Component
 public class ByzzFuzzScenarioFaultFactory implements FaultFactory {
-    private final Random rand = new Random();
+  private final Random rand = new Random();
 
-    @Override
-    public List<Fault> generateFaults(FaultContext input) {
-        List<Fault> faults = new ArrayList<>();
-        Scenario scenario = input.getScenario();
+  @Override
+  public List<Fault> generateFaults(FaultContext input) {
+    List<Fault> faults = new ArrayList<>();
+    Scenario scenario = input.getScenario();
 
-        // assert the scenario is configured with a byzzfuzz scheduler
-        if (!(scenario.getScheduler() instanceof ByzzFuzzScheduler scheduler)) {
-            throw new IllegalArgumentException("Scenario scheduler must be a ByzzFuzzScheduler");
-        }
-
-        // get scheduler params
-        int c = scheduler.getNumRoundsWithProcessFaults();
-        int d = scheduler.getNumRoundsWithNetworkFaults();
-        int r = scheduler.getNumRoundsWithFaults();
-        Set<String> nodeIds = scenario.getNodes().keySet();
-
-        // Create network faults
-        for (int i = 1; i <= d; i++) {
-            int round = rand.nextInt(r) + 1;
-            Set<String> partition = SetSubsets.getRandomNonEmptySubset(nodeIds);
-            Fault networkFault = new ByzzFuzzNetworkFault(partition, round);
-            faults.add(networkFault);
-        }
-
-        // Create process faults
-        for (int i = 1; i < c; i++) {
-            int round = rand.nextInt(r) + 1;
-            String sender = nodeIds.stream().skip(rand.nextInt(nodeIds.size())).findFirst().orElseThrow();
-            Set<String> recipientIds = SetSubsets.getRandomNonEmptySubset(nodeIds);
-
-            // generate process fault
-            Fault processFault = new ByzzFuzzProcessFault(recipientIds, sender, round);
-            faults.add(processFault);
-        }
-
-        return faults;
+    // assert the scenario is configured with a byzzfuzz scheduler
+    if (!(scenario.getScheduler() instanceof ByzzFuzzScheduler scheduler)) {
+      throw new IllegalArgumentException(
+          "Scenario scheduler must be a ByzzFuzzScheduler");
     }
+
+    // get scheduler params
+    int c = scheduler.getNumRoundsWithProcessFaults();
+    int d = scheduler.getNumRoundsWithNetworkFaults();
+    int r = scheduler.getNumRoundsWithFaults();
+    Set<String> nodeIds = scenario.getNodes().keySet();
+
+    // Create network faults
+    for (int i = 1; i <= d; i++) {
+      int round = rand.nextInt(r) + 1;
+      Set<String> partition = SetSubsets.getRandomNonEmptySubset(nodeIds);
+      Fault networkFault = new ByzzFuzzNetworkFault(partition, round);
+      faults.add(networkFault);
+    }
+
+    // Create process faults
+    for (int i = 1; i < c; i++) {
+      int round = rand.nextInt(r) + 1;
+      String sender = nodeIds.stream()
+                          .skip(rand.nextInt(nodeIds.size()))
+                          .findFirst()
+                          .orElseThrow();
+      Set<String> recipientIds = SetSubsets.getRandomNonEmptySubset(nodeIds);
+
+      // generate process fault
+      Fault processFault =
+          new ByzzFuzzProcessFault(recipientIds, sender, round);
+      faults.add(processFault);
+    }
+
+    return faults;
+  }
 }

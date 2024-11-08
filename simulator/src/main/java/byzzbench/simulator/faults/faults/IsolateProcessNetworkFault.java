@@ -13,9 +13,9 @@ import byzzbench.simulator.transport.Router;
  * Behavior: Isolate the node from the network
  */
 public class IsolateProcessNetworkFault extends BaseFault {
-    public IsolateProcessNetworkFault(String nodeId) {
-        super("IsolateProcessNetworkFault-%s".formatted(nodeId),
-                new NodeInPartitionPredicate(nodeId, Router.DEFAULT_PARTITION),
-                new IsolateNodeBehavior(nodeId));
-    }
+  public IsolateProcessNetworkFault(String nodeId) {
+    super("IsolateProcessNetworkFault-%s".formatted(nodeId),
+          new NodeInPartitionPredicate(nodeId, Router.DEFAULT_PARTITION),
+          new IsolateNodeBehavior(nodeId));
+  }
 }

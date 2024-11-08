@@ -12,25 +12,24 @@ import lombok.EqualsAndHashCode;
 @EqualsAndHashCode(callSuper = true)
 @AllArgsConstructor
 public abstract class DataMessage extends MessagePayload {
-    public static final String TYPE = "Data";
-    /**
-     * Index of this page within level
-     */
-    private final int index;
+  public static final String TYPE = "Data";
+  /**
+   * Index of this page within level
+   */
+  private final int index;
 
-    /**
-     * Seqno of last checkpoint in which data was modified
-     */
-    private final long lastModifiedSeqno;
+  /**
+   * Seqno of last checkpoint in which data was modified
+   */
+  private final long lastModifiedSeqno;
 
-    /**
-     * Data
-     */
-    private final byte[] data;
+  /**
+   * Data
+   */
+  private final byte[] data;
 
-
-    @Override
-    public String getType() {
-        return TYPE;
-    }
+  @Override
+  public String getType() {
+    return TYPE;
+  }
 }

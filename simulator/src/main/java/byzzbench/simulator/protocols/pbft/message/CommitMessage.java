@@ -18,86 +18,87 @@ import lombok.extern.java.Log;
 @With
 @Log
 @AllArgsConstructor
-public class CommitMessage extends MessagePayload implements CertifiableMessage, PbftMessagePayloadWithSequenceNumber {
-    public static final String TYPE = "Commit";
-    /**
-     * The view number
-     */
-    private final long view;
+public class CommitMessage extends MessagePayload
+    implements CertifiableMessage, PbftMessagePayloadWithSequenceNumber {
+  public static final String TYPE = "Commit";
+  /**
+   * The view number
+   */
+  private final long view;
 
-    /**
-     * The sequence number
-     */
-    private final long seqno;
+  /**
+   * The sequence number
+   */
+  private final long seqno;
 
-    /**
-     * The ID of the replica that generated this message
-     */
-    private final String id;
+  /**
+   * The ID of the replica that generated this message
+   */
+  private final String id;
 
-    /**
-     * A variable length signature
-     */
-    private final String signature;
+  /**
+   * A variable length signature
+   */
+  private final String signature;
 
-    /**
-     * Creates a new Commit message with view number "v" and sequence number "s".
-     *
-     * @param replica the replica that is creating this message
-     * @param v       the view number
-     * @param s       the sequence number
-     */
-    public CommitMessage(PbftReplica replica, long v, long s) {
-        this.view = v;
-        this.seqno = s;
-        this.id = replica.id();
-        this.signature = replica.id(); // TODO: sign properly
-    }
+  /**
+   * Creates a new Commit message with view number "v" and sequence number "s".
+   *
+   * @param replica the replica that is creating this message
+   * @param v       the view number
+   * @param s       the sequence number
+   */
+  public CommitMessage(PbftReplica replica, long v, long s) {
+    this.view = v;
+    this.seqno = s;
+    this.id = replica.id();
+    this.signature = replica.id(); // TODO: sign properly
+  }
 
-    @Override
-    public String getType() {
-        return TYPE;
-    }
+  @Override
+  public String getType() {
+    return TYPE;
+  }
 
-    @Override
-    public boolean match(CertifiableMessage other) {
-        return false;
-    }
+  @Override
+  public boolean match(CertifiableMessage other) {
+    return false;
+  }
 
-    @Override
-    public String id() {
-        return this.id;
-    }
+  @Override
+  public String id() {
+    return this.id;
+  }
 
-    @Override
-    public long seqno() {
-        return this.seqno;
-    }
+  @Override
+  public long seqno() {
+    return this.seqno;
+  }
 
-    @Override
-    public boolean verify() {
-        log.severe("verify(): Not implemented");
-        return true;
-        //throw new UnsupportedOperationException("Not implemented");
-    }
+  @Override
+  public boolean verify() {
+    log.severe("verify(): Not implemented");
+    return true;
+    // throw new UnsupportedOperationException("Not implemented");
+  }
 
-    @Override
-    public long view() {
-        return this.view;
-    }
+  @Override
+  public long view() {
+    return this.view;
+  }
 
-    @Override
-    public boolean full() {
-        return false;
-    }
+  @Override
+  public boolean full() {
+    return false;
+  }
 
-    @Override
-    public boolean encode() {
-        return false;
-    }
+  @Override
+  public boolean encode() {
+    return false;
+  }
 
-    @Override
-    public boolean decode() {
-        return false;
-    }
+  @Override
+  public boolean decode() {
+    return false;
+  }
 }

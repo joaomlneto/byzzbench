@@ -12,20 +12,23 @@ import org.springframework.stereotype.Component;
 
 @Component
 public class DummyScenarioFactory extends BaseScenarioFactory {
-    public DummyScenarioFactory(SchedulerFactoryService schedulerFactoryService, ByzzBenchConfig byzzBenchConfig, ObjectMapper objectMapper) {
-        super(schedulerFactoryService, byzzBenchConfig, objectMapper);
-    }
+  public DummyScenarioFactory(SchedulerFactoryService schedulerFactoryService,
+                              ByzzBenchConfig byzzBenchConfig,
+                              ObjectMapper objectMapper) {
+    super(schedulerFactoryService, byzzBenchConfig, objectMapper);
+  }
 
-    @Override
-    public String getId() {
-        return "dummy";
-    }
+  @Override
+  public String getId() {
+    return "dummy";
+  }
 
-    @Override
-    public Scenario createScenario(MessageMutatorService messageMutatorService, JsonNode params) {
-        Scheduler scheduler = this.createScheduler(messageMutatorService, params);
-        DummyScenario scenarioExecutor = new DummyScenario(scheduler);
-        scenarioExecutor.loadParameters(params);
-        return scenarioExecutor;
-    }
+  @Override
+  public Scenario createScenario(MessageMutatorService messageMutatorService,
+                                 JsonNode params) {
+    Scheduler scheduler = this.createScheduler(messageMutatorService, params);
+    DummyScenario scenarioExecutor = new DummyScenario(scheduler);
+    scenarioExecutor.loadParameters(params);
+    return scenarioExecutor;
+  }
 }

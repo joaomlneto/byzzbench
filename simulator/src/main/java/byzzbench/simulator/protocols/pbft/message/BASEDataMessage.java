@@ -9,7 +9,7 @@ import lombok.Getter;
 @Getter
 @EqualsAndHashCode(callSuper = true)
 public class BASEDataMessage extends DataMessage {
-    public BASEDataMessage(int index, long lastModifiedSeqno, byte[] data) {
-        super(index, lastModifiedSeqno, data);
-    }
+  public BASEDataMessage(int index, long lastModifiedSeqno, byte[] data) {
+    super(index, lastModifiedSeqno, data);
+  }
 }

@@ -10,5 +10,4 @@ import org.springframework.context.annotation.Configuration;
  */
 @Configuration(proxyBeanMethods = false)
 @EnableConfigurationProperties
-public class SpringConfig {
-}
+public class SpringConfig {}

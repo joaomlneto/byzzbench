@@ -10,5 +10,5 @@ import java.util.Optional;
  * @param time    the timestamp
  * @param <T>     the type of the message
  */
-public record MessageWithTime<T extends CertifiableMessage>(Optional<T> message, Instant time) {
-}
+public record MessageWithTime<T extends CertifiableMessage>(Optional<T> message,
+                                                            Instant time) {}

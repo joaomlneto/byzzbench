@@ -8,23 +8,21 @@ import lombok.Data;
  */
 @Data
 public class BaseFault implements Fault {
-    private final String id;
-    @JsonIgnore
-    private final FaultPredicate predicate;
-    @JsonIgnore
-    private final FaultBehavior behavior;
+  private final String id;
+  @JsonIgnore private final FaultPredicate predicate;
+  @JsonIgnore private final FaultBehavior behavior;
 
-    public String getName() {
-        return behavior.getName() + " when " + predicate.getName();
-    }
+  public String getName() {
+    return behavior.getName() + " when " + predicate.getName();
+  }
 
-    @Override
-    public boolean test(FaultContext state) {
-        return predicate.test(state);
-    }
+  @Override
+  public boolean test(FaultContext state) {
+    return predicate.test(state);
+  }
 
-    @Override
-    public void accept(FaultContext state) {
-        behavior.accept(state);
-    }
+  @Override
+  public void accept(FaultContext state) {
+    behavior.accept(state);
+  }
 }

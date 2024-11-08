@@ -11,20 +11,23 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 //@Component
 public class PbftScenarioFactory extends BaseScenarioFactory {
-    public PbftScenarioFactory(SchedulerFactoryService schedulerFactoryService, ByzzBenchConfig byzzBenchConfig, ObjectMapper objectMapper) {
-        super(schedulerFactoryService, byzzBenchConfig, objectMapper);
-    }
+  public PbftScenarioFactory(SchedulerFactoryService schedulerFactoryService,
+                             ByzzBenchConfig byzzBenchConfig,
+                             ObjectMapper objectMapper) {
+    super(schedulerFactoryService, byzzBenchConfig, objectMapper);
+  }
 
-    @Override
-    public String getId() {
-        return "pbft";
-    }
+  @Override
+  public String getId() {
+    return "pbft";
+  }
 
-    @Override
-    public Scenario createScenario(MessageMutatorService messageMutatorService, JsonNode params) {
-        Scheduler scheduler = this.createScheduler(messageMutatorService, params);
-        Scenario scenarioExecutor = new PbftScenario(scheduler);
-        scenarioExecutor.loadParameters(params);
-        return scenarioExecutor;
-    }
+  @Override
+  public Scenario createScenario(MessageMutatorService messageMutatorService,
+                                 JsonNode params) {
+    Scheduler scheduler = this.createScheduler(messageMutatorService, params);
+    Scenario scenarioExecutor = new PbftScenario(scheduler);
+    scenarioExecutor.loadParameters(params);
+    return scenarioExecutor;
+  }
 }
