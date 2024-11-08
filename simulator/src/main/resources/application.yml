@@ -20,9 +20,9 @@ byzzbench:
   scheduler:
     id: "byzzfuzz"
     params:
-      numRoundsWithProcessFaults: 2
-      numRoundsWithNetworkFaults: 4
-      numRoundsWithFaults: 5
+      numRoundsWithProcessFaults: 1
+      numRoundsWithNetworkFaults: 2
+      numRoundsWithFaults: 4
   scenario:
     id: pbft-java
     scheduler: byzzfuzz
@@ -37,3 +37,5 @@ byzzbench:
           behavior: mybehavior2
         - predicate: mypred3
           behavior: mybehavior3
+    terminationCondition:
+      maxEvents: 50
