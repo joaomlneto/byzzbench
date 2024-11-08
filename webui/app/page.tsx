@@ -7,6 +7,7 @@ import { NodeList } from "@/components/NodeList";
 import { PredicateList } from "@/components/PredicateList";
 import { RunningSimulatorStats } from "@/components/RunningSimulatorStats";
 import { ScheduleDetails } from "@/components/Schedule";
+import { ScenarioScheduledFaultsList } from "@/components/ScheduledFaultsList";
 import { useGetMode, useGetSchedule } from "@/lib/byzzbench-client";
 import {
   Accordion,
@@ -104,6 +105,8 @@ export default function Home() {
           </ScrollArea>
           <Title order={5}>Trigger Faults</Title>
           <ScenarioEnabledFaultsList />
+          <Title order={5}>Scheduled Faults</Title>
+          <ScenarioScheduledFaultsList />
           <Title order={5}>Discarded Events</Title>
           <DroppedMessagesList />
         </Stack>
