@@ -4,26 +4,25 @@ import byzzbench.simulator.faults.FaultContext;
 import byzzbench.simulator.faults.FaultPredicate;
 import byzzbench.simulator.transport.Event;
 import byzzbench.simulator.transport.MessageEvent;
-import byzzbench.simulator.transport.messages.RoundMessagePayload;
 import lombok.RequiredArgsConstructor;
 
 import java.util.Optional;
 
 /**
- * Predicate that checks if the round of a message matches a given round.
+ * Predicate that checks if the message sender has a given id.
  */
 @RequiredArgsConstructor
-public class RoundPredicate implements FaultPredicate {
-    private final long round;
+public class MessageSenderHasIdPredicate implements FaultPredicate {
+    private final String nodeId;
 
     @Override
     public String getId() {
-        return "RoundFaultPrecondition-%d".formatted(round);
+        return "MessageSenderHasIdPredicate-%s".formatted(this.nodeId);
     }
 
     @Override
     public String getName() {
-        return "Round is %d".formatted(round);
+        return "Message sender is %s".formatted(this.nodeId);
     }
 
     @Override
@@ -34,11 +33,12 @@ public class RoundPredicate implements FaultPredicate {
             return false;
         }
 
+        // check if it is a message event
         if (!(event.get() instanceof MessageEvent message)) {
             return false;
         }
 
-        return message.getPayload() instanceof RoundMessagePayload roundMessage
-                && roundMessage.getRound() == round;
+        // check if the sender of the message is the given node id
+        return message.getSenderId().equals(nodeId);
     }
 }
