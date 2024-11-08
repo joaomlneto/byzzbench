@@ -65,4 +65,17 @@ public class SetSubsets {
         int random = rand.nextInt(1 << set.size());
         return getSubset(set, random);
     }
+
+    /**
+     * Get a random nonempty subset of a set, uniformly distributed
+     *
+     * @param set The set to get a random subset of
+     * @param <T> The type of the elements in the set
+     * @return A random subset of the input set
+     */
+    public static <T> Set<T> getRandomNonEmptySubset(Set<T> set) {
+        // generate random number between 0 and 2^n
+        int random = rand.nextInt(1 << set.size() - 1) + 1;
+        return getSubset(set, random);
+    }
 }
