@@ -134,6 +134,28 @@ public class Transport {
     }
 
     /**
+     * Sends a response from a replica to a client.
+     * @param sender The ID of the replica sending the response
+     * @param response The response to send
+     * @param recipient The ID of the client receiving the response
+     * @param tolerance the tolerance of the protocol (used for hbft)
+     */
+    public synchronized void sendClientResponse(String sender, Serializable response, String recipient, long tolerance, long seqNumber) {
+        // assert that the sender exists
+        if (!this.scenario.getNodes().containsKey(sender)) {
+            throw new IllegalArgumentException("Replica not found: " + sender);
+        }
+
+        if (!this.scenario.getClients().containsKey(recipient)) {
+            throw new IllegalArgumentException("Client not found: " + recipient);
+        }
+
+        // deliver the reply directly to the client to handle
+        Client c = this.scenario.getClients().get(recipient);
+        c.handleReply(sender, response, tolerance, seqNumber);
+    }
+
+    /**
      * Sends a message between two replicas.
      * @param sender The ID of the replica sending the message
      * @param message The payload of the message to send

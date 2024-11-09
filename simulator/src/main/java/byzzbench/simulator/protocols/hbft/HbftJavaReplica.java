@@ -142,6 +142,10 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
             RequestMessage request = ticket.getRequest();
             long timestamp = request.getTimestamp();
             long sequenceNumber = ticket.getSeqNumber();
+
+            // Also possbile option
+            // ReplyMessage prevReply = ticket.getReply();
+
             ReplyMessage reply = new ReplyMessage(
                     viewNumber,
                     timestamp,
@@ -203,7 +207,7 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
         }
 
         long currentViewNumber = this.getViewNumber();
-        long seqNumber = this.seqCounter.getAndIncrement();
+        long seqNumber = this.seqCounter.incrementAndGet();
 
         /*
          * The message log is not flat-mapped, meaning that messages are
@@ -216,7 +220,7 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
          * number that this (the primary) has determined.
          */
         Ticket<O, R> ticket = messageLog.newTicket(currentViewNumber, seqNumber);
-        // PBFT 4.2 - Append REQUEST
+        
         ticket.append(request);
 
         PrepareMessage prepare = new PrepareMessage(
@@ -224,9 +228,11 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
             seqNumber,
             this.digest(request),
             request);
-        this.broadcastMessage(prepare);
 
-        Serializable operation = request.getOperation();
+        // Send to self as well in order to process the request
+        this.broadcastMessageIncludingSelf(prepare);
+
+        /* Serializable operation = request.getOperation();
         Serializable result = this.compute(new SerializableLogEntry(operation));
 
         ReplyMessage reply = new ReplyMessage(
@@ -240,16 +246,18 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
 
         this.sendReply(clientId, reply);
 
-        // hBFT 4.2 - Append PREPARE
+        // hBFT 4.2 - Append PREPARE and REPLY
+        // Commit is missing
         ticket.append(prepare);
+        ticket.append(reply);
 
         // Move to COMMIT phase
         ReplicaTicketPhase phase = ticket.getPhase();
-        ticket.casPhase(phase, ReplicaTicketPhase.COMMIT);
+        ticket.casPhase(phase, ReplicaTicketPhase.COMMIT); */
     }
 
     public void recvRequest(RequestMessage request) {
-        // PBFT 4.4 - Do not accept REQUEST when disgruntled
+        // hBFT 4.4 - Do not accept REQUEST when disgruntled
         if (this.disgruntled) {
             return;
         }
@@ -270,7 +278,7 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
          * has been sent by a faulty replica.
          */
 
-        // PBFT 4.4 - Phase messages are not accepted when the replica is
+        // hBFT 4.4 - Phase messages are not accepted when the replica is
         // disgruntled
         if (this.disgruntled) {
             return false;
@@ -289,14 +297,14 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
     private Ticket<O, R> recvPhaseMessage(IPhaseMessage message) {
         /*
          * The PREPARE and COMMIT messages have a common validation procedure
-         * per PBFT 4.2, and has been extracted to this method.
+         * per hBFT 4.1, and has been extracted to this method.
          *
-         * Both must pass the #verifyPhaseMessage(...) test as with PRE-PREPARE.
+         * Both must pass the #verifyPhaseMessage(...).
          * If the ticket for these messages have not been added yet, then a new
          * ticket will be created in order for these messages to be added to the
          * log and organized for the sequence number (see
          * #recvRequest(ReplicaRequest, boolean)) because out-of-order phase
-         * messages may arrive before the corresponding PRE-PREPARE has been
+         * messages may arrive before the corresponding PREPARE has been
          * received to set up the ticket.
          */
         if (!this.verifyPhaseMessage(message)) {
@@ -338,13 +346,13 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
          * hBFT 4.1 specifies that given a valid PREPARE (matching
          * signature, view and valid sequence number), the replica must only
          * accept a PREPARE given that no other PREPARE has been
-         * received OR that the new PRE-PREPARE matches the digest of the one
+         * received OR that the new PREPARE matches the digest of the one
          * that was already received.
          */
         Ticket<O, R> ticket = messageLog.getTicket(currentViewNumber, seqNumber);
         if (ticket != null) {
             // PREPARE has previously been inserted into the log for this
-            // sequence number - verify the digests match per PBFT 4.1
+            // sequence number - verify the digests match per hBFT 4.1
             for (Object message : ticket.getMessages()) {
                 if (!(message instanceof PrepareMessage prevPrepare)) {
                     continue;
@@ -371,28 +379,28 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
         String clientId = request.getClientId();
         long timestamp = request.getTimestamp();
 
-        // we have the set the local seqNumber to the prepares sequence number
+        // we have the set the local seqNumber to the prepare's sequence number
         this.seqCounter.set(seqNumber);
 
         ReplyMessage reply = new ReplyMessage(
-                currentViewNumber,
-                timestamp,
-                seqNumber,
-                clientId,
-                this.getNodeId(),
-                result,
-                this.getSpeculativeHistory());
+            currentViewNumber,
+            timestamp,
+            seqNumber,
+            clientId,
+            this.getNodeId(),
+            result,
+            this.speculativeHistory);
 
         this.sendReply(clientId, reply);
 
         // hBFT 4.1 - Multicast COMMIT to other replicas
         CommitMessage commit = new CommitMessage(
-                currentViewNumber,
-                seqNumber,
-                digest,
-                request,
-                this.getNodeId(),
-                this.getSpeculativeHistory());
+            currentViewNumber,
+            seqNumber,
+            digest,
+            request,
+            this.getNodeId(),
+            this.speculativeHistory);
         this.broadcastMessage(commit);
 
         // hBFT 4.1 - Add COMMIT to the log
@@ -431,7 +439,8 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
              * Per hBFT 4.1 if the replica is in PREPARE phase, waiting for a PREPARE message,
              * then if it has f + 1 COMMIT messages in the log it can also COMMIT and REPLY
              */
-            if (ticket.isCommittedPrepare(this.tolerance) && ticket.casPhase(phase, ReplicaTicketPhase.COMMIT)) {
+            if (ticket.isPrepared(this.tolerance) && ticket.casPhase(phase, ReplicaTicketPhase.COMMIT)) {
+                System.out.println("Replica " + this.getNodeId() + " received f + 1 COMMIT in PREPARE phase so should also COMMIT and REPLY");
                 RequestMessage request = ticket.getRequest();
                 if (request != null) {
                     Serializable operation = request.getOperation();
@@ -443,13 +452,15 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
                     this.seqCounter.set(seqNumber);
 
                     ReplyMessage reply = new ReplyMessage(
-                            currentViewNumber,
-                            timestamp,
-                            seqNumber,
-                            clientId,
-                            this.getNodeId(),
-                            result,
-                            this.getSpeculativeHistory());
+                        currentViewNumber,
+                        timestamp,
+                        seqNumber,
+                        clientId,
+                        this.getNodeId(),
+                        result,
+                        this.speculativeHistory);
+
+                    System.out.println("Replica " + this.getNodeId() + " REPLIED");
 
                     this.sendReply(clientId, reply);
 
@@ -460,13 +471,13 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
                         digest,
                         request,
                         this.getNodeId(),
-                        this.getSpeculativeHistory());
+                        this.speculativeHistory);
                     
                     // Send to self as well in order to trigger the check for 2f + 1 COMMIT messages
                     this.broadcastMessageIncludingSelf(commit);
 
                     // hBFT 4.1 - Add PREPARE along with its REQUEST to the log
-                    ticket.append(commit);
+                    // ticket.append(commit);
                 }
             }
         }
@@ -479,7 +490,7 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
              * if it gets f + 1 conflicting COMMIT messages with its PREPARE
              * then it sends a view change message
              */
-            if (ticket.isCommittedLocal(this.tolerance) && ticket.casPhase(phase, ReplicaTicketPhase.COMMIT)) {
+            if (ticket.isCommittedLocal(this.tolerance)) {
                 RequestMessage request = ticket.getRequest();
                 if (request != null) {
                     String clientId = request.getClientId();
@@ -493,7 +504,7 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
 
                     this.timeouts.remove(key);
                 }
-            } else if (ticket.isCommittedConflicting(this.tolerance) && ticket.casPhase(phase, ReplicaTicketPhase.COMMIT)) {
+            } else if (ticket.isCommittedConflicting(this.tolerance)) {
                 ViewChangeMessage viewChangeMessage = this.messageLog.produceViewChange(seqNumber, this.getNodeId(), tolerance, this.speculativeHistory);
                 this.broadcastMessage(viewChangeMessage);
             }
@@ -511,7 +522,7 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
 
     public void sendReply(String clientId, ReplyMessage reply) {
         //this.sendMessage(reply, clientId);
-        this.sendReplyToClient(clientId, reply);
+        this.sendReplyToClient(clientId, reply, this.tolerance, reply.getSequenceNumber());
 
         // When prior requests are fulfilled, attempt to process the buffer
         // to ensure they are dispatched in a timely manner

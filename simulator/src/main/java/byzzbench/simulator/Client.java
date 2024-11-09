@@ -2,14 +2,20 @@ package byzzbench.simulator;
 
 import byzzbench.simulator.transport.Transport;
 import byzzbench.simulator.utils.NonNull;
+
 import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import lombok.Builder;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
+import java.util.SortedMap;
+import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
@@ -51,7 +57,12 @@ public class Client implements Serializable {
     /**
      * The replies received by the client.
      */
-    private final List<Serializable> replies = new ArrayList<>();
+    private final SortedMap<Long, List<Serializable>> replies = new TreeMap<>();
+
+    /**
+     * The request sequence number already completed.
+     */
+    private final Set<Long> completedRequests = new HashSet<>();
 
     /**
      * Initializes the client by sending the initial requests.
@@ -76,11 +87,49 @@ public class Client implements Serializable {
      * Handles a reply received by the client.
      * @param senderId The ID of the sender of the reply.
      * @param reply The reply received by the client.
+     * @param tolerance the tolerance of the protocol (used for hbft)
+     */
+    public void handleReply(String senderId, Serializable reply, long tolerance, long seqNumber) {
+        if (this.replies.get(seqNumber) != null) {
+            this.replies.get(seqNumber).add(reply);
+        } else {
+            this.replies.put(seqNumber, new ArrayList<>());
+            this.replies.get(seqNumber).add(reply);
+        }
+        /**
+         * If the client received 2f + 1 correct replies,
+         * and the request has not been completed yet.
+         */
+        if (this.completedReplies(tolerance, seqNumber) 
+            && !this.completedRequests.contains(seqNumber) 
+            && this.requestSequenceNumber.get() < this.maxRequests) {
+            this.completedRequests.add(seqNumber);
+            this.sendRequest();
+        }
+    }
+
+     /**
+     * Handles a reply received by the client.
+     * @param senderId The ID of the sender of the reply.
+     * @param reply The reply received by the client.
      */
     public void handleReply(String senderId, Serializable reply) {
-        this.replies.add(reply);
+        if (this.replies.get(this.requestSequenceNumber.get()) != null) {
+            this.replies.get(this.requestSequenceNumber.get()).add(reply);
+        } else {
+            this.replies.put(this.requestSequenceNumber.get(), new ArrayList<>());
+            this.replies.get(this.requestSequenceNumber.get()).add(reply);
+        }
         if (this.requestSequenceNumber.get() < this.maxRequests) {
             this.sendRequest();
         }
+    }
+
+
+    /**
+     * Checks whether it has received 2f + 1 replies
+     */
+    public boolean completedReplies(long tolerance, long seqNumber) {
+        return this.replies.get(seqNumber).size() >= 2 * tolerance + 1;
     }
 }

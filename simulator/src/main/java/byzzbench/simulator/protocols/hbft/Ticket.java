@@ -78,7 +78,7 @@ public class Ticket<O extends Serializable, R extends Serializable> implements S
         return commits >= requiredCommits;
     }
 
-    public boolean isCommittedPrepare(int tolerance) {
+    public boolean isPrepared(int tolerance) {
         final int requiredCommits = tolerance + 1;
         int commits = 0;
         for (Object message : this.messages) {

@@ -168,6 +168,16 @@ public abstract class Replica implements Serializable {
     }
 
     /**
+     * Send a reply to a client.
+     * @param clientId the ID of the client
+     * @param reply the reply payload
+     * @param tolerance the tolerance of the protocol (used for hbft)
+     */
+    public void sendReplyToClient(String clientId, Serializable reply, long tolerance, long seqNumber) {
+        this.transport.sendClientResponse(this.nodeId, reply, clientId, tolerance, seqNumber);
+    }
+
+    /**
      * Handle a message received by this replica.
      *
      * @param sender  the ID of the sender
