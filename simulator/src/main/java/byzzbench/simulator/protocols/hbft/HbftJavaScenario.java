@@ -17,7 +17,7 @@ public class HbftJavaScenario extends BaseScenario {
     private final HbftTerminationCondition terminationCondition;
 
     public HbftJavaScenario(Scheduler scheduler) {
-        super("pbft-java", scheduler);
+        super("hbft", scheduler);
         this.terminationCondition = new HbftTerminationCondition();
     }
 

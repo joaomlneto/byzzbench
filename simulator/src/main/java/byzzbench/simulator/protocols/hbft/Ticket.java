@@ -8,7 +8,6 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
 import java.io.Serializable;
-import java.lang.reflect.Array;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.concurrent.CompletableFuture;
@@ -82,12 +81,17 @@ public class Ticket<O extends Serializable, R extends Serializable> implements S
         final int requiredCommits = tolerance + 1;
         int commits = 0;
         for (Object message : this.messages) {
-            if (message instanceof CommitMessage) {
+            if (message instanceof CommitMessage commitMessage) {
                 commits++;
+
+                if (commits >= requiredCommits) {
+                    this.request = commitMessage.getRequest();
+                    return true;
+                }
             }
         }
 
-        return commits >= requiredCommits;
+        return false;
     }
 
     public boolean casPhase(ReplicaTicketPhase old, ReplicaTicketPhase next) {

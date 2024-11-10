@@ -29,8 +29,8 @@ import lombok.NonNull;
 
 
 public class MessageLog implements Serializable {
-    private static final byte[] NULL_DIGEST = new byte[0];
-    private static final RequestMessage NULL_REQ = new RequestMessage(null, 0, "");
+    //private static final byte[] NULL_DIGEST = new byte[0];
+    //private static final RequestMessage NULL_REQ = new RequestMessage(null, 0, "");
 
     private final int bufferThreshold;
     @Getter
@@ -43,6 +43,8 @@ public class MessageLog implements Serializable {
     private final SortedMap<ReplicaRequestKey, Ticket<?, ?>> ticketCache = new TreeMap<>();
     private final SortedMap<TicketKey, Ticket<?, ?>> tickets = new TreeMap<>();
 
+    // In practice a replica can only have one checkpoint-I message in a view
+    // It will be cleared when a stable checkpoint is reached
     private final SortedMap<Long, Collection<CheckpointMessage>> checkpointsI = new TreeMap<>();
     private final SortedMap<Long, Collection<CheckpointMessage>> checkpointsII = new TreeMap<>();
     private final SortedMap<Long, Collection<CheckpointMessage>> checkpointsIII = new TreeMap<>();
@@ -130,6 +132,7 @@ public class MessageLog implements Serializable {
         }
 
         // Reset the certificates
+        // TODO: I am not sure whether these should be cleared or not
         this.cer1 = new TreeMap<>();
         this.cer2 = new TreeMap<>();
 
@@ -160,19 +163,6 @@ public class MessageLog implements Serializable {
             // Can produce duplicates
             Collection<SpeculativeHistory> cer1History = this.cer1.computeIfAbsent(viewNumber, k -> new ConcurrentLinkedQueue<>());
             cer1History.add(history);
-
-            // final int stableCount = 2 * tolerance + 1;
-            // int matching = 0;
-
-            // for (CheckpointMessage proof : checkpointProofs) {
-            //     if (Arrays.equals(proof.getDigest(), checkpoint.getDigest())) {
-            //         matching++;
-
-            //         if (matching == stableCount) {
-            //             return;
-            //         }
-            //     }
-            // }
         }
 
         if (checkpoint instanceof CheckpointIIIMessage) {
@@ -201,6 +191,7 @@ public class MessageLog implements Serializable {
 
     public boolean isCER1(CheckpointMessage checkpoint, int tolerance, SpeculativeHistory history) {
         long seqNumber = checkpoint.getLastSeqNumber();
+        // Should there be at least one because we add the checkpoint before calling this function
         Collection<CheckpointMessage> checkpointProofs = this.checkpointsII.computeIfAbsent(seqNumber, k -> new ConcurrentLinkedQueue<>());
         
         final int stableCount = 2 * tolerance + 1;
@@ -219,7 +210,14 @@ public class MessageLog implements Serializable {
         return false;
     }
 
-    public ViewChangeMessage produceViewChange(long newViewNumber, String replicaId, int tolerance, SpeculativeHistory history) {
+    /*
+     * Checks whether a collection is empty
+     */
+    public boolean isNullOrEmpty( final Collection< ? > c ) {
+        return c == null || c.isEmpty();
+    }
+
+    public ViewChangeMessage produceViewChange(long newViewNumber, String replicaId, int tolerance, SortedMap<Long, RequestMessage> speculativeRequests) {
         /*
          * Produces a VIEW-CHANGE vote message in accordance with hBFT 4.3.
          *
@@ -238,11 +236,39 @@ public class MessageLog implements Serializable {
          * Speculatively executed requests with sequence number higher,
          * than the last accepted checkpoint (lowWaterMark)
          */
-        SpeculativeHistory requestsR = history.getHistory(checkpoint);
+        SortedMap<Long, RequestMessage> requestsR = new TreeMap<>();
+        for (long seqNumber : speculativeRequests.keySet()) {
+            if (seqNumber > checkpoint) {
+                requestsR.put(seqNumber, speculativeRequests.get(seqNumber));
+            }
+        }
 
+        /* 
+         * Execution history from previous view
+         * CER1(M, v-1)
+         */
+        SpeculativeHistory historyP;
+        if (this.isNullOrEmpty(this.cer1.get(newViewNumber - 1))) {
+            historyP = this.cer1.get(newViewNumber - 1).iterator().next();
+        } else {
+            historyP = null;
+        }
+
+        /* 
+         * Q execution history from the accepted Checkpoint-I message
+         * TODO: figure out which view is this
+         */
+        // SpeculativeHistory historyQ;
+        // if (this.isNullOrEmpty(this.checkpointsI.get(this.checkpointsI.keySet().iterator().next()))) {
+        //     historyQ = this.checkpointsI.get(this.checkpointsI.keySet().iterator().next());
+        // } else {
+        //     historyQ = null;
+        // }
+
+        // cer1 could be empty
         ViewChangeMessage viewChange = new ViewChangeMessage(
             newViewNumber,
-            this.cer1.get(newViewNumber - 1).iterator().next(),
+            historyP,
             this.lastStableCheckpoint.getHistory(),
             requestsR,
             replicaId);
@@ -266,7 +292,7 @@ public class MessageLog implements Serializable {
 
     public ViewChangeResult acceptViewChange(ViewChangeMessage viewChange, String curReplicaId, long curViewNumber, int tolerance) {
         /*
-         * Per PBFT 4.4, a received VIEW-CHANGE vote is stored into the message
+         * Per hBFT 4.3, a received VIEW-CHANGE vote is stored into the message
          * log and the state is returned to the replica as
          * ReplicaViewChangeResult.
          *
@@ -354,7 +380,7 @@ public class MessageLog implements Serializable {
         // Loop through the view-change messages and try to find 2f + 1 matching P history
         for (ViewChangeMessage viewChangePerReplica : newViewSet.values()) {
             SpeculativeHistory pHistory = viewChangePerReplica.getSpeculativeHistoryP();
-            SortedMap<Long, RequestMessage> requests = viewChangePerReplica.getRequestsR().getRequests();
+            SortedMap<Long, RequestMessage> requests = viewChangePerReplica.getRequestsR();
             allRequests.add(requests);
 
             for (long seqNum : requests.keySet()) {
@@ -362,7 +388,7 @@ public class MessageLog implements Serializable {
             }
             
             // We tackle the empty history later in rule B
-            if (pHistory.isEmpty()) {
+            if (pHistory == null || pHistory.isEmpty()) {
                 continue;
             }
 
@@ -399,7 +425,7 @@ public class MessageLog implements Serializable {
             for (ViewChangeMessage viewChangePerReplica : newViewSet.values()) {
                 SpeculativeHistory pHistory = viewChangePerReplica.getSpeculativeHistoryP();
 
-                if (pHistory.isEmpty()) {
+                if (pHistory == null || pHistory.isEmpty()) {
                     counter++;
                 }
             }
@@ -418,14 +444,12 @@ public class MessageLog implements Serializable {
         SpeculativeHistory sortedRequests = new SpeculativeHistory();
 
         /*  
-         * I have zero clue if this is correct
-         * Idea is that we need to check every view-change's requests
-         * and if the seq number is present at least f + 1 times\
-         * we add it for the New-view
+         * Select every request in R if f+1 replicas include it
+         * And sequence number is greater than the largest in selectedHistoryM
          */
         for (SortedMap<Long, RequestMessage> requests : allRequests) {
             for (Map.Entry<Long, RequestMessage> request : requests.entrySet()) {
-                if (requestMap.get(request.getKey()) >= tolerance + 1) {
+                if ((selectedHistoryM == null || request.getKey() > selectedHistoryM.getGreatesSeqNumber()) && requestMap.get(request.getKey()) >= tolerance + 1) {
                     sortedRequests.addEntry(request.getKey(), request.getValue());
                 }
             }
@@ -448,6 +472,8 @@ public class MessageLog implements Serializable {
 
     private void gcNewView(long newViewNumber) {
         /*
+         * hBFT clean up after new view is similar as of PBFT
+         * 
          * Performs clean-up for entering a new view in accordance with PBFT
          * 4.4. This means that any view change votes and pending tickets that
          * are not in the new view are removed.
@@ -469,25 +495,6 @@ public class MessageLog implements Serializable {
          */
         long newViewNumber = newView.getNewViewNumber();
         this.gcNewView(newViewNumber);
-
-        long minS = Integer.MAX_VALUE;
-        Collection<CheckpointMessage> checkpointProofs = null;
-        Collection<ViewChangeMessage> viewChangeProofs = newView.getViewChangeProofs();
-        for (ViewChangeMessage viewChange : viewChangeProofs) {
-            if (newViewNumber != viewChange.getNewViewNumber()) {
-                return false;
-            }
-
-            long seqNumber = viewChange.getSpeculativeHistoryQ().getGreatesSeqNumber();
-            if (seqNumber < minS) {
-                minS = seqNumber;
-            }
-        }
-
-        if (this.lowWaterMark < minS) {
-            this.checkpointsI.put(minS, checkpointProofs);
-            this.gcCheckpoint(minS, newView.getSpeculativeHistory());
-        }
 
         return true;
     }

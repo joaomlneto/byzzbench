@@ -5,6 +5,8 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.With;
 
+import java.util.SortedMap;
+
 import byzzbench.simulator.protocols.hbft.SpeculativeHistory;
 
 @Data
@@ -14,7 +16,7 @@ public class ViewChangeMessage extends MessagePayload {
     private final long newViewNumber;
     private final SpeculativeHistory speculativeHistoryP;
     private final SpeculativeHistory speculativeHistoryQ;
-    private final SpeculativeHistory requestsR;
+    private final SortedMap<Long, RequestMessage> requestsR;
     private final String replicaId;
 
     @Override
