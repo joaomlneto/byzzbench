@@ -43,8 +43,6 @@ public class MessageLog implements Serializable {
     private final SortedMap<ReplicaRequestKey, Ticket<?, ?>> ticketCache = new TreeMap<>();
     private final SortedMap<TicketKey, Ticket<?, ?>> tickets = new TreeMap<>();
 
-    // In practice a replica can only have one checkpoint-I message in a view
-    // It will be cleared when a stable checkpoint is reached
     private final SortedMap<Long, Collection<CheckpointMessage>> checkpointsI = new TreeMap<>();
     private final SortedMap<Long, Collection<CheckpointMessage>> checkpointsII = new TreeMap<>();
     private final SortedMap<Long, Collection<CheckpointMessage>> checkpointsIII = new TreeMap<>();
@@ -53,6 +51,7 @@ public class MessageLog implements Serializable {
 
     private Checkpoint lastStableCheckpoint;
 
+    private Checkpoint lastAcceptedCheckpointI;
     private SortedMap<Long, Collection<SpeculativeHistory>> cer1 = new TreeMap<>();
     private SortedMap<Long, Collection<SpeculativeHistory>> cer2 = new TreeMap<>();
 
@@ -135,6 +134,7 @@ public class MessageLog implements Serializable {
         // TODO: I am not sure whether these should be cleared or not
         this.cer1 = new TreeMap<>();
         this.cer2 = new TreeMap<>();
+        this.lastAcceptedCheckpointI = null;
 
         this.lastStableCheckpoint = new Checkpoint(checkpoint, history);
 
@@ -147,13 +147,15 @@ public class MessageLog implements Serializable {
          * Per hBFT 4.2, each time a checkpoint-III is generated or received, it
          * gets stored in the log until 2f + 1 are accumulated (CER2(M,v)) that have
          * matching digests to the checkpoint that was added to the log, in
-         * which case the garbage collection occurs (see #gcCheckpoint(long)).
+         * which case the garbage collection occurs (see #gcCheckpoint(long))
+         * and a stable checkpoint is established.
          */
         long seqNumber = checkpoint.getLastSeqNumber();
 
         if (checkpoint instanceof CheckpointIMessage) {
             Collection<CheckpointMessage> checkpointProofs = this.checkpointsI.computeIfAbsent(seqNumber, k -> new ConcurrentLinkedQueue<>());
             checkpointProofs.add(checkpoint);
+            this.lastAcceptedCheckpointI = new Checkpoint(seqNumber, history);
         }
 
         if (checkpoint instanceof CheckpointIIMessage) {
@@ -248,7 +250,7 @@ public class MessageLog implements Serializable {
          * CER1(M, v-1)
          */
         SpeculativeHistory historyP;
-        if (this.isNullOrEmpty(this.cer1.get(newViewNumber - 1))) {
+        if (!this.isNullOrEmpty(this.cer1.get(newViewNumber - 1))) {
             historyP = this.cer1.get(newViewNumber - 1).iterator().next();
         } else {
             historyP = null;
@@ -258,18 +260,18 @@ public class MessageLog implements Serializable {
          * Q execution history from the accepted Checkpoint-I message
          * TODO: figure out which view is this
          */
-        // SpeculativeHistory historyQ;
-        // if (this.isNullOrEmpty(this.checkpointsI.get(this.checkpointsI.keySet().iterator().next()))) {
-        //     historyQ = this.checkpointsI.get(this.checkpointsI.keySet().iterator().next());
-        // } else {
-        //     historyQ = null;
-        // }
+        SpeculativeHistory historyQ;
+        if (this.lastAcceptedCheckpointI != null) {
+            historyQ = this.lastAcceptedCheckpointI.getHistory();
+        } else {
+            historyQ = null;
+        }
 
         // cer1 could be empty
         ViewChangeMessage viewChange = new ViewChangeMessage(
             newViewNumber,
             historyP,
-            this.lastStableCheckpoint.getHistory(),
+            historyQ,
             requestsR,
             replicaId);
 
@@ -449,7 +451,7 @@ public class MessageLog implements Serializable {
          */
         for (SortedMap<Long, RequestMessage> requests : allRequests) {
             for (Map.Entry<Long, RequestMessage> request : requests.entrySet()) {
-                if ((selectedHistoryM == null || request.getKey() > selectedHistoryM.getGreatesSeqNumber()) && requestMap.get(request.getKey()) >= tolerance + 1) {
+                if ((selectedHistoryM == null || request.getKey() > selectedHistoryM.getGreatestSeqNumber()) && requestMap.get(request.getKey()) >= tolerance + 1) {
                     sortedRequests.addEntry(request.getKey(), request.getValue());
                 }
             }
@@ -462,11 +464,24 @@ public class MessageLog implements Serializable {
             }
         }
 
+        /*  
+         * If Rule A is correct then the selected Checkpoint
+         * is the selectedHistoryM.
+         * Otherwise its the replicas last stable checkpoint.
+         * Nullable if there is no previous checkpoint.
+         */
+        Checkpoint selectedCheckpoint;
+        if (selectedHistoryM == null) {
+            selectedCheckpoint = this.lastStableCheckpoint;
+        } else {
+            selectedCheckpoint = new Checkpoint(selectedHistoryM.getGreatestSeqNumber(), selectedHistoryM);
+        }
+
         // Construct the New-View message with V, X (selected checkpoint), and M (speculative history)
         return new NewViewMessage(
             newViewNumber,
             newViewSet.values(),
-            this.lastStableCheckpoint,
+            selectedCheckpoint,
             sortedRequests);
 }
 

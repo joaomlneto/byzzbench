@@ -610,26 +610,23 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
          * and perform GC if the checkpoint is stable.
          */
         String primaryId = this.getPrimaryId();
-        
-        if (checkpoint instanceof CheckpointIMessage) {
-            /* 
-             * Only primary can send checkpoint-I, else send View-Change
-             * TODO: Implement some different logic if CheckpointIMessage
-             * is not from primary, maybe let a few through and initatie a view change
-             * after f + 1 messages
-             */
-            if (primaryId.equals(checkpoint.getReplicaId()) 
-                && Arrays.equals(checkpoint.getDigest(), this.digest(speculativeHistory)) 
-                && checkpoint.getLastSeqNumber() == this.seqCounter.get()) {
-                this.checkpointForNewView = false;
-                messageLog.appendCheckpoint(checkpoint, this.tolerance, this.speculativeHistory, this.getViewNumber());
-            } else {
-                ViewChangeMessage viewChangeMessage = messageLog.produceViewChange(this.getViewNumber() + 1, this.getNodeId(), tolerance, this.speculativeRequests);
-                this.broadcastMessage(viewChangeMessage);
-            }
-        } else if (checkpoint instanceof CheckpointIIMessage) {
-            // Digest and speculative execution history should match
-            if (Arrays.equals(checkpoint.getDigest(), this.digest(speculativeHistory)) && checkpoint.getLastSeqNumber() == this.seqCounter.get()) {
+
+        if (Arrays.equals(checkpoint.getDigest(), this.digest(speculativeHistory)) && checkpoint.getLastSeqNumber() == this.seqCounter.get()) {
+            if (checkpoint instanceof CheckpointIMessage) {
+                /* 
+                 * Only primary can send checkpoint-I, else send View-Change
+                 * TODO: Implement some different logic if CheckpointIMessage
+                 * is not from primary, maybe let a few through and initatie a view change
+                 * after f + 1 messages
+                 */
+                if (primaryId.equals(checkpoint.getReplicaId())) {
+                    this.checkpointForNewView = false;
+                    messageLog.appendCheckpoint(checkpoint, this.tolerance, this.speculativeHistory, this.getViewNumber());
+                } else {
+                    ViewChangeMessage viewChangeMessage = messageLog.produceViewChange(this.getViewNumber() + 1, this.getNodeId(), tolerance, this.speculativeRequests);
+                    this.broadcastMessage(viewChangeMessage);
+                }
+            } else if (checkpoint instanceof CheckpointIIMessage) { 
                 messageLog.appendCheckpoint(checkpoint, this.tolerance, this.speculativeHistory, this.getViewNumber());
                 
                 // Check whether 2f + 1 Checkpoint-II messages have been seen
@@ -646,19 +643,13 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
                     messageLog.appendCheckpoint(checkpointIII, this.tolerance, this.speculativeHistory, this.getViewNumber());
                     this.sendCheckpoint(checkpointIII);
                 }
-            } else {
-                ViewChangeMessage viewChangeMessage = messageLog.produceViewChange(this.getViewNumber() + 1, this.getNodeId(), tolerance, this.speculativeRequests);
-                this.broadcastMessage(viewChangeMessage);
-            }
-        } else if (checkpoint instanceof CheckpointIIIMessage) {
-            // Digest and speculative execution history should match
-            if (Arrays.equals(checkpoint.getDigest(), this.digest(speculativeHistory)) && checkpoint.getLastSeqNumber() == this.seqCounter.get()) {
+            } else if (checkpoint instanceof CheckpointIIIMessage) {
                 // GC will execute once 2f + 1 is received
                 messageLog.appendCheckpoint(checkpoint, this.tolerance, this.speculativeHistory, this.getViewNumber());
-            } else {
-                ViewChangeMessage viewChangeMessage = messageLog.produceViewChange(this.getViewNumber() + 1, this.getNodeId(), tolerance, this.speculativeRequests);
-                this.broadcastMessage(viewChangeMessage);
             }
+        } else {
+            ViewChangeMessage viewChangeMessage = messageLog.produceViewChange(this.getViewNumber() + 1, this.getNodeId(), tolerance, this.speculativeRequests);
+            this.broadcastMessage(viewChangeMessage);
         }
     }
 
@@ -722,6 +713,7 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
             if (newView != null) {
                 this.broadcastMessage(newView);
                 this.enterNewView(newViewNumber);
+                this.checkpointForNewView = false;
                 
                 // as of hBFT 4.3 checkpoint protocol is called after a new-view message
                 CheckpointMessage checkpoint = new CheckpointIMessage(seqCounter.get(), this.digest(this.speculativeHistory), this.getNodeId());
@@ -786,6 +778,15 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
             return;
         } else if (m instanceof CommitMessage commit) {
             recvCommit(commit);
+            return;
+        } else if (m instanceof CheckpointMessage checkpoint) {
+            recvCheckpoint(checkpoint);
+            return;
+        } else if (m instanceof ViewChangeMessage viewChange) {
+            recvViewChange(viewChange);
+            return;
+        } else if (m instanceof NewViewMessage newView) {
+            recvNewView(newView);
             return;
         }
         throw new RuntimeException("Unknown message type");

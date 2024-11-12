@@ -45,7 +45,7 @@ public class SpeculativeHistory implements Serializable {
         return requests;
     }
 
-    public long getGreatesSeqNumber() {
+    public long getGreatestSeqNumber() {
         long maxNumber = 0;
         for (SpeculativeEntry specHistory : history) {
             if (specHistory.getSequenceNumber() > maxNumber) {
@@ -64,15 +64,10 @@ public class SpeculativeHistory implements Serializable {
     public static class SpeculativeEntry implements Serializable {
         private final long sequenceNumber;
         private final RequestMessage request;
-        // Probably not needed
-        // private final Serializable result;
-        // Maybe also viewNumber, not sure yet
-        // private final long viewNumber;
 
         public SpeculativeEntry(long sequenceNumber, RequestMessage request) {
             this.sequenceNumber = sequenceNumber;
             this.request = request;
-            //this.result = result;
         }
     }
 }
