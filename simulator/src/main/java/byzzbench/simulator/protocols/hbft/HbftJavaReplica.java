@@ -45,6 +45,7 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
      * Sometimes called the commit certificate.
      * It includes requests that are considered committed,
      * in other words the replica got 2f + 1 COMMIT messages
+     * THIS IS R IN THE VIEW-CHANGE!!!
      * for the request.
      */
     @Getter
@@ -138,7 +139,7 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
                         newViewNumber,
                         this.getNodeId(),
                         this.tolerance,
-                        this.speculativeRequests);
+                        this.speculativeHistory);
                 this.sendViewChange(viewChange);
 
                 /*
@@ -282,6 +283,7 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
             return;
         }
 
+        // TODO: Need to check whether its from client or replica
         // hBFT 4.2 - Attempt to process non-bufferred request
         this.recvRequest(request, false);
     }
@@ -555,7 +557,7 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
                     messageLog.appendCheckpoint(checkpoint, this.tolerance, this.speculativeHistory, this.getViewNumber());
                 }
             } else if (ticket.isCommittedConflicting(this.tolerance)) {
-                ViewChangeMessage viewChangeMessage = this.messageLog.produceViewChange(seqNumber, this.getNodeId(), tolerance, this.speculativeRequests);
+                ViewChangeMessage viewChangeMessage = this.messageLog.produceViewChange(seqNumber, this.getNodeId(), tolerance, this.speculativeHistory);
                 this.broadcastMessage(viewChangeMessage);
             }
         }
@@ -623,7 +625,7 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
                     this.checkpointForNewView = false;
                     messageLog.appendCheckpoint(checkpoint, this.tolerance, this.speculativeHistory, this.getViewNumber());
                 } else {
-                    ViewChangeMessage viewChangeMessage = messageLog.produceViewChange(this.getViewNumber() + 1, this.getNodeId(), tolerance, this.speculativeRequests);
+                    ViewChangeMessage viewChangeMessage = messageLog.produceViewChange(this.getViewNumber() + 1, this.getNodeId(), tolerance, this.speculativeHistory);
                     this.broadcastMessage(viewChangeMessage);
                 }
             } else if (checkpoint instanceof CheckpointIIMessage) { 
@@ -648,7 +650,7 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
                 messageLog.appendCheckpoint(checkpoint, this.tolerance, this.speculativeHistory, this.getViewNumber());
             }
         } else {
-            ViewChangeMessage viewChangeMessage = messageLog.produceViewChange(this.getViewNumber() + 1, this.getNodeId(), tolerance, this.speculativeRequests);
+            ViewChangeMessage viewChangeMessage = messageLog.produceViewChange(this.getViewNumber() + 1, this.getNodeId(), tolerance, this.speculativeHistory);
             this.broadcastMessage(viewChangeMessage);
         }
     }
@@ -691,7 +693,7 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
         ViewChangeResult result = messageLog.acceptViewChange(viewChange, this.getNodeId(), curViewNumber, this.tolerance);
         if (result.isShouldBandwagon()) {
             ViewChangeMessage bandwagonViewChange = messageLog.produceViewChange(
-                    result.getBandwagonViewNumber(), this.getNodeId(), this.tolerance, this.speculativeRequests);
+                    result.getBandwagonViewNumber(), this.getNodeId(), this.tolerance, this.speculativeHistory);
             this.sendViewChange(bandwagonViewChange);
         }
     

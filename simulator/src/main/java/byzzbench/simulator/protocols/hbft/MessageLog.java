@@ -219,7 +219,7 @@ public class MessageLog implements Serializable {
         return c == null || c.isEmpty();
     }
 
-    public ViewChangeMessage produceViewChange(long newViewNumber, String replicaId, int tolerance, SortedMap<Long, RequestMessage> speculativeRequests) {
+    public ViewChangeMessage produceViewChange(long newViewNumber, String replicaId, int tolerance, SpeculativeHistory history) {
         /*
          * Produces a VIEW-CHANGE vote message in accordance with hBFT 4.3.
          *
@@ -238,12 +238,7 @@ public class MessageLog implements Serializable {
          * Speculatively executed requests with sequence number higher,
          * than the last accepted checkpoint (lowWaterMark)
          */
-        SortedMap<Long, RequestMessage> requestsR = new TreeMap<>();
-        for (long seqNumber : speculativeRequests.keySet()) {
-            if (seqNumber > checkpoint) {
-                requestsR.put(seqNumber, speculativeRequests.get(seqNumber));
-            }
-        }
+        SpeculativeHistory requestsR = history.getHistory(checkpoint);
 
         /* 
          * Execution history from previous view
@@ -272,7 +267,7 @@ public class MessageLog implements Serializable {
             newViewNumber,
             historyP,
             historyQ,
-            requestsR,
+            requestsR.getRequests(),
             replicaId);
 
         /*
