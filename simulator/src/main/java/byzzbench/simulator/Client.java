@@ -75,12 +75,14 @@ public class Client implements Serializable {
     }
 
     /**
-     * Sends a request to a replica in the system.
+     * As of hBFT 4.1, sends a request to all replica in the system.
      */
     public void sendRequest() {
         String recipientId = transport.getScenario().getNodes().keySet().iterator().next();
         String requestId = String.format("%s/%d", this.clientId, this.requestSequenceNumber.getAndIncrement());
-        this.transport.sendClientRequest(this.clientId, requestId, recipientId);
+        //for (String recipientId : transport.getScenario().getNodes().keySet()) {
+            this.transport.sendClientRequest(this.clientId, requestId, recipientId);
+        //}
     }
 
     /**

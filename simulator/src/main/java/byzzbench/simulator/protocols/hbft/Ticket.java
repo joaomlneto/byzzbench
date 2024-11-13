@@ -39,7 +39,7 @@ public class Ticket<O extends Serializable, R extends Serializable> implements S
     public void append(Serializable message) {
         this.messages.add(message);
 
-        if (this.request == null) {
+        //if (this.request == null) {
             if (message instanceof RequestMessage requestMessage) {
                 this.request = requestMessage;
             } else if (message instanceof PrepareMessage prepareMessage) {
@@ -48,7 +48,7 @@ public class Ticket<O extends Serializable, R extends Serializable> implements S
             } else if (message instanceof ReplyMessage replyMessage) {
                 this.reply = replyMessage;
             }
-        }
+        //}
     }
 
     public boolean isCommittedLocal(int tolerance) {
@@ -68,6 +68,7 @@ public class Ticket<O extends Serializable, R extends Serializable> implements S
         int commits = 0;
         for (Object message : this.messages) {
             if (message instanceof CommitMessage commitMessage) {
+                System.out.println(this.viewNumber + " " + this.seqNumber);
                 if (!commitMessage.getRequest().equals(this.request) || !Arrays.equals(commitMessage.getDigest(), this.prepare.getDigest())) {
                     commits++;
                 }

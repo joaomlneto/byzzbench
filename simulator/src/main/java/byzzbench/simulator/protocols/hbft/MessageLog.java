@@ -219,7 +219,7 @@ public class MessageLog implements Serializable {
         return c == null || c.isEmpty();
     }
 
-    public ViewChangeMessage produceViewChange(long newViewNumber, String replicaId, int tolerance, SpeculativeHistory history) {
+    public ViewChangeMessage produceViewChange(long newViewNumber, String replicaId, int tolerance, SortedMap<Long,RequestMessage> speculativeRequests) {
         /*
          * Produces a VIEW-CHANGE vote message in accordance with hBFT 4.3.
          *
@@ -238,7 +238,12 @@ public class MessageLog implements Serializable {
          * Speculatively executed requests with sequence number higher,
          * than the last accepted checkpoint (lowWaterMark)
          */
-        SpeculativeHistory requestsR = history.getHistory(checkpoint);
+        SortedMap<Long, RequestMessage> requestsR = new TreeMap<>();
+        for (long seqNumber : speculativeRequests.keySet()) {
+            if (seqNumber > checkpoint) {
+                requestsR.put(seqNumber, speculativeRequests.get(seqNumber));
+            }
+        }
 
         /* 
          * Execution history from previous view
@@ -267,7 +272,7 @@ public class MessageLog implements Serializable {
             newViewNumber,
             historyP,
             historyQ,
-            requestsR.getRequests(),
+            requestsR,
             replicaId);
 
         /*
@@ -506,6 +511,9 @@ public class MessageLog implements Serializable {
         long newViewNumber = newView.getNewViewNumber();
         this.gcNewView(newViewNumber);
 
+        // TODO: verify VIEW-CHANGE messages
+        // this.verify(newView.getViewChanges());
+
         return true;
     }
 
@@ -515,6 +523,10 @@ public class MessageLog implements Serializable {
 
     public <O> void buffer(RequestMessage request) {
         this.buffer.addLast(request);
+    }
+
+    public <O> void bufferFirst(RequestMessage request) {
+        this.buffer.addFirst(request);
     }
 
     public <O> RequestMessage popBuffer() {

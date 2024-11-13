@@ -139,7 +139,7 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
                         newViewNumber,
                         this.getNodeId(),
                         this.tolerance,
-                        this.speculativeHistory);
+                        this.speculativeRequests);
                 this.sendViewChange(viewChange);
 
                 /*
@@ -240,7 +240,6 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
          * number that this (the primary) has determined.
          */
         Ticket<O, R> ticket = messageLog.newTicket(currentViewNumber, seqNumber);
-        
         ticket.append(request);
 
         PrepareMessage prepare = new PrepareMessage(
@@ -249,10 +248,9 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
             this.digest(request),
             request);
 
-        // Send to self as well in order to process the request
-        this.broadcastMessageIncludingSelf(prepare);
+        this.broadcastMessage(prepare);
 
-        /* Serializable operation = request.getOperation();
+        Serializable operation = request.getOperation();
         Serializable result = this.compute(new SerializableLogEntry(operation));
 
         ReplyMessage reply = new ReplyMessage(
@@ -263,17 +261,27 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
             this.getNodeId(),
             result,
             this.getSpeculativeHistory());
-
+        
         this.sendReply(clientId, reply);
 
-        // hBFT 4.2 - Append PREPARE and REPLY
-        // Commit is missing
+        // hBFT 4.1 - Multicast COMMIT to other replicas
+        CommitMessage commit = new CommitMessage(
+            currentViewNumber,
+            seqNumber,
+            this.digest(request),
+            request,
+            this.getNodeId(),
+            this.speculativeHistory);
+
+        this.broadcastMessage(commit);
+
         ticket.append(prepare);
         ticket.append(reply);
+        ticket.append(commit);
 
         // Move to COMMIT phase
         ReplicaTicketPhase phase = ticket.getPhase();
-        ticket.casPhase(phase, ReplicaTicketPhase.COMMIT); */
+        ticket.casPhase(phase, ReplicaTicketPhase.COMMIT);
     }
 
     public void recvRequest(RequestMessage request) {
@@ -557,7 +565,7 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
                     messageLog.appendCheckpoint(checkpoint, this.tolerance, this.speculativeHistory, this.getViewNumber());
                 }
             } else if (ticket.isCommittedConflicting(this.tolerance)) {
-                ViewChangeMessage viewChangeMessage = this.messageLog.produceViewChange(seqNumber, this.getNodeId(), tolerance, this.speculativeHistory);
+                ViewChangeMessage viewChangeMessage = this.messageLog.produceViewChange(seqNumber, this.getNodeId(), tolerance, this.speculativeRequests);
                 this.broadcastMessage(viewChangeMessage);
             }
         }
@@ -625,7 +633,7 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
                     this.checkpointForNewView = false;
                     messageLog.appendCheckpoint(checkpoint, this.tolerance, this.speculativeHistory, this.getViewNumber());
                 } else {
-                    ViewChangeMessage viewChangeMessage = messageLog.produceViewChange(this.getViewNumber() + 1, this.getNodeId(), tolerance, this.speculativeHistory);
+                    ViewChangeMessage viewChangeMessage = messageLog.produceViewChange(this.getViewNumber() + 1, this.getNodeId(), tolerance, this.speculativeRequests);
                     this.broadcastMessage(viewChangeMessage);
                 }
             } else if (checkpoint instanceof CheckpointIIMessage) { 
@@ -650,7 +658,7 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
                 messageLog.appendCheckpoint(checkpoint, this.tolerance, this.speculativeHistory, this.getViewNumber());
             }
         } else {
-            ViewChangeMessage viewChangeMessage = messageLog.produceViewChange(this.getViewNumber() + 1, this.getNodeId(), tolerance, this.speculativeHistory);
+            ViewChangeMessage viewChangeMessage = messageLog.produceViewChange(this.getViewNumber() + 1, this.getNodeId(), tolerance, this.speculativeRequests);
             this.broadcastMessage(viewChangeMessage);
         }
     }
@@ -693,7 +701,7 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
         ViewChangeResult result = messageLog.acceptViewChange(viewChange, this.getNodeId(), curViewNumber, this.tolerance);
         if (result.isShouldBandwagon()) {
             ViewChangeMessage bandwagonViewChange = messageLog.produceViewChange(
-                    result.getBandwagonViewNumber(), this.getNodeId(), this.tolerance, this.speculativeHistory);
+                    result.getBandwagonViewNumber(), this.getNodeId(), this.tolerance, this.speculativeRequests);
             this.sendViewChange(bandwagonViewChange);
         }
     
@@ -718,14 +726,21 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
                 this.checkpointForNewView = false;
                 
                 // as of hBFT 4.3 checkpoint protocol is called after a new-view message
-                CheckpointMessage checkpoint = new CheckpointIMessage(seqCounter.get(), this.digest(this.speculativeHistory), this.getNodeId());
+                CheckpointMessage checkpoint = new CheckpointIMessage(seqCounter.get(), this.digest(newView.getCheckpoint().getHistory()), this.getNodeId());
                 this.messageLog.appendCheckpoint(checkpoint, tolerance, this.speculativeHistory, newView.getNewViewNumber());
                 this.broadcastMessage(checkpoint);
+
+                // as of hBFT 4.3 the hanging speculative requests should be prepared with new seqNumbers
+                // TODO: this is probably not the best way to do this
+                for (RequestMessage request : newView.getSpeculativeHistory().getRequests().values()) {
+                    this.messageLog.buffer(request);
+                }
             }
         }
     }
 
     public void sendViewChange(ViewChangeMessage viewChange) {
+        this.disgruntled = true;
         // hBFT 4.3 - Multicast VIEW-CHANGE vote
         this.broadcastMessage(viewChange);
     }
