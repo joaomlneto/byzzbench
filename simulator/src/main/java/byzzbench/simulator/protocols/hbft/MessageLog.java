@@ -511,8 +511,25 @@ public class MessageLog implements Serializable {
         long newViewNumber = newView.getNewViewNumber();
         this.gcNewView(newViewNumber);
 
-        // TODO: verify VIEW-CHANGE messages
-        // this.verify(newView.getViewChanges());
+        long minS = Integer.MAX_VALUE;
+        Collection<CheckpointMessage> checkpointProofs = null;
+        Collection<ViewChangeMessage> viewChangeProofs = newView.getViewChangeProofs();
+        for (ViewChangeMessage viewChange : viewChangeProofs) {
+            if (newViewNumber != viewChange.getNewViewNumber()) {
+                return false;
+            }
+
+            long seqNumber = viewChange.getSpeculativeHistoryP().getGreatestSeqNumber();
+            if (seqNumber < minS) {
+                minS = seqNumber;
+                checkpointProofs = viewChange.getSpeculativeHistoryQ();
+            }
+        }
+
+        if (this.lowWaterMark < minS) {
+            this.checkpoints.put(minS, checkpointProofs);
+            this.gcCheckpoint(minS);
+        }
 
         return true;
     }

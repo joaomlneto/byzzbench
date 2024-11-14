@@ -308,7 +308,7 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
          * has been sent by a faulty replica.
          */
 
-        // hBFT 4.4 - Phase messages are not accepted when the replica is
+        // Phase messages are not accepted when the replica is
         // disgruntled or waiting for checkpoint
         if (this.disgruntled || this.checkpointForNewView) {
             return false;
@@ -556,7 +556,7 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
                  */
                 if (seqNumber % messageLog.getCheckpointInterval() == 0) {
                     CheckpointMessage checkpoint = new CheckpointIMessage(
-                        seqNumber,
+                        this.speculativeHistory.getGreatestSeqNumber(),
                         this.digest(this.speculativeHistory),
                         this.getNodeId());
                     this.sendCheckpoint(checkpoint);
@@ -684,12 +684,6 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
         long curViewNumber = this.getViewNumber();
         long newViewNumber = viewChange.getNewViewNumber();
         String newPrimaryId = this.computePrimaryId(newViewNumber, this.getNodeIds().size());
-    
-        // TODO:
-        // hBFT-Specific: Determine if hPANIC triggered this view change
-        // if (viewChange.isTriggeredByPanic()) {
-        //     this.messageLog.append(viewChange); 
-        // }
     
         // Checkpoint Synchronization: Make sure speculative history matches
         // if (!localDigest.equals(viewChange.getCheckpointDigest())) {
