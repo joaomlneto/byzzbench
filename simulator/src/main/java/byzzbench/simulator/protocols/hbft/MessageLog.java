@@ -52,8 +52,8 @@ public class MessageLog implements Serializable {
     private Checkpoint lastStableCheckpoint;
 
     private Checkpoint lastAcceptedCheckpointI;
-    private SortedMap<Long, Collection<SpeculativeHistory>> cer1 = new TreeMap<>();
-    private SortedMap<Long, Collection<SpeculativeHistory>> cer2 = new TreeMap<>();
+    private final SortedMap<Long, Collection<SpeculativeHistory>> cer1 = new TreeMap<>();
+    private final SortedMap<Long, Collection<SpeculativeHistory>> cer2 = new TreeMap<>();
 
     private volatile long lowWaterMark;
     private volatile long highWaterMark;
@@ -132,8 +132,8 @@ public class MessageLog implements Serializable {
 
         // Reset the certificates
         // TODO: I am not sure whether these should be cleared or not
-        this.cer1 = new TreeMap<>();
-        this.cer2 = new TreeMap<>();
+        // this.cer1 = new TreeMap<>();
+        // this.cer2 = new TreeMap<>();
         this.lastAcceptedCheckpointI = null;
 
         this.lastStableCheckpoint = new Checkpoint(checkpoint, history);
@@ -260,9 +260,9 @@ public class MessageLog implements Serializable {
          * Q execution history from the accepted Checkpoint-I message
          * TODO: figure out which view is this
          */
-        SpeculativeHistory historyQ;
+        Checkpoint historyQ;
         if (this.lastAcceptedCheckpointI != null) {
-            historyQ = this.lastAcceptedCheckpointI.getHistory();
+            historyQ = this.lastAcceptedCheckpointI;
         } else {
             historyQ = null;
         }
@@ -374,6 +374,8 @@ public class MessageLog implements Serializable {
         long certificateTolerance = 2 * tolerance + 1;
         Map<SpeculativeHistory, Integer> historyMap = new HashMap<>();
 
+        Map<Long, Integer> checkpointMap = new HashMap<>();
+
         // Replica needs all the possibly executed requests for later
         Map<Long, Integer> requestMap = new HashMap<>();
         Collection<SortedMap<Long, RequestMessage>> allRequests = new ArrayList<>();
@@ -382,6 +384,7 @@ public class MessageLog implements Serializable {
         // Loop through the view-change messages and try to find 2f + 1 matching P history
         for (ViewChangeMessage viewChangePerReplica : newViewSet.values()) {
             SpeculativeHistory pHistory = viewChangePerReplica.getSpeculativeHistoryP();
+            Checkpoint qHistory = viewChangePerReplica.getSpeculativeHistoryQ();
             SortedMap<Long, RequestMessage> requests = viewChangePerReplica.getRequestsR();
             allRequests.add(requests);
 
@@ -395,6 +398,7 @@ public class MessageLog implements Serializable {
             }
 
             historyMap.put(pHistory, historyMap.getOrDefault(pHistory, 0) + 1);
+            checkpointMap.put(qHistory.getSequenceNumber(), checkpointMap.getOrDefault(qHistory.getSequenceNumber(), 0) + 1);
         }
 
         for (Map.Entry<SpeculativeHistory, Integer> entry : historyMap.entrySet()) {
@@ -406,14 +410,9 @@ public class MessageLog implements Serializable {
         // Rule A2: At least f + 1 replicas accepted Checkpoint-I in view v' > v
         if (selectedHistoryM != null) {
             final int stableCount = tolerance + 1;
-            int matching = 0;
 
-            for (Long key : this.cer1.keySet()) {
-                if (key > newViewNumber - 1) {
-                    matching += this.cer1.get(key).size();
-                }
-
-                if (matching >= stableCount) {
+            for (Long key : checkpointMap.keySet()) {
+                if (checkpointMap.get(key) >= stableCount) {
                     // Get first element, should all be the same history
                     ruleASatisfied = true;
                     break;
@@ -453,6 +452,8 @@ public class MessageLog implements Serializable {
             for (Map.Entry<Long, RequestMessage> request : requests.entrySet()) {
                 if ((selectedHistoryM == null || request.getKey() > selectedHistoryM.getGreatestSeqNumber()) && requestMap.get(request.getKey()) >= tolerance + 1) {
                     sortedRequests.addEntry(request.getKey(), request.getValue());
+                } else if (selectedHistoryM == null || request.getKey() > selectedHistoryM.getGreatestSeqNumber()) {
+                    sortedRequests.addEntry(request.getKey(), null);
                 }
             }
         }
@@ -504,32 +505,15 @@ public class MessageLog implements Serializable {
 
     public boolean acceptNewView(NewViewMessage newView) {
         /*
-         * Verify the change to a new view in accordance with PBFT 4.4 and then
-         * find the min-s value and update the low water mark if it is lagging
-         * behind the new view.
+         * When receiving a new view message the replicas will 
+         * run a checkpoint sub-protocol (started by the primary)
          */
+
+        // TODO: verify view-change
+
+
         long newViewNumber = newView.getNewViewNumber();
         this.gcNewView(newViewNumber);
-
-        long minS = Integer.MAX_VALUE;
-        Collection<CheckpointMessage> checkpointProofs = null;
-        Collection<ViewChangeMessage> viewChangeProofs = newView.getViewChangeProofs();
-        for (ViewChangeMessage viewChange : viewChangeProofs) {
-            if (newViewNumber != viewChange.getNewViewNumber()) {
-                return false;
-            }
-
-            long seqNumber = viewChange.getSpeculativeHistoryP().getGreatestSeqNumber();
-            if (seqNumber < minS) {
-                minS = seqNumber;
-                checkpointProofs = viewChange.getSpeculativeHistoryQ();
-            }
-        }
-
-        if (this.lowWaterMark < minS) {
-            this.checkpoints.put(minS, checkpointProofs);
-            this.gcCheckpoint(minS);
-        }
 
         return true;
     }

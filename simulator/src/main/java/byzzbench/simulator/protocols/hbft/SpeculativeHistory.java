@@ -1,8 +1,6 @@
 package byzzbench.simulator.protocols.hbft;
 
 import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.Collection;
 import java.util.SortedMap;
 import java.util.TreeMap;
 
@@ -15,59 +13,52 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 public class SpeculativeHistory implements Serializable {
-    private Collection<SpeculativeEntry> history = new ArrayList<>();
+    private SortedMap<Long, RequestMessage> history = new TreeMap<>();
 
     public void addEntry(long sequenceNumber, RequestMessage request) {
-        history.add(new SpeculativeEntry(sequenceNumber, request));
+        history.put(sequenceNumber, request);
     }
 
     public SpeculativeHistory getHistory(long sequenceNumber) {
-        Collection<SpeculativeEntry> filteredHistory = history.stream().filter(entry -> entry.getSequenceNumber() > sequenceNumber).toList();
+        SortedMap<Long, RequestMessage> filteredHistory = new TreeMap<>();
+        for (Long key : this.history.keySet()) {
+            if (key > sequenceNumber) {
+                filteredHistory.put(key, this.history.get(key));
+            }
+        }
+        return new SpeculativeHistory(filteredHistory);
+    }
+
+    public SpeculativeHistory getHistoryBefore(long sequenceNumber) {
+        SortedMap<Long, RequestMessage> filteredHistory = new TreeMap<>();
+        for (Long key : this.history.keySet()) {
+            if (key <= sequenceNumber) {
+                filteredHistory.put(key, this.history.get(key));
+            }
+        }
         return new SpeculativeHistory(filteredHistory);
     }
 
     public SortedMap<Long, RequestMessage> getRequests(long sequenceNumber) {
-        Collection<SpeculativeEntry> filteredHistory = history.stream().filter(entry -> entry.getSequenceNumber() > sequenceNumber).toList();
-        SortedMap<Long, RequestMessage> requests = new TreeMap<>();
-        for (SpeculativeEntry entry : filteredHistory) {
-            requests.put(entry.getSequenceNumber(), entry.getRequest());
+        SortedMap<Long, RequestMessage> filteredHistory = new TreeMap<>();
+        for (Long key : this.history.keySet()) {
+            if (key > sequenceNumber) {
+                filteredHistory.put(key, this.history.get(key));
+            }
         }
-
-        return requests;
+        return filteredHistory;
     }
 
     public SortedMap<Long, RequestMessage> getRequests() {
-        SortedMap<Long, RequestMessage> requests = new TreeMap<>();
-        for (SpeculativeEntry entry : this.history) {
-            requests.put(entry.getSequenceNumber(), entry.getRequest());
-        }
-
-        return requests;
+        return this.history;
     }
 
     public long getGreatestSeqNumber() {
-        long maxNumber = 0;
-        for (SpeculativeEntry specHistory : history) {
-            if (specHistory.getSequenceNumber() > maxNumber) {
-                maxNumber = specHistory.getSequenceNumber();
-            }
-        }
-
-        return maxNumber;
+        return this.history.lastKey();
     }
 
     public boolean isEmpty() {
         return history.isEmpty();
     }
 
-    @Data
-    public static class SpeculativeEntry implements Serializable {
-        private final long sequenceNumber;
-        private final RequestMessage request;
-
-        public SpeculativeEntry(long sequenceNumber, RequestMessage request) {
-            this.sequenceNumber = sequenceNumber;
-            this.request = request;
-        }
-    }
 }

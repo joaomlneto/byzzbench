@@ -45,7 +45,6 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
      * Sometimes called the commit certificate.
      * It includes requests that are considered committed,
      * in other words the replica got 2f + 1 COMMIT messages
-     * THIS IS R IN THE VIEW-CHANGE!!!
      * for the request.
      */
     @Getter
@@ -554,7 +553,7 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
                  * use the same as for PBFT, where the sequence number mod 
                  * the interval reaches 0.
                  */
-                if (seqNumber % messageLog.getCheckpointInterval() == 0) {
+                if (seqNumber % 1 == 0) {
                     CheckpointMessage checkpoint = new CheckpointIMessage(
                         this.speculativeHistory.getGreatestSeqNumber(),
                         this.digest(this.speculativeHistory),
@@ -621,7 +620,8 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
          */
         String primaryId = this.getPrimaryId();
 
-        if (Arrays.equals(checkpoint.getDigest(), this.digest(speculativeHistory)) && checkpoint.getLastSeqNumber() == this.seqCounter.get()) {
+        // TODO: double check if the speculativeHistory seq number or the curr seq number should match
+        if (Arrays.equals(checkpoint.getDigest(), this.digest(this.speculativeHistory)) && checkpoint.getLastSeqNumber() == this.speculativeHistory.getGreatestSeqNumber()) {
             if (checkpoint instanceof CheckpointIMessage) {
                 /* 
                  * Only primary can send checkpoint-I, else send View-Change
@@ -632,6 +632,16 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
                 if (primaryId.equals(checkpoint.getReplicaId())) {
                     this.checkpointForNewView = false;
                     messageLog.appendCheckpoint(checkpoint, this.tolerance, this.speculativeHistory, this.getViewNumber());
+
+                    CheckpointMessage checkpointII = new CheckpointIIMessage(
+                        checkpoint.getLastSeqNumber(),
+                        this.digest(this.speculativeHistory),
+                        this.getNodeId()
+                    );
+
+                    // I add it to the log as the sendCheckpoint doesnt include self
+                    messageLog.appendCheckpoint(checkpointII, this.tolerance, this.speculativeHistory, this.getViewNumber());
+                    this.sendCheckpoint(checkpointII);
                 } else {
                     ViewChangeMessage viewChangeMessage = messageLog.produceViewChange(this.getViewNumber() + 1, this.getNodeId(), tolerance, this.speculativeRequests);
                     this.broadcastMessage(viewChangeMessage);
@@ -715,20 +725,13 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
             NewViewMessage newView = messageLog.produceNewView(newViewNumber, this.getNodeId(), this.tolerance);
     
             if (newView != null) {
-                this.broadcastMessage(newView);
-                this.enterNewView(newViewNumber);
+                this.broadcastMessageIncludingSelf(newView);
                 this.checkpointForNewView = false;
                 
                 // as of hBFT 4.3 checkpoint protocol is called after a new-view message
                 CheckpointMessage checkpoint = new CheckpointIMessage(seqCounter.get(), this.digest(newView.getCheckpoint().getHistory()), this.getNodeId());
                 this.messageLog.appendCheckpoint(checkpoint, tolerance, this.speculativeHistory, newView.getNewViewNumber());
                 this.broadcastMessage(checkpoint);
-
-                // as of hBFT 4.3 the hanging speculative requests should be prepared with new seqNumbers
-                // TODO: this is probably not the best way to do this
-                for (RequestMessage request : newView.getSpeculativeHistory().getRequests().values()) {
-                    this.messageLog.buffer(request);
-                }
             }
         }
     }
@@ -741,6 +744,18 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
 
     public void recvNewView(NewViewMessage newView) {
         /*
+         * Probably non standard behaviour: hBFT does not state
+         * what happens after a new view other than running a 
+         * checkpoint sub-protocol. The replicas somehow need to
+         * catch up with the history and verify the new view.
+         * So I will do a similar step as in Zyzzyva, as
+         * hBFT works very similar to it.
+         * 
+         * There are 3 possibilities:
+         * 1. The replica is behind with its history
+         * 2. The replica has different history than the other replicas
+         * 3. The replica has the same history
+         * 
          * Per hBFT 4.3 after a new view message is received,
          * the new primary needs to send a Checkpoint-I message
          * if this is not achieved, we can technically do two things
@@ -753,8 +768,31 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
             return;
         }
 
-        long newViewNumber = newView.getNewViewNumber();
+        long maxL = this.speculativeHistory.getGreatestSeqNumber();
+        long minS = newView.getCheckpoint().getSequenceNumber();
+        long maxR = newView.getSpeculativeHistory().getGreatestSeqNumber();
 
+        // Case 1. - behind with history
+        if (maxL < minS) { 
+            for (Long seqNumOfHistory : newView.getSpeculativeHistory().getRequests().keySet()) {
+                if (maxL < seqNumOfHistory && seqNumOfHistory <= minS) {
+                    this.speculativeHistory.addEntry(seqNumOfHistory, newView.getSpeculativeHistory().getRequests().get(seqNumOfHistory));
+                }
+            }
+
+            return;
+        } else if (maxL >= minS 
+            && this.digest(this.speculativeHistory.getHistoryBefore(maxL)) 
+            != this.digest(newView.getSpeculativeHistory().getHistoryBefore(maxL))) {
+            //TODO
+        } else if (maxL >= minS 
+            && this.digest(this.speculativeHistory.getHistoryBefore(maxL)) 
+            == this.digest(newView.getSpeculativeHistory().getHistoryBefore(maxL))) {
+            //TODO
+        }
+
+
+        long newViewNumber = newView.getNewViewNumber();
         this.enterNewView(newViewNumber);
     }
 

@@ -8,6 +8,7 @@ import lombok.With;
 import java.util.SortedMap;
 
 import byzzbench.simulator.protocols.hbft.SpeculativeHistory;
+import byzzbench.simulator.protocols.hbft.utils.Checkpoint;
 
 @Data
 @EqualsAndHashCode(callSuper = true)
@@ -15,7 +16,7 @@ import byzzbench.simulator.protocols.hbft.SpeculativeHistory;
 public class ViewChangeMessage extends MessagePayload {
     private final long newViewNumber;
     private final SpeculativeHistory speculativeHistoryP;
-    private final SpeculativeHistory speculativeHistoryQ;
+    private final Checkpoint speculativeHistoryQ;
     private final SortedMap<Long, RequestMessage> requestsR;
     private final String replicaId;
 
