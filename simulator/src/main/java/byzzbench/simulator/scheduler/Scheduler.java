@@ -13,6 +13,14 @@ public interface Scheduler extends Serializable {
     String getId();
 
     /**
+     * Called whenever this scheduler has been assigned a new scenario.
+     * This allows for schedulers like ByzzFuzz to pre-schedule faults.
+     *
+     * @param scenario the scenario being assigned to this scheduler
+     */
+    void initializeScenario(Scenario scenario);
+
+    /**
      * Loads the parameters for the scheduler from a JSON object.
      *
      * @param parameters The JSON object containing the parameters for the scheduler.

@@ -13,17 +13,17 @@ import java.util.Optional;
  * Predicate that checks if the round of a message matches a given round.
  */
 @RequiredArgsConstructor
-public class RoundPredicate implements FaultPredicate {
+public class MessageRoundPredicate implements FaultPredicate {
     private final long round;
 
     @Override
     public String getId() {
-        return "RoundFaultPrecondition-%d".formatted(round);
+        return "MessageRoundFaultPrecondition-%d".formatted(round);
     }
 
     @Override
     public String getName() {
-        return "Round is %d".formatted(round);
+        return "Message Round is %d".formatted(round);
     }
 
     @Override

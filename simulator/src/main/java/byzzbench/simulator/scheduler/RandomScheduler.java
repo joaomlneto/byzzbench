@@ -57,6 +57,11 @@ public class RandomScheduler extends BaseScheduler {
     }
 
     @Override
+    public void initializeScenario(Scenario scenario) {
+        // no initialization needed
+    }
+
+    @Override
     public synchronized Optional<EventDecision> scheduleNext(Scenario scenario) throws Exception {
         // Get a random event
         List<Event> queuedEvents =

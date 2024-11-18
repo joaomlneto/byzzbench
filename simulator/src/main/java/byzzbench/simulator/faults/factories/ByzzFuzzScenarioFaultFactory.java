@@ -38,6 +38,9 @@ public class ByzzFuzzScenarioFaultFactory implements FaultFactory {
         int r = scheduler.getNumRoundsWithFaults();
         Set<String> nodeIds = scenario.getNodes().keySet();
 
+        // print c, d, r
+        System.out.println("c: " + c + ", d: " + d + ", r: " + r);
+
         // Create network faults
         for (int i = 1; i <= d; i++) {
             int round = rand.nextInt(r) + 1;
@@ -47,7 +50,7 @@ public class ByzzFuzzScenarioFaultFactory implements FaultFactory {
         }
 
         // Create process faults
-        for (int i = 1; i < c; i++) {
+        for (int i = 1; i <= c; i++) {
             int round = rand.nextInt(r) + 1;
             String sender = nodeIds.stream().skip(rand.nextInt(nodeIds.size())).findFirst().orElseThrow();
             Set<String> recipientIds = SetSubsets.getRandomNonEmptySubset(nodeIds);
@@ -56,6 +59,10 @@ public class ByzzFuzzScenarioFaultFactory implements FaultFactory {
             Fault processFault = new ByzzFuzzProcessFault(recipientIds, sender, round);
             faults.add(processFault);
         }
+
+        // Faults
+        System.out.println("ByzzFuzzFaults:");
+        faults.forEach(fault -> System.out.println(fault.getId()));
 
         return faults;
     }

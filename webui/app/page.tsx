@@ -16,7 +16,6 @@ import {
   Group,
   ScrollArea,
   Stack,
-  Text,
   Title,
 } from "@mantine/core";
 import { useLocalStorage } from "@mantine/hooks";
@@ -61,8 +60,8 @@ export default function Home() {
           value={selectedAccordionEntries}
           onChange={setSelectedAccordionEntries}
         >
-          <Group wrap="nowrap" gap="xs">
-            <Text>Invariants:</Text>
+          <Group wrap="nowrap" gap="xs" align="center">
+            <Title order={3}>{schedule?.data.scenarioId}</Title>
             <PredicateList />
           </Group>
           <Accordion.Item key="clients" value="clients">

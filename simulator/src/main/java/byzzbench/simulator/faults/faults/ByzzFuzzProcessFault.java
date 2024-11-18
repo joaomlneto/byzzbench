@@ -3,8 +3,8 @@ package byzzbench.simulator.faults.faults;
 import byzzbench.simulator.faults.BaseFault;
 import byzzbench.simulator.faults.behaviors.MutateMessageBehavior;
 import byzzbench.simulator.faults.predicates.MessageRecipientHasIdPredicate;
+import byzzbench.simulator.faults.predicates.MessageRoundPredicate;
 import byzzbench.simulator.faults.predicates.MessageSenderHasIdPredicate;
-import byzzbench.simulator.faults.predicates.RoundPredicate;
 
 import java.util.Set;
 
@@ -24,7 +24,7 @@ public class ByzzFuzzProcessFault extends BaseFault {
     public ByzzFuzzProcessFault(Set<String> recipients, String sender, int round) {
         super(
                 "byzzfuzzprocessfault-%d-%s-%s".formatted(round, sender, String.join("-", recipients)),
-                new RoundPredicate(round)
+                new MessageRoundPredicate(round)
                         .and(new MessageSenderHasIdPredicate(sender))
                         .and(new MessageRecipientHasIdPredicate(recipients)),
                 new MutateMessageBehavior()

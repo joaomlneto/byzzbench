@@ -2,6 +2,9 @@ package byzzbench.simulator.scheduler;
 
 import byzzbench.simulator.Scenario;
 import byzzbench.simulator.faults.Fault;
+import byzzbench.simulator.faults.FaultContext;
+import byzzbench.simulator.faults.FaultFactory;
+import byzzbench.simulator.faults.factories.ByzzFuzzScenarioFaultFactory;
 import byzzbench.simulator.service.MessageMutatorService;
 import byzzbench.simulator.transport.ClientRequestEvent;
 import byzzbench.simulator.transport.Event;
@@ -69,6 +72,14 @@ public class ByzzFuzzScheduler extends BaseScheduler {
         if (parameters != null && parameters.has("numRoundsWithFaults")) {
             this.numRoundsWithFaults = parameters.get("numRoundsWithFaults").asInt();
         }
+    }
+
+    @Override
+    public void initializeScenario(Scenario scenario) {
+        FaultFactory faultFactory = new ByzzFuzzScenarioFaultFactory();
+        FaultContext context = new FaultContext(scenario);
+        List<Fault> faults = faultFactory.generateFaults(context);
+        faults.forEach(fault -> scenario.getTransport().addFault(fault, true));
     }
 
     @Override

@@ -1,5 +1,6 @@
 package byzzbench.simulator;
 
+import byzzbench.simulator.config.ByzzBenchConfig;
 import byzzbench.simulator.faults.Fault;
 import byzzbench.simulator.faults.FaultContext;
 import byzzbench.simulator.faults.factories.ByzzFuzzScenarioFaultFactory;
@@ -143,10 +144,6 @@ public abstract class BaseScenario implements Scenario {
         this.transport.addFault(new IsolateProcessNetworkFault(replica.getNodeId()), false);
         this.transport.addFault(new HealNodeNetworkFault(replica.getNodeId()), false);
 
-        // inject byzzfuzz faults
-        List<Fault> byzzFuzzFaults = (new ByzzFuzzScenarioFaultFactory()).generateFaults(new FaultContext(this));
-        byzzFuzzFaults.forEach(fault -> this.transport.addFault(fault, true));
-
         // notify the observers
         this.observers.forEach(o -> o.onReplicaAdded(replica));
     }
@@ -162,8 +159,9 @@ public abstract class BaseScenario implements Scenario {
     @Override
     public final void setupScenario() {
         this.setup();
-        getClients().values().forEach(Client::initializeClient);
-        getNodes().values().forEach(Replica::initialize);
+        this.getClients().values().forEach(Client::initializeClient);
+        this.getNodes().values().forEach(Replica::initialize);
+        this.scheduler.initializeScenario(this);
     }
 
     public final void loadParameters(JsonNode parameters) {
@@ -178,7 +176,36 @@ public abstract class BaseScenario implements Scenario {
             this.scheduler.loadParameters(schedulerParameters);
         }
 
+        if (parameters.has("faults")) {
+            System.out.println("Faults: " + parameters.get("faults").toPrettyString());
+            ByzzFuzzScenarioFaultFactory faultFactory = new ByzzFuzzScenarioFaultFactory();
+            List<Fault> faults = faultFactory.generateFaults(new FaultContext(this));
+            faults.forEach(fault -> this.transport.addFault(fault, true));
+        }
+
         this.loadScenarioParameters(parameters);
+    }
+
+    public final void loadParameters(ByzzBenchConfig.ScenarioConfig config) {
+        System.out.println("Loading parameters for scenario: " + config.getId());
+        System.out.println("Loading parameters for scenario: " + config.getId());
+        System.out.println("Loading parameters for scenario: " + config.getId());
+        System.out.println("Loading parameters for scenario: " + config.getId());
+        System.out.println("Loading parameters for scenario: " + config.getId());
+        System.out.println("Loading parameters for scenario: " + config.getId());
+        System.out.println("Loading parameters for scenario: " + config.getId());
+        System.out.println("Loading parameters for scenario: " + config.getId());
+        System.out.println("Loading parameters for scenario: " + config.getId());
+        System.out.println("Loading parameters for scenario: " + config.getId());
+        System.out.println("Loading parameters for scenario: " + config.getId());
+        System.out.println("Loading parameters for scenario: " + config.getId());
+        System.out.println("Loading parameters for scenario: " + config.getId());
+        System.out.println("Loading parameters for scenario: " + config.getId());
+        System.out.println("Loading parameters for scenario: " + config.getId());
+        System.out.println("Loading parameters for scenario: " + config.getId());
+        System.out.println("Loading parameters for scenario: " + config.getId());
+        System.out.println("Loading parameters for scenario: " + config.getId());
+        System.out.println("Loading parameters for scenario: " + config.getId());
     }
 
     /**

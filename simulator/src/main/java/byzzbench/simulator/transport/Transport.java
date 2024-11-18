@@ -114,6 +114,7 @@ public class Transport {
             throw new IllegalArgumentException("Client not found: " + sender);
         }
 
+        // assert that the recipient exists
         if (!this.scenario.getNodes().containsKey(recipient)) {
             throw new IllegalArgumentException("Replica not found: " + recipient);
         }
@@ -180,12 +181,14 @@ public class Transport {
      * @param event The event to append
      */
     private synchronized void appendEvent(Event event) {
-        // apply automatic faults
-        this.automaticFaults.values().stream()
-                .filter(f -> f.test(new FaultContext(this.scenario, event)))
-                .forEach(f -> f.accept(new FaultContext(this.scenario, event)));
-
+        // add the event to the map
         this.events.put(event.getEventId(), event);
+
+        // apply automatic faults
+        this.automaticFaults.values()
+                .forEach(f -> f.testAndAccept(new FaultContext(this.scenario, event)));
+
+        // notify observers
         this.observers.forEach(o -> o.onEventAdded(event));
     }
 

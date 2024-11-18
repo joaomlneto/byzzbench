@@ -16,7 +16,7 @@ public class MutateMessageBehavior implements FaultBehavior {
 
     @Override
     public String getName() {
-        return "Apply random message mutation";
+        return "Apply random mutation";
     }
 
     @Override

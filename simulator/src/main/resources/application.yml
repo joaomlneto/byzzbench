@@ -22,20 +22,11 @@ byzzbench:
     params:
       numRoundsWithProcessFaults: 1
       numRoundsWithNetworkFaults: 2
-      numRoundsWithFaults: 4
+      numRoundsWithFaults: 5
   scenario:
     id: pbft-java
     scheduler: byzzfuzz
-    schedulerParams:
-      numRoundsWithProcessFaults: 44
-      numRoundsWithNetworkFaults: 55
-      numRoundsWithFaults: 66
-      mutations:
-        - predicate: mypred1
-          behavior: mybehavior1
-        - predicate: mypred2
-          behavior: mybehavior2
-        - predicate: mypred3
-          behavior: mybehavior3
+    scheduledFaults:
+      factories: [ ]
     terminationCondition:
       maxEvents: 50
