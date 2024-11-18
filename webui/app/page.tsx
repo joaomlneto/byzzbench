@@ -84,29 +84,30 @@ export default function Home() {
           </Accordion.Item>
         </Accordion>
       </Stack>
-
       <AppShell.Aside p="md" maw={400}>
-        <Stack gap="xs">
-          <Title order={5}>Schedule</Title>
-          <ScrollArea mah={500} type="auto">
-            {schedule?.data && (
-              <ScheduleDetails
-                hideTitle
-                hideMaterializeButton
-                hideDownloadButton
-                hideDetailsButton
-                hideScenario
-                hideSaveButton
-                title="Current Schedule"
-                schedule={schedule.data}
-              />
-            )}
-          </ScrollArea>
-          <Title order={5}>Trigger Faults</Title>
-          <ScenarioEnabledFaultsList />
-          <Title order={5}>Discarded Events</Title>
-          <DroppedMessagesList />
-        </Stack>
+        <ScrollArea type="never" mah="100vh">
+          <Stack gap="xs">
+            <Title order={5}>Schedule</Title>
+            <ScrollArea mah={500} type="auto">
+              {schedule?.data && (
+                  <ScheduleDetails
+                      hideTitle
+                      hideMaterializeButton
+                      hideDownloadButton
+                      hideDetailsButton
+                      hideScenario
+                      hideSaveButton
+                      title="Current Schedule"
+                      schedule={schedule.data}
+                  />
+              )}
+            </ScrollArea>
+            <Title order={5}>Trigger Faults</Title>
+            <ScenarioEnabledFaultsList />
+            <Title order={5}>Discarded Events</Title>
+            <DroppedMessagesList />
+          </Stack>
+        </ScrollArea>
       </AppShell.Aside>
     </Container>
   );
