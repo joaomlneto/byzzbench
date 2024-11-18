@@ -9,6 +9,12 @@ import byzzbench.simulator.service.SchedulerFactoryService;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+/**
+ * Factory for creating scenarios based on the reference PBFT implementation.
+ * <p>
+ * FIXME: This is not yet ready and should not be used, hence the
+ * commented-out @Component annotation below.
+ */
 //@Component
 public class PbftScenarioFactory extends BaseScenarioFactory {
     public PbftScenarioFactory(SchedulerFactoryService schedulerFactoryService, ByzzBenchConfig byzzBenchConfig, ObjectMapper objectMapper) {

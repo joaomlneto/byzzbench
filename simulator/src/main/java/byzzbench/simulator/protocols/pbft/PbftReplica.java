@@ -22,6 +22,8 @@ import java.util.logging.Level;
  * A replica implementing the Practical Byzantine Fault Tolerance (PBFT) protocol,
  * based on the latest version of the protocol as published in the web page of the
  * authors of the protocol.
+ * <p>
+ * FIXME: This is not yet ready and should not be used.
  */
 @Log
 public class PbftReplica extends LeaderBasedProtocolReplica {
