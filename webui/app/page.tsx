@@ -88,19 +88,21 @@ export default function Home() {
         <ScrollArea type="never" mah="100vh">
           <Stack gap="xs">
             <Title order={5}>Schedule</Title>
-            <ScrollArea mah={500} type="auto">
-              {schedule?.data && (
-                  <ScheduleDetails
-                      hideTitle
-                      hideMaterializeButton
-                      hideDownloadButton
-                      hideDetailsButton
-                      hideScenario
-                      hideSaveButton
-                      title="Current Schedule"
-                      schedule={schedule.data}
-                  />
-              )}
+            <ScrollArea mah={500} type="always" style={{ overflowY: 'auto' }}>
+              <div style={{ maxHeight: '500px', overflowY: 'auto' }}>
+                {schedule?.data && (
+                    <ScheduleDetails
+                        hideTitle
+                        hideMaterializeButton
+                        hideDownloadButton
+                        hideDetailsButton
+                        hideScenario
+                        hideSaveButton
+                        title="Current Schedule"
+                        schedule={schedule.data}
+                    />
+                )}
+              </div>
             </ScrollArea>
             <Title order={5}>Trigger Faults</Title>
             <ScenarioEnabledFaultsList />
