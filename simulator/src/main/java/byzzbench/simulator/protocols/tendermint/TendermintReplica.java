@@ -15,14 +15,29 @@ import lombok.extern.java.Log;
 @Log
 @Getter
 public class TendermintReplica extends LeaderBasedProtocolReplica {
-    private long height = 0; // Current blockchain height
-    private long round = 0;  // Current round
-    private String lockedBlockHash = null; // Block hash this replica is locked on
-    private String proposedBlockHash = null; // Block hash proposed in the current round
-    private final Set<GenericVoteMessage> receivedVotes = new HashSet<>(); // Received votes for the current round
+
+    // Blockchain height: the current index of the chain being decided
+    private long height = 0;
+
+    // Round: the current round within the height, where multiple rounds might be needed to finalize a block
+    private long round = 0;
+
+    // Hash of the block this replica is "locked" on (used to ensure no conflicting decisions are made)
+    private String lockedBlockHash = null;
+
+    // Proposed block hash for the current round
+    private String proposedBlockHash = null;
+
+    // Set of received votes during the current round
+    private final Set<GenericVoteMessage> receivedVotes = new HashSet<>();
+
+    //Map of voting power for each node
+    private final Map<String, Integer> votingPower = new HashMap<>();
 
     public TendermintReplica(String nodeId, SortedSet<String> nodeIds, Transport transport) {
+        // Initialize replica with node ID, a list of other nodes, transport, and a commit log
         super(nodeId, nodeIds, transport, new TotalOrderCommitLog());
+        this.initialize();
     }
 
     // ============================
@@ -30,13 +45,14 @@ public class TendermintReplica extends LeaderBasedProtocolReplica {
     // ============================
 
     /**
-     * Handles the propose step where the designated leader proposes a block.
-     *
-     * @param proposalMessage The proposal message containing block details.
+     * Handles the proposal from the designated leader for the current round.
+     * Intended Behavior:
+     * - Validate the proposal's height and round.
+     * - Accept the proposal if valid, otherwise reject it.
      */
     protected void handleProposal(ProposalMessage proposalMessage) {
-        // Validate proposal (e.g., check block hash, height, and round).
         if (validateMessage(proposalMessage)) {
+            // Accept the proposed block and store its hash
             proposedBlockHash = proposalMessage.getBlockHash();
             log.info("Proposal received and accepted: " + proposalMessage);
         } else {
@@ -46,24 +62,36 @@ public class TendermintReplica extends LeaderBasedProtocolReplica {
 
 
     /**
-     * Creates a proposal message for the current block.
-     *
-     * @return The created ProposalMessage.
+     * Creates a block proposal for this replica.
+     * Intended Behavior:
+     * - If locked on a block, propose that block.
+     * - Otherwise, create a new block to propose.
      */
     protected ProposalMessage createProposal() {
-        /// if lockedBlockHash is not null, propose the locked block
-        /// else propose a new block
         String blockHash = (lockedBlockHash != null) ? lockedBlockHash : createBlock().getType();
         return new ProposalMessage(getNodeId(), height, round, blockHash);
     }
 
-    private void broadcastProposal() {
+    /**
+     * Broadcasts the block proposal to all validators in the network.
+     * Intended Behavior:
+     * - Send a proposal message containing the block details to all peers.
+     */
+    protected void broadcastProposal() {
+        // Check if this replica is the current leader
+        if (!getNodeId().equals(getLeaderId())) {
+            log.info("Not the leader for this round. Skipping proposal broadcast.");
+            return;
+        }
+
+        log.info("Broadcasting proposal as leader: " + getNodeId());
         ProposalMessage proposalMessage = createProposal();
         broadcastMessage(proposalMessage);
     }
 
     private Block createBlock() {
-        // TODO: Generate a new block with transactions and metadata.
+        // Intended Behavior:
+        // - Generate a new block with transactions and metadata for the current height.
         return new Block(height, new TreeSet<>(), proposedBlockHash);
     }
 
@@ -73,9 +101,10 @@ public class TendermintReplica extends LeaderBasedProtocolReplica {
     // ============================
 
     /**
-     * Handles a received prevote message during the prevote step.
-     *
-     * @param prevoteMessage The prevote message received from another validator.
+     * Handles a prevote message from another validator.
+     * Intended Behavior:
+     * - Validate the prevote and track votes for the block hash (or nil).
+     * - If 2/3 of validators prevote for a block, lock onto it.
      */
     protected void handlePrevote(PrevoteMessage prevoteMessage) {
         if (!validateMessage(prevoteMessage)) {
@@ -84,32 +113,39 @@ public class TendermintReplica extends LeaderBasedProtocolReplica {
         }
 
         log.info("Prevote received: " + prevoteMessage);
-
-        // Track the vote for the given block hash or NIL
         receivedVotes.add(prevoteMessage);
 
-        // Check if a quorum of 2/3 prevotes for a specific block or nil is reached
         if (hasQuorumForBlock(prevoteMessage.getBlockHash())) {
             log.info("Quorum reached for block hash: " + prevoteMessage.getBlockHash());
             if (prevoteMessage.getBlockHash() != null) {
-                lockedBlockHash = prevoteMessage.getBlockHash(); // Lock onto this block
+                lockedBlockHash = prevoteMessage.getBlockHash();
             }
         }
     }
 
     /**
-     * Checks if there is a quorum of 2/3 prevotes for the given block hash.
-     *
-     * @param blockHash The block hash to check (null for NIL).
-     * @return True if a quorum is reached, false otherwise.
+     * Checks if 2/3 quorum is reached for a block hash.
+     * Intended Behavior:
+     * - Count votes for the specified block hash.
+     * - Return true if they represent at least 2/3 of the total voting power.
      */
     private boolean hasQuorumForBlock(String blockHash) {
-        long totalVotes = receivedVotes.stream()
-                .filter(vote -> Objects.equals(vote.getBlockHash(), blockHash))
-                .count();
+        int totalPower = 0;
+        int quorumPower = 0;
 
-        return totalVotes >= (2.0 / 3.0) * getNodeIds().size();
+        for (GenericVoteMessage vote : receivedVotes) {
+            // Match votes for the given block hash
+            if (Objects.equals(vote.getBlockHash(), blockHash)) {
+                String voter = vote.getAuthor();
+                quorumPower += votingPower.getOrDefault(voter, 0);
+            }
+            totalPower += votingPower.getOrDefault(vote.getAuthor(), 0);
+        }
+
+        // Check if quorumPower reaches 2/3 of totalPower
+        return quorumPower >= (2 * totalPower) / 3;
     }
+
 
     /**
      * Creates a prevote message for the specified block hash.
@@ -122,16 +158,14 @@ public class TendermintReplica extends LeaderBasedProtocolReplica {
     }
 
     /**
-     * Creates and broadcasts a prevote message for the current round and block.
-     *
-     * If the validator is locked on a block, it prevotes for that block.
-     * If there is no lock but a valid proposal exists, it prevotes for the proposal.
-     * Otherwise, it prevotes nil.
+     * Broadcasts a prevote message for the current round.
+     * Intended Behavior:
+     * - Vote for the locked block, proposed block, or nil, depending on the state.
      */
     private void broadcastPrevote() {
         String blockHashToPrevote = (lockedBlockHash != null) ? lockedBlockHash
                 : (proposedBlockHash != null) ? proposedBlockHash
-                : null; // NIL vote
+                : null;
 
         PrevoteMessage prevoteMessage = createPrevote(blockHashToPrevote);
         broadcastMessage(prevoteMessage);
@@ -142,9 +176,10 @@ public class TendermintReplica extends LeaderBasedProtocolReplica {
     // ============================
 
     /**
-     * Handles a received precommit message during the precommit step.
-     *
-     * @param precommitMessage The precommit message received from another validator.
+     * Handles a precommit message during the precommit step.
+     * Intended Behavior:
+     * - Validate and track precommits for the block.
+     * - If 2/3 of validators precommit, commit the block.
      */
     protected void handlePrecommit(PrecommitMessage precommitMessage) {
         if (!validateMessage(precommitMessage)) {
@@ -153,11 +188,8 @@ public class TendermintReplica extends LeaderBasedProtocolReplica {
         }
 
         log.info("Precommit received: " + precommitMessage);
-
-        // Track the vote for the given block hash or nil
         receivedVotes.add(precommitMessage);
 
-        // Check if a quorum of 2/3 precommits for a specific block or nil is reached
         if (hasQuorumForBlock(precommitMessage.getBlockHash())) {
             log.info("Quorum reached for precommit: " + precommitMessage.getBlockHash());
             if (precommitMessage.getBlockHash() != null) {
@@ -202,24 +234,16 @@ public class TendermintReplica extends LeaderBasedProtocolReplica {
 
     /**
      * Handles the commit process for a block.
-     *
-     * This method is triggered when a quorum of precommits is reached for a block.
-     *
-     * @param blockHash The hash of the block to commit.
+     * Intended Behavior:
+     * - Finalize the block and add it to the blockchain.
+     * - Broadcast a commit message and proceed to the next height.
      */
     protected void handleCommit(String blockHash) {
         log.info("Committing block with hash: " + blockHash);
 
-        // Create and finalize the block (assuming transactions are stored elsewhere)
         Block block = new Block(height, new TreeSet<>(), blockHash);
-
-        // Commit the block locally
         commitBlock(block);
-
-        // Broadcast the commit message to other validators
         broadcastCommit(blockHash);
-
-        // Transition to the next height
         advanceToNextHeight();
     }
 
@@ -402,14 +426,49 @@ public class TendermintReplica extends LeaderBasedProtocolReplica {
     @Override
     public void initialize() {
         log.info("Initializing Tendermint replica: " + getNodeId());
-        this.height = 0;
-        this.round = 0;
-        this.lockedBlockHash = null;
-        this.proposedBlockHash = null;
-        this.receivedVotes.clear();
+        initializeVotingPower(); // Initialize voting power
+        this.setView(1);
+    }
 
-        // Start the first propose step
-        broadcastProposal();
+    // Initialize the voting power map
+    private void initializeVotingPower() {
+        votingPower.put("A", 50); // Assign 50% voting power to replica A
+        votingPower.put("B", 20); // Assign 20% voting power to replica B
+        votingPower.put("C", 20); // Assign 20% voting power to replica C
+        votingPower.put("D", 10); // Assign 10% voting power to replica D
+    }
+
+    private void setView(long viewNumber) {
+        String leaderId = (viewNumber == 1) ? "A" : computePrimaryId(viewNumber, this.votingPower);
+        this.setView(viewNumber, leaderId);
+    }
+
+    private String computePrimaryId(long viewNumber, Map<String, Integer> votingPower) {
+        // Sort replicas by ID for consistency
+        List<String> sortedReplicas = new ArrayList<>(votingPower.keySet());
+        sortedReplicas.sort(String::compareTo);
+
+        // Calculate total voting power
+        int totalVotingPower = votingPower.values().stream().mapToInt(Integer::intValue).sum();
+
+        // Calculate the cumulative weight for each replica
+        List<Integer> cumulativeWeights = new ArrayList<>();
+        int cumulativeSum = 0;
+        for (String replica : sortedReplicas) {
+            cumulativeSum += votingPower.getOrDefault(replica, 0);
+            cumulativeWeights.add(cumulativeSum);
+        }
+
+        // Determine the leader based on the view number
+        int modValue = (int) (viewNumber % totalVotingPower);
+        for (int i = 0; i < cumulativeWeights.size(); i++) {
+            if (modValue < cumulativeWeights.get(i)) {
+                return sortedReplicas.get(i);
+            }
+        }
+
+        // Default to the first replica if no match (should never happen)
+        return sortedReplicas.get(0);
     }
 
     /**
