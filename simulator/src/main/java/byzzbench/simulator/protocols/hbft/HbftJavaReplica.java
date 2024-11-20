@@ -796,11 +796,98 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
         this.seqCounter.set(nextSeq);
 
         // Replicas need to execute speculated requests
+        for (Long seqNumOfHistory : newView.getSpeculativeHistory().getRequests().keySet()) {
+            if (newView.getSpeculativeHistory().getRequests().get(seqNumOfHistory) == null) {
+                continue;
+            }
 
+            if (this.seqCounter.getAndIncrement() == seqNumOfHistory && newView.getSpeculativeHistory().getRequests().get(seqNumOfHistory) != null) {
+                this.executeRequestFromViewChange(newView.getSpeculativeHistory().getRequests().get(seqNumOfHistory), this.getViewNumber(), seqNumOfHistory);
+            }
+        }
 
 
         long newViewNumber = newView.getNewViewNumber();
         this.enterNewView(newViewNumber);
+    }
+
+    public void executeRequestFromViewChange(RequestMessage request, long currentViewNumber, long seqNumber) {
+        // Check whether the replica already executed the request
+        if (this.replied(request.getClientId(), request.getTimestamp(), currentViewNumber, seqNumber)) {
+            return;
+        }
+
+        /*
+         * hBFT 4.1 specifies that given a valid PREPARE (matching
+         * signature, view and valid sequence number), the replica must only
+         * accept a PREPARE given that no other PREPARE has been
+         * received OR that the new PREPARE matches the digest of the one
+         * that was already received.
+         */
+        Ticket<O, R> ticket = messageLog.getTicket(currentViewNumber, seqNumber);
+        if (ticket != null) {
+            // PREPARE has previously been inserted into the log for this
+            // sequence number - verify the digests match per hBFT 4.1
+            for (Object message : ticket.getMessages()) {
+                if (!(message instanceof PrepareMessage prevPrepare)) {
+                    continue;
+                }
+
+                byte[] prevDigest = prevPrepare.getDigest();
+                if (!Arrays.equals(prevDigest, this.digest(request))) {
+                    return;
+                }
+            }
+        } else {
+            // PREPARE is the first - create a new ticket for it in this
+            // replica (see #recvRequest(ReplicaRequest, boolean) for why the
+            // message log is structured this way)
+            ticket = messageLog.newTicket(currentViewNumber, seqNumber);
+        }
+
+        Serializable operation = request.getOperation();
+        Serializable result = this.compute(new SerializableLogEntry(operation));
+    
+        String clientId = request.getClientId();
+        long timestamp = request.getTimestamp();
+
+        // we have the set the local seqNumber to the prepare's sequence number
+        this.seqCounter.set(seqNumber);
+
+        ReplyMessage reply = new ReplyMessage(
+            currentViewNumber,
+            timestamp,
+            seqNumber,
+            clientId,
+            this.getNodeId(),
+            result,
+            this.speculativeHistory);
+
+        this.speculativeRequests.put(seqNumber, request);
+        this.sendReply(clientId, reply);
+
+        // hBFT 4.1 - Multicast COMMIT to other replicas
+        CommitMessage commit = new CommitMessage(
+            currentViewNumber,
+            seqNumber,
+            this.digest(request),
+            request,
+            this.getNodeId(),
+            this.speculativeHistory);
+        this.broadcastMessage(commit);
+
+        // hBFT 4.1 - Add COMMIT to the log
+        ticket.append(commit);
+
+        // Move to COMMIT phase
+        ReplicaTicketPhase phase = ticket.getPhase();
+        ticket.casPhase(phase, ReplicaTicketPhase.COMMIT);
+        
+        /*
+         * Per hBFT 4.1, this replica stasfies the prepared predicate IF it has
+         * valid REQUEST and PREPARE messages. 
+         */
+        this.tryAdvanceState(ticket, commit);
     }
 
     private String computePrimaryId(long viewNumber, int numReplicas) {

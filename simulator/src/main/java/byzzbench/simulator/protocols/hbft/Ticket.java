@@ -68,7 +68,7 @@ public class Ticket<O extends Serializable, R extends Serializable> implements S
         int commits = 0;
         for (Object message : this.messages) {
             if (message instanceof CommitMessage commitMessage) {
-                System.out.println(this.viewNumber + " " + this.seqNumber);
+                //System.out.println(this.viewNumber + " " + this.seqNumber);
                 if (!commitMessage.getRequest().equals(this.request) || !Arrays.equals(commitMessage.getDigest(), this.prepare.getDigest())) {
                     commits++;
                 }
