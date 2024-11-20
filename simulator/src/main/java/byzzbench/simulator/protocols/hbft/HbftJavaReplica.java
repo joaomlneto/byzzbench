@@ -770,7 +770,7 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
 
         long maxL = this.speculativeHistory.getGreatestSeqNumber();
         long minS = newView.getCheckpoint().getSequenceNumber();
-        long maxR = newView.getSpeculativeHistory().getGreatestSeqNumber();
+        long nextSeq = minS;
 
         // Case 1. - behind with history
         if (maxL < minS) { 
@@ -779,17 +779,24 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
                     this.speculativeHistory.addEntry(seqNumOfHistory, newView.getSpeculativeHistory().getRequests().get(seqNumOfHistory));
                 }
             }
-
-            return;
+            nextSeq = minS + 1;
+        // Case 2. - different history
         } else if (maxL >= minS 
             && this.digest(this.speculativeHistory.getHistoryBefore(maxL)) 
             != this.digest(newView.getSpeculativeHistory().getHistoryBefore(maxL))) {
-            //TODO
+                this.speculativeHistory.rollBack(minS);
+                nextSeq = minS + 1;
+        // Case 3. - same history
         } else if (maxL >= minS 
             && this.digest(this.speculativeHistory.getHistoryBefore(maxL)) 
             == this.digest(newView.getSpeculativeHistory().getHistoryBefore(maxL))) {
-            //TODO
+                nextSeq = maxL + 1;
         }
+
+        this.seqCounter.set(nextSeq);
+
+        // Replicas need to execute speculated requests
+
 
 
         long newViewNumber = newView.getNewViewNumber();

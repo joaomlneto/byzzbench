@@ -19,6 +19,14 @@ public class SpeculativeHistory implements Serializable {
         history.put(sequenceNumber, request);
     }
 
+    public void rollBack(long sequenceNumber) {
+        for (Long key : history.keySet()) {
+            if (key > sequenceNumber) {
+                this.history.remove(key);
+            }
+        }
+    }
+
     public SpeculativeHistory getHistory(long sequenceNumber) {
         SortedMap<Long, RequestMessage> filteredHistory = new TreeMap<>();
         for (Long key : this.history.keySet()) {
