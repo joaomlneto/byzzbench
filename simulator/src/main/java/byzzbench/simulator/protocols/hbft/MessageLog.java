@@ -191,10 +191,31 @@ public class MessageLog implements Serializable {
         }
     }
 
-    public boolean isCER1(CheckpointMessage checkpoint, int tolerance, SpeculativeHistory history) {
+    public boolean isCER1(CheckpointMessage checkpoint, int tolerance) {
         long seqNumber = checkpoint.getLastSeqNumber();
         // Should there be at least one because we add the checkpoint before calling this function
         Collection<CheckpointMessage> checkpointProofs = this.checkpointsII.computeIfAbsent(seqNumber, k -> new ConcurrentLinkedQueue<>());
+        
+        final int stableCount = 2 * tolerance + 1;
+        int matching = 0;
+
+        for (CheckpointMessage proof : checkpointProofs) {
+            if (Arrays.equals(proof.getDigest(), checkpoint.getDigest())) {
+                matching++;
+
+                if (matching == stableCount) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    public boolean isCER2(CheckpointMessage checkpoint, int tolerance) {
+        long seqNumber = checkpoint.getLastSeqNumber();
+        // Should there be at least one because we add the checkpoint before calling this function
+        Collection<CheckpointMessage> checkpointProofs = this.checkpointsIII.computeIfAbsent(seqNumber, k -> new ConcurrentLinkedQueue<>());
         
         final int stableCount = 2 * tolerance + 1;
         int matching = 0;

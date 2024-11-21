@@ -1,5 +1,6 @@
 package byzzbench.simulator.protocols.hbft.message;
 
+import byzzbench.simulator.protocols.hbft.SpeculativeHistory;
 import byzzbench.simulator.transport.MessagePayload;
 
 public abstract class CheckpointMessage extends MessagePayload {
@@ -8,4 +9,6 @@ public abstract class CheckpointMessage extends MessagePayload {
     public abstract long getLastSeqNumber();
 
     public abstract byte[] getDigest();
+
+    public abstract SpeculativeHistory getHistory();
 }

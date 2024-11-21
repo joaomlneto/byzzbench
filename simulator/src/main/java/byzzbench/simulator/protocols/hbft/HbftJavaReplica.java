@@ -49,7 +49,7 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
      */
     @Getter
     @JsonIgnore
-    private final SpeculativeHistory speculativeHistory;
+    private SpeculativeHistory speculativeHistory;
 
     /**
      * The speculatively executed requests.
@@ -553,19 +553,21 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
                  * use the same as for PBFT, where the sequence number mod 
                  * the interval reaches 0.
                  */
-                if (seqNumber % 1 == 0) {
+                if (seqNumber % 1 == 0 && this.getNodeId().equals(this.getPrimaryId())) {
                     CheckpointMessage checkpoint = new CheckpointIMessage(
                         this.speculativeHistory.getGreatestSeqNumber(),
                         this.digest(this.speculativeHistory),
-                        this.getNodeId());
-                    this.sendCheckpoint(checkpoint);
+                        this.getNodeId(),
+                        this.speculativeHistory);
+                    //this.sendCheckpoint(checkpoint);
+                    this.broadcastMessageIncludingSelf(checkpoint);
 
                     // Log own checkpoint in accordance to hBFT 4.2
                     messageLog.appendCheckpoint(checkpoint, this.tolerance, this.speculativeHistory, this.getViewNumber());
                 }
             } else if (ticket.isCommittedConflicting(this.tolerance)) {
                 ViewChangeMessage viewChangeMessage = this.messageLog.produceViewChange(seqNumber, this.getNodeId(), tolerance, this.speculativeRequests);
-                this.broadcastMessage(viewChangeMessage);
+                this.sendViewChange(viewChangeMessage);
             }
         }
     }
@@ -619,58 +621,122 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
          * and perform GC if the checkpoint is stable.
          */
         String primaryId = this.getPrimaryId();
+        // Upon receiving a checkpoint the replica gets out of disgruntled state
+        this.disgruntled = false;
 
-        // TODO: double check if the speculativeHistory seq number or the curr seq number should match
-        if (Arrays.equals(checkpoint.getDigest(), this.digest(this.speculativeHistory)) && checkpoint.getLastSeqNumber() == this.speculativeHistory.getGreatestSeqNumber()) {
-            if (checkpoint instanceof CheckpointIMessage) {
-                /* 
-                 * Only primary can send checkpoint-I, else send View-Change
-                 * TODO: Implement some different logic if CheckpointIMessage
-                 * is not from primary, maybe let a few through and initatie a view change
-                 * after f + 1 messages
-                 */
-                if (primaryId.equals(checkpoint.getReplicaId())) {
-                    this.checkpointForNewView = false;
-                    messageLog.appendCheckpoint(checkpoint, this.tolerance, this.speculativeHistory, this.getViewNumber());
+        if (checkpoint instanceof CheckpointIMessage
+         && !primaryId.equals(checkpoint.getReplicaId())
+         && !Arrays.equals(checkpoint.getDigest(), this.digest(this.speculativeHistory))
+         && checkpoint.getLastSeqNumber() != this.speculativeHistory.getGreatestSeqNumber()) {
+            ViewChangeMessage viewChangeMessage = messageLog.produceViewChange(this.getViewNumber() + 1, this.getNodeId(), tolerance, this.speculativeRequests);
+            this.sendViewChange(viewChangeMessage);
+        } else {
+            this.checkpointForNewView = false;
+            messageLog.appendCheckpoint(checkpoint, this.tolerance, this.speculativeHistory, this.getViewNumber());
 
-                    CheckpointMessage checkpointII = new CheckpointIIMessage(
-                        checkpoint.getLastSeqNumber(),
-                        this.digest(this.speculativeHistory),
-                        this.getNodeId()
-                    );
+            if (checkpoint instanceof CheckpointIMessage) {            
+                CheckpointMessage checkpointII = new CheckpointIIMessage(
+                    checkpoint.getLastSeqNumber(),
+                    this.digest(this.speculativeHistory),
+                    this.getNodeId(),
+                    this.speculativeHistory
+                );
 
-                    // I add it to the log as the sendCheckpoint doesnt include self
-                    messageLog.appendCheckpoint(checkpointII, this.tolerance, this.speculativeHistory, this.getViewNumber());
-                    this.sendCheckpoint(checkpointII);
-                } else {
-                    ViewChangeMessage viewChangeMessage = messageLog.produceViewChange(this.getViewNumber() + 1, this.getNodeId(), tolerance, this.speculativeRequests);
-                    this.broadcastMessage(viewChangeMessage);
-                }
-            } else if (checkpoint instanceof CheckpointIIMessage) { 
-                messageLog.appendCheckpoint(checkpoint, this.tolerance, this.speculativeHistory, this.getViewNumber());
-                
+                // I add it to the log as the sendCheckpoint doesnt include self
+                messageLog.appendCheckpoint(checkpointII, this.tolerance, this.speculativeHistory, this.getViewNumber());
+                this.sendCheckpoint(checkpointII);
+            }
+
+            if (checkpoint instanceof CheckpointIIMessage) { 
                 // Check whether 2f + 1 Checkpoint-II messages have been seen
                 // If yes then send Checkpoint-III
-                boolean isCER1 = messageLog.isCER1(checkpoint, tolerance, this.speculativeHistory);
+                boolean isCER1 = messageLog.isCER1(checkpoint, tolerance);
                 if (isCER1) {
+                    this.speculativeHistory = checkpoint.getHistory();
+                    this.seqCounter.set(checkpoint.getLastSeqNumber());
                     CheckpointMessage checkpointIII = new CheckpointIIIMessage(
                         checkpoint.getLastSeqNumber(),
                         this.digest(this.speculativeHistory),
-                        this.getNodeId()
+                        this.getNodeId(),
+                        this.speculativeHistory
                     );
 
                     // I add it to the log as the sendCheckpoint doesnt include self
                     messageLog.appendCheckpoint(checkpointIII, this.tolerance, this.speculativeHistory, this.getViewNumber());
                     this.sendCheckpoint(checkpointIII);
                 }
-            } else if (checkpoint instanceof CheckpointIIIMessage) {
-                // GC will execute once 2f + 1 is received
-                messageLog.appendCheckpoint(checkpoint, this.tolerance, this.speculativeHistory, this.getViewNumber());
             }
-        } else {
-            ViewChangeMessage viewChangeMessage = messageLog.produceViewChange(this.getViewNumber() + 1, this.getNodeId(), tolerance, this.speculativeRequests);
-            this.broadcastMessage(viewChangeMessage);
+
+            if (checkpoint instanceof CheckpointIIIMessage) { 
+                boolean isCER2 = messageLog.isCER2(checkpoint, tolerance);
+                if (isCER2) {
+                    this.speculativeHistory = checkpoint.getHistory();
+                    this.seqCounter.set(checkpoint.getLastSeqNumber());
+                }
+            }
+
         }
+
+        // TODO: double check if the speculativeHistory seq number or the curr seq number should match
+        // if (Arrays.equals(checkpoint.getDigest(), this.digest(this.speculativeHistory)) && checkpoint.getLastSeqNumber() == this.speculativeHistory.getGreatestSeqNumber()) {
+        //     if (checkpoint instanceof CheckpointIMessage) {
+        //         /* 
+        //          * Only primary can send checkpoint-I, else send View-Change
+        //          * TODO: Implement some different logic if CheckpointIMessage
+        //          * is not from primary, maybe let a few through and initatie a view change
+        //          * after f + 1 messages
+        //          */
+        //         if (primaryId.equals(checkpoint.getReplicaId())) {
+        //             this.checkpointForNewView = false;
+        //             messageLog.appendCheckpoint(checkpoint, this.tolerance, this.speculativeHistory, this.getViewNumber());
+
+        //             CheckpointMessage checkpointII = new CheckpointIIMessage(
+        //                 checkpoint.getLastSeqNumber(),
+        //                 this.digest(this.speculativeHistory),
+        //                 this.getNodeId(),
+        //                 this.speculativeHistory
+        //             );
+
+        //             // I add it to the log as the sendCheckpoint doesnt include self
+        //             messageLog.appendCheckpoint(checkpointII, this.tolerance, this.speculativeHistory, this.getViewNumber());
+        //             this.sendCheckpoint(checkpointII);
+        //         } else {
+        //             ViewChangeMessage viewChangeMessage = messageLog.produceViewChange(this.getViewNumber() + 1, this.getNodeId(), tolerance, this.speculativeRequests);
+        //             this.sendViewChange(viewChangeMessage);
+        //         }
+        //     } else if (checkpoint instanceof CheckpointIIMessage) { 
+        //         messageLog.appendCheckpoint(checkpoint, this.tolerance, this.speculativeHistory, this.getViewNumber());
+                
+        //         // Check whether 2f + 1 Checkpoint-II messages have been seen
+        //         // If yes then send Checkpoint-III
+        //         boolean isCER1 = messageLog.isCER1(checkpoint, tolerance);
+        //         if (isCER1) {
+        //             this.speculativeHistory = checkpoint.getHistory();
+        //             this.seqCounter.set(checkpoint.getLastSeqNumber());
+        //             CheckpointMessage checkpointIII = new CheckpointIIIMessage(
+        //                 checkpoint.getLastSeqNumber(),
+        //                 this.digest(this.speculativeHistory),
+        //                 this.getNodeId(),
+        //                 this.speculativeHistory
+        //             );
+
+        //             // I add it to the log as the sendCheckpoint doesnt include self
+        //             messageLog.appendCheckpoint(checkpointIII, this.tolerance, this.speculativeHistory, this.getViewNumber());
+        //             this.sendCheckpoint(checkpointIII);
+        //         }
+        //     } else if (checkpoint instanceof CheckpointIIIMessage) {
+        //         // GC will execute once 2f + 1 is received
+        //         messageLog.appendCheckpoint(checkpoint, this.tolerance, this.speculativeHistory, this.getViewNumber());
+        //         boolean isCER2 = messageLog.isCER2(checkpoint, tolerance);
+        //         if (isCER2) {
+        //             this.speculativeHistory = checkpoint.getHistory();
+        //             this.seqCounter.set(checkpoint.getLastSeqNumber());
+        //         }
+        //     }
+        // } else {
+        //     ViewChangeMessage viewChangeMessage = messageLog.produceViewChange(this.getViewNumber() + 1, this.getNodeId(), tolerance, this.speculativeRequests);
+        //     this.sendViewChange(viewChangeMessage);
+        // }
     }
 
     public void sendCheckpoint(CheckpointMessage checkpoint) {
@@ -729,9 +795,9 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
                 this.checkpointForNewView = false;
                 
                 // as of hBFT 4.3 checkpoint protocol is called after a new-view message
-                CheckpointMessage checkpoint = new CheckpointIMessage(seqCounter.get(), this.digest(newView.getCheckpoint().getHistory()), this.getNodeId());
+                CheckpointMessage checkpoint = new CheckpointIMessage(seqCounter.get(), this.digest(newView.getCheckpoint().getHistory()), this.getNodeId(), this.speculativeHistory);
                 this.messageLog.appendCheckpoint(checkpoint, tolerance, this.speculativeHistory, newView.getNewViewNumber());
-                this.broadcastMessage(checkpoint);
+                this.broadcastMessageIncludingSelf(checkpoint);
             }
         }
     }

@@ -62,11 +62,14 @@ public class SpeculativeHistory implements Serializable {
     }
 
     public long getGreatestSeqNumber() {
+        if (this.history.isEmpty()) {
+            return 0;
+        }
         return this.history.lastKey();
     }
 
     public boolean isEmpty() {
-        return history.isEmpty();
+        return this.history.isEmpty();
     }
 
 }
