@@ -5,6 +5,9 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.With;
 
+/**
+ * <p>Message sent by Proposer replicas to Acceptor replicas to recover after new leader election.</p>
+ */
 @Data
 @EqualsAndHashCode(callSuper = true)
 @With

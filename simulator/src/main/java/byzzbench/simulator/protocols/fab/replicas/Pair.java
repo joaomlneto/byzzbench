@@ -10,16 +10,17 @@ import lombok.extern.java.Log;
 @Log
 @Getter
 public class Pair implements Comparable<Pair> {
-    private final String value;
-    private final String number;
+    private final byte[] value;
+    private final long number;
 
-    public Pair(String number, String value) {
+    public Pair(long number, byte[] value) {
         this.value = value;
         this.number = number;
     }
 
     @Override
     public int compareTo(Pair o) {
-        return value.compareTo(o.value);
+        // Compare the proposal number of the pair
+        return Long.compare(this.number, o.number);
     }
 }

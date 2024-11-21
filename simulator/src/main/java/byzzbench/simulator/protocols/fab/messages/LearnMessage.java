@@ -6,6 +6,9 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.With;
 
+/**
+ * <p>Message sent by Learner replicas to Proposer and (the other) Learner replicas to inform them that a value has been learned.</p>
+ */
 @Data
 @EqualsAndHashCode(callSuper = true)
 @With
