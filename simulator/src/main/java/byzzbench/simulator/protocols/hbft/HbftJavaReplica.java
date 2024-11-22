@@ -133,7 +133,6 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
 
                 long newViewNumber = backoff.getNewViewNumber();
                 backoff.expire();
-
                 ViewChangeMessage viewChange = messageLog.produceViewChange(
                         newViewNumber,
                         this.getNodeId(),
@@ -555,7 +554,7 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
                  */
                 if (seqNumber % 1 == 0 && this.getNodeId().equals(this.getPrimaryId())) {
                     CheckpointMessage checkpoint = new CheckpointIMessage(
-                        this.speculativeHistory.getGreatestSeqNumber(),
+                        seqNumber,
                         this.digest(this.speculativeHistory),
                         this.getNodeId(),
                         this.speculativeHistory);
@@ -625,9 +624,9 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
         this.disgruntled = false;
 
         if (checkpoint instanceof CheckpointIMessage
-         && !primaryId.equals(checkpoint.getReplicaId())
-         && !Arrays.equals(checkpoint.getDigest(), this.digest(this.speculativeHistory))
-         && checkpoint.getLastSeqNumber() != this.speculativeHistory.getGreatestSeqNumber()) {
+         && (!primaryId.equals(checkpoint.getReplicaId())
+         || !Arrays.equals(checkpoint.getDigest(), this.digest(this.speculativeHistory))
+         || checkpoint.getLastSeqNumber() != this.seqCounter.get())) {
             ViewChangeMessage viewChangeMessage = messageLog.produceViewChange(this.getViewNumber() + 1, this.getNodeId(), tolerance, this.speculativeRequests);
             this.sendViewChange(viewChangeMessage);
         } else {
