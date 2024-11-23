@@ -49,7 +49,7 @@ public class MessageLog implements Serializable {
     // Stored as (viewNumber, (replicaId, message))
     private final SortedMap<Long, SortedMap<String, ViewChangeMessage>> viewChanges = new TreeMap<>();
 
-    private Checkpoint lastStableCheckpoint;
+    private Checkpoint lastStableCheckpoint = new Checkpoint(0, null);
 
     private Checkpoint lastAcceptedCheckpointI;
     private final SortedMap<Long, Collection<SpeculativeHistory>> cer1 = new TreeMap<>();
@@ -202,14 +202,10 @@ public class MessageLog implements Serializable {
         for (CheckpointMessage proof : checkpointProofs) {
             if (Arrays.equals(proof.getDigest(), checkpoint.getDigest())) {
                 matching++;
-
-                if (matching == stableCount) {
-                    return true;
-                }
             }
         }
 
-        return false;
+        return matching == stableCount;
     }
 
     public boolean isCER2(CheckpointMessage checkpoint, int tolerance) {
@@ -223,14 +219,21 @@ public class MessageLog implements Serializable {
         for (CheckpointMessage proof : checkpointProofs) {
             if (Arrays.equals(proof.getDigest(), checkpoint.getDigest())) {
                 matching++;
-
-                if (matching == stableCount) {
-                    return true;
-                }
             }
         }
 
-        return false;
+        return matching == stableCount;
+    }
+
+    public SpeculativeHistory isCER1inView(long viewNumber, int tolerance) {
+        if (this.isNullOrEmpty(this.cer1.get(viewNumber))) {
+            return null;
+        } else {
+            if (this.cer1.get(viewNumber).size() >= 2 * tolerance + 1) {
+                return this.cer1.get(viewNumber).iterator().next();
+            } 
+            return null;
+        }
     }
 
     /*
@@ -270,12 +273,7 @@ public class MessageLog implements Serializable {
          * Execution history from previous view
          * CER1(M, v-1)
          */
-        SpeculativeHistory historyP;
-        if (!this.isNullOrEmpty(this.cer1.get(newViewNumber - 1))) {
-            historyP = this.cer1.get(newViewNumber - 1).iterator().next();
-        } else {
-            historyP = null;
-        }
+        SpeculativeHistory historyP = this.isCER1inView(newViewNumber - 1, tolerance);
 
         /* 
          * Q execution history from the accepted Checkpoint-I message

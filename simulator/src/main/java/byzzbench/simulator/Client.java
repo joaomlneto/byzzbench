@@ -18,6 +18,8 @@ import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicLong;
 
+import javax.sound.sampled.Line;
+
 /**
  * Represents a client in the system. Each client has a unique identifier.
  * The client is responsible for sending requests to the replicas in the system.
@@ -65,6 +67,11 @@ public class Client implements Serializable {
     private final Set<Long> completedRequests = new HashSet<>();
 
     /**
+     * Timeout for client
+     */
+    private final long timeout = 1000;
+
+    /**
      * Initializes the client by sending the initial requests.
      */
     public void initializeClient() {
@@ -83,6 +90,7 @@ public class Client implements Serializable {
         //for (String recipientId : transport.getScenario().getNodes().keySet()) {
             this.transport.sendClientRequest(this.clientId, requestId, recipientId);
         //}
+        //this.transport.setTimeout(clientId, this::sendRequest, timeout);
     }
 
     /**

@@ -61,13 +61,6 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
     @JsonIgnore
     private final SortedMap<Long, RequestMessage> speculativeRequests;
 
-    /**
-     * The set of timeouts for the replica?
-     * TODO: This should not be here!!
-     */
-    @JsonIgnore
-    private final SortedMap<ReplicaRequestKey, LinearBackoff> timeouts = new TreeMap<>();
-
     @Getter
     @Setter
     private volatile boolean disgruntled = false;
@@ -199,7 +192,7 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
             return;
         }
 
-        // Start the timer for this request per hBFT 4.4
+        // Start the timer for this request per hBFT 4.3
         this.timeouts.computeIfAbsent(key, k -> new LinearBackoff(this.getViewNumber(), this.timeout));
 
         String primaryId = this.getPrimaryId();
@@ -249,7 +242,7 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
         this.broadcastMessage(prepare);
 
         Serializable operation = request.getOperation();
-        Serializable result = this.compute(new SerializableLogEntry(operation));
+        Serializable result = new SerializableLogEntry(operation);
 
         ReplyMessage reply = new ReplyMessage(
             currentViewNumber,
@@ -319,7 +312,33 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
         }
 
         long seqNumber = message.getSequenceNumber();
-        return messageLog.isBetweenWaterMarks(seqNumber);
+
+
+        /* 
+         * This is different from PBFT where PBFT accepts
+         * every sequence number that is between the lowWaterMark
+         * and the highWaterMark. In hBFT as of 4.1 a prepare message
+         * is only accepted if the seq number of the message equals
+         * the local seq number + 1. Otherwise, if its a commit message
+         * its accepted if the seq number equals the local seq number or 
+         * the local seq number + 1. The two latter cases will be further
+         * evaluated in the tryAdvanceState function.
+         */
+        if (message instanceof PrepareMessage) {
+            return seqNumber == this.seqCounter.get() + 1;
+        } else if (message instanceof CommitMessage) {
+            return seqNumber == this.seqCounter.get() + 1 || seqNumber == this.seqCounter.get();
+        }
+
+        /* 
+         * This part should never trigger as the only
+         * two possible messages here are PREPARE and COMMIT 
+         */
+        return false;
+
+        // This is still questionable as this is true for PBFT
+        // However, not necessarily true for hBFT
+        // return messageLog.isBetweenWaterMarks(seqNumber);
     }
 
     private Ticket<O, R> recvPhaseMessage(IPhaseMessage message) {
@@ -407,7 +426,7 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
         ticket.append(prepare);
 
         Serializable operation = request.getOperation();
-        Serializable result = this.compute(new SerializableLogEntry(operation));
+        Serializable result = new SerializableLogEntry(operation);
     
         String clientId = request.getClientId();
         long timestamp = request.getTimestamp();
@@ -481,7 +500,7 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
                 // although, we should not be herer if executed its good to check
                 if (request != null && !this.replied(request.getClientId(), request.getTimestamp(), currentViewNumber, seqNumber)) {
                     Serializable operation = request.getOperation();
-                    Serializable result = this.compute(new SerializableLogEntry(operation));
+                    Serializable result = new SerializableLogEntry(operation);
                 
                     String clientId = request.getClientId();
                     long timestamp = request.getTimestamp();
@@ -534,6 +553,10 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
                 if (request != null) {
                     String clientId = request.getClientId();
                     long timestamp = request.getTimestamp();
+
+                    // Add operation to commitLog
+                    Serializable operation = request.getOperation();
+                    this.compute(new SerializableLogEntry(operation));
 
                     // Add the execution to the speculative execution history
                     this.speculativeHistory.addEntry(seqNumber, request);
@@ -627,6 +650,7 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
          && (!primaryId.equals(checkpoint.getReplicaId())
          || !Arrays.equals(checkpoint.getDigest(), this.digest(this.speculativeHistory))
          || checkpoint.getLastSeqNumber() != this.seqCounter.get())) {
+            this.checkpointForNewView = false;
             ViewChangeMessage viewChangeMessage = messageLog.produceViewChange(this.getViewNumber() + 1, this.getNodeId(), tolerance, this.speculativeRequests);
             this.sendViewChange(viewChangeMessage);
         } else {
@@ -651,7 +675,7 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
                 // If yes then send Checkpoint-III
                 boolean isCER1 = messageLog.isCER1(checkpoint, tolerance);
                 if (isCER1) {
-                    this.speculativeHistory = checkpoint.getHistory();
+                    this.adjustHistory(checkpoint.getHistory().getRequests());
                     this.seqCounter.set(checkpoint.getLastSeqNumber());
                     CheckpointMessage checkpointIII = new CheckpointIIIMessage(
                         checkpoint.getLastSeqNumber(),
@@ -669,73 +693,29 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
             if (checkpoint instanceof CheckpointIIIMessage) { 
                 boolean isCER2 = messageLog.isCER2(checkpoint, tolerance);
                 if (isCER2) {
-                    this.speculativeHistory = checkpoint.getHistory();
+                    this.adjustHistory(checkpoint.getHistory().getRequests());
                     this.seqCounter.set(checkpoint.getLastSeqNumber());
                 }
             }
 
         }
+    }
 
-        // TODO: double check if the speculativeHistory seq number or the curr seq number should match
-        // if (Arrays.equals(checkpoint.getDigest(), this.digest(this.speculativeHistory)) && checkpoint.getLastSeqNumber() == this.speculativeHistory.getGreatestSeqNumber()) {
-        //     if (checkpoint instanceof CheckpointIMessage) {
-        //         /* 
-        //          * Only primary can send checkpoint-I, else send View-Change
-        //          * TODO: Implement some different logic if CheckpointIMessage
-        //          * is not from primary, maybe let a few through and initatie a view change
-        //          * after f + 1 messages
-        //          */
-        //         if (primaryId.equals(checkpoint.getReplicaId())) {
-        //             this.checkpointForNewView = false;
-        //             messageLog.appendCheckpoint(checkpoint, this.tolerance, this.speculativeHistory, this.getViewNumber());
-
-        //             CheckpointMessage checkpointII = new CheckpointIIMessage(
-        //                 checkpoint.getLastSeqNumber(),
-        //                 this.digest(this.speculativeHistory),
-        //                 this.getNodeId(),
-        //                 this.speculativeHistory
-        //             );
-
-        //             // I add it to the log as the sendCheckpoint doesnt include self
-        //             messageLog.appendCheckpoint(checkpointII, this.tolerance, this.speculativeHistory, this.getViewNumber());
-        //             this.sendCheckpoint(checkpointII);
-        //         } else {
-        //             ViewChangeMessage viewChangeMessage = messageLog.produceViewChange(this.getViewNumber() + 1, this.getNodeId(), tolerance, this.speculativeRequests);
-        //             this.sendViewChange(viewChangeMessage);
-        //         }
-        //     } else if (checkpoint instanceof CheckpointIIMessage) { 
-        //         messageLog.appendCheckpoint(checkpoint, this.tolerance, this.speculativeHistory, this.getViewNumber());
+    public void adjustHistory(SortedMap<Long, RequestMessage> requests) {
+        /* 
+         * Commitlog requires the request to match,
+         * so we add any missing requests.
+         * Replicas also adjust their speculativeHistory
+         */
+        for (Long key : requests.keySet()) {
+            if (!this.speculativeHistory.getRequests().containsKey(key)) {
+                this.speculativeHistory.addEntry(key, requests.get(key));
                 
-        //         // Check whether 2f + 1 Checkpoint-II messages have been seen
-        //         // If yes then send Checkpoint-III
-        //         boolean isCER1 = messageLog.isCER1(checkpoint, tolerance);
-        //         if (isCER1) {
-        //             this.speculativeHistory = checkpoint.getHistory();
-        //             this.seqCounter.set(checkpoint.getLastSeqNumber());
-        //             CheckpointMessage checkpointIII = new CheckpointIIIMessage(
-        //                 checkpoint.getLastSeqNumber(),
-        //                 this.digest(this.speculativeHistory),
-        //                 this.getNodeId(),
-        //                 this.speculativeHistory
-        //             );
-
-        //             // I add it to the log as the sendCheckpoint doesnt include self
-        //             messageLog.appendCheckpoint(checkpointIII, this.tolerance, this.speculativeHistory, this.getViewNumber());
-        //             this.sendCheckpoint(checkpointIII);
-        //         }
-        //     } else if (checkpoint instanceof CheckpointIIIMessage) {
-        //         // GC will execute once 2f + 1 is received
-        //         messageLog.appendCheckpoint(checkpoint, this.tolerance, this.speculativeHistory, this.getViewNumber());
-        //         boolean isCER2 = messageLog.isCER2(checkpoint, tolerance);
-        //         if (isCER2) {
-        //             this.speculativeHistory = checkpoint.getHistory();
-        //             this.seqCounter.set(checkpoint.getLastSeqNumber());
-        //         }
-        //     }
-        // } else {
-        //     ViewChangeMessage viewChangeMessage = messageLog.produceViewChange(this.getViewNumber() + 1, this.getNodeId(), tolerance, this.speculativeRequests);
-        //     this.sendViewChange(viewChangeMessage);
-        // }
+                // Add operation to commitLog
+                Serializable operation = requests.get(key).getOperation();
+                this.compute(new SerializableLogEntry(operation));
+            }
+        }
     }
 
     public void sendCheckpoint(CheckpointMessage checkpoint) {
@@ -794,7 +774,7 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
                 this.checkpointForNewView = false;
                 
                 // as of hBFT 4.3 checkpoint protocol is called after a new-view message
-                CheckpointMessage checkpoint = new CheckpointIMessage(seqCounter.get(), this.digest(newView.getCheckpoint().getHistory()), this.getNodeId(), this.speculativeHistory);
+                CheckpointMessage checkpoint = new CheckpointIMessage(seqCounter.get(), this.digest(this.speculativeHistory), this.getNodeId(), this.speculativeHistory);
                 this.messageLog.appendCheckpoint(checkpoint, tolerance, this.speculativeHistory, newView.getNewViewNumber());
                 this.broadcastMessageIncludingSelf(checkpoint);
             }
@@ -808,6 +788,7 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
     }
 
     public void recvNewView(NewViewMessage newView) {
+        System.out.println(newView);
         /*
          * Probably non standard behaviour: hBFT does not state
          * what happens after a new view other than running a 
@@ -834,7 +815,7 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
         }
 
         long maxL = this.speculativeHistory.getGreatestSeqNumber();
-        long minS = newView.getCheckpoint().getSequenceNumber();
+        long minS = newView.getCheckpoint() == null ? 0 : newView.getCheckpoint().getSequenceNumber();
         long nextSeq = minS;
 
         // Case 1. - behind with history
