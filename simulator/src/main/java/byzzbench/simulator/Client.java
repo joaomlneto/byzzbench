@@ -90,7 +90,13 @@ public class Client implements Serializable {
         //for (String recipientId : transport.getScenario().getNodes().keySet()) {
             this.transport.sendClientRequest(this.clientId, requestId, recipientId);
         //}
-        //this.transport.setTimeout(clientId, this::sendRequest, timeout);
+        this.setTimeout(this::sendRequest, timeout);
+    }
+
+    public void retransmitRequest(long seqNumber) {
+        if (this.shouldRetransmit(1, seqNumber)) {
+
+        }
     }
 
     /**
@@ -135,6 +141,13 @@ public class Client implements Serializable {
         }
     }
 
+    /**
+     * Checks whether client should retransmit the request
+     * if #replies < f + 1
+     */
+    public boolean shouldRetransmit(long tolerance, long seqNumber) {
+        return this.replies.get(seqNumber).size() < tolerance + 1;
+    }
 
     /**
      * Checks whether it has received 2f + 1 replies
@@ -142,4 +155,26 @@ public class Client implements Serializable {
     public boolean completedReplies(long tolerance, long seqNumber) {
         return this.replies.get(seqNumber).size() >= 2 * tolerance + 1;
     }
+
+    /**
+     * Set a timeout for this replica.
+     *
+     * @param r       the runnable to execute when the timeout occurs
+     * @param timeout the timeout in milliseconds
+     * @return the timeout ID
+     */
+    public long setTimeout(Runnable r, long timeout) {
+        Runnable wrapper = () -> {
+            r.run();
+        };
+        return this.transport.setClientTimeout(this.clientId, wrapper, timeout);
+    }
+
+    /**
+     * Clear all timeouts for this replica.
+     */
+    public void clearAllTimeouts() {
+        this.transport.clearClientTimeouts(this.clientId);
+    }
+
 }

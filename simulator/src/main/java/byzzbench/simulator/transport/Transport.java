@@ -384,6 +384,24 @@ public class Transport {
         return timeoutEvent.getEventId();
     }
 
+    public synchronized long setClientTimeout(String clientId, Runnable runnable,
+                           long timeout) {
+        TimeoutEvent timeoutEvent = TimeoutEvent.builder()
+                .eventId(this.eventSeqNum.getAndIncrement())
+                .description("CLIENT TIMEOUT")
+                .nodeId(clientId)
+                .timeout(timeout)
+                .task(runnable)
+                .build();
+        this.appendEvent(timeoutEvent);
+        this.observers.forEach(o -> o.onTimeout(timeoutEvent));
+
+
+        log.info("Timeout set for " + clientId + " in " +
+                timeout + "ms: " + timeoutEvent);
+        return timeoutEvent.getEventId();
+    }
+
     public synchronized void clearReplicaTimeouts(Replica replica) {
         // get all event IDs for timeouts from this replica
         List<Long> eventIds =
@@ -394,6 +412,25 @@ public class Transport {
                                         -> e instanceof TimeoutEvent t &&
                                         t.getNodeId().equals(replica.getNodeId()) &&
                                         t.getStatus() == Event.Status.QUEUED)
+                        .map(Event::getEventId)
+                        .toList();
+
+        // remove all event IDs
+        for (Long eventId : eventIds) {
+            events.get(eventId).setStatus(Event.Status.DROPPED);
+            this.observers.forEach(o -> o.onEventDropped(events.get(eventId)));
+        }
+    }
+
+    public synchronized void clearClientTimeouts(String clientId) {
+        // get all event IDs for timeouts from this client
+        List<Long> eventIds =
+                this.events.values()
+                        .stream()
+                        .filter(
+                                e -> e instanceof TimeoutEvent t &&
+                                t.getNodeId().equals(clientId) &&
+                                t.getStatus() == Event.Status.QUEUED)
                         .map(Event::getEventId)
                         .toList();
 
