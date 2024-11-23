@@ -213,6 +213,29 @@ public abstract class Replica implements Serializable {
     }
 
     /**
+     * Set a timeout for this replica.
+     *
+     * @param r       the runnable to execute when the timeout occurs
+     * @param timeout the timeout in milliseconds
+     * @param description the type of timeout
+     * @return the timeout ID
+     */
+    public long setTimeout(Runnable r, long timeout, String description) {
+        Runnable wrapper = () -> {
+            this.notifyObserversTimeout();
+            r.run();
+        };
+        return this.transport.setTimeout(this, wrapper, timeout, description);
+    }
+
+    /**
+     * Clear timeout based on description.
+     */
+    public void clearTimeout(String description) {
+        this.transport.clearTimeout(this, description);
+    }
+
+    /**
      * Clear all timeouts for this replica.
      */
     public void clearAllTimeouts() {

@@ -384,6 +384,24 @@ public class Transport {
         return timeoutEvent.getEventId();
     }
 
+    public synchronized long setTimeout(Replica replica, Runnable runnable,
+                           long timeout, String description) {
+        TimeoutEvent timeoutEvent = TimeoutEvent.builder()
+                .eventId(this.eventSeqNum.getAndIncrement())
+                .description(description)
+                .nodeId(replica.getNodeId())
+                .timeout(timeout)
+                .task(runnable)
+                .build();
+        this.appendEvent(timeoutEvent);
+        this.observers.forEach(o -> o.onTimeout(timeoutEvent));
+
+
+        log.info(description + " timeout set for " + replica.getNodeId() + " in " +
+                timeout + "ms: " + timeoutEvent);
+        return timeoutEvent.getEventId();
+    }
+
     public synchronized long setClientTimeout(String clientId, Runnable runnable,
                            long timeout) {
         TimeoutEvent timeoutEvent = TimeoutEvent.builder()
@@ -400,6 +418,26 @@ public class Transport {
         log.info("Timeout set for " + clientId + " in " +
                 timeout + "ms: " + timeoutEvent);
         return timeoutEvent.getEventId();
+    }
+
+    public synchronized void clearTimeout(Replica replica, String description) {
+        // get all event IDs for timeouts from this replica
+        List<Long> eventIds =
+                this.events.values()
+                        .stream()
+                        .filter(
+                            e -> e instanceof TimeoutEvent t &&
+                                t.getNodeId().equals(replica.getNodeId()) &&
+                                t.getStatus() == Event.Status.QUEUED &&
+                                t.getDescription().equals(description))
+                        .map(Event::getEventId)
+                        .toList();
+
+        // remove all event IDs
+        for (Long eventId : eventIds) {
+            events.get(eventId).setStatus(Event.Status.DROPPED);
+            this.observers.forEach(o -> o.onEventDropped(events.get(eventId)));
+        }
     }
 
     public synchronized void clearReplicaTimeouts(Replica replica) {

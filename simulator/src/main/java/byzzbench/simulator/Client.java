@@ -18,7 +18,6 @@ import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicLong;
 
-import javax.sound.sampled.Line;
 
 /**
  * Represents a client in the system. Each client has a unique identifier.
@@ -121,6 +120,7 @@ public class Client implements Serializable {
             && this.requestSequenceNumber.get() < this.maxRequests) {
             this.completedRequests.add(seqNumber);
             this.sendRequest();
+            this.clearAllTimeouts();
         }
     }
 
@@ -157,7 +157,7 @@ public class Client implements Serializable {
     }
 
     /**
-     * Set a timeout for this replica.
+     * Set a timeout for this client.
      *
      * @param r       the runnable to execute when the timeout occurs
      * @param timeout the timeout in milliseconds
@@ -171,7 +171,7 @@ public class Client implements Serializable {
     }
 
     /**
-     * Clear all timeouts for this replica.
+     * Clear all timeouts for this client.
      */
     public void clearAllTimeouts() {
         this.transport.clearClientTimeouts(this.clientId);

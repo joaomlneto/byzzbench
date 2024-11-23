@@ -95,56 +95,12 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
         this.setView(viewNumber, leaderId);
     }
 
-    public Collection<ReplicaRequestKey> activeTimers() {
-        return Collections.unmodifiableCollection(this.timeouts.keySet());
+    private void clearTimeouts() {
+        this.clearAllTimeouts();
     }
 
-    public long checkTimeout(ReplicaRequestKey key) {
-        LinearBackoff backoff = this.timeouts.get(key);
-        if (backoff == null) {
-            return 0L;
-        }
-
-        synchronized (backoff) {
-            long elapsed = backoff.elapsed();
-
-            /*
-             * This method is called in a loop to check the timers on the requests
-             * that are currently waiting to be fulfilled.
-             *
-             * Per PBFT 4.5.2, each time a timeout occurs, a VIEW-CHANGE vote will
-             * be multicasted to the current view plus the number of timeouts that
-             * have occurred and the replica waits a longer period of time until
-             * the next vote is sent. The timer then waits for the sufficient number
-             * of VIEW-CHANGE votes to be received before being allowed to expire
-             * again after the next period of time and multicast the next
-             * VIEW-CHANGE.
-             */
-            long remainingTime = backoff.getTimeout() - elapsed;
-            if (remainingTime <= 0 && !backoff.isWaitingForVotes()) {
-                this.disgruntled = true;
-
-                long newViewNumber = backoff.getNewViewNumber();
-                backoff.expire();
-                ViewChangeMessage viewChange = messageLog.produceViewChange(
-                        newViewNumber,
-                        this.getNodeId(),
-                        this.tolerance,
-                        this.speculativeRequests);
-                this.sendViewChange(viewChange);
-
-                /*
-                 * Timer expires, meaning that we will need to wait at least the
-                 * next period of time before the timer is allowed to expire again
-                 * due to having to als include the time for the votes to be
-                 * received and processed
-                 */
-                return backoff.getTimeout();
-            }
-
-            // Timer has not expired yet, so wait out the remaining we computed
-            return remainingTime;
-        }
+    private void clearSpecificTimeout(String description) {
+        this.clearTimeout(description);
     }
 
     private void resendReply(String clientId, Ticket<O, R> ticket) {
@@ -191,9 +147,6 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
             this.resendReply(clientId, cachedTicket);
             return;
         }
-
-        // Start the timer for this request per hBFT 4.3
-        this.timeouts.computeIfAbsent(key, k -> new LinearBackoff(this.getViewNumber(), this.timeout));
 
         String primaryId = this.getPrimaryId();
 
@@ -289,6 +242,17 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
 
     public void sendRequest(String replicaId, RequestMessage request) {
         this.sendMessage(request, replicaId);
+    }
+
+    public void recvPanic(PanicMessage panic) {
+        this.messageLog.appendPanic(panic, this.getNodeId());
+        if (this.messageLog.checkPanics(this.tolerance) && this.getNodeId() ) {
+
+        }
+    }
+
+    public void forwardPanic(PanicMessage panic) {
+        this.broadcastMessage(panic);
     }
 
     private boolean verifyPhaseMessage(IPhaseMessage message) {
@@ -421,6 +385,10 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
             // message log is structured this way)
             ticket = messageLog.newTicket(currentViewNumber, seqNumber);
         }
+
+        // Start the timer for this request per hBFT 4.3
+        // This timeout check whether a request is completed in a given time
+        this.setTimeout(this::sendViewChangeOnTimeout, timeout, "REQUEST");
 
         // hBFT 4.1 - Add PREPARE along with its REQUEST to the log
         ticket.append(prepare);
@@ -564,7 +532,8 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
                     ReplicaRequestKey key = new ReplicaRequestKey(clientId, timestamp);
                     messageLog.completeTicket(key, currentViewNumber, seqNumber);
 
-                    this.timeouts.remove(key);
+                    // Clear the timeout for request completion
+                    this.clearSpecificTimeout("REQUEST");
                 }
 
                 /*
@@ -586,12 +555,19 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
 
                     // Log own checkpoint in accordance to hBFT 4.2
                     messageLog.appendCheckpoint(checkpoint, this.tolerance, this.speculativeHistory, this.getViewNumber());
+                } else if (seqNumber % 1 == 0) {
+                    this.setTimeout(this::sendViewChangeOnTimeout, timeout, "CHECKPOINT");
                 }
             } else if (ticket.isCommittedConflicting(this.tolerance)) {
-                ViewChangeMessage viewChangeMessage = this.messageLog.produceViewChange(seqNumber, this.getNodeId(), tolerance, this.speculativeRequests);
+                ViewChangeMessage viewChangeMessage = this.messageLog.produceViewChange(this.getViewNumber() + 1, this.getNodeId(), tolerance, this.speculativeRequests);
                 this.sendViewChange(viewChangeMessage);
             }
         }
+    }
+
+    private void sendViewChangeOnTimeout() {
+        ViewChangeMessage viewChangeMessage = this.messageLog.produceViewChange(this.getViewNumber() + 1, this.getNodeId(), tolerance, this.speculativeRequests);
+        this.sendViewChange(viewChangeMessage);
     }
 
     /**
@@ -643,8 +619,15 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
          * and perform GC if the checkpoint is stable.
          */
         String primaryId = this.getPrimaryId();
-        // Upon receiving a checkpoint the replica gets out of disgruntled state
-        this.disgruntled = false;
+
+        // TODO: Probably checkpoints should be correct as well
+        if (!(checkpoint instanceof CheckpointIMessage) || checkpoint instanceof CheckpointIMessage && primaryId.equals(checkpoint.getReplicaId())) {
+           // Upon receiving a checkpoint the replica gets out of disgruntled state
+            this.disgruntled = false;
+
+            // Clear the timeout for the checkpoint
+            this.clearTimeout("CHECKPOINT"); 
+        }
 
         if (checkpoint instanceof CheckpointIMessage
          && (!primaryId.equals(checkpoint.getReplicaId())
@@ -732,7 +715,7 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
         this.disgruntled = false;
         this.checkpointForNewView = true;
         this.setView(newViewNumber);
-        this.timeouts.clear();
+        this.clearAllTimeouts();
     }
 
     public void recvViewChange(ViewChangeMessage viewChange) {
@@ -752,17 +735,6 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
             ViewChangeMessage bandwagonViewChange = messageLog.produceViewChange(
                     result.getBandwagonViewNumber(), this.getNodeId(), this.tolerance, this.speculativeRequests);
             this.sendViewChange(bandwagonViewChange);
-        }
-    
-        // Start timer to vote for next view, if applicable
-        if (result.isBeginNextVote()) {
-            for (LinearBackoff backoff : this.timeouts.values()) {
-                synchronized (backoff) {
-                    if (newViewNumber + 1 == backoff.getNewViewNumber()) {
-                        backoff.beginNextTimer();
-                    }
-                }
-            }
         }
     
         // If this replica is the new primary, multicast NEW-VIEW and update state
@@ -976,6 +948,9 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
             return;
         } else if (m instanceof NewViewMessage newView) {
             recvNewView(newView);
+            return;
+        } else if (m instanceof PanicMessage panic) {
+            recvPanic(panic);
             return;
         }
         throw new RuntimeException("Unknown message type");

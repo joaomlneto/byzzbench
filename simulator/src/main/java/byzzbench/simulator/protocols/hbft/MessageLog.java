@@ -18,6 +18,7 @@ import byzzbench.simulator.protocols.hbft.message.CheckpointIIMessage;
 import byzzbench.simulator.protocols.hbft.message.CheckpointIMessage;
 import byzzbench.simulator.protocols.hbft.message.CheckpointMessage;
 import byzzbench.simulator.protocols.hbft.message.NewViewMessage;
+import byzzbench.simulator.protocols.hbft.message.PanicMessage;
 import byzzbench.simulator.protocols.hbft.message.RequestMessage;
 import byzzbench.simulator.protocols.hbft.message.ViewChangeMessage;
 import byzzbench.simulator.protocols.hbft.pojo.ReplicaRequestKey;
@@ -48,6 +49,9 @@ public class MessageLog implements Serializable {
     private final SortedMap<Long, Collection<CheckpointMessage>> checkpointsIII = new TreeMap<>();
     // Stored as (viewNumber, (replicaId, message))
     private final SortedMap<Long, SortedMap<String, ViewChangeMessage>> viewChanges = new TreeMap<>();
+
+    // Panic messages from replicas
+    private final SortedMap<String, PanicMessage> panics = new TreeMap<>();
 
     private Checkpoint lastStableCheckpoint = new Checkpoint(0, null);
 
@@ -140,6 +144,18 @@ public class MessageLog implements Serializable {
 
         this.highWaterMark = checkpoint + this.watermarkInterval;
         this.lowWaterMark = checkpoint;
+    }
+
+    public void appendPanic(PanicMessage panic, String replicaId) {
+        this.panics.put(replicaId, panic);
+    }
+
+    public void clearPanics() {
+        this.panics.clear();
+    }
+
+    public boolean checkPanics(int tolerance) {
+        return this.panics.size() >= tolerance * 2 + 1;
     }
 
     public void appendCheckpoint(CheckpointMessage checkpoint, int tolerance, SpeculativeHistory history, long viewNumber) {
