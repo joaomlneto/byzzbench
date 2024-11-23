@@ -95,10 +95,6 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
         this.setView(viewNumber, leaderId);
     }
 
-    private void clearTimeouts() {
-        this.clearAllTimeouts();
-    }
-
     private void clearSpecificTimeout(String description) {
         this.clearTimeout(description);
     }
@@ -244,10 +240,39 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
         this.sendMessage(request, replicaId);
     }
 
-    public void recvPanic(PanicMessage panic) {
-        this.messageLog.appendPanic(panic, this.getNodeId());
-        if (this.messageLog.checkPanics(this.tolerance) && this.getNodeId() ) {
+    public boolean executedRequest(byte[] digest) {
+        for (RequestMessage request : this.speculativeRequests.values()) {
+            if (Arrays.equals(this.digest(request), digest)) {
+                return true;
+            }
+        }
 
+        return false;
+    }
+
+    public void recvPanic(PanicMessage panic) {
+        // If this replica didnt exectue the request,
+        // it cannot accept the PANIC message
+        if (!this.executedRequest(panic.getDigest())) {
+            return;
+        }
+
+        this.forwardPanic(panic);
+        this.disgruntled = true;
+
+        this.messageLog.appendPanic(panic, this.getNodeId());
+        if (this.messageLog.checkPanics(this.tolerance) && this.getNodeId().equals(this.getPrimaryId())) {
+            CheckpointMessage checkpoint = new CheckpointIMessage(
+                        this.seqCounter.get(),
+                        this.digest(this.speculativeHistory),
+                        this.getNodeId(),
+                        this.speculativeHistory);
+            //this.sendCheckpoint(checkpoint);
+            this.broadcastMessageIncludingSelf(checkpoint);
+        } else if (!this.getNodeId().equals(this.getPrimaryId()) && this.messageLog.checkPanicsForTimeout(this.tolerance)) {
+            // Start the timer for this request per hBFT 4.3
+            // This timeout check whether a request is completed in a given time
+            this.setTimeout(this::sendViewChangeOnTimeout, timeout, "PANIC");
         }
     }
 
@@ -554,7 +579,7 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
                     this.broadcastMessageIncludingSelf(checkpoint);
 
                     // Log own checkpoint in accordance to hBFT 4.2
-                    messageLog.appendCheckpoint(checkpoint, this.tolerance, this.speculativeHistory, this.getViewNumber());
+                    //messageLog.appendCheckpoint(checkpoint, this.tolerance, this.speculativeHistory, this.getViewNumber());
                 } else if (seqNumber % 1 == 0) {
                     this.setTimeout(this::sendViewChangeOnTimeout, timeout, "CHECKPOINT");
                 }
@@ -625,8 +650,10 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
            // Upon receiving a checkpoint the replica gets out of disgruntled state
             this.disgruntled = false;
 
-            // Clear the timeout for the checkpoint
-            this.clearTimeout("CHECKPOINT"); 
+            // Clear the timeout for the checkpoint and panic
+            this.clearSpecificTimeout("CHECKPOINT"); 
+            this.clearSpecificTimeout("PANIC");
+            this.messageLog.clearPanics();
         }
 
         if (checkpoint instanceof CheckpointIMessage
@@ -716,6 +743,7 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
         this.checkpointForNewView = true;
         this.setView(newViewNumber);
         this.clearAllTimeouts();
+        this.messageLog.clearPanics();
     }
 
     public void recvViewChange(ViewChangeMessage viewChange) {

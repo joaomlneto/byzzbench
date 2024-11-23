@@ -158,6 +158,10 @@ public class MessageLog implements Serializable {
         return this.panics.size() >= tolerance * 2 + 1;
     }
 
+    public boolean checkPanicsForTimeout(int tolerance) {
+        return this.panics.size() >= tolerance + 1;
+    }
+
     public void appendCheckpoint(CheckpointMessage checkpoint, int tolerance, SpeculativeHistory history, long viewNumber) {
         /*
          * Per hBFT 4.2, each time a checkpoint-III is generated or received, it
