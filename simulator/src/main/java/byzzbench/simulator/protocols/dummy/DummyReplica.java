@@ -27,7 +27,7 @@ public class DummyReplica extends Replica {
     }
 
     @Override
-    public void handleClientRequest(String clientId, Serializable request) throws Exception {
+    public void handleClientRequest(String clientId, long timestamp, Serializable request) throws Exception {
         this.getCommitLog().add(new SerializableLogEntry(request));
         this.broadcastMessage(new ClientRequestMessage(request));
     }

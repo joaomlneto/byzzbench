@@ -1,5 +1,7 @@
 package byzzbench.simulator;
 
+import byzzbench.simulator.protocols.hbft.message.PanicMessage;
+import byzzbench.simulator.protocols.hbft.message.RequestMessage;
 import byzzbench.simulator.transport.Transport;
 import byzzbench.simulator.utils.NonNull;
 
@@ -10,7 +12,10 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
 import java.io.Serializable;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -27,6 +32,21 @@ import java.util.concurrent.atomic.AtomicLong;
 @Builder
 @RequiredArgsConstructor
 public class Client implements Serializable {
+
+    /**
+     * The message digest algorithm to use for hashing messages.
+     */
+    @JsonIgnore
+    static MessageDigest md;
+
+    static {
+        try {
+            md = MessageDigest.getInstance("SHA-1");
+        } catch (NoSuchAlgorithmException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     /**
      * The unique ID of the client.
      */
@@ -58,7 +78,7 @@ public class Client implements Serializable {
     /**
      * The replies received by the client.
      */
-    private final SortedMap<Long, List<Serializable>> replies = new TreeMap<>();
+    private final SortedMap<Long, SortedMap<Long, Collection<Serializable>>> replies = new TreeMap<>();
 
     /**
      * The request sequence number already completed.
@@ -66,9 +86,15 @@ public class Client implements Serializable {
     private final Set<Long> completedRequests = new HashSet<>();
 
     /**
+     * The sent requests.
+     */
+    private final SortedMap<Long, RequestMessage> sentRequests = new TreeMap<>();
+
+    /**
      * Timeout for client
      */
-    private final long timeout = 1000;
+    private final long timeout = 5000;
+
 
     /**
      * Initializes the client by sending the initial requests.
@@ -84,17 +110,25 @@ public class Client implements Serializable {
      * As of hBFT 4.1, sends a request to all replica in the system.
      */
     public void sendRequest() {
-        String recipientId = transport.getScenario().getNodes().keySet().iterator().next();
-        String requestId = String.format("%s/%d", this.clientId, this.requestSequenceNumber.getAndIncrement());
-        //for (String recipientId : transport.getScenario().getNodes().keySet()) {
-            this.transport.sendClientRequest(this.clientId, requestId, recipientId);
-        //}
-        this.setTimeout(this::sendRequest, timeout);
+        String requestId = String.format("%s/%d", this.clientId, this.requestSequenceNumber.incrementAndGet());
+        long timestamp = System.currentTimeMillis();
+        RequestMessage request = new RequestMessage(requestId, timestamp, this.clientId);
+        this.sentRequests.put(this.requestSequenceNumber.get(), request);
+        this.transport.multicastClientRequest(this.clientId, timestamp, requestId, this.transport.getNodeIds());
+        this.setTimeout(this::retransmitOrPanic, this.timeout);
     }
 
-    public void retransmitRequest(long seqNumber) {
-        if (this.shouldRetransmit(1, seqNumber)) {
-
+    public void retransmitOrPanic() {
+        long tolerance = (long) Math.floor((this.transport.getNodeIds().size() - 1) / 3);
+        if (this.shouldRetransmit(tolerance)) {
+            String requestId = String.format("%s/%d", this.clientId, this.requestSequenceNumber.get());
+            long timestamp = System.currentTimeMillis();
+            this.transport.multicastClientRequest(this.clientId, timestamp, requestId, this.transport.getNodeIds());
+        } else if (this.shouldPanic(tolerance)) {
+            RequestMessage message = this.sentRequests.get(this.requestSequenceNumber.get());
+            PanicMessage panic = new PanicMessage(this.digest(message), System.currentTimeMillis(), this.clientId);
+            this.transport.multicast(this.clientId, this.transport.getNodeIds(), panic);
+            this.setTimeout(this::retransmitOrPanic, this.timeout);
         }
     }
 
@@ -105,19 +139,17 @@ public class Client implements Serializable {
      * @param tolerance the tolerance of the protocol (used for hbft)
      */
     public void handleReply(String senderId, Serializable reply, long tolerance, long seqNumber) {
-        if (this.replies.get(seqNumber) != null) {
-            this.replies.get(seqNumber).add(reply);
-        } else {
-            this.replies.put(seqNumber, new ArrayList<>());
-            this.replies.get(seqNumber).add(reply);
-        }
+        this.replies.putIfAbsent(this.requestSequenceNumber.get(), new TreeMap<>());
+        this.replies.get(this.requestSequenceNumber.get()).putIfAbsent(seqNumber, new ArrayList<>());
+        this.replies.get(this.requestSequenceNumber.get()).get(seqNumber).add(reply);
+
         /**
          * If the client received 2f + 1 correct replies,
          * and the request has not been completed yet.
          */
         if (this.completedReplies(tolerance, seqNumber) 
             && !this.completedRequests.contains(seqNumber) 
-            && this.requestSequenceNumber.get() < this.maxRequests) {
+            && this.requestSequenceNumber.get() <= this.maxRequests) {
             this.completedRequests.add(seqNumber);
             this.sendRequest();
             this.clearAllTimeouts();
@@ -130,12 +162,8 @@ public class Client implements Serializable {
      * @param reply The reply received by the client.
      */
     public void handleReply(String senderId, Serializable reply) {
-        if (this.replies.get(this.requestSequenceNumber.get()) != null) {
-            this.replies.get(this.requestSequenceNumber.get()).add(reply);
-        } else {
-            this.replies.put(this.requestSequenceNumber.get(), new ArrayList<>());
-            this.replies.get(this.requestSequenceNumber.get()).add(reply);
-        }
+        // this.replies.putIfAbsent(this.requestSequenceNumber.get(), new ArrayList<>());
+        // this.replies.get(this.requestSequenceNumber.get()).add(reply);
         if (this.requestSequenceNumber.get() < this.maxRequests) {
             this.sendRequest();
         }
@@ -145,15 +173,35 @@ public class Client implements Serializable {
      * Checks whether client should retransmit the request
      * if #replies < f + 1
      */
-    public boolean shouldRetransmit(long tolerance, long seqNumber) {
-        return this.replies.get(seqNumber).size() < tolerance + 1;
+    public boolean shouldRetransmit(long tolerance) {
+        for (Long key : replies.get(this.requestSequenceNumber.get()).keySet()) {
+            return !(this.replies.get(this.requestSequenceNumber.get()).get(key).size() >= tolerance + 1);
+        }
+        return true;
+    }
+
+    /**
+     * Checks whether client should send PANIC
+     * if f + 1 <= #replies < 2f + 1
+     */
+    public boolean shouldPanic(long tolerance) {
+        for (Long key : replies.get(this.requestSequenceNumber.get()).keySet()) {
+            return this.replies.get(this.requestSequenceNumber.get()).get(key).size() >= tolerance + 1 
+                && this.replies.get(this.requestSequenceNumber.get()).get(key).size() < tolerance * 2 + 1;
+        }
+        return false;
     }
 
     /**
      * Checks whether it has received 2f + 1 replies
      */
     public boolean completedReplies(long tolerance, long seqNumber) {
-        return this.replies.get(seqNumber).size() >= 2 * tolerance + 1;
+        for (Long key : replies.get(this.requestSequenceNumber.get()).keySet()) {
+            if (this.replies.get(this.requestSequenceNumber.get()).get(key).size() >= 2 * tolerance + 1) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /**
@@ -175,6 +223,16 @@ public class Client implements Serializable {
      */
     public void clearAllTimeouts() {
         this.transport.clearClientTimeouts(this.clientId);
+    }
+
+    /**
+     * Create a digest of a message.
+     *
+     * @param message the message to digest
+     * @return the digest of the message
+     */
+    public byte[] digest(Serializable message) {
+        return md.digest(message.toString().getBytes());
     }
 
 }

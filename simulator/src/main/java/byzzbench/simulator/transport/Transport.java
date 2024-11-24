@@ -90,6 +90,33 @@ public class Transport {
     /**
      * Sends a request from a client to a replica.
      * @param sender The ID of the client sending the request
+     * @param timestamp The time of the creation of the request
+     * @param operation The operation to send
+     * @param recipient The ID of the replica receiving the request
+     */
+    public synchronized void sendClientRequest(String sender, long timestamp, Serializable operation, String recipient) {
+        // assert that the sender exists
+        if (!this.scenario.getClients().containsKey(sender)) {
+            throw new IllegalArgumentException("Client not found: " + sender);
+        }
+
+        if (!this.scenario.getNodes().containsKey(recipient)) {
+            throw new IllegalArgumentException("Replica not found: " + recipient);
+        }
+
+        Event event = ClientRequestEvent.builder()
+                .timestamp(timestamp)
+                .eventId(this.eventSeqNum.getAndIncrement())
+                .senderId(sender)
+                .recipientId(recipient)
+                .payload(operation)
+                .build();
+        this.appendEvent(event);
+    }
+
+    /**
+     * Sends a request from a client to a replica.
+     * @param sender The ID of the client sending the request
      * @param operation The operation to send
      * @param recipient The ID of the replica receiving the request
      */
@@ -104,12 +131,32 @@ public class Transport {
         }
 
         Event event = ClientRequestEvent.builder()
+                .timestamp(System.currentTimeMillis())
                 .eventId(this.eventSeqNum.getAndIncrement())
                 .senderId(sender)
                 .recipientId(recipient)
                 .payload(operation)
                 .build();
         this.appendEvent(event);
+    }
+
+    /**
+     * Multicasts a message to a set of recipients.
+     * @param sender The ID of the sender
+     * @param recipients The set of recipient IDs
+     * @param payload The payload of the message
+     */
+    public synchronized void multicastClientRequest(String sender, long timestamp, Serializable operation, Set<String> recipients) {
+        for (String recipient : recipients) {
+            Event event = ClientRequestEvent.builder()
+                .timestamp(timestamp)
+                .eventId(this.eventSeqNum.getAndIncrement())
+                .senderId(sender)
+                .recipientId(recipient)
+                .payload(operation)
+                .build();
+            this.appendEvent(event);
+        }
     }
 
     /**
@@ -234,7 +281,7 @@ public class Transport {
 
         switch (e) {
             case ClientRequestEvent c -> {
-                this.scenario.getNodes().get(c.getRecipientId()).handleClientRequest(c.getSenderId(), c.getPayload());
+                this.scenario.getNodes().get(c.getRecipientId()).handleClientRequest(c.getSenderId(), c.getTimestamp(), c.getPayload());
             }
             case MessageEvent m -> {
                 this.scenario.getNodes().get(m.getRecipientId()).handleMessage(m.getSenderId(), m.getPayload());

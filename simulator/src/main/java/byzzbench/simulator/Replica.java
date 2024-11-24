@@ -154,9 +154,10 @@ public abstract class Replica implements Serializable {
      *
      * @param clientId the ID of the client
      * @param request  the request payload
+     * @param timestamp the time the request was created/sent
      * @throws Exception if an error occurs while handling the request
      */
-    public abstract void handleClientRequest(String clientId, Serializable request) throws Exception;
+    public abstract void handleClientRequest(String clientId, long timestamp, Serializable request) throws Exception;
 
     /**
      * Send a reply to a client.

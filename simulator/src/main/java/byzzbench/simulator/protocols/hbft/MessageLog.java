@@ -333,59 +333,40 @@ public class MessageLog implements Serializable {
 
     public ViewChangeResult acceptViewChange(ViewChangeMessage viewChange, String curReplicaId, long curViewNumber, int tolerance) {
         /*
-         * Per hBFT 4.3, a received VIEW-CHANGE vote is stored into the message
-         * log and the state is returned to the replica as
-         * ReplicaViewChangeResult.
-         *
-         * The procedure first computes the total number of votes from other
-         * replicas that try to move the view a higher view number. If this
-         * number of other relicas is equal to the bandwagon size, then this
-         * replica contributes its vote once to avoid creating an infinite
-         * response loop and taking up the network capacity.
-         *
-         * Secondly, this procedure finds the smallest view the system is
-         * attempting to elect and selects that to bandwagon.
-         *
-         * Finally, this procedure determines if the number of votes is enough
-         * to restart the timer to move to the view after the one now being
-         * elected in the case that the candidate view has a faulty primary.
+         * Checks whether the view change is correct, 
+         * the view is higher than the current
+         * 
+         * If f + 1 view-changes are received for the same view number
+         * the replica accepts and also sends a view-change
+         * (if it didnt send previously)
+         * 
+         * If gets 2f + 1 view-changes and this is the potential primary,
+         * then sends a new-view (handled by replica itself)
          */
         long newViewNumber = viewChange.getNewViewNumber();
         String replicaId = viewChange.getReplicaId();
+
+        if (newViewNumber <= curViewNumber) {
+            return new ViewChangeResult(false, false);
+        }
 
         SortedMap<String, ViewChangeMessage> newViewSet = this.viewChanges.computeIfAbsent(newViewNumber, k -> new TreeMap<>());
         newViewSet.put(replicaId, viewChange);
 
         final int bandwagonSize = tolerance + 1;
 
-        int totalVotes = 0;
-        long smallestView = Long.MAX_VALUE;
-        for (SortedMap.Entry<Long, SortedMap<String, ViewChangeMessage>> entry : this.viewChanges.entrySet()) {
-            long entryView = entry.getKey();
-            if (entryView <= curViewNumber) {
-                continue;
-            }
-
-            SortedMap<String, ViewChangeMessage> votes = entry.getValue();
-            int entryVotes = votes.size();
-
-            if (votes.containsKey(curReplicaId)) {
-                entryVotes--;
-            }
-
-            totalVotes += entryVotes;
-
-            if (smallestView > entryView) {
-                smallestView = entryView;
-            }
+        boolean shouldBandwagon = false;
+        boolean shouldSendNewView = false;
+        if (!newViewSet.keySet().contains(curReplicaId) && bandwagonSize == newViewSet.size()) {
+            shouldBandwagon = true;
         }
 
-        boolean shouldBandwagon = totalVotes == bandwagonSize;
+        final int newViewSize = 2 * tolerance + 1;
+        if (newViewSize == newViewSet.size()) {
+            shouldSendNewView = true;
+        }
 
-        final int timerThreshold = 2 * tolerance + 1;
-        boolean beginNextVote = newViewSet.size() >= timerThreshold;
-
-        return new ViewChangeResult(shouldBandwagon, smallestView, beginNextVote);
+        return new ViewChangeResult(shouldBandwagon, shouldSendNewView);
     }
 
     public NewViewMessage produceNewView(long newViewNumber, String replicaId, int tolerance) {
@@ -489,6 +470,7 @@ public class MessageLog implements Serializable {
          */
         for (SortedMap<Long, RequestMessage> requests : allRequests) {
             for (Map.Entry<Long, RequestMessage> request : requests.entrySet()) {
+                System.out.println(selectedHistoryM + " " + request + " " + (requestMap.get(request.getKey()) >= tolerance + 1));
                 if ((selectedHistoryM == null || request.getKey() > selectedHistoryM.getGreatestSeqNumber()) && requestMap.get(request.getKey()) >= tolerance + 1) {
                     sortedRequests.addEntry(request.getKey(), request.getValue());
                 } else if (selectedHistoryM == null || request.getKey() > selectedHistoryM.getGreatestSeqNumber()) {

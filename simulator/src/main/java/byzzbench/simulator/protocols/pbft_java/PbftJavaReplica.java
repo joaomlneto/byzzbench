@@ -670,7 +670,7 @@ public class PbftJavaReplica<O extends Serializable, R extends Serializable> ext
     }
 
     @Override
-    public void handleClientRequest(String clientId, Serializable request) throws Exception {
+    public void handleClientRequest(String clientId, long timestamp, Serializable request) throws Exception {
         // FIXME: should not get timestamp from system time
         RequestMessage m = new RequestMessage(request, System.currentTimeMillis(), clientId);
         this.recvRequest(m);

@@ -46,10 +46,10 @@ public class HbftJavaScenario extends BaseScenario {
 
     @Override
     public synchronized void run() {
-        // send a request message to node A
+        // send a request message to all nodes
         try {
             this.setNumClients(1);
-            this.transport.sendClientRequest("C0", "123", "A");
+            this.transport.multicastClientRequest("C0", System.currentTimeMillis(), "123", this.getNodes().keySet());
         } catch (Exception e) {
             e.printStackTrace();
             throw new RuntimeException(e);
