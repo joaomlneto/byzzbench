@@ -95,6 +95,26 @@ public class PrepareMessageMutatorFactory extends MessageMutatorFactory {
                         mutatedMessage.sign(message.getSignedBy());
                         messageEvent.setPayload(mutatedMessage);
                     }
+                },
+                new MessageMutationFault("hbft-prepare-different-digest", "Change digest", List.of(PrepareMessage.class)) {
+                    @Override
+                    public void accept(FaultContext serializable) {
+                        Optional<Event> event = serializable.getEvent();
+                        if (event.isEmpty()) {
+                            throw invalidMessageTypeException;
+                        }
+                        if (!(event.get() instanceof MessageEvent messageEvent)) {
+                            throw invalidMessageTypeException;
+                        }
+                        if (!(messageEvent.getPayload() instanceof PrepareMessage message)) {
+                            throw invalidMessageTypeException;
+                        }
+                        // Create a random digest
+                        byte[] digest = new byte[20];
+                        PrepareMessage mutatedMessage = message.withDigest(digest);
+                        mutatedMessage.sign(message.getSignedBy());
+                        messageEvent.setPayload(mutatedMessage);
+                    }
                 }
         );
     }

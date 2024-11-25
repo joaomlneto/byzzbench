@@ -42,6 +42,7 @@ public class MessageLog implements Serializable {
     private final Deque<RequestMessage> buffer = new ConcurrentLinkedDeque<>();
 
     private final SortedMap<ReplicaRequestKey, Ticket<?, ?>> ticketCache = new TreeMap<>();
+    @Getter
     private final SortedMap<TicketKey, Ticket<?, ?>> tickets = new TreeMap<>();
 
     private final SortedMap<Long, Collection<CheckpointMessage>> checkpointsI = new TreeMap<>();
