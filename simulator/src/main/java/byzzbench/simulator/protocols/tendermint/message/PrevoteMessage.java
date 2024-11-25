@@ -11,6 +11,7 @@ public class PrevoteMessage extends GenericVoteMessage {
     private final long height;      // Current blockchain height
     private final long round;       // Current round in the consensus process
     private final String replicaId; // ID of the validator sending the prevote
+    private byte[] digest;
 
     @Override
     public String getType() {

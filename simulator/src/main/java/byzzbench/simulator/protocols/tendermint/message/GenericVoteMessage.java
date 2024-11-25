@@ -5,7 +5,7 @@ import byzzbench.simulator.transport.MessagePayload;
 import java.util.Comparator;
 
 public abstract class GenericVoteMessage extends MessagePayload implements Comparable<GenericVoteMessage> {
-    public abstract String getBlockHash();
+    public abstract String getDigest();
 
     public abstract String getAuthor();
 
@@ -13,7 +13,7 @@ public abstract class GenericVoteMessage extends MessagePayload implements Compa
 
     @Override
     public int compareTo(GenericVoteMessage other) {
-        return Comparator.comparing(GenericVoteMessage::getBlockHash)
+        return Comparator.comparing(GenericVoteMessage::getDigest)
                 .thenComparing(GenericVoteMessage::getAuthor)
                 .compare(this, other);
     }

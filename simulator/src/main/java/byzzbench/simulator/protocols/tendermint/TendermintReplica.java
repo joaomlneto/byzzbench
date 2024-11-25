@@ -1,14 +1,17 @@
 package byzzbench.simulator.protocols.tendermint;
 
 import byzzbench.simulator.LeaderBasedProtocolReplica;
+import byzzbench.simulator.protocols.tendermint.MessageLog;
 import byzzbench.simulator.protocols.tendermint.message.*;
 import byzzbench.simulator.state.TotalOrderCommitLog;
 import byzzbench.simulator.transport.MessagePayload;
 import byzzbench.simulator.transport.Transport;
 
+
 import java.io.Serializable;
 import java.util.*;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Getter;
 import lombok.extern.java.Log;
 
@@ -22,10 +25,14 @@ public class TendermintReplica extends LeaderBasedProtocolReplica {
     // Round: the current round within the height, where multiple rounds might be needed to finalize a block
     private long round;
 
+    // Step: the current step within the round (PROPOSE, PREVOTE, PRECOMMIT)
     private Step step;
 
+    //
+    private List<String> decision;
+
     // Hash of the block this replica is "locked" on (used to ensure no conflicting decisions are made)
-    private String lockedValue;
+    private byte[] lockedValue;
 
     // Round number of the block this replica is locked on
     private long lockedRound;
@@ -45,6 +52,7 @@ public class TendermintReplica extends LeaderBasedProtocolReplica {
         this.height = 0;
         this.round = 0;
         this.step = Step.PROPOSE;
+        this.decision = new ArrayList<>();
         this.lockedValue = null;
         this.lockedRound = -1;
         this.validValue = null;
@@ -62,24 +70,59 @@ public class TendermintReplica extends LeaderBasedProtocolReplica {
      * - Accept the proposal if valid, otherwise reject it.
      */
     protected void handleProposal(ProposalMessage proposalMessage) {
-        if (proposalMessage.isSignedBy(proposer(height, round))) {
+        // Validate if the message is signed by the correct proposer
+        if (!proposalMessage.isSignedBy(proposer(height, round))) {
             log.warning("Message not from proposer for this round: " + proposalMessage);
             return;
         }
-        log.info("Proposal received: " + proposalMessage);
+
+        // Compute the digest for the received proposal
+        byte[] computedDigest = this.digest(proposalMessage.getDigest());
+
+        // Validate the digest
+        if (!Arrays.equals(computedDigest, proposalMessage.getDigest())) {
+            log.warning("Invalid digest for the proposal: " + proposalMessage);
+            return;
+        }
+
+        // Process the proposal
+        log.info("Valid proposal received: " + proposalMessage);
+
         if (isInitialProposal(proposalMessage)) {
-            // Accept the proposed block and store its hash
-            log.info("Proposal received and accepted: " + proposalMessage);
+            log.info("Initial proposal accepted: " + proposalMessage);
             broadcastPrevote(height, round, getNodeId());
         } else if (isSubsequentProposal(proposalMessage)) {
             log.info("Subsequent proposal received: " + proposalMessage);
-            if (getStep().equals(Step.PROPOSE)
+
+            // Verify if the proposal is valid and if it's in the right step to be accepted
+            if (valid(proposalMessage.getDigest()) &&
+                    (this.step.equals(Step.PREVOTE) || this.step.equals(Step.PRECOMMIT))) {
+
+                // Lock the value if currently in the PREVOTE step
+                if (this.step == Step.PREVOTE) {
+                    this.lockedValue = proposalMessage.getDigest();
+                    this.lockedRound = proposalMessage.getRound();
+                    broadcastPrecommit(height, round, getNodeId());
+                    this.step = Step.PRECOMMIT;
+                }
+
+                this.validValue = proposalMessage.getValue();
+                this.validRound = proposalMessage.getRound();
+            } else if (this.decision.get((int) height) == null) {
+                // Finalize decision if valid
+                if (valid(proposalMessage.getValue())) {
+                    this.decision.set((int) height, proposalMessage.getValue());
+                    this.height++;
+                    reset();
+                }
+            } else if (getStep().equals(Step.PROPOSE)
                     && proposalMessage.getValidRound() >= 0
                     && proposalMessage.getValidRound() < getRound()) {
-                // TODO: implement valid(value)
-                if (valid(proposalMessage.getValue())
-                        && (lockedRound <= proposalMessage.getValidRound()
-                        || lockedValue.equals(proposalMessage.getValue()))) {
+
+                // Validate subsequent proposals and possibly broadcast prevote
+                if (valid(proposalMessage.getValue()) &&
+                        (lockedRound <= proposalMessage.getValidRound() ||
+                                lockedValue.equals(proposalMessage.getValue()))) {
                     broadcastPrevote(height, round, proposalMessage.getSignedBy());
                 } else {
                     broadcastPrevote(height, round, null);
@@ -91,16 +134,31 @@ public class TendermintReplica extends LeaderBasedProtocolReplica {
             log.warning("Invalid proposal received: " + proposalMessage);
             broadcastPrevote(height, round, null);
         }
+
+        // Advance to the next step
         step = Step.PREVOTE;
     }
 
+
+    private void reset() {
+        this.lockedValue = null;
+        this.lockedRound = -1;
+        this.validValue = null;
+        this.validRound = -1;
+    }
+
     // This variant of the Byzantine consensus problem has an application-specific valid() predicate to indicate
-    //whether a value is valid. In the context of blockchain systems, for example, a value is not valid if it does not
-    //contain an appropriate hash of the last value (block) added to the blockchain.
-    private boolean valid(int value) {
+    // whether a value is valid. In the context of blockchain systems, for example, a value is not valid if it does not
+    // contain an appropriate hash of the last value (block) added to the blockchain.
+    private boolean valid(byte[] digest) {
         return true;
     }
 
+    /**
+     * 28: upon ⟨PROPOSAL, hp, roundp, v, vr⟩ from proposer(hp, roundp) AND 2f + 1 ⟨PREVOTE, hp, vr, id(v)⟩
+     * @param proposalMessage
+     * @return true if the proposal is a subsequent proposal
+     */
     private boolean isSubsequentProposal(ProposalMessage proposalMessage) {
         if (proposalMessage.getValidRound() != -1) {
             // TODO: 2f + 1 ⟨PREVOTE, hp, vr, id(v)⟩ messages received
@@ -110,6 +168,16 @@ public class TendermintReplica extends LeaderBasedProtocolReplica {
         return false;
     }
 
+    /**
+     * 22: upon ⟨PROPOSAL, hp, roundp, v, −1⟩ from proposer(hp, roundp) while stepp = propose do
+     * 23: if valid(v) ∧ (lockedRoundp = −1 ∨ lockedV aluep = v) then
+     * 24: broadcast ⟨PREVOTE, hp, roundp, id(v)⟩
+     * 25: else
+     * 26: broadcast ⟨PREVOTE, hp, roundp, nil⟩
+     * 27: stepp ← prevote
+     * @param proposalMessage
+     * @return true if the proposal is the initial proposal
+     */
     private boolean isInitialProposal(ProposalMessage proposalMessage) {
         if (proposalMessage.getValidRound() == -1) {
             if (proposer(height, round).equals(proposalMessage.getSignedBy()) && step == Step.PROPOSE) {

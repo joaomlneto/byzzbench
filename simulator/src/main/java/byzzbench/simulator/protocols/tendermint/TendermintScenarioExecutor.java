@@ -3,6 +3,7 @@ package byzzbench.simulator.protocols.tendermint;
 import byzzbench.simulator.BaseScenario;
 import byzzbench.simulator.Replica;
 import byzzbench.simulator.TerminationCondition;
+import byzzbench.simulator.protocols.tendermint.MessageLog;
 import byzzbench.simulator.scheduler.Scheduler;
 import com.fasterxml.jackson.databind.JsonNode;
 import lombok.extern.java.Log;

@@ -12,7 +12,7 @@ public class ProposalMessage extends MessagePayload {
     private final String replicaId; // ID of the proposer
     private final long height; // Current blockchain height
     private final long round; // Current round in the consensus process
-    private final int value; // Value to be proposed
+    private byte[] digest;
     private final long validRound; // Round in which the value is valid
 
     @Override

@@ -9,7 +9,7 @@ import java.util.*;
 
 @RequiredArgsConstructor
 public class MessageLog {
-    private final FastHotStuffReplica node;
+    private final TendermintReplica node;
     private final SortedSet<Object> committed = new TreeSet<>();
     private final SortedMap<Object, SortedSet<Object>> votes = new TreeMap<>();
     private final SortedMap<Object, SortedSet<Object>> newViews = new TreeMap<>();
