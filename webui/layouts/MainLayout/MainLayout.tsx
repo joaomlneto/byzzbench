@@ -5,10 +5,10 @@ import {
   ForceSyncActionIcon,
   ResetActionIcon,
   SaveScheduleActionIcon,
-  SelectScenarioActionIcon,
   StartActionIcon,
   StopActionIcon,
 } from "@/components/ActionIcon";
+import { ShowConfigActionIcon } from "@/components/ActionIcon/ShowConfigActionIcon";
 import { ColorSchemeToggle } from "@/components/ColorSchemeToggle";
 import { ImportScheduleButton } from "@/components/ImportScheduleButton";
 import { ScheduleList } from "@/components/Schedule";
@@ -27,7 +27,7 @@ export const MainLayout = ({ children }: PropsWithChildren) => {
         <Group p="xs">
           <ColorSchemeToggle />
           <HeaderMenu />
-          <SelectScenarioActionIcon />
+          <ShowConfigActionIcon />
           <ResetActionIcon />
           <DoSchedulerActionIcon />
           <ForceSyncActionIcon />

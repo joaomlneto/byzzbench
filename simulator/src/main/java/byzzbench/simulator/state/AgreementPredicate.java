@@ -16,7 +16,10 @@ public class AgreementPredicate implements ScenarioPredicate {
 
     @Override
     public boolean test(Scenario scenarioExecutor) {
-        Collection<Replica> replicas = scenarioExecutor.getNodes().values();
+        Collection<Replica> replicas = scenarioExecutor.getNodes().values().stream()
+                .filter(Replica.class::isInstance)
+                .map(Replica.class::cast)
+                .toList();
 
         // get the max length of the commit logs of all replicas
         int commonPrefixLength = replicas.stream()

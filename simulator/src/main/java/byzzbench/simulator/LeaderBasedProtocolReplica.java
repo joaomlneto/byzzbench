@@ -1,10 +1,11 @@
 package byzzbench.simulator;
 
 import byzzbench.simulator.state.CommitLog;
-import byzzbench.simulator.transport.Transport;
+import byzzbench.simulator.transport.MessagePayload;
 import lombok.Getter;
 
-import java.util.SortedSet;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Abstract class for a replica that is part of a leader-based protocol.
@@ -14,12 +15,12 @@ public abstract class LeaderBasedProtocolReplica extends Replica {
     private long viewNumber = -1;
     private String leaderId;
 
-    protected LeaderBasedProtocolReplica(String nodeId, SortedSet<String> nodeIds, Transport transport, CommitLog commitLog) {
-        super(nodeId, nodeIds, transport, commitLog);
+    protected LeaderBasedProtocolReplica(String nodeId, Scenario scenario, CommitLog commitLog) {
+        super(nodeId, scenario, commitLog);
     }
 
     /**
-     * Get the current view of the replica.
+     * Set the current view of the replica.
      *
      * @param viewNumber The view number.
      * @param leaderId   The ID of the leader.
@@ -30,5 +31,53 @@ public abstract class LeaderBasedProtocolReplica extends Replica {
 
         // notify the distributed state of the leader change
         this.notifyObserversLeaderChange(leaderId);
+    }
+
+    /**
+     * Set the current view of the replica, and set the leader ID to the round-robin primary.
+     *
+     * @param viewNumber The view number.
+     */
+    public void setView(long viewNumber) {
+        this.setView(viewNumber, this.getRoundRobinPrimaryId(viewNumber));
+    }
+
+    /**
+     * Get the primary ID for the current view, round-robin style.
+     *
+     * @return The ID of the primary replica.
+     */
+    public String getRoundRobinPrimaryId() {
+        return this.getRoundRobinPrimaryId(this.viewNumber);
+    }
+
+    /**
+     * Get the primary ID for a given view, round-robin style.
+     *
+     * @param view The view number.
+     * @return The ID of the primary replica.
+     */
+    public String getRoundRobinPrimaryId(long view) {
+        List<String> sortedNodeIds = new ArrayList<>(this.getScenario().getNodeIds(this));
+        int numNodes = sortedNodeIds.size();
+        return sortedNodeIds.get((int) (view % numNodes));
+    }
+
+    /**
+     * Send a message to the leader.
+     *
+     * @param message The message to send.
+     */
+    public void sendMessageToLeader(MessagePayload message) {
+        this.sendMessage(message, this.getLeaderId());
+    }
+
+    /**
+     * Check if the replica is the leader.
+     *
+     * @return True if the replica is the leader, false otherwise.
+     */
+    public boolean amILeader() {
+        return this.getId().equals(this.getLeaderId());
     }
 }
