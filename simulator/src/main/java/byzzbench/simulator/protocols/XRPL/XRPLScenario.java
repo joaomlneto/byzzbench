@@ -52,7 +52,7 @@ public class XRPLScenario extends BaseScenario {
             XRPLLedger genesis = new XRPLLedger("0", 1, new ArrayList<>());
             nodeIds.forEach(nodeId -> {
                 //XRPLMessageLog messageLog = new XRPLMessageLog();
-                XRPLReplica replica = new XRPLReplica(nodeId, nodeIds, this.transport, this.timekeeper, unl, genesis); //nodes trust all nodes currently
+                XRPLReplica replica = new XRPLReplica(nodeId, this, unl, genesis); //nodes trust all nodes currently
                 this.replica_list.add(replica);
                 this.addNode(replica);
             });
@@ -76,15 +76,15 @@ public class XRPLScenario extends BaseScenario {
             List<String> unl1 = List.of("A", "B", "C", "D", "E");
             List<String> unl2 = List.of("C", "D", "E", "F", "G");
 
-            XRPLReplica replica1 = new XRPLReplica("A", nodeIds, this.transport, this.timekeeper, unl1, genesis);
-            XRPLReplica replica2 = new XRPLReplica("B", nodeIds, this.transport, this.timekeeper, unl1, genesis);
-            XRPLReplica replica3 = new XRPLReplica("C", nodeIds, this.transport, this.timekeeper, unl1, genesis);
+            XRPLReplica replica1 = new XRPLReplica("A", this, unl1, genesis);
+            XRPLReplica replica2 = new XRPLReplica("B", this, unl1, genesis);
+            XRPLReplica replica3 = new XRPLReplica("C", this, unl1, genesis);
 
-            XRPLReplica replica4 = new XRPLReplica("D", nodeIds, this.transport, this.timekeeper, List.of("D"), genesis);
+            XRPLReplica replica4 = new XRPLReplica("D", this, List.of("D"), genesis);
 
-            XRPLReplica replica5 = new XRPLReplica("E", nodeIds, this.transport, this.timekeeper, unl2, genesis);
-            XRPLReplica replica6 = new XRPLReplica("F", nodeIds, this.transport, this.timekeeper, unl2, genesis);
-            XRPLReplica replica7 = new XRPLReplica("G", nodeIds, this.transport, this.timekeeper, unl2, genesis);
+            XRPLReplica replica5 = new XRPLReplica("E", this, unl2, genesis);
+            XRPLReplica replica6 = new XRPLReplica("F", this, unl2, genesis);
+            XRPLReplica replica7 = new XRPLReplica("G", this, unl2, genesis);
 
             this.replica_list.addAll(List.of(replica1, replica2, replica3, replica4, replica5, replica6, replica7));
 
@@ -138,10 +138,10 @@ public class XRPLScenario extends BaseScenario {
     private void runScenario3() {
         System.out.println("Running scenario 3");
         try {
-            this.addClient(new Client("C0", this.transport) {
+            this.addClient(new Client(this, "C0") {
                 @Override
-                public void initializeClient() {
-                    this.getTransport().sendClientRequest(this.getClientId(), "tx", "D");
+                public void initialize() {
+                    this.getScenario().getTransport().sendClientRequest(this.getId(), "tx", "D");
                 }
             });
             this.transport.sendClientRequest("C0", "tx", "D");

@@ -1,12 +1,11 @@
 package byzzbench.simulator.protocols.pbft;
 
 import byzzbench.simulator.LeaderBasedProtocolReplica;
-import byzzbench.simulator.Timekeeper;
+import byzzbench.simulator.Scenario;
 import byzzbench.simulator.Timer;
 import byzzbench.simulator.protocols.pbft.message.*;
 import byzzbench.simulator.state.TotalOrderCommitLog;
 import byzzbench.simulator.transport.MessagePayload;
-import byzzbench.simulator.transport.Transport;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Getter;
 import lombok.extern.java.Log;
@@ -270,13 +269,11 @@ public class PbftReplica extends LeaderBasedProtocolReplica {
     /**
      * Creates a new PBFT replica with the given node ID, set of node IDs, transport, and timekeeper.
      *
-     * @param nodeId     The unique identifier for the replica.
-     * @param nodeIds    The set of known node IDs in the system (excludes client IDs).
-     * @param transport  The transport layer for the replica.
-     * @param timekeeper The timekeeper for the replica.
+     * @param nodeId   The unique identifier for the replica.
+     * @param scenario The scenario in which the replica is running.
      */
-    public PbftReplica(String nodeId, SortedSet<String> nodeIds, Transport transport, Timekeeper timekeeper) {
-        super(nodeId, nodeIds, transport, timekeeper, new TotalOrderCommitLog());
+    public PbftReplica(String nodeId, Scenario scenario) {
+        super(nodeId, scenario, new TotalOrderCommitLog());
 
         replies = new RepInfo(this);
         /**
@@ -314,7 +311,7 @@ public class PbftReplica extends LeaderBasedProtocolReplica {
         this.plog = new SeqNumLog<>(config.getMAX_OUT(), () -> new PreparedCertificate(PbftReplica.this));
         this.clog = new SeqNumLog<>(config.getMAX_OUT(), () -> new Certificate<>(PbftReplica.this));
         this.elog = new SeqNumLog<>(config.getMAX_OUT() * 2, () -> new Certificate<>(PbftReplica.this));
-        this.sset = new IdentifiableObjectsSet<>(nodeIds);
+        this.sset = new IdentifiableObjectsSet<>(this.getNodeIds());
 
         // TODO: replies should have a size of num_principals in BASE, (mem, num_principals) in BFT
 
@@ -382,7 +379,7 @@ public class PbftReplica extends LeaderBasedProtocolReplica {
 
         join_mcast_group();
 
-        nodeIds.stream()
+        this.getNodeIds().stream()
                 // filter out the current node
                 .filter(nodeId::equals)
                 // create a principal for every other node
@@ -914,7 +911,7 @@ public class PbftReplica extends LeaderBasedProtocolReplica {
 
                         // If I have a pre-prepare/prepare, send it, provide I have sent
                         // a pre-prepare/prepare for view v.
-                        if (primary().equals(this.getNodeId())) {
+                        if (primary().equals(this.getId())) {
                             MessageWithTime<PrePrepareMessage> pp = plog.fetch(n).my_pre_prepare();
                             if (pp.message().isPresent()) {
                                 retransmit(pp.message().get(), current, pp.time(), p);
@@ -934,7 +931,7 @@ public class PbftReplica extends LeaderBasedProtocolReplica {
 
                 } else {
                     //m->has_nv_info() == false
-                    if (!m.has_vc(this.getNodeId())) {
+                    if (!m.has_vc(this.getId())) {
                         // p does not have my view-change: send it.
                         MessageWithTime<ViewChangeMessage> vc = vi.my_view_change();
                         if (vc.message().isEmpty()) {
@@ -944,14 +941,14 @@ public class PbftReplica extends LeaderBasedProtocolReplica {
                     }
 
                     if (m.has_nv_m()) {
-                        if (primary(v).equals(this.getNodeId()) && vi.hasNewView(v)) {
+                        if (primary(v).equals(this.getId()) && vi.hasNewView(v)) {
                             // p does not have new-view message and I am primary: send it
                             MessageWithTime<NewViewMessage> nv = vi.myNewView();
                             if (nv.message().isPresent()) {
                                 this.retransmit(nv.message().get(), current, nv.time(), p);
                             }
                         } else {
-                            if (primary(v).equals(this.getNodeId()) && vi.hasNewView(v)) {
+                            if (primary(v).equals(this.getId()) && vi.hasNewView(v)) {
                                 // Send any view-change messages that p may be missing
                                 // that are referred to by the new-view message. This may
                                 // be important if the sender of the original message is faulty.
@@ -1025,7 +1022,7 @@ public class PbftReplica extends LeaderBasedProtocolReplica {
             return;
         }
 
-        if (limbo && !primary().equals(this.getNodeId())) {
+        if (limbo && !primary().equals(this.getId())) {
             maxv = vi.maxMajView();
             if (maxv > v) {
                 throw new IllegalStateException("Invalid state!");
@@ -1749,7 +1746,7 @@ public class PbftReplica extends LeaderBasedProtocolReplica {
      * @return The identifier of this replica.
      */
     public String id() {
-        return this.getNodeId();
+        return this.getId();
     }
 
     /**

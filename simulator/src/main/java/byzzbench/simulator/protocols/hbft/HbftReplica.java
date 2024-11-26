@@ -1,16 +1,14 @@
 package byzzbench.simulator.protocols.hbft;
 
 import byzzbench.simulator.Replica;
-import byzzbench.simulator.Timekeeper;
+import byzzbench.simulator.Scenario;
 import byzzbench.simulator.state.CommitLog;
 import byzzbench.simulator.state.TotalOrderCommitLog;
 import byzzbench.simulator.transport.MessagePayload;
-import byzzbench.simulator.transport.Transport;
 import lombok.ToString;
 import lombok.extern.java.Log;
 
 import java.io.Serializable;
-import java.util.SortedSet;
 
 /**
  * A Replica in the hBFT protocol.
@@ -32,13 +30,11 @@ public class HbftReplica extends Replica {
     /**
      * Create a new replica.
      *
-     * @param nodeId     the unique ID of the replica
-     * @param nodeIds    the set of known node IDs in the system (excludes client IDs)
-     * @param transport  the transport layer
-     * @param timekeeper the timekeeper
+     * @param nodeId   the unique ID of the replica
+     * @param scenario the scenario
      */
-    protected HbftReplica(String nodeId, SortedSet<String> nodeIds, Transport transport, Timekeeper timekeeper) {
-        super(nodeId, nodeIds, transport, timekeeper, new TotalOrderCommitLog());
+    protected HbftReplica(String nodeId, Scenario scenario) {
+        super(nodeId, scenario, new TotalOrderCommitLog());
     }
 
     @Override

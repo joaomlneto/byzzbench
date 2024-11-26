@@ -1,14 +1,13 @@
 package byzzbench.simulator.protocols.XRPL;
 
 import byzzbench.simulator.Replica;
-import byzzbench.simulator.Timekeeper;
+import byzzbench.simulator.Scenario;
 import byzzbench.simulator.protocols.XRPL.messages.XRPLProposeMessage;
 import byzzbench.simulator.protocols.XRPL.messages.XRPLSubmitMessage;
 import byzzbench.simulator.protocols.XRPL.messages.XRPLTxMessage;
 import byzzbench.simulator.protocols.XRPL.messages.XRPLValidateMessage;
 import byzzbench.simulator.state.TotalOrderCommitLog;
 import byzzbench.simulator.transport.MessagePayload;
-import byzzbench.simulator.transport.Transport;
 import lombok.Getter;
 
 import java.io.Serializable;
@@ -34,8 +33,8 @@ public class XRPLReplica extends Replica {
     private @Getter XRPLConsensusResult result;
     private @Getter SortedMap<String, XRPLLedger> validations; //map of last validated ledgers indexed on nodeId
 
-    protected XRPLReplica(String nodeId, SortedSet<String> nodeIds, Transport transport, Timekeeper timekeeper, List<String> UNL, XRPLLedger prevLedger_) {
-        super(nodeId, nodeIds, transport, timekeeper, new TotalOrderCommitLog());
+    protected XRPLReplica(String nodeId, Scenario scenario, List<String> UNL, XRPLLedger prevLedger_) {
+        super(nodeId, scenario, new TotalOrderCommitLog());
         this.ourUNL = UNL;
         this.result = new XRPLConsensusResult();
         this.state = null;  //set to open with first heartbeat
@@ -52,11 +51,6 @@ public class XRPLReplica extends Replica {
         for (String nodeIdString : this.ourUNL) {
             this.recentPeerPositions.put(nodeIdString, new ArrayDeque<>());
         }
-    }
-
-    @Override
-    public void initialize() {
-        //nothing to do
     }
 
     @Override
@@ -88,7 +82,7 @@ public class XRPLReplica extends Replica {
             String tx = msg.getTx();
             this.pendingTransactions.add(tx);
         } catch (Exception e) {
-            log.info("Couldn't handle submit message in node " + this.getNodeId() + ": " + e.getMessage());
+            log.info("Couldn't handle submit message in node " + this.getId() + ": " + e.getMessage());
         }
     }
 
@@ -133,7 +127,7 @@ public class XRPLReplica extends Replica {
                 throw new IllegalArgumentException("message signature invalid");
             }
         } catch (Exception e) {
-            System.out.println("Couldn't handle validate message in node " + this.getNodeId() + ": " + e + ": " + e.getMessage());
+            System.out.println("Couldn't handle validate message in node " + this.getId() + ": " + e + ": " + e.getMessage());
             e.printStackTrace();
         }
     }
@@ -162,7 +156,7 @@ public class XRPLReplica extends Replica {
                 }
             }
         } catch (Exception e) {
-            log.info("Error handling propose message in node " + this.getNodeId() + ": " + e.getMessage());
+            log.info("Error handling propose message in node " + this.getId() + ": " + e.getMessage());
         }
 
     }
@@ -179,7 +173,7 @@ public class XRPLReplica extends Replica {
 
         XRPLLedger tempL = getPreferredLedger(this.validLedger);
         if (!this.prevLedger.getId().equals(tempL.getId())) {
-            log.info("found that the node: " + this.getNodeId() + " is not on the preferred ledger");
+            log.info("found that the node: " + this.getId() + " is not on the preferred ledger");
             this.prevLedger = tempL;
             startConsensus();
         }
@@ -243,9 +237,9 @@ public class XRPLReplica extends Replica {
         }
         this.result.resetDisputes();
         if (hasResChanged) {
-            XRPLProposal prop = new XRPLProposal(this.prevLedger.getId(), this.result.getProposal().getSeq() + 1, this.result.getTxList(), this.getNodeId(), 1 /*TODO this should be now (or prev prop time) */);
+            XRPLProposal prop = new XRPLProposal(this.prevLedger.getId(), this.result.getProposal().getSeq() + 1, this.result.getTxList(), this.getId(), 1 /*TODO this should be now (or prev prop time) */);
             this.result.setProposal(prop);
-            XRPLProposeMessage propmsg = new XRPLProposeMessage(prop, this.getNodeId());
+            XRPLProposeMessage propmsg = new XRPLProposeMessage(prop, this.getId());
             this.broadcastMessage(propmsg);
             this.currWorkLedger = new XRPLLedger(this.currWorkLedger.getParentId(), this.currWorkLedger.getSeq(), this.result.getTxList());
             for (String nodeId : this.ourUNL) {
@@ -285,9 +279,9 @@ public class XRPLReplica extends Replica {
         if (this.validations == null) {
             this.validations = new TreeMap<>();
         }
-        tmpL.signLedger(this.getNodeId());
-        this.validations.put(this.getNodeId(), tmpL);
-        XRPLValidateMessage val = new XRPLValidateMessage(this.getNodeId(), tmpL);
+        tmpL.signLedger(this.getId());
+        this.validations.put(this.getId(), tmpL);
+        XRPLValidateMessage val = new XRPLValidateMessage(this.getId(), tmpL);
         this.prevLedger = tmpL;
         this.broadcastMessage(val);
         this.prevRoundTime = this.result.getRoundTime();
@@ -302,7 +296,7 @@ public class XRPLReplica extends Replica {
         int agree = 0;
         int total = this.ourUNL.size();
 
-        if (!this.ourUNL.contains(this.getNodeId())) {
+        if (!this.ourUNL.contains(this.getId())) {
             total += 1;
         }
 
@@ -320,11 +314,11 @@ public class XRPLReplica extends Replica {
     private void closeLedger() {
         this.currWorkLedger = new XRPLLedger(this.prevLedger.getId(), this.prevLedger.getSeq() + 1, this.pendingTransactions);
         this.result = new XRPLConsensusResult(this.pendingTransactions);
-        XRPLProposal prop = new XRPLProposal(this.prevLedger.getId(), 0, this.result.getTxList(), getNodeId(), 1); // TODO get hash of prev ledger and call to clock.now for params
+        XRPLProposal prop = new XRPLProposal(this.prevLedger.getId(), 0, this.result.getTxList(), getId(), 1); // TODO get hash of prev ledger and call to clock.now for params
         // TODO this.result.setRoundTime(clock.now());
         this.result.setProposal(prop);
 
-        XRPLProposeMessage propmsg = new XRPLProposeMessage(prop, this.getNodeId());
+        XRPLProposeMessage propmsg = new XRPLProposeMessage(prop, this.getId());
         this.broadcastMessage(propmsg);
         for (String nodeId : this.ourUNL) {
             if (currPeerProposals.get(nodeId) != null) {

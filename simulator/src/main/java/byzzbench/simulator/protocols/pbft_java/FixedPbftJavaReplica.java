@@ -1,20 +1,18 @@
 package byzzbench.simulator.protocols.pbft_java;
 
-import byzzbench.simulator.Timekeeper;
+import byzzbench.simulator.Scenario;
 import byzzbench.simulator.protocols.pbft_java.message.PrePrepareMessage;
 import byzzbench.simulator.protocols.pbft_java.message.PrepareMessage;
 import byzzbench.simulator.protocols.pbft_java.message.RequestMessage;
-import byzzbench.simulator.transport.Transport;
 import lombok.extern.java.Log;
 
 import java.io.Serializable;
 import java.util.Arrays;
-import java.util.SortedSet;
 
 @Log
 public class FixedPbftJavaReplica<O extends Serializable, R extends Serializable> extends PbftJavaReplica<O, R> {
-    public FixedPbftJavaReplica(String replicaId, SortedSet<String> nodeIds, int tolerance, long timeout, MessageLog messageLog, Timekeeper timekeeper, Transport transport) {
-        super(replicaId, nodeIds, tolerance, timeout, messageLog, timekeeper, transport);
+    public FixedPbftJavaReplica(String replicaId, int tolerance, long timeout, MessageLog messageLog, Scenario scenario) {
+        super(replicaId, scenario, tolerance, timeout, messageLog);
     }
 
     @Override
@@ -74,7 +72,7 @@ public class FixedPbftJavaReplica<O extends Serializable, R extends Serializable
                 currentViewNumber,
                 seqNumber,
                 digest,
-                this.getNodeId());
+                this.getId());
         this.broadcastMessage(prepare);
 
         // PBFT 4.2 - Add PREPARE to the log

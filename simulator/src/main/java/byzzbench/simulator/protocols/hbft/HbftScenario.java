@@ -40,7 +40,7 @@ public class HbftScenario extends BaseScenario {
                 nodeIds.add(Character.toString((char) ('A' + i)));
             }
             nodeIds.forEach(nodeId -> {
-                Replica replica = new HbftReplica(nodeId, nodeIds, transport, timekeeper);
+                Replica replica = new HbftReplica(nodeId, this);
                 this.addNode(replica);
             });
             this.setNumClients(1);

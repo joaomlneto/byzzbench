@@ -1,13 +1,13 @@
 package byzzbench.simulator.protocols.pbft_java;
 
 import byzzbench.simulator.LeaderBasedProtocolReplica;
-import byzzbench.simulator.Timekeeper;
+import byzzbench.simulator.Scenario;
 import byzzbench.simulator.protocols.pbft_java.message.*;
 import byzzbench.simulator.state.LogEntry;
 import byzzbench.simulator.state.SerializableLogEntry;
 import byzzbench.simulator.state.TotalOrderCommitLog;
+import byzzbench.simulator.transport.DefaultClientRequestPayload;
 import byzzbench.simulator.transport.MessagePayload;
-import byzzbench.simulator.transport.Transport;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Getter;
 import lombok.Setter;
@@ -48,13 +48,11 @@ public class PbftJavaReplica<O extends Serializable, R extends Serializable> ext
     private volatile boolean disgruntled = false;
 
     public PbftJavaReplica(String replicaId,
-                           SortedSet<String> nodeIds,
+                           Scenario scenario,
                            int tolerance,
                            long timeout,
-                           MessageLog messageLog,
-                           Timekeeper timekeeper,
-                           Transport transport) {
-        super(replicaId, nodeIds, transport, timekeeper, new TotalOrderCommitLog());
+                           MessageLog messageLog) {
+        super(replicaId, scenario, new TotalOrderCommitLog());
         this.tolerance = tolerance;
         this.timeout = timeout;
         this.messageLog = messageLog;
@@ -62,7 +60,7 @@ public class PbftJavaReplica<O extends Serializable, R extends Serializable> ext
 
     @Override
     public void initialize() {
-        System.out.println("Initializing replica " + this.getNodeId());
+        System.out.println("Initializing replica " + this.getId());
         this.setView(1);
     }
 
@@ -111,7 +109,7 @@ public class PbftJavaReplica<O extends Serializable, R extends Serializable> ext
 
                 ViewChangeMessage viewChange = messageLog.produceViewChange(
                         newViewNumber,
-                        this.getNodeId(),
+                        this.getId(),
                         this.tolerance);
                 this.sendViewChange(viewChange);
 
@@ -144,7 +142,7 @@ public class PbftJavaReplica<O extends Serializable, R extends Serializable> ext
                     viewNumber,
                     timestamp,
                     clientId,
-                    this.getNodeId(),
+                    this.getId(),
                     result);
             this.sendReply(clientId, reply);
         }).exceptionally(t -> {
@@ -186,7 +184,7 @@ public class PbftJavaReplica<O extends Serializable, R extends Serializable> ext
 
         // PBFT 4.1 - If the request is received by a non-primary replica
         // send the request to the actual primary
-        if (!this.getNodeId().equals(primaryId)) {
+        if (!this.getId().equals(primaryId)) {
             this.sendRequest(primaryId, request);
             return;
         }
@@ -336,7 +334,7 @@ public class PbftJavaReplica<O extends Serializable, R extends Serializable> ext
                 currentViewNumber,
                 seqNumber,
                 digest,
-                this.getNodeId());
+                this.getId());
         this.broadcastMessage(prepare);
 
         // PBFT 4.2 - Add PREPARE to the log
@@ -441,7 +439,7 @@ public class PbftJavaReplica<O extends Serializable, R extends Serializable> ext
                         currentViewNumber,
                         seqNumber,
                         digest,
-                        this.getNodeId());
+                        this.getId());
                 this.broadcastMessage(commit);
 
                 // PBFT 4.2 - Add own commit to the log
@@ -477,7 +475,7 @@ public class PbftJavaReplica<O extends Serializable, R extends Serializable> ext
                             currentViewNumber,
                             timestamp,
                             clientId,
-                            this.getNodeId(),
+                            this.getId(),
                             result);
 
                     ReplicaRequestKey key = new ReplicaRequestKey(clientId, timestamp);
@@ -503,7 +501,7 @@ public class PbftJavaReplica<O extends Serializable, R extends Serializable> ext
                     CheckpointMessage checkpoint = new CheckpointMessage(
                             seqNumber,
                             this.digest(this),
-                            this.getNodeId());
+                            this.getId());
                     this.sendCheckpoint(checkpoint);
 
                     // Log own checkpoint in accordance to PBFT 4.3
@@ -604,13 +602,13 @@ public class PbftJavaReplica<O extends Serializable, R extends Serializable> ext
 
         // PBFT 4.5.2 - Determine whether to bandwagon on the lowest view change
         ViewChangeResult result = messageLog.acceptViewChange(viewChange,
-                this.getNodeId(),
+                this.getId(),
                 curViewNumber,
                 this.tolerance);
         if (result.isShouldBandwagon()) {
             ViewChangeMessage bandwagonViewChange = messageLog.produceViewChange(
                     result.getBandwagonViewNumber(),
-                    this.getNodeId(),
+                    this.getId(),
                     this.tolerance);
             this.sendViewChange(bandwagonViewChange);
         }
@@ -627,14 +625,14 @@ public class PbftJavaReplica<O extends Serializable, R extends Serializable> ext
             }
         }
 
-        if (newPrimaryId.equals(this.getNodeId())) {
+        if (newPrimaryId.equals(this.getId())) {
             /*
              * Per PBFT 4.4, if this is the replica being voted as the new
              * primary, then when it receives 2*f votes, it will multicast a
              * NEW-VIEW message to notify the other replicas and perform the
              * necessary procedures to enter the new view.
              */
-            NewViewMessage newView = messageLog.produceNewView(newViewNumber, this.getNodeId(), this.tolerance);
+            NewViewMessage newView = messageLog.produceNewView(newViewNumber, this.getId(), this.tolerance);
             if (newView != null) {
                 this.broadcastMessage(newView);
 
@@ -706,7 +704,7 @@ public class PbftJavaReplica<O extends Serializable, R extends Serializable> ext
                     newViewNumber,
                     seqNumber,
                     digest,
-                    this.getNodeId());
+                    this.getId());
             this.broadcastMessage(prepare);
 
             // PBFT 4.4 - Append the PREPARE message to the log
@@ -722,7 +720,7 @@ public class PbftJavaReplica<O extends Serializable, R extends Serializable> ext
     }
 
     @Override
-    public void handleClientRequest(String clientId, Serializable request) throws Exception {
+    public void handleClientRequest(String clientId, Serializable request) {
         // FIXME: should not get timestamp from system time
         RequestMessage m = new RequestMessage(request, System.currentTimeMillis(), clientId);
         this.recvRequest(m);
@@ -731,11 +729,12 @@ public class PbftJavaReplica<O extends Serializable, R extends Serializable> ext
     @Override
     public void handleMessage(String sender, MessagePayload m) {
         switch (m) {
+            case DefaultClientRequestPayload clientRequest -> handleClientRequest(sender, clientRequest.getOperation());
             case RequestMessage request -> recvRequest(request);
             case PrePrepareMessage prePrepare -> recvPrePrepare(prePrepare);
             case PrepareMessage prepare -> recvPrepare(prepare);
             case CommitMessage commit -> recvCommit(commit);
-            case null, default -> throw new IllegalArgumentException("Unknown message type");
+            case null, default -> throw new IllegalArgumentException("Unknown message type: " + m);
         }
     }
 

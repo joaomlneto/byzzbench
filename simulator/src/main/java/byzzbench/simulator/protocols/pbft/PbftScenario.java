@@ -36,11 +36,11 @@ public class PbftScenario extends BaseScenario {
 
             // Create clients
             //this.setNumClients(1); // only works for the default client.
-            this.addClient(new PbftClient("C1", this.transport));
+            this.addClient(new PbftClient(this, "C1"));
 
             nodeIds.forEach(nodeId -> {
                 MessageLog messageLog = new MessageLog(100, 100, 200);
-                Replica replica = new PbftReplica(nodeId, nodeIds, transport, timekeeper);
+                Replica replica = new PbftReplica(nodeId, this);
                 this.addNode(replica);
             });
         } catch (Exception e) {

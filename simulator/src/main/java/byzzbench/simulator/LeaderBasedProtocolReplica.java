@@ -2,12 +2,10 @@ package byzzbench.simulator;
 
 import byzzbench.simulator.state.CommitLog;
 import byzzbench.simulator.transport.MessagePayload;
-import byzzbench.simulator.transport.Transport;
 import lombok.Getter;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.SortedSet;
 
 /**
  * Abstract class for a replica that is part of a leader-based protocol.
@@ -17,8 +15,8 @@ public abstract class LeaderBasedProtocolReplica extends Replica {
     private long viewNumber = -1;
     private String leaderId;
 
-    protected LeaderBasedProtocolReplica(String nodeId, SortedSet<String> nodeIds, Transport transport, Timekeeper timekeeper, CommitLog commitLog) {
-        super(nodeId, nodeIds, transport, timekeeper, commitLog);
+    protected LeaderBasedProtocolReplica(String nodeId, Scenario scenario, CommitLog commitLog) {
+        super(nodeId, scenario, commitLog);
     }
 
     /**
@@ -60,8 +58,8 @@ public abstract class LeaderBasedProtocolReplica extends Replica {
      * @return The ID of the primary replica.
      */
     public String getRoundRobinPrimaryId(long view) {
-        List<String> sortedNodeIds = new ArrayList<>(this.getNodeIds());
-        int numNodes = this.getNodeIds().size();
+        List<String> sortedNodeIds = new ArrayList<>(this.getScenario().getNodeIds(this));
+        int numNodes = sortedNodeIds.size();
         return sortedNodeIds.get((int) (view % numNodes));
     }
 
@@ -80,6 +78,6 @@ public abstract class LeaderBasedProtocolReplica extends Replica {
      * @return True if the replica is the leader, false otherwise.
      */
     public boolean amILeader() {
-        return this.getNodeId().equals(this.getLeaderId());
+        return this.getId().equals(this.getLeaderId());
     }
 }

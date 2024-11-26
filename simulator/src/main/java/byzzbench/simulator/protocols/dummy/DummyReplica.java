@@ -1,25 +1,21 @@
 package byzzbench.simulator.protocols.dummy;
 
 import byzzbench.simulator.Replica;
-import byzzbench.simulator.Timekeeper;
+import byzzbench.simulator.Scenario;
 import byzzbench.simulator.state.SerializableLogEntry;
 import byzzbench.simulator.state.TotalOrderCommitLog;
 import byzzbench.simulator.transport.MessagePayload;
-import byzzbench.simulator.transport.Transport;
 import lombok.ToString;
 import lombok.extern.java.Log;
 
 import java.io.Serializable;
-import java.util.SortedSet;
 
 @Log
 @ToString(callSuper = true)
 public class DummyReplica extends Replica {
 
-    public DummyReplica(String replicaId,
-                        SortedSet<String> nodeIds,
-                        Transport transport, Timekeeper timekeeper) {
-        super(replicaId, nodeIds, transport, timekeeper, new TotalOrderCommitLog());
+    public DummyReplica(String replicaId, Scenario scenario) {
+        super(replicaId, scenario, new TotalOrderCommitLog());
     }
 
     @Override

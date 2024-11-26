@@ -165,7 +165,7 @@ public class Principal implements Serializable {
              */
 
             this.tstamp = t;
-            my_tstamp = r.getTimekeeper().getTime(r);
+            my_tstamp = r.getScenario().getTimekeeper().getTime(r);
         }
     }
 
