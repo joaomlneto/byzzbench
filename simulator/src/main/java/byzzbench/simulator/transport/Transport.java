@@ -1,7 +1,7 @@
 package byzzbench.simulator.transport;
 
 import byzzbench.simulator.Client;
-import byzzbench.simulator.Replica;
+import byzzbench.simulator.Node;
 import byzzbench.simulator.Scenario;
 import byzzbench.simulator.faults.Fault;
 import byzzbench.simulator.faults.FaultContext;
@@ -123,7 +123,7 @@ public class Transport {
                 .eventId(this.eventSeqNum.getAndIncrement())
                 .senderId(sender)
                 .recipientId(recipient)
-                .payload(operation)
+                .payload(new DefaultClientRequestPayload(operation))
                 .build();
         this.appendEvent(event);
     }
@@ -135,7 +135,7 @@ public class Transport {
      * @param response  The response to send
      * @param recipient The ID of the client receiving the response
      */
-    public synchronized void sendClientResponse(String sender, Serializable response, String recipient) {
+    public synchronized void sendClientResponse(String sender, MessagePayload response, String recipient) {
         // assert that the sender exists
         if (!this.scenario.getNodes().containsKey(sender)) {
             throw new IllegalArgumentException("Replica not found: " + sender);
@@ -147,7 +147,7 @@ public class Transport {
 
         // deliver the reply directly to the client to handle
         Client c = this.scenario.getClients().get(recipient);
-        c.handleReply(sender, response);
+        c.handleMessage(sender, response);
     }
 
     /**
@@ -244,7 +244,7 @@ public class Transport {
 
         switch (e) {
             case ClientRequestEvent c -> {
-                this.scenario.getNodes().get(c.getRecipientId()).handleClientRequest(c.getSenderId(), c.getPayload());
+                this.scenario.getNodes().get(c.getRecipientId()).handleMessage(c.getSenderId(), c.getPayload());
             }
             case MessageEvent m -> {
                 this.scenario.getNodes().get(m.getRecipientId()).handleMessage(m.getSenderId(), m.getPayload());
@@ -382,26 +382,23 @@ public class Transport {
     /**
      * Creates a new timeout event
      *
-     * @param replica  The replica that created the timeout
+     * @param node     The node that created the timeout
      * @param runnable The task to execute when the timeout occurs
      * @param timeout  The timeout duration
      * @return The ID of the newly-created timeout event
      */
-    public synchronized long setTimeout(Replica replica, Runnable runnable,
+    public synchronized long setTimeout(Node node, Runnable runnable,
                                         Duration timeout) {
         TimeoutEvent timeoutEvent = TimeoutEvent.builder()
                 .eventId(this.eventSeqNum.getAndIncrement())
                 .description("TIMEOUT")
-                .nodeId(replica.getNodeId())
+                .nodeId(node.getId())
                 .timeout(timeout)
                 .task(runnable)
                 .build();
         this.appendEvent(timeoutEvent);
         this.observers.forEach(o -> o.onTimeout(timeoutEvent));
-
-
-        log.info("Timeout set for " + replica.getNodeId() + " in " +
-                timeout + "ms: " + timeoutEvent);
+        log.info("Timeout set for " + node.getId() + " in " + timeout + "ms: " + timeoutEvent);
         return timeoutEvent.getEventId();
     }
 
@@ -410,7 +407,7 @@ public class Transport {
      *
      * @param eventId The ID of the event to clear.
      */
-    public synchronized void clearTimeout(Replica replica, long eventId) {
+    public synchronized void clearTimeout(Node node, long eventId) {
         Event e = events.get(eventId);
 
         if (e == null) {
@@ -421,8 +418,8 @@ public class Transport {
             throw new IllegalArgumentException("Event is not a timeout: " + eventId);
         }
 
-        if (!timeoutEvent.getNodeId().equals(replica.getNodeId())) {
-            throw new IllegalArgumentException("Timeout does not belong to this replica!");
+        if (!timeoutEvent.getNodeId().equals(node.getId())) {
+            throw new IllegalArgumentException("Timeout does not belong to this node!");
         }
 
         timeoutEvent.setStatus(Event.Status.DROPPED);
@@ -430,19 +427,19 @@ public class Transport {
     }
 
     /**
-     * Clears all timeouts for a given replica.
+     * Clears all timeouts for a given node.
      *
-     * @param replica The replica to clear timeouts for.
+     * @param node The node to clear timeouts for.
      */
-    public synchronized void clearReplicaTimeouts(Replica replica) {
-        // get all event IDs for timeouts from this replica
+    public synchronized void clearReplicaTimeouts(Node node) {
+        // get all event IDs for timeouts from this node
         List<Long> eventIds =
                 this.events.values()
                         .stream()
                         .filter(
                                 e
                                         -> e instanceof TimeoutEvent t &&
-                                        t.getNodeId().equals(replica.getNodeId()) &&
+                                        t.getNodeId().equals(node.getId()) &&
                                         t.getStatus() == Event.Status.QUEUED)
                         .map(Event::getEventId)
                         .toList();
@@ -463,7 +460,7 @@ public class Transport {
                 .collect(Collectors.toCollection(TreeSet::new));
     }
 
-    public synchronized Replica getNode(String nodeId) {
+    public synchronized Node getNode(String nodeId) {
         return this.scenario.getNodes().get(nodeId);
     }
 
