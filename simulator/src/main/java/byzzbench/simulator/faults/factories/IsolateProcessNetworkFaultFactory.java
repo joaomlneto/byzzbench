@@ -6,6 +6,7 @@ import byzzbench.simulator.faults.FaultFactory;
 import byzzbench.simulator.faults.faults.HealNetworkFault;
 import byzzbench.simulator.faults.faults.HealNodeNetworkFault;
 import byzzbench.simulator.faults.faults.IsolateProcessNetworkFault;
+import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -14,6 +15,7 @@ import java.util.List;
  * A factory that creates IsolateProcessNetworkFaults for each node in the network,
  * allowing each node to be isolated from the network.
  */
+@Component
 public class IsolateProcessNetworkFaultFactory implements FaultFactory {
     @Override
     public List<Fault> generateFaults(FaultContext input) {

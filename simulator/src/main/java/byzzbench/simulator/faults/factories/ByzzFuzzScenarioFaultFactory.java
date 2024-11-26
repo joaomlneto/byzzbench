@@ -38,9 +38,6 @@ public class ByzzFuzzScenarioFaultFactory implements FaultFactory {
         int r = scheduler.getNumRoundsWithFaults();
         Set<String> nodeIds = scenario.getNodes().keySet();
 
-        // print c, d, r
-        System.out.println("c: " + c + ", d: " + d + ", r: " + r);
-
         // Create network faults
         for (int i = 1; i <= d; i++) {
             int round = rand.nextInt(r) + 1;
