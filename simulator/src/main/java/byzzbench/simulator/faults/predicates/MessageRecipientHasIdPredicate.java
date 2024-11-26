@@ -39,7 +39,7 @@ public class MessageRecipientHasIdPredicate implements FaultPredicate {
 
     @Override
     public String getName() {
-        return "Message recipient is %s".formatted(this.nodeIds);
+        return "Message recipient is in %s".formatted(this.nodeIds);
     }
 
     @Override
