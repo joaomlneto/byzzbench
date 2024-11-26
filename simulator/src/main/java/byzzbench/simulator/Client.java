@@ -53,8 +53,8 @@ public class Client implements Serializable, Node {
     public void initialize() {
         // Send the first request
         this.sendRequest();
-        System.out.println("CLIENT TIMEOUT SETUP");
-        this.setTimeout("sendRequest", this::sendRequest, Duration.ofSeconds(1));
+        //System.out.println("CLIENT TIMEOUT SETUP");
+        //this.setTimeout("sendRequest", this::sendRequest, Duration.ofSeconds(1));
     }
 
     /**
