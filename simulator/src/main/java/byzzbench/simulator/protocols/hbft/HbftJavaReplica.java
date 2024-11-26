@@ -177,12 +177,12 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
          * fulfilled serially in an async manner because each reply to a
          * buffered request is guaranteed to dispatch the next buffered request.
          */
-        if (!wasRequestBuffered) {
+        /* if (!wasRequestBuffered) {
             if (messageLog.shouldBuffer()) {
                 messageLog.buffer(request);
                 return;
             }
-        }
+        } */
 
         long currentViewNumber = this.getViewNumber();
         long seqNumber = this.seqCounter.incrementAndGet();
@@ -289,8 +289,11 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
             //this.sendCheckpoint(checkpoint);
             this.broadcastMessageIncludingSelf(checkpoint);
         } else if (!this.getNodeId().equals(this.getPrimaryId()) && this.messageLog.checkPanicsForTimeout(this.tolerance)) {
-            // Start the timer for this request per hBFT 4.3
-            // This timeout check whether a request is completed in a given time
+            /* 
+             * Start the timer for this request per hBFT 4.3
+             * This timeout checks whether a checkpoint is received
+             * within a time after receiving f + 1 PANICs
+             */
             this.setTimeout(this::sendViewChangeOnTimeout, timeout, "PANIC");
         }
     }
@@ -300,13 +303,6 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
     }
 
     private boolean verifyPhaseMessage(IPhaseMessage message) {
-        /*
-         * The 3 phases specified by PBFT 4.2 have a common verification
-         * procedure which is extracted to this method. If this procedure fails,
-         * then the replica automatically halts processing because the message
-         * has been sent by a faulty replica.
-         */
-
         // Phase messages are not accepted when the replica is
         // disgruntled or waiting for checkpoint
         if (this.disgruntled || this.checkpointForNewView) {
@@ -343,10 +339,6 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
          * two possible messages here are PREPARE and COMMIT 
          */
         return false;
-
-        // This is still questionable as this is true for PBFT
-        // However, not necessarily true for hBFT
-        // return messageLog.isBetweenWaterMarks(seqNumber);
     }
 
     private Ticket<O, R> recvPhaseMessage(IPhaseMessage message) {
@@ -654,32 +646,36 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
          * Per hBFT 4.2, there is a 3 phase checkpoint subprotocol,
          * where the protocol starts with the primary sending Checkpoint-I message, 
          * then upon receiving this the replicas send a Checkpoint-II message, 
-         * upon receiving 2f+1 Checkpoint-II messages it creates a CER1(M, v) and,
+         * upon receiving 2f+1 Checkpoint-II messages it creates a CER1(M, v) and
          * replicas send Checkpoint-III messages, and upon receiving 2f+1 create CER2(M, v)
          * and perform GC if the checkpoint is stable.
+         * 
+         * If the replica recieves an incorrect CHECKPOINT-I message,
+         * it sends a VIEW-CHANGE message. 
          */
         String primaryId = this.getPrimaryId();
-
-        // TODO: Probably checkpoints should be correct as well
-        if (!(checkpoint instanceof CheckpointIMessage) || checkpoint instanceof CheckpointIMessage && primaryId.equals(checkpoint.getReplicaId())) {
-           // Upon receiving a checkpoint the replica gets out of disgruntled state
-            this.disgruntled = false;
-
-            // Clear the timeout for the checkpoint and panic
-            this.clearSpecificTimeout("CHECKPOINT"); 
-            this.clearSpecificTimeout("PANIC");
-            this.messageLog.clearPanics();
-        }
 
         if (checkpoint instanceof CheckpointIMessage
          && (!primaryId.equals(checkpoint.getReplicaId())
          || !Arrays.equals(checkpoint.getDigest(), this.digest(this.speculativeHistory))
          || checkpoint.getLastSeqNumber() != this.seqCounter.get())) {
             System.out.println(checkpoint + " Replica: " + this.seqCounter.get() + " " + Arrays.equals(checkpoint.getDigest(), this.digest(this.speculativeHistory)));
+            /* 
+             * If the it is a CHECKPOINT-I message and not correct
+             * then the replica sends a view-change.
+             */
             this.checkpointForNewView = false;
             ViewChangeMessage viewChangeMessage = messageLog.produceViewChange(this.getViewNumber() + 1, this.getNodeId(), tolerance, this.speculativeRequests);
             this.sendViewChange(viewChangeMessage);
         } else {
+            // Upon receiving a checkpoint the replica gets out of disgruntled state
+            this.disgruntled = false;
+
+            // Clear the timeout for the checkpoint and panic
+            this.clearSpecificTimeout("CHECKPOINT"); 
+            this.clearSpecificTimeout("PANIC");
+            this.messageLog.clearPanics();
+
             this.checkpointForNewView = false;
             messageLog.appendCheckpoint(checkpoint, this.tolerance, this.speculativeHistory, this.getViewNumber());
 
@@ -731,7 +727,9 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
         /* 
          * Commitlog requires the request to match,
          * so we add any missing requests.
-         * Replicas also adjust their speculativeHistory
+         * Replicas also adjust their speculativeHistory as of
+         * hBFT 4.4 (2): states a correct replica that received a 
+         * bad request, learns the result and remain consistent
          */
         for (Long key : requests.keySet()) {
             if (!this.speculativeHistory.getRequests().containsKey(key)) {
