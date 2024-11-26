@@ -1,19 +1,26 @@
 package byzzbench.simulator.service;
 
 import byzzbench.simulator.Scenario;
-import byzzbench.simulator.ScenarioPredicate;
 import byzzbench.simulator.config.ByzzBenchConfig;
 import byzzbench.simulator.scheduler.EventDecision;
+import byzzbench.simulator.transport.Event;
+import byzzbench.simulator.transport.messages.MessageWithRound;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.java.Log;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
+import org.springframework.context.annotation.DependsOn;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Service;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.time.Instant;
 import java.util.Optional;
+import java.util.OptionalLong;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -28,25 +35,25 @@ import java.util.concurrent.Executors;
 @RequiredArgsConstructor
 @Log
 public class SimulatorService {
-
     private final ByzzBenchConfig byzzBenchConfig;
-
-    private final int MAX_EVENTS_FOR_RUN = SimulatorConfig.MAX_EVENTS_FOR_RUN;
-    private final int MAX_DROPPED_MESSAGES = SimulatorConfig.MAX_DROPPED_MESSAGES;
-    private final int CHECK_TERMINATION_FREQ = SimulatorConfig.CHECK_TERMINATION_FREQ;
     private final ScenarioService scenarioService;
     private final ExecutorService executor = Executors.newFixedThreadPool(1);
-    private int droppedMessageCount;
     private SimulatorServiceMode mode = SimulatorServiceMode.STOPPED;
     private boolean shouldStop = false;
     private Scenario scenario;
-    private ScenarioPredicate terminationCondition;
     private String scenarioId;
     private JsonNode scenarioParams;
 
     @EventListener(ApplicationReadyEvent.class)
+    @DependsOn("simulatorApplication")
     void onStartup() {
+        this.scenarioId = this.byzzBenchConfig.getScenario().getId();
+        this.scenarioParams = JsonNodeFactory.instance.objectNode();
         this.changeScenario(byzzBenchConfig.getScenario().getId(), JsonNodeFactory.instance.objectNode());
+
+        if (this.byzzBenchConfig.isAutostart()) {
+            this.start();
+        }
     }
 
     /**
@@ -61,10 +68,25 @@ public class SimulatorService {
         this.resetScenario();
     }
 
+    /**
+     * Creates a new scenario with the previously set scenario ID and parameters, replacing the current scenario.
+     */
     public void resetScenario() {
+        if (this.scenario != null) {
+            // serialize it to file
+            Path root = byzzBenchConfig.getOutputPathForThisRun();
+            // create a directory "xyz" in the root path
+            String currentTimeWithMillis = String.format("%d%09d", Instant.now().getEpochSecond(), Instant.now().getNano());
+            int scenarioIndex = this.scenarioService.getScenarios().size();
+            Path scenarioPath = root.resolve(String.format("%s-%d", this.scenario.getId(), scenarioIndex));
+            System.out.println("Scenario path: " + scenarioPath);
+            try {
+                Files.createDirectories(scenarioPath);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }
         this.scenario = this.scenarioService.generateScenario(this.scenarioId, this.scenarioParams);
-        //this.scenario.setupScenario();
-        this.droppedMessageCount = 0;
         this.scenario.runScenario();
     }
 
@@ -82,10 +104,8 @@ public class SimulatorService {
 
     /**
      * Starts the simulator with the given number of actions per run.
-     *
-     * @param numActionsPerRun The number of scheduler actions to run per run.
      */
-    public void start(int numActionsPerRun) {
+    public void start() {
         // check if the simulator is already running
         if (this.mode == SimulatorServiceMode.RUNNING) {
             throw new IllegalStateException("The simulator is already running");
@@ -103,58 +123,65 @@ public class SimulatorService {
             try {
                 // run the scenario until the stop flag is set
                 while (!this.shouldStop) {
-                    int num_events = 0;
-                    this.droppedMessageCount = 0;
                     int scenarioId = this.scenarioService.getScenarios().size() + 1;
                     System.out.println("Running scenario #" + scenarioId);
 
-                    boolean flag = true;
                     try {
-                        while (flag) {
+                        while (true) {
                             this.invokeScheduleNext();
-                            num_events += 1;
-
-                            if ((num_events % CHECK_TERMINATION_FREQ == 0 && this.terminationCondition.test(this.scenario))) {
-                                log.info("Termination condition has been satisfied for this run, terminating. . .");
-                                flag = false;
-                                numTerm += 1;
-                            }
+                            long numEvents = this.scenario.getSchedule().getEvents().size();
+                            long terminationSamplingFreq = this.byzzBenchConfig.getScenario().getTermination().getSamplingFrequency();
+                            boolean shouldCheckTermination = numEvents % terminationSamplingFreq == 0;
 
                             // if the invariants do not hold, terminate the run
                             if (!this.scenario.invariantsHold()) {
                                 log.info("Invariants do not hold, terminating. . .");
                                 var unsatisfiedInvariants = this.scenario.unsatisfiedInvariants();
                                 this.scenario.getSchedule().finalizeSchedule(unsatisfiedInvariants);
+                                numTerm++;
                                 break;
                             }
 
-                            if (num_events > MAX_EVENTS_FOR_RUN) {
-                                log.info("Reached max # of actions for this run, terminating. . .");
-                                flag = false;
-                                numMaxedOut += 1;
+                            if (shouldCheckTermination) {
+                                OptionalLong maxDeliveredRound = this.scenario.getTransport()
+                                        .getEventsInState(Event.Status.DELIVERED)
+                                        .stream()
+                                        .filter(MessageWithRound.class::isInstance)
+                                        .map(MessageWithRound.class::cast)
+                                        .mapToLong(MessageWithRound::getRound)
+                                        .max();
+
+                                OptionalLong minQueuedRound = this.scenario.getTransport()
+                                        .getEventsInState(Event.Status.QUEUED)
+                                        .stream()
+                                        .filter(MessageWithRound.class::isInstance)
+                                        .map(MessageWithRound.class::cast)
+                                        .mapToLong(MessageWithRound::getRound)
+                                        .min();
+                                long currentRound = minQueuedRound.orElse(maxDeliveredRound.orElse(0));
+
+                                if (numEvents >= byzzBenchConfig.getScenario().getTermination().getMinEvents()
+                                        && currentRound >= byzzBenchConfig.getScenario().getTermination().getMinRounds()) {
+                                    log.info("Reached min # of events and rounds for this run, terminating. . .");
+                                    numMaxedOut++;
+                                    break;
+                                }
                             }
+
                         }
 
                     } catch (Exception e) {
                         System.out.println("Error in schedule " + scenarioId + ": " + e);
                         e.printStackTrace();
-                        flag = false;
                         numErr += 1;
                     }
 
-                    // run the scenario for the given number of events
-                   /*  for (int i = 1; i < numActionsPerRun; i++) {
-                        System.out.println("Running action " + i + "/" + numActionsPerRun);
-                        this.scenarioExecutor.getScheduler().scheduleNext();
-                    } */
                     this.resetScenario();
-                    this.droppedMessageCount = 0;
                 }
             } catch (Exception e) {
                 throw new RuntimeException(e);
             } finally {
                 this.mode = SimulatorServiceMode.STOPPED;
-
                 System.out.println("number of runs terminated by condition: " + numTerm);
                 System.out.println("number of runs terminated by max actions: " + numMaxedOut);
                 System.out.println("number of runs halted by error: " + numErr);
@@ -165,14 +192,7 @@ public class SimulatorService {
     public void invokeScheduleNext() throws Exception {
         Optional<EventDecision> decisionOptional = this.scenario.getScheduler().scheduleNext(this.scenario);
         if (decisionOptional.isPresent()) {
-            EventDecision decision = decisionOptional.get();
-            if (decision.getDecision() == EventDecision.DecisionType.DROPPED) {
-                this.droppedMessageCount += 1;
-            }
-
-            if (this.scenario.getScheduler().isDropMessages() && this.droppedMessageCount >= MAX_DROPPED_MESSAGES) {
-                this.scenario.getScheduler().stopDropMessages();
-            }
+            //EventDecision decision = decisionOptional.get();
         } else {
             log.info("Couldn't schedule action");
         }
