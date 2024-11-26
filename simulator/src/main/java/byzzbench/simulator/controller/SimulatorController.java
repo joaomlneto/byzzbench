@@ -1,7 +1,7 @@
 package byzzbench.simulator.controller;
 
 import byzzbench.simulator.Client;
-import byzzbench.simulator.Replica;
+import byzzbench.simulator.Node;
 import byzzbench.simulator.Scenario;
 import byzzbench.simulator.ScenarioPredicate;
 import byzzbench.simulator.config.ByzzBenchConfig;
@@ -81,13 +81,23 @@ public class SimulatorController {
     }
 
     /**
+     * Get the list of available node IDs in the current scenario.
+     *
+     * @return The list of node IDs.
+     */
+    @GetMapping("/replicas")
+    public SortedSet<String> getReplicas() {
+        return simulatorService.getScenario().getReplicas().navigableKeySet();
+    }
+
+    /**
      * Get the internal state of the node with the given ID.
      *
      * @param nodeId The ID of the node to get.
      * @return The internal state of the node with the given ID.
      */
     @GetMapping("/node/{nodeId}")
-    public Replica getNode(@PathVariable String nodeId) {
+    public Node getNode(@PathVariable String nodeId) {
         return simulatorService.getScenario().getNode(nodeId);
     }
 
@@ -484,8 +494,8 @@ public class SimulatorController {
     // parameters: numRuns, eventsPerRun
     // returns: list of schedules
     @PostMapping("/start")
-    public void start(@RequestParam int eventsPerRun) {
-        simulatorService.start(eventsPerRun);
+    public void start() {
+        simulatorService.start();
     }
 
     /**

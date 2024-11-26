@@ -11,7 +11,7 @@ export type FaultsListEntryProps = {
 export const ScheduledFaultsListEntry = ({ faultId }: FaultsListEntryProps) => {
   const faultQuery = useGetAutomaticFault(faultId);
   return (
-    <Card withBorder shadow="sm" padding="xs" m={4}>
+    <Card withBorder shadow="sm" padding="xs" m={4} maw="350">
       <Group gap="xs">
         <Text>{faultQuery.data?.data.name}</Text>
       </Group>

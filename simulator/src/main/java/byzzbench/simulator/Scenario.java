@@ -10,6 +10,9 @@ import java.util.List;
 import java.util.NavigableMap;
 import java.util.SortedSet;
 
+/**
+ * Represents a runnable scenario.
+ */
 public interface Scenario extends Serializable {
     /**
      * Get a unique identifier for the scenario.
@@ -70,15 +73,30 @@ public interface Scenario extends Serializable {
      *
      * @return A map of replica IDs to the replica objects.
      */
-    NavigableMap<String, Replica> getNodes();
+    NavigableMap<String, Replica> getReplicas();
 
     /**
-     * Get a replica by ID in the scenario.
+     * Get the nodes in the scenario.
      *
-     * @return The replica object with the given ID.
-     * @throws IllegalArgumentException If the replica ID is not found.
+     * @return A map of node IDs to the node objects.
      */
-    Replica getNode(String replicaId);
+    NavigableMap<String, Node> getNodes();
+
+    /**
+     * Get a node by ID in the scenario.
+     *
+     * @return The node object with the given ID.
+     * @throws IllegalArgumentException If the node ID is not found.
+     */
+    Node getNode(String nodeId);
+
+    /**
+     * Return the set of node IDs in the system visible to the given node.
+     *
+     * @param node The node to get the node IDs for.
+     * @return The set of node IDs in the system visible to the given node.
+     */
+    SortedSet<String> getNodeIds(Node node);
 
     /**
      * Get the observers in the scenario.
@@ -118,7 +136,5 @@ public interface Scenario extends Serializable {
      *
      * @return True if the invariants hold, false otherwise.
      */
-    default boolean invariantsHold() {
-        return unsatisfiedInvariants().isEmpty();
-    }
+    boolean invariantsHold();
 }

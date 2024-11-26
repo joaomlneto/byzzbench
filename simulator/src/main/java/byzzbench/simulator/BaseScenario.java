@@ -43,17 +43,11 @@ public abstract class BaseScenario implements Scenario {
      */
     protected final Scheduler scheduler;
     /**
-     * Map of node id to the {@link Replica} object.
+     * Map of node id to the {@link Node} object.
      */
     @Getter(onMethod_ = {@Synchronized})
     @JsonIgnore
-    private final NavigableMap<String, Replica> nodes = new TreeMap<>();
-    /**
-     * Map of client id to the {@link Client} object.
-     */
-    @Getter(onMethod_ = {@Synchronized})
-    @JsonIgnore
-    private final NavigableMap<String, Client> clients = new TreeMap<>();
+    private final NavigableMap<String, Node> nodes = new TreeMap<>();
     /**
      * A unique identifier for the scenario.
      */
@@ -107,15 +101,25 @@ public abstract class BaseScenario implements Scenario {
     }
 
     /**
+     * Removes all registered clients
+     */
+    private void removeAllClients() {
+        this.nodes.entrySet().stream()
+                .filter(entry -> entry.getValue() instanceof Client)
+                .map(Map.Entry::getKey)
+                .forEach(this.nodes::remove);
+    }
+
+    /**
      * Sets the number of clients in the scenario.
      *
      * @param numClients The number of clients to set.
      */
     protected void setNumClients(int numClients) {
-        this.clients.clear();
+        this.removeAllClients();
         for (int i = 0; i < numClients; i++) {
             String clientId = String.format("C%d", i);
-            Client client = Client.builder().clientId(clientId).transport(this.transport).build();
+            Client client = Client.builder().id(clientId).scenario(this).build();
             this.addClient(client);
         }
     }
@@ -126,7 +130,7 @@ public abstract class BaseScenario implements Scenario {
      * @param client The client to add.
      */
     public void addClient(Client client) {
-        this.clients.put(client.getClientId(), client);
+        this.nodes.put(client.getId(), client);
         // notify the observers
         this.observers.forEach(o -> o.onClientAdded(client));
     }
@@ -138,19 +142,23 @@ public abstract class BaseScenario implements Scenario {
      */
     public void addNode(Replica replica) {
         // add the node to the list of nodes
-        getNodes().put(replica.getNodeId(), replica);
+        getNodes().put(replica.getId(), replica);
 
         // for each node, add a IsolateNodeFault and a HealNodeFault
-        this.transport.addFault(new IsolateProcessNetworkFault(replica.getNodeId()), false);
-        this.transport.addFault(new HealNodeNetworkFault(replica.getNodeId()), false);
+        this.transport.addFault(new IsolateProcessNetworkFault(replica.getId()), false);
+        this.transport.addFault(new HealNodeNetworkFault(replica.getId()), false);
 
         // notify the observers
         this.observers.forEach(o -> o.onReplicaAdded(replica));
     }
 
     @Override
-    public synchronized Replica getNode(String replicaId) {
-        return this.getNodes().get(replicaId);
+    public synchronized Replica getNode(String nodeId) {
+        Node node = this.getNodes().get(nodeId);
+        if (!(node instanceof Replica replica)) {
+            throw new IllegalArgumentException("Node with ID " + nodeId + " is not a replica.");
+        }
+        return replica;
     }
 
     /**
@@ -159,8 +167,8 @@ public abstract class BaseScenario implements Scenario {
     @Override
     public final void setupScenario() {
         this.setup();
-        this.getClients().values().forEach(Client::initializeClient);
-        this.getNodes().values().forEach(Replica::initialize);
+        this.getClients().values().forEach(Client::initialize);
+        this.getNodes().values().forEach(Node::initialize);
         this.scheduler.initializeScenario(this);
     }
 
@@ -259,5 +267,38 @@ public abstract class BaseScenario implements Scenario {
 
     public final void finalizeSchedule() {
         this.getSchedule().finalizeSchedule(this.unsatisfiedInvariants());
+    }
+
+    public void writeToFile() {
+
+    }
+
+    @Override
+    public SortedSet<String> getNodeIds(Node node) {
+        return new TreeSet<>(this.getNodes().keySet());
+    }
+
+    @Override
+    public NavigableMap<String, Client> getClients() {
+        NavigableMap<String, Client> clients = new TreeMap<>();
+        this.getNodes()
+                .values()
+                .stream()
+                .filter(Client.class::isInstance)
+                .map(Client.class::cast)
+                .forEach(client -> clients.put(client.getId(), client));
+        return clients;
+    }
+
+    @Override
+    public NavigableMap<String, Replica> getReplicas() {
+        NavigableMap<String, Replica> replicas = new TreeMap<>();
+        this.getNodes()
+                .values()
+                .stream()
+                .filter(Replica.class::isInstance)
+                .map(Replica.class::cast)
+                .forEach(replica -> replicas.put(replica.getId(), replica));
+        return replicas;
     }
 }
