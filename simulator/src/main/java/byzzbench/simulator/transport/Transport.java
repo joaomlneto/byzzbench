@@ -507,6 +507,30 @@ public class Transport {
         return timeoutEvent.getEventId();
     }
 
+    /**
+     * Clears a timeout event.
+     *
+     * @param eventId The ID of the event to clear.
+     */
+    public synchronized void clearTimeout(Node node, long eventId) {
+        Event e = events.get(eventId);
+
+        if (e == null) {
+            throw new IllegalArgumentException("Event not found: " + eventId);
+        }
+
+        if (!(e instanceof TimeoutEvent timeoutEvent)) {
+            throw new IllegalArgumentException("Event is not a timeout: " + eventId);
+        }
+
+        if (!timeoutEvent.getNodeId().equals(node.getId())) {
+            throw new IllegalArgumentException("Timeout does not belong to this node!");
+        }
+
+        timeoutEvent.setStatus(Event.Status.DROPPED);
+        this.observers.forEach(o -> o.onEventDropped(timeoutEvent));
+    }
+
     public synchronized void clearTimeout(Replica replica, String description) {
         // get all event IDs for timeouts from this replica
         List<Long> eventIds =
