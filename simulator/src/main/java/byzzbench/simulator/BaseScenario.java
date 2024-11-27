@@ -1,7 +1,11 @@
 package byzzbench.simulator;
 
-import byzzbench.simulator.faults.HealNodeNetworkFault;
-import byzzbench.simulator.faults.IsolateProcessNetworkFault;
+import byzzbench.simulator.config.ByzzBenchConfig;
+import byzzbench.simulator.faults.Fault;
+import byzzbench.simulator.faults.FaultContext;
+import byzzbench.simulator.faults.factories.ByzzFuzzScenarioFaultFactory;
+import byzzbench.simulator.faults.faults.HealNodeNetworkFault;
+import byzzbench.simulator.faults.faults.IsolateProcessNetworkFault;
 import byzzbench.simulator.schedule.Schedule;
 import byzzbench.simulator.scheduler.Scheduler;
 import byzzbench.simulator.state.AgreementPredicate;
@@ -30,65 +34,66 @@ public abstract class BaseScenario implements Scenario {
      */
     @ToString.Exclude
     protected final transient Transport transport;
-
+    /**
+     * The timekeeper for the scenario.
+     */
+    protected final transient Timekeeper timekeeper;
     /**
      * The scheduler for the scenario.
      */
     protected final Scheduler scheduler;
-
     /**
-     * Map of node id to the {@link Replica} object.
+     * Map of node id to the {@link Node} object.
      */
     @Getter(onMethod_ = {@Synchronized})
     @JsonIgnore
-    private final NavigableMap<String, Replica> nodes = new TreeMap<>();
-
-    /**
-     * Map of client id to the {@link Client} object.
-     */
-    @Getter(onMethod_ = {@Synchronized})
-    @JsonIgnore
-    private final NavigableMap<String, Client> clients = new TreeMap<>();
-
+    private final NavigableMap<String, Node> nodes = new TreeMap<>();
     /**
      * A unique identifier for the scenario.
      */
     private final String id;
-
     /**
      * The invariants that must be satisfied by the scenario at all times.
      */
     private final List<ScenarioPredicate> invariants = List.of(new AgreementPredicate(), new LivenessPredicate());
-
     /**
      * The schedule of events in order of delivery.
      */
     @Getter(onMethod_ = {@Synchronized})
     @JsonIgnore
     private final Schedule schedule = Schedule.builder().scenario(this).build();
-
     /**
      * The observers of this scenario.
      */
     @JsonIgnore
     private final transient List<ScenarioObserver> observers = new java.util.ArrayList<>();
+    /**
+     * The termination condition for the scenario.
+     */
+    protected ScenarioPredicate terminationCondition;
+    /**
+     * Pseudo-random number generator for the scenario.
+     */
+    Random rand;
 
     /**
      * Creates a new scenario with the given unique identifier and scheduler.
      *
-     * @param id The unique identifier for the scenario.
+     * @param id        The unique identifier for the scenario.
      * @param scheduler The scheduler for the scenario.
      */
     protected BaseScenario(String id, Scheduler scheduler) {
         this.id = id;
         this.scheduler = scheduler;
         this.transport = new Transport(this);
+        this.timekeeper = new Timekeeper(this);
         this.setupScenario();
         this.addObserver(new AdobDistributedState());
     }
 
     /**
      * Adds an observer to the scenario.
+     *
      * @param observer The observer to add.
      */
     public void addObserver(ScenarioObserver observer) {
@@ -96,32 +101,36 @@ public abstract class BaseScenario implements Scenario {
     }
 
     /**
-     * Removes an observer from the scenario.
-     * @param observer The observer to remove.
+     * Removes all registered clients
      */
-    public void removeObserver(ScenarioObserver observer) {
-        this.observers.remove(observer);
+    private void removeAllClients() {
+        this.nodes.entrySet().stream()
+                .filter(entry -> entry.getValue() instanceof Client)
+                .map(Map.Entry::getKey)
+                .forEach(this.nodes::remove);
     }
 
     /**
      * Sets the number of clients in the scenario.
+     *
      * @param numClients The number of clients to set.
      */
     protected void setNumClients(int numClients) {
-        this.clients.clear();
+        this.removeAllClients();
         for (int i = 0; i < numClients; i++) {
             String clientId = String.format("C%d", i);
-            Client client = Client.builder().clientId(clientId).transport(this.transport).build();
+            Client client = Client.builder().id(clientId).scenario(this).build();
             this.addClient(client);
         }
     }
 
     /**
      * Adds a client to the scenario.
+     *
      * @param client The client to add.
      */
     public void addClient(Client client) {
-        this.clients.put(client.getClientId(), client);
+        this.nodes.put(client.getId(), client);
         // notify the observers
         this.observers.forEach(o -> o.onClientAdded(client));
     }
@@ -133,19 +142,23 @@ public abstract class BaseScenario implements Scenario {
      */
     public void addNode(Replica replica) {
         // add the node to the list of nodes
-        getNodes().put(replica.getNodeId(), replica);
+        getNodes().put(replica.getId(), replica);
 
         // for each node, add a IsolateNodeFault and a HealNodeFault
-        this.transport.addNetworkFault(new IsolateProcessNetworkFault(replica.getNodeId()));
-        this.transport.addNetworkFault(new HealNodeNetworkFault(replica.getNodeId()));
+        this.transport.addFault(new IsolateProcessNetworkFault(replica.getId()), false);
+        this.transport.addFault(new HealNodeNetworkFault(replica.getId()), false);
 
         // notify the observers
         this.observers.forEach(o -> o.onReplicaAdded(replica));
     }
 
     @Override
-    public synchronized Replica getNode(String replicaId) {
-        return this.getNodes().get(replicaId);
+    public synchronized Replica getNode(String nodeId) {
+        Node node = this.getNodes().get(nodeId);
+        if (!(node instanceof Replica replica)) {
+            throw new IllegalArgumentException("Node with ID " + nodeId + " is not a replica.");
+        }
+        return replica;
     }
 
     /**
@@ -154,8 +167,9 @@ public abstract class BaseScenario implements Scenario {
     @Override
     public final void setupScenario() {
         this.setup();
-        getClients().values().forEach(Client::initializeClient);
-        getNodes().values().forEach(Replica::initialize);
+        this.getClients().values().forEach(Client::initialize);
+        this.getNodes().values().forEach(Node::initialize);
+        this.scheduler.initializeScenario(this);
     }
 
     public final void loadParameters(JsonNode parameters) {
@@ -170,11 +184,22 @@ public abstract class BaseScenario implements Scenario {
             this.scheduler.loadParameters(schedulerParameters);
         }
 
+        if (parameters.has("faults")) {
+            System.out.println("Faults: " + parameters.get("faults").toPrettyString());
+            ByzzFuzzScenarioFaultFactory faultFactory = new ByzzFuzzScenarioFaultFactory();
+            List<Fault> faults = faultFactory.generateFaults(new FaultContext(this));
+            faults.forEach(fault -> this.transport.addFault(fault, true));
+        }
+
         this.loadScenarioParameters(parameters);
+    }
+
+    public final void loadParameters(ByzzBenchConfig.ScenarioConfig config) {
     }
 
     /**
      * Loads the parameters for the scenario from a JSON object.
+     *
      * @param parameters The JSON object containing the parameters for the scenario.
      */
     protected abstract void loadScenarioParameters(JsonNode parameters);
@@ -198,6 +223,7 @@ public abstract class BaseScenario implements Scenario {
 
     /**
      * Checks if the invariants are satisfied by the scenario in its current state.
+     *
      * @return True if the invariants are satisfied, false otherwise.
      */
     @Override
@@ -207,6 +233,7 @@ public abstract class BaseScenario implements Scenario {
 
     /**
      * Returns the invariants that are not satisfied by the scenario in its current state.
+     *
      * @return The invariants that are not satisfied by the scenario in its current state.
      */
     public final SortedSet<ScenarioPredicate> unsatisfiedInvariants() {
@@ -214,8 +241,45 @@ public abstract class BaseScenario implements Scenario {
                 .collect(Collectors.toCollection(TreeSet::new));
     }
 
+    @Override
+    public boolean isTerminated() {
+        return this.terminationCondition.test(this);
+    }
+
     public final void finalizeSchedule() {
         this.getSchedule().finalizeSchedule(this.unsatisfiedInvariants());
     }
 
+    public void writeToFile() {
+
+    }
+
+    @Override
+    public SortedSet<String> getNodeIds(Node node) {
+        return new TreeSet<>(this.getNodes().keySet());
+    }
+
+    @Override
+    public NavigableMap<String, Client> getClients() {
+        NavigableMap<String, Client> clients = new TreeMap<>();
+        this.getNodes()
+                .values()
+                .stream()
+                .filter(Client.class::isInstance)
+                .map(Client.class::cast)
+                .forEach(client -> clients.put(client.getId(), client));
+        return clients;
+    }
+
+    @Override
+    public NavigableMap<String, Replica> getReplicas() {
+        NavigableMap<String, Replica> replicas = new TreeMap<>();
+        this.getNodes()
+                .values()
+                .stream()
+                .filter(Replica.class::isInstance)
+                .map(Replica.class::cast)
+                .forEach(replica -> replicas.put(replica.getId(), replica));
+        return replicas;
+    }
 }

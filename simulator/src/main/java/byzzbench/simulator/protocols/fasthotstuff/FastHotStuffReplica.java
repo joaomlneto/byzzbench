@@ -1,14 +1,15 @@
 package byzzbench.simulator.protocols.fasthotstuff;
 
 import byzzbench.simulator.LeaderBasedProtocolReplica;
+import byzzbench.simulator.Scenario;
 import byzzbench.simulator.protocols.fasthotstuff.message.*;
 import byzzbench.simulator.state.TotalOrderCommitLog;
 import byzzbench.simulator.transport.MessagePayload;
-import byzzbench.simulator.transport.Transport;
 import lombok.Getter;
 import lombok.extern.java.Log;
 
 import java.io.Serializable;
+import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
@@ -16,7 +17,7 @@ import java.util.stream.Collectors;
 @Log
 @Getter
 public class FastHotStuffReplica extends LeaderBasedProtocolReplica {
-    public static final int TIMEOUT_DELAY = 15000; // 15 seconds
+    public static final Duration TIMEOUT_DELAY = Duration.ofSeconds(15);
 
     private final AtomicLong round = new AtomicLong(3);
     private final AtomicLong lastVotedRound = new AtomicLong(2);
@@ -27,8 +28,8 @@ public class FastHotStuffReplica extends LeaderBasedProtocolReplica {
     private final SortedMap<String, Block> knownBlocks = new TreeMap<>();
     private GenericQuorumCertificate highestQc = new QuorumCertificate(new ArrayList<>());
 
-    public FastHotStuffReplica(String nodeId, SortedSet<String> nodeIds, Transport transport) {
-        super(nodeId, nodeIds, transport, new TotalOrderCommitLog());
+    public FastHotStuffReplica(String nodeId, Scenario scenario) {
+        super(nodeId, scenario, new TotalOrderCommitLog());
     }
 
     @Override
@@ -37,12 +38,12 @@ public class FastHotStuffReplica extends LeaderBasedProtocolReplica {
         createGenesisBlocks();
 
         // leader broadcasts a block
-        if (this.getNodeId().equals(this.getLeader())) {
+        if (this.getId().equals(this.getLeader())) {
             this.broadcastMessageIncludingSelf(
                     new Block(highestQc,
                             this.round.get(),
-                            this.getNodeId(),
-                            String.format("%s%d", this.getNodeId(), this.round.get())));
+                            this.getId(),
+                            String.format("%s%d", this.getId(), this.round.get())));
         }
 
         // create 15 second timeout
@@ -77,7 +78,7 @@ public class FastHotStuffReplica extends LeaderBasedProtocolReplica {
                         .toList());
 
         // if I am node 0, print the blocks and quorum certificates
-        if (this.getNodeId().equals(nodeIds.get(0))) {
+        if (this.getId().equals(nodeIds.get(0))) {
             log.severe(String.format("Block 0: %s", b0));
             log.severe(String.format("QC 0: %s", qc0));
             log.severe(String.format("Block 1: %s", b1));
@@ -113,7 +114,7 @@ public class FastHotStuffReplica extends LeaderBasedProtocolReplica {
             Optional<QuorumCertificate> qc = this.addVote(vote);
             if (qc.isPresent()) {
                 this.processBlock(this.getBlock(vote.getBlockHash()));
-                Block block = new Block(qc.get(), this.round.get(), this.getNodeId(), String.format("%s%d", this.getNodeId(), this.round.get()));
+                Block block = new Block(qc.get(), this.round.get(), this.getId(), String.format("%s%d", this.getId(), this.round.get()));
                 this.broadcastMessageIncludingSelf(block);
             }
             return;
@@ -126,7 +127,7 @@ public class FastHotStuffReplica extends LeaderBasedProtocolReplica {
                 // FIXME: THIS IS PROBABLY WRONG.
                 // see: https://github.com/asonnino/twins-simulator/blob/master/fhs/node.py#L43
                 // XXX: Now this is probably right!
-                Block block = new Block(qc.get(), this.round.get(), this.getNodeId(), String.format("%s%d", this.getNodeId(), this.round.get()));
+                Block block = new Block(qc.get(), this.round.get(), this.getId(), String.format("%s%d", this.getId(), this.round.get()));
                 this.broadcastMessageIncludingSelf(block);
             }
             return;
@@ -191,7 +192,7 @@ public class FastHotStuffReplica extends LeaderBasedProtocolReplica {
         this.resetTimeout();
         this.lastVotedRound.set(block.getRound());
         this.round.set(Math.max(this.round.get(), block.getRound() + 1));
-        VoteMessage vote = new VoteMessage(this.getNodeId(), this.hash(block));
+        VoteMessage vote = new VoteMessage(this.getId(), this.hash(block));
         String nextLeaderId = this.getLeader(block.getRound() + 1);
         log.info(String.format("Sending vote %s to next leader: %s", vote, nextLeaderId));
         this.sendMessage(vote, nextLeaderId);
@@ -240,7 +241,7 @@ public class FastHotStuffReplica extends LeaderBasedProtocolReplica {
         log.info("Timeout!");
         this.round.incrementAndGet();
         this.resetTimeout();
-        NewViewMessage vote = new NewViewMessage(this.highestQc, this.round.get(), this.getNodeId());
+        NewViewMessage vote = new NewViewMessage(this.highestQc, this.round.get(), this.getId());
         String nextLeader = this.getLeader();
         this.sendMessage(vote, nextLeader);
         log.info("Sending new view message to next leader: " + nextLeader);
@@ -248,7 +249,7 @@ public class FastHotStuffReplica extends LeaderBasedProtocolReplica {
 
     public void resetTimeout() {
         this.clearAllTimeouts();
-        this.setTimeout(this::handleTimeout, TIMEOUT_DELAY);
+        this.setTimeout("Timeout", this::handleTimeout, TIMEOUT_DELAY);
     }
 
 

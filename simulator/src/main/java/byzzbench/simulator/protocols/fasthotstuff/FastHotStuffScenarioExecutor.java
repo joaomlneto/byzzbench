@@ -2,7 +2,6 @@ package byzzbench.simulator.protocols.fasthotstuff;
 
 import byzzbench.simulator.BaseScenario;
 import byzzbench.simulator.Replica;
-import byzzbench.simulator.TerminationCondition;
 import byzzbench.simulator.scheduler.Scheduler;
 import com.fasterxml.jackson.databind.JsonNode;
 import lombok.extern.java.Log;
@@ -32,7 +31,7 @@ public class FastHotStuffScenarioExecutor extends BaseScenario {
             }
 
             nodeIds.forEach(nodeId -> {
-                Replica replica = new FastHotStuffReplica(nodeId, nodeIds, transport);
+                Replica replica = new FastHotStuffReplica(nodeId, this);
                 this.addNode(replica);
             });
         } catch (Exception e) {
@@ -44,15 +43,5 @@ public class FastHotStuffScenarioExecutor extends BaseScenario {
     public synchronized void run() {
         // nothing to do at the moment
         // TODO: genesis block creation logic should be moved here
-    }
-
-    @Override
-    public TerminationCondition getTerminationCondition() {
-        return new TerminationCondition() {
-            @Override
-            public boolean shouldTerminate() {
-                return false;
-            }
-        };
     }
 }

@@ -2,7 +2,7 @@ package byzzbench.simulator;
 
 import byzzbench.simulator.protocols.hbft.message.PanicMessage;
 import byzzbench.simulator.protocols.hbft.message.RequestMessage;
-import byzzbench.simulator.transport.Transport;
+import byzzbench.simulator.transport.MessagePayload;
 import byzzbench.simulator.utils.NonNull;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -12,6 +12,7 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
 import java.io.Serializable;
+import java.time.Duration;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
@@ -31,7 +32,14 @@ import java.util.concurrent.atomic.AtomicLong;
 @Getter
 @Builder
 @RequiredArgsConstructor
-public class Client implements Serializable {
+public class Client implements Serializable, Node {
+    /**
+     * The scenario object that this client belongs to.
+     */
+    @JsonIgnore
+    @NonNull
+    private final transient Scenario scenario;
+
 
     /**
      * The message digest algorithm to use for hashing messages.
@@ -51,7 +59,7 @@ public class Client implements Serializable {
      * The unique ID of the client.
      */
     @NonNull
-    private final String clientId;
+    private final String id;
 
     /**
      * The sequence number of the next request to be sent by the client.
@@ -59,21 +67,9 @@ public class Client implements Serializable {
     private final AtomicLong requestSequenceNumber = new AtomicLong(0);
 
     /**
-     * The transport layer for the client.
-     */
-    @JsonIgnore
-    @NonNull
-    private final transient Transport transport;
-
-    /**
      * The maximum number of requests that can be sent by the client.
      */
     private final long maxRequests = 3;
-
-    /**
-     * The maximum number of requests that can be sent concurrently by the client.
-     */
-    private final long maxConcurrentRequests = 1;
 
     /**
      * The replies received by the client.
@@ -96,14 +92,12 @@ public class Client implements Serializable {
     private final long timeout = 5000;
 
 
-    /**
-     * Initializes the client by sending the initial requests.
-     */
-    public void initializeClient() {
-        // Send the initial requests
-        for (int i = 0; i < this.maxConcurrentRequests; i++) {
-            this.sendRequest();
-        }
+    @Override
+    public void initialize() {
+        // Send the first request
+        this.sendRequest();
+        //System.out.println("CLIENT TIMEOUT SETUP");
+        //this.setTimeout("sendRequest", this::sendRequest, Duration.ofSeconds(1));
     }
 
     /**
@@ -159,15 +153,44 @@ public class Client implements Serializable {
 
      /**
      * Handles a reply received by the client.
+     *
      * @param senderId The ID of the sender of the reply.
-     * @param reply The reply received by the client.
+     * @param reply    The reply received by the client.
      */
-    public void handleReply(String senderId, Serializable reply) {
+    public void handleMessage(String senderId, MessagePayload reply) {
         // this.replies.putIfAbsent(this.requestSequenceNumber.get(), new ArrayList<>());
         // this.replies.get(this.requestSequenceNumber.get()).add(reply);
         if (this.requestSequenceNumber.get() < this.maxRequests) {
             this.sendRequest();
         }
+    }
+
+    /**
+     * Set a timeout for this replica.
+     *
+     * @param name    a name for the timeout
+     * @param r       the runnable to execute when the timeout occurs
+     * @param timeout the timeout duration
+     * @return the timer object
+     */
+    public long setTimeout(String name, Runnable r, Duration timeout) {
+        return this.scenario.getTransport().setTimeout(this, r, timeout);
+    }
+
+    /**
+     * Clear a timeout for this replica.
+     *
+     * @param eventId the event ID of the timeout to clear
+     */
+    public void clearTimeout(long eventId) {
+        this.scenario.getTransport().clearTimeout(this, eventId);
+    }
+
+    /**
+     * Clear all timeouts for this replica.
+     */
+    public void clearAllTimeouts() {
+        this.scenario.getTransport().clearReplicaTimeouts(this);
     }
 
     /**
