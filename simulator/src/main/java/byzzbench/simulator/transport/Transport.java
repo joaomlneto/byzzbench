@@ -124,7 +124,7 @@ public class Transport {
                 .eventId(this.eventSeqNum.getAndIncrement())
                 .senderId(sender)
                 .recipientId(recipient)
-                .payload(new DefaultClientRequestPayload(operation))
+                .payload(new DefaultClientRequestPayload(timestamp, operation))
                 .build();
         this.appendEvent(event);
     }
@@ -151,7 +151,7 @@ public class Transport {
                 .eventId(this.eventSeqNum.getAndIncrement())
                 .senderId(sender)
                 .recipientId(recipient)
-                .payload(new DefaultClientRequestPayload(operation))
+                .payload(new DefaultClientRequestPayload(0L, operation))
                 .build();
         this.appendEvent(event);
     }
@@ -169,7 +169,7 @@ public class Transport {
                 .eventId(this.eventSeqNum.getAndIncrement())
                 .senderId(sender)
                 .recipientId(recipient)
-                .payload(new DefaultClientRequestPayload(operation))
+                .payload(new DefaultClientRequestPayload(timestamp, operation))
                 .build();
             this.appendEvent(event);
         }
@@ -313,7 +313,7 @@ public class Transport {
 
         switch (e) {
             case ClientRequestEvent c -> {
-                this.scenario.getNodes().get(c.getRecipientId()).handleClientRequest(c.getSenderId(), c.getTimestamp(), c.getPayload());
+                this.scenario.getNodes().get(c.getRecipientId()).handleMessage(c.getSenderId(), c.getPayload());
             }
             case MessageEvent m -> {
                 this.scenario.getNodes().get(m.getRecipientId()).handleMessage(m.getSenderId(), m.getPayload());
@@ -472,11 +472,11 @@ public class Transport {
     }
 
     public synchronized long setTimeout(Replica replica, Runnable runnable,
-                           long timeout, String description) {
+                           Duration timeout, String description) {
         TimeoutEvent timeoutEvent = TimeoutEvent.builder()
                 .eventId(this.eventSeqNum.getAndIncrement())
                 .description(description)
-                .nodeId(replica.getNodeId())
+                .nodeId(replica.getId())
                 .timeout(timeout)
                 .task(runnable)
                 .build();
@@ -484,13 +484,13 @@ public class Transport {
         this.observers.forEach(o -> o.onTimeout(timeoutEvent));
 
 
-        log.info(description + " timeout set for " + replica.getNodeId() + " in " +
+        log.info(description + " timeout set for " + replica.getId() + " in " +
                 timeout + "ms: " + timeoutEvent);
         return timeoutEvent.getEventId();
     }
 
     public synchronized long setClientTimeout(String clientId, Runnable runnable,
-                           long timeout) {
+                           Duration timeout) {
         TimeoutEvent timeoutEvent = TimeoutEvent.builder()
                 .eventId(this.eventSeqNum.getAndIncrement())
                 .description("CLIENT TIMEOUT")
@@ -538,7 +538,7 @@ public class Transport {
                         .stream()
                         .filter(
                             e -> e instanceof TimeoutEvent t &&
-                                t.getNodeId().equals(replica.getNodeId()) &&
+                                t.getNodeId().equals(replica.getId()) &&
                                 t.getStatus() == Event.Status.QUEUED &&
                                 t.getDescription().equals(description))
                         .map(Event::getEventId)
@@ -551,7 +551,7 @@ public class Transport {
         }
     }
 
-    public synchronized void clearReplicaTimeouts(Replica replica) {
+    public synchronized void clearReplicaTimeouts(Node node) {
         // get all event IDs for timeouts from this replica
         List<Long> eventIds =
                 this.events.values()

@@ -1,8 +1,8 @@
 package byzzbench.simulator.protocols.hbft.mutator;
 
 import byzzbench.simulator.faults.FaultContext;
-import byzzbench.simulator.faults.MessageMutationFault;
-import byzzbench.simulator.faults.MessageMutatorFactory;
+import byzzbench.simulator.faults.faults.MessageMutationFault;
+import byzzbench.simulator.faults.factories.MessageMutatorFactory;
 import byzzbench.simulator.protocols.hbft.message.PrepareMessage;
 import byzzbench.simulator.transport.Event;
 import byzzbench.simulator.transport.MessageEvent;

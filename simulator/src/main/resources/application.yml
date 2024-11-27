@@ -22,15 +22,15 @@ byzzbench:
 
   scheduler:
     id: "byzzfuzz" # The ID of the scheduler to use
-    maxDropMessages: 1 # Maximum number of messages to drop per scenario
-    maxFaults: 1 # Maximum number of faults to inject per scenario
+    maxDropMessages: 0 # Maximum number of messages to drop per scenario
+    maxFaults: 0 # Maximum number of faults to inject per scenario
     params:
       numRoundsWithProcessFaults: 1
       numRoundsWithNetworkFaults: 2
       numRoundsWithFaults: 5
 
   scenario:
-    id: pbft-java
+    id: hbft
     params:
       replicas: 4
     scheduledFaults:

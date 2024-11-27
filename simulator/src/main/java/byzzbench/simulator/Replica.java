@@ -237,7 +237,8 @@ public abstract class Replica implements Serializable, Node {
             this.notifyObserversTimeout();
             r.run();
         };
-        return this.scenario.getTransport().setTimeout(this, wrapper, timeout, description);
+        Duration duration = Duration.ofSeconds(timeout);
+        return this.scenario.getTransport().setTimeout(this, wrapper, duration, description);
     }
 
     /**

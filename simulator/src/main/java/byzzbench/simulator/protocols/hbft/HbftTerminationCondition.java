@@ -1,16 +1,11 @@
 package byzzbench.simulator.protocols.hbft;
 
-import java.util.Random;
+import byzzbench.simulator.Scenario;
+import byzzbench.simulator.ScenarioPredicate;
 
-import byzzbench.simulator.TerminationCondition;
-
-public class HbftTerminationCondition extends TerminationCondition {
-
-    Random random = new Random();
-
+public class HbftTerminationCondition implements ScenarioPredicate {
     @Override
-    public boolean shouldTerminate() {
-        return random.nextInt(100) == 1;
+    public boolean test(Scenario scenario) {
+        return scenario.getSchedule().getEvents().size() > 100;
     }
-
 }

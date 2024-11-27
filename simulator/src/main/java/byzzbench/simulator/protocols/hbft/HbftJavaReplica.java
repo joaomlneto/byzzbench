@@ -9,6 +9,7 @@ import byzzbench.simulator.protocols.hbft.pojo.ViewChangeResult;
 import byzzbench.simulator.state.LogEntry;
 import byzzbench.simulator.state.SerializableLogEntry;
 import byzzbench.simulator.state.TotalOrderCommitLog;
+import byzzbench.simulator.transport.DefaultClientRequestPayload;
 import byzzbench.simulator.transport.MessagePayload;
 import byzzbench.simulator.transport.Transport;
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -956,7 +957,7 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
     }
 
     @Override
-    public void handleClientRequest(String clientId, long timestamp, Serializable request) throws Exception {
+    public void handleClientRequest(String clientId, long timestamp, Serializable request) {
         // timestamp should be the time of the creation of the request
         RequestMessage m = new RequestMessage(request, timestamp, clientId);
         System.out.println(m);
@@ -968,6 +969,10 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
         if (m instanceof RequestMessage request) {
             System.out.println(request);
             recvRequest(request);
+            return;
+        } else if (m instanceof DefaultClientRequestPayload clientRequest) {
+            System.out.println(clientRequest);
+            handleClientRequest(sender, clientRequest.getTimestamp(), clientRequest.getOperation());
             return;
         } else if (m instanceof PrepareMessage prepare) {
             recvPrepare(prepare);

@@ -87,9 +87,9 @@ public class Client implements Serializable, Node {
     private final SortedMap<Long, RequestMessage> sentRequests = new TreeMap<>();
 
     /**
-     * Timeout for client
+     * Timeout for client in seconds
      */
-    private final long timeout = 5000;
+    private final long timeout = 5;
 
 
     @Override
@@ -108,21 +108,21 @@ public class Client implements Serializable, Node {
         long timestamp = System.currentTimeMillis();
         RequestMessage request = new RequestMessage(requestId, timestamp, this.id);
         this.sentRequests.put(this.requestSequenceNumber.get(), request);
-        this.getScenario().getTransport().multicastClientRequest(this.id, timestamp, requestId, this.getScenario().getTransport().getNodeIds());
+        this.getScenario().getTransport().multicastClientRequest(this.id, timestamp, requestId, this.scenario.getTransport().getNodeIds());
         this.setTimeout(this::retransmitOrPanic, this.timeout);
     }
 
     public void retransmitOrPanic() {
-        long tolerance = (long) Math.floor((this.transport.getNodeIds().size() - 1) / 3);
+        long tolerance = (long) Math.floor((this.scenario.getTransport().getNodeIds().size() - 1) / 3);
         if (this.shouldRetransmit(tolerance)) {
-            String requestId = String.format("%s/%d", this.clientId, this.requestSequenceNumber.get());
+            String requestId = String.format("%s/%d", this.id, this.requestSequenceNumber.get());
             // Based on hBFT 4.1 it uses the identical request
             long timestamp = this.sentRequests.get(this.requestSequenceNumber.get()).getTimestamp();
-            this.transport.multicastClientRequest(this.clientId, timestamp, requestId, this.transport.getNodeIds());
+            this.scenario.getTransport().multicastClientRequest(this.id, timestamp, requestId, this.scenario.getTransport().getNodeIds());
         } else if (this.shouldPanic(tolerance)) {
             RequestMessage message = this.sentRequests.get(this.requestSequenceNumber.get());
-            PanicMessage panic = new PanicMessage(this.digest(message), System.currentTimeMillis(), this.clientId);
-            this.transport.multicast(this.clientId, this.transport.getNodeIds(), panic);
+            PanicMessage panic = new PanicMessage(this.digest(message), System.currentTimeMillis(), this.id);
+            this.scenario.getTransport().multicast(this.id, this.scenario.getTransport().getNodeIds(), panic);
             this.setTimeout(this::retransmitOrPanic, this.timeout);
         }
     }
@@ -173,8 +173,24 @@ public class Client implements Serializable, Node {
      * @param timeout the timeout duration
      * @return the timer object
      */
-    public long setTimeout(String name, Runnable r, Duration timeout) {
-        return this.scenario.getTransport().setTimeout(this, r, timeout);
+    public long setTimeout(String name, Runnable r, long timeout) {
+        Duration duration = Duration.ofSeconds(timeout);
+        return this.scenario.getTransport().setTimeout(this, r, duration);
+    }
+
+        /**
+     * Set a timeout for this client.
+     *
+     * @param r       the runnable to execute when the timeout occurs
+     * @param timeout the timeout in milliseconds
+     * @return the timeout ID
+     */
+    public long setTimeout(Runnable r, long timeout) {
+        Runnable wrapper = () -> {
+            r.run();
+        };
+        Duration duration = Duration.ofSeconds(timeout);
+        return this.scenario.getTransport().setClientTimeout(this.id, wrapper, duration);
     }
 
     /**
@@ -229,25 +245,11 @@ public class Client implements Serializable, Node {
     }
 
     /**
-     * Set a timeout for this client.
-     *
-     * @param r       the runnable to execute when the timeout occurs
-     * @param timeout the timeout in milliseconds
-     * @return the timeout ID
-     */
-    public long setTimeout(Runnable r, long timeout) {
-        Runnable wrapper = () -> {
-            r.run();
-        };
-        return this.transport.setClientTimeout(this.clientId, wrapper, timeout);
-    }
-
-    /**
      * Clear all timeouts for this client.
      */
-    public void clearAllTimeouts() {
-        this.transport.clearClientTimeouts(this.clientId);
-    }
+    // public void clearAllTimeouts() {
+    //     this.scenario.getTransport().clearClientTimeouts(this.id);
+    // }
 
     /**
      * Create a digest of a message.
