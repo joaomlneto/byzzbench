@@ -195,25 +195,6 @@ public abstract class BaseScenario implements Scenario {
     }
 
     public final void loadParameters(ByzzBenchConfig.ScenarioConfig config) {
-        System.out.println("Loading parameters for scenario: " + config.getId());
-        System.out.println("Loading parameters for scenario: " + config.getId());
-        System.out.println("Loading parameters for scenario: " + config.getId());
-        System.out.println("Loading parameters for scenario: " + config.getId());
-        System.out.println("Loading parameters for scenario: " + config.getId());
-        System.out.println("Loading parameters for scenario: " + config.getId());
-        System.out.println("Loading parameters for scenario: " + config.getId());
-        System.out.println("Loading parameters for scenario: " + config.getId());
-        System.out.println("Loading parameters for scenario: " + config.getId());
-        System.out.println("Loading parameters for scenario: " + config.getId());
-        System.out.println("Loading parameters for scenario: " + config.getId());
-        System.out.println("Loading parameters for scenario: " + config.getId());
-        System.out.println("Loading parameters for scenario: " + config.getId());
-        System.out.println("Loading parameters for scenario: " + config.getId());
-        System.out.println("Loading parameters for scenario: " + config.getId());
-        System.out.println("Loading parameters for scenario: " + config.getId());
-        System.out.println("Loading parameters for scenario: " + config.getId());
-        System.out.println("Loading parameters for scenario: " + config.getId());
-        System.out.println("Loading parameters for scenario: " + config.getId());
     }
 
     /**
