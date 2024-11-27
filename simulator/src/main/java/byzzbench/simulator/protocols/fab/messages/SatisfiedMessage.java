@@ -13,6 +13,7 @@ import lombok.With;
 @EqualsAndHashCode(callSuper = true)
 @With
 public class SatisfiedMessage extends MessagePayload {
+    private final String senderId;
     private final Pair valueAndProposalNumber;
     public String getType() {
         return "SATISFIED";

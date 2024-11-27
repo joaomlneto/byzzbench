@@ -1,5 +1,6 @@
 package byzzbench.simulator.protocols.fab.messages;
 
+import byzzbench.simulator.protocols.fab.ProgressCertificate;
 import byzzbench.simulator.protocols.fab.replicas.Pair;
 import byzzbench.simulator.transport.MessagePayload;
 import lombok.Data;
@@ -15,6 +16,7 @@ import lombok.With;
 public class ProposeMessage extends MessagePayload {
     private final String replicaId;
     private final Pair valueAndProposalNumber;
+    private final ProgressCertificate progressCertificate;
 
     @Override
     public String getType() {

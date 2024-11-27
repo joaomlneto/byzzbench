@@ -13,6 +13,7 @@ import lombok.ToString;
 @ToString
 public class SuspectMessage extends MessagePayload {
     private final String senderId;
+    private final String suspectId;
 
     @Override
     public String getType() {

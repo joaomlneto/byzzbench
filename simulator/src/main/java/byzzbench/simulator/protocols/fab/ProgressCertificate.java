@@ -1,5 +1,6 @@
 package byzzbench.simulator.protocols.fab;
 
+import java.util.Arrays;
 import java.util.List;
 
 public record ProgressCertificate(int proposalNumber, List<SignedResponse> responses) {
@@ -10,9 +11,9 @@ public record ProgressCertificate(int proposalNumber, List<SignedResponse> respo
     }
 
     // Check if the certificate vouches for a specific value
-    public boolean vouchesFor(String value) {
+    public boolean vouchesFor(byte[] value) {
         long matchingResponses = responses.stream()
-                .filter(response -> response.value().equals(value))
+                .filter(response -> Arrays.equals(response.value(), value))
                 .count();
 
         return matchingResponses >= (responses.size() / 2) + 1;

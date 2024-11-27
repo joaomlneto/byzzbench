@@ -1,11 +1,12 @@
 package byzzbench.simulator.protocols.fab;
 
+import java.util.Arrays;
 import java.util.Objects;
 
-public record SignedResponse(String value, int proposalNumber, String signature) {
+public record SignedResponse(byte[] value, int proposalNumber, String signature) {
     // Simple signature verification method
     public boolean isSignatureValid(String publicKey) {
-        return Objects.hash(value, proposalNumber) == Integer.parseInt(signature);
+        return Objects.hash(Arrays.hashCode(value), proposalNumber) == Integer.parseInt(signature);
     }
 }
 

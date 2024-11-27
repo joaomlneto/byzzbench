@@ -3,6 +3,8 @@ package byzzbench.simulator.protocols.fab.replicas;
 import lombok.Getter;
 import lombok.extern.java.Log;
 
+import java.util.Arrays;
+
 /**
  * A <h1>Pair</h1> class that representing the value accepted by acceptors.
  *
@@ -22,5 +24,19 @@ public class Pair implements Comparable<Pair> {
     public int compareTo(Pair o) {
         // Compare the proposal number of the pair
         return Long.compare(this.number, o.number);
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (obj == null) {
+            return false;
+        }
+
+        if (getClass() != obj.getClass()) {
+            return false;
+        }
+
+        final Pair other = (Pair) obj;
+        return (this.number == other.getNumber() && Arrays.equals(this.value, other.value));
     }
 }

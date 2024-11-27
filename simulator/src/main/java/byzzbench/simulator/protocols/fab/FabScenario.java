@@ -26,6 +26,11 @@ public class FabScenario extends BaseScenario {
 
     @Override
     protected void setup() {
+        // Scenario with f = 1 (Byzantine nodes), p = 4, a = 6, l = 4.
+        int p = 4;
+        int a = 6;
+        int l = 4;
+        int f = 1;
         try {
             SortedSet<String> nodesIds = new TreeSet<>();
             for (int i = 0; i < NUM_NODES; i++) {
@@ -33,25 +38,25 @@ public class FabScenario extends BaseScenario {
             }
 
             List<FabRole> proposerAndAcceptor = List.of(FabRole.PROPOSER, FabRole.ACCEPTOR);
-            FabReplica replica1 = new FabReplica("A", nodesIds, transport, null, proposerAndAcceptor, true, 1000);
+            FabReplica replica1 = new FabReplica("A", nodesIds, transport, null, proposerAndAcceptor, true, 1000, p, a, l, f);
             replicas.add(replica1);
 
-            FabReplica replica2 = new FabReplica("B", nodesIds, transport, null, proposerAndAcceptor, false, 1000);
+            FabReplica replica2 = new FabReplica("B", nodesIds, transport, null, proposerAndAcceptor, false, 1000, p, a, l, f);
             replicas.add(replica2);
 
             List<FabRole> proposerAndAcceptorAndLearner = List.of(FabRole.PROPOSER, FabRole.ACCEPTOR, FabRole.LEARNER);
 
-            FabReplica replica3 = new FabReplica("C", nodesIds, transport, null, proposerAndAcceptorAndLearner, false, 1000);
+            FabReplica replica3 = new FabReplica("C", nodesIds, transport, null, proposerAndAcceptorAndLearner, false, 1000, p, a, l, f);
             replicas.add(replica3);
 
-            FabReplica replica4 = new FabReplica("D", nodesIds, transport, null, proposerAndAcceptorAndLearner, false, 1000);
+            FabReplica replica4 = new FabReplica("D", nodesIds, transport, null, proposerAndAcceptorAndLearner, false, 1000, p, a, l, f);
             replicas.add(replica4);
 
             List<FabRole> learnerAndAcceptor = List.of(FabRole.ACCEPTOR, FabRole.LEARNER);
-            FabReplica replica5 = new FabReplica("E", nodesIds, transport, null, learnerAndAcceptor, false, 1000);
+            FabReplica replica5 = new FabReplica("E", nodesIds, transport, null, learnerAndAcceptor, false, 1000, p, a, l, f);
             replicas.add(replica5);
 
-            FabReplica replica6 = new FabReplica("F", nodesIds, transport, null, learnerAndAcceptor, false, 1000);
+            FabReplica replica6 = new FabReplica("F", nodesIds, transport, null, learnerAndAcceptor, false, 1000, p, a, l, f);
             replicas.add(replica6);
         } catch (Exception e) {
             throw new RuntimeException(e);
