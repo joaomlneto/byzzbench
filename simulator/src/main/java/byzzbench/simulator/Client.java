@@ -104,11 +104,11 @@ public class Client implements Serializable, Node {
      * As of hBFT 4.1, sends a request to all replica in the system.
      */
     public void sendRequest() {
-        String requestId = String.format("%s/%d", this.clientId, this.requestSequenceNumber.incrementAndGet());
+        String requestId = String.format("%s/%d", this.id, this.requestSequenceNumber.incrementAndGet());
         long timestamp = System.currentTimeMillis();
-        RequestMessage request = new RequestMessage(requestId, timestamp, this.clientId);
+        RequestMessage request = new RequestMessage(requestId, timestamp, this.id);
         this.sentRequests.put(this.requestSequenceNumber.get(), request);
-        this.transport.multicastClientRequest(this.clientId, timestamp, requestId, this.transport.getNodeIds());
+        this.getScenario().getTransport().multicastClientRequest(this.id, timestamp, requestId, this.getScenario().getTransport().getNodeIds());
         this.setTimeout(this::retransmitOrPanic, this.timeout);
     }
 
