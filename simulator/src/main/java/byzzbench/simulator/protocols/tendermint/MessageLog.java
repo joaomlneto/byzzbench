@@ -1,8 +1,9 @@
 package byzzbench.simulator.protocols.tendermint;
 
-import byzzbench.simulator.protocols.fasthotstuff.FastHotStuffReplica;
-import byzzbench.simulator.protocols.fasthotstuff.message.NewViewMessage;
-import byzzbench.simulator.protocols.fasthotstuff.message.VoteMessage;
+import byzzbench.simulator.protocols.tendermint.message.GenericMessage;
+
+import byzzbench.simulator.protocols.tendermint.message.PrecommitMessage;
+import byzzbench.simulator.protocols.tendermint.message.PrevoteMessage;
 import lombok.RequiredArgsConstructor;
 
 import java.util.*;
@@ -10,28 +11,27 @@ import java.util.*;
 @RequiredArgsConstructor
 public class MessageLog {
     private final TendermintReplica node;
-    private final SortedSet<Object> committed = new TreeSet<>();
-    private final SortedMap<Object, SortedSet<Object>> votes = new TreeMap<>();
-    private final SortedMap<Object, SortedSet<Object>> newViews = new TreeMap<>();
+    private SortedMap<Long,GenericMessage> voteMessages = new TreeMap<>();
 
-    private Collection<Object> canMakeQc(SortedMap<Object, SortedSet<Object>> collection, Object key, Object value) {
-        boolean before = collection.containsKey(key) && collection.get(key).size() >= computeQuorumSize();
-        collection.computeIfAbsent(key, k -> new TreeSet<>()).add(value);
-        boolean after = collection.containsKey(key) && collection.get(key).size() >= computeQuorumSize();
-        return after && !before ? collection.get(key) : null;
+    public void addVoteMessage(GenericMessage voteMessage) {
+        voteMessages.put(voteMessage.getHeight(), voteMessage);
     }
 
-    public void addVote(VoteMessage vote) {
-        String digest = vote.getBlockHash();
-        //Set<Object> votes = this.
+    public long getVoteMessageCount() {
+        return voteMessages.size();
     }
 
-    public void addVote(NewViewMessage newView) {
-
+    public boolean hasEnoughPreVotes(PrevoteMessage prevoteMessage) {
+        long prevoteCount = voteMessages.values().stream()
+                .filter(voteMessage -> voteMessage instanceof PrevoteMessage)
+                .count();
+        return prevoteCount >= 2 * node.getTolerance() + 1;
     }
 
-    private int computeQuorumSize() {
-        int n = this.node.getNodeIds().size();
-        return (int) Math.ceil(2 * n / 3);
+    public boolean hasEnoughPreCommits(PrecommitMessage precommitMessage) {
+        long precommitCount = voteMessages.values().stream()
+                .filter(voteMessage -> voteMessage instanceof PrecommitMessage)
+                .count();
+        return precommitCount >= 2 * node.getTolerance() + 1;
     }
 }

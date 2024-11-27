@@ -7,11 +7,11 @@ import lombok.With;
 @Data
 @EqualsAndHashCode(callSuper = true)
 @With
-public class PrecommitMessage extends GenericVoteMessage {
+public class PrecommitMessage extends GenericMessage {
     private final String replicaId; // ID of the validator sending the precommit
     private final long height;      // Current blockchain height
     private final long round;       // Current round in the consensus process
-    private byte[] digest;
+    private final Block block;
 
     @Override
     public String getType() {

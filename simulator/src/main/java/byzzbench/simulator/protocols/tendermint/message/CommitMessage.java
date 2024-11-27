@@ -8,13 +8,19 @@ import lombok.With;
 @Data
 @EqualsAndHashCode(callSuper = true)
 @With
-public class CommitMessage extends MessagePayload {
+public class CommitMessage extends GenericMessage {
     private final String replicaId;  // The ID of the validator sending the commit message
     private final long height;       // The height of the blockchain
-    private byte[] digest;
+    private final long round;        // The round in the consensus process
+    private final Block block;
 
     @Override
     public String getType() {
         return "COMMIT";
+    }
+
+    @Override
+    public String getAuthor() {
+        return replicaId;
     }
 }

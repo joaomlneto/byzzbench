@@ -8,16 +8,23 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import java.util.*;
 import byzzbench.simulator.state.PartialOrderLogEntry;
+import lombok.Getter;
+import lombok.Setter;
 
 @Data
-@EqualsAndHashCode(callSuper = true)
-public class Block extends MessagePayload implements LogEntry {
+public class Block implements LogEntry, Comparable<Block> {
     private final long height;
-    private final SortedSet<String> transactions;
-    private final String previousBlockHash;
+    private final long id;
+    private final String value;
 
     public String getType() {
         return "BLOCK";
     }
 
+    @Override
+    public int compareTo(Block other) {
+        return Comparator.comparing(Block::getId)
+                .thenComparing(Block::getValue)
+                .compare(this, other);
+    }
 }
