@@ -7,9 +7,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 
 import byzzbench.simulator.BaseScenario;
 import byzzbench.simulator.Replica;
-import byzzbench.simulator.Scenario;
-import byzzbench.simulator.ScenarioPredicate;
-import byzzbench.simulator.protocols.pbft_java.PbftTerminationPredicate;
 import byzzbench.simulator.scheduler.Scheduler;
 import lombok.Getter;
 import lombok.extern.java.Log;
