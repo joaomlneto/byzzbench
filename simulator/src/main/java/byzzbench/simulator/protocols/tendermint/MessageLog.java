@@ -4,6 +4,8 @@ import byzzbench.simulator.protocols.tendermint.message.GenericMessage;
 
 import byzzbench.simulator.protocols.tendermint.message.PrecommitMessage;
 import byzzbench.simulator.protocols.tendermint.message.PrevoteMessage;
+import byzzbench.simulator.protocols.tendermint.message.ProposalMessage;
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
 import java.util.*;
@@ -11,27 +13,56 @@ import java.util.*;
 @RequiredArgsConstructor
 public class MessageLog {
     private final TendermintReplica node;
-    private SortedMap<Long,GenericMessage> voteMessages = new TreeMap<>();
+    private final SortedSet<GenericMessage> Messages = new TreeSet<>();
 
-    public void addVoteMessage(GenericMessage voteMessage) {
-        voteMessages.put(voteMessage.getHeight(), voteMessage);
+    @Getter
+    private long proposalCount = 0;
+
+    @Getter
+    private long precommitCount = 0;
+
+    @Getter
+    private long prevoteCount = 0;
+
+
+    public boolean addMessage(GenericMessage voteMessage) {
+        boolean added = Messages.add(voteMessage);
+        if (voteMessage instanceof PrecommitMessage) {
+            precommitCount++;
+        } else if (voteMessage instanceof PrevoteMessage) {
+            prevoteCount++;
+        }
+        else if (voteMessage instanceof ProposalMessage) {
+            proposalCount++;
+        }
+        return added;
     }
 
-    public long getVoteMessageCount() {
-        return voteMessages.size();
+    public long getMessageCount() {
+        return Messages.size();
     }
 
     public boolean hasEnoughPreVotes(PrevoteMessage prevoteMessage) {
-        long prevoteCount = voteMessages.values().stream()
-                .filter(voteMessage -> voteMessage instanceof PrevoteMessage)
-                .count();
         return prevoteCount >= 2 * node.getTolerance() + 1;
     }
 
     public boolean hasEnoughPreCommits(PrecommitMessage precommitMessage) {
-        long precommitCount = voteMessages.values().stream()
-                .filter(voteMessage -> voteMessage instanceof PrecommitMessage)
-                .count();
         return precommitCount >= 2 * node.getTolerance() + 1;
+    }
+
+    public boolean contains(PrevoteMessage prevoteMessage) {
+        return Messages.contains(prevoteMessage);
+    }
+
+    public void sentPrevote() {
+        prevoteCount++;
+    }
+
+    public void sentProposal() {
+        proposalCount++;
+    }
+
+    public void sentPrecommit() {
+        precommitCount++;
     }
 }

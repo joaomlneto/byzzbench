@@ -15,8 +15,9 @@ public abstract class GenericMessage extends MessagePayload implements Comparabl
 
     @Override
     public int compareTo(GenericMessage other) {
-        return Comparator.comparing(GenericMessage::getBlock)
+        return Comparator.comparing(GenericMessage::getBlock, Comparator.nullsFirst(Comparator.naturalOrder()))
                 .thenComparing(GenericMessage::getAuthor)
                 .compare(this, other);
     }
+
 }

@@ -8,9 +8,9 @@ import lombok.With;
 @EqualsAndHashCode(callSuper = true)
 @With
 public class PrecommitMessage extends GenericMessage {
-    private final String replicaId; // ID of the validator sending the precommit
     private final long height;      // Current blockchain height
     private final long round;       // Current round in the consensus process
+    private final String replicaId; // ID of the validator sending the precommit
     private final Block block;
 
     @Override
