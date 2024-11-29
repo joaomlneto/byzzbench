@@ -12,8 +12,9 @@ public class GossipMessage extends MessagePayload {
     private final String replicaId;
     private final GenericMessage gossipMessage;
 
+
     @Override
     public String getType() {
-        return "Gossip";
+        return "GOSSIP";
     }
 }

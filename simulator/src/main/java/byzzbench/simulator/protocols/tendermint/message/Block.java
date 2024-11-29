@@ -14,6 +14,7 @@ import lombok.Setter;
 @Data
 public class Block implements LogEntry, Comparable<Block> {
     private final long height;
+    private final long round;
     private final long id;
     private final String value;
 

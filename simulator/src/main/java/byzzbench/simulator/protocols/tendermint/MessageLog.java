@@ -1,10 +1,7 @@
 package byzzbench.simulator.protocols.tendermint;
 
-import byzzbench.simulator.protocols.tendermint.message.GenericMessage;
+import byzzbench.simulator.protocols.tendermint.message.*;
 
-import byzzbench.simulator.protocols.tendermint.message.PrecommitMessage;
-import byzzbench.simulator.protocols.tendermint.message.PrevoteMessage;
-import byzzbench.simulator.protocols.tendermint.message.ProposalMessage;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
@@ -14,26 +11,36 @@ import java.util.*;
 public class MessageLog {
     private final TendermintReplica node;
     private final SortedSet<GenericMessage> Messages = new TreeSet<>();
+    @Getter
+    private final SortedMap<Block, Long> prevotes = new TreeMap<>();
+    @Getter
+    private final SortedMap<Block, Long> precommits = new TreeMap<>();
 
     @Getter
     private long proposalCount = 0;
 
-    @Getter
-    private long precommitCount = 0;
-
-    @Getter
-    private long prevoteCount = 0;
-
 
     public boolean addMessage(GenericMessage voteMessage) {
-        boolean added = Messages.add(voteMessage);
-        if (voteMessage instanceof PrecommitMessage) {
-            precommitCount++;
-        } else if (voteMessage instanceof PrevoteMessage) {
-            prevoteCount++;
+        if (voteMessage.getBlock()==null) {
+            return false;
         }
-        else if (voteMessage instanceof ProposalMessage) {
-            proposalCount++;
+        boolean added = Messages.add(voteMessage);
+        if (added) {
+            if (voteMessage instanceof PrecommitMessage) {
+                if(precommits.containsKey(voteMessage.getBlock())) {
+                    precommits.put(voteMessage.getBlock(), precommits.get(voteMessage.getBlock()) + 1);
+                } else {
+                    precommits.put(voteMessage.getBlock(), 1L);
+                }
+            } else if (voteMessage instanceof PrevoteMessage) {
+                if(prevotes.containsKey(voteMessage.getBlock())) {
+                    prevotes.put(voteMessage.getBlock(), prevotes.get(voteMessage.getBlock()) + 1);
+                } else {
+                    prevotes.put(voteMessage.getBlock(), 1L);
+                }
+            } else if (voteMessage instanceof ProposalMessage) {
+                proposalCount++;
+            }
         }
         return added;
     }
@@ -43,26 +50,30 @@ public class MessageLog {
     }
 
     public boolean hasEnoughPreVotes(PrevoteMessage prevoteMessage) {
-        return prevoteCount >= 2 * node.getTolerance() + 1;
+        return prevotes.getOrDefault(prevoteMessage.getBlock(), 0L) >= 2 * node.getTolerance() + 1;
     }
 
     public boolean hasEnoughPreCommits(PrecommitMessage precommitMessage) {
-        return precommitCount >= 2 * node.getTolerance() + 1;
+        return precommits.getOrDefault(precommitMessage.getBlock(), 0L) >= 2 * node.getTolerance() + 1;
     }
 
     public boolean contains(PrevoteMessage prevoteMessage) {
         return Messages.contains(prevoteMessage);
     }
 
-    public void sentPrevote() {
-        prevoteCount++;
+    public String getPrevoteCount(PrevoteMessage prevoteMessage) {
+        return prevotes.getOrDefault(prevoteMessage.getBlock(), 0L).toString();
     }
 
-    public void sentProposal() {
-        proposalCount++;
-    }
-
-    public void sentPrecommit() {
-        precommitCount++;
-    }
+//    public void sentPrevote() {
+//        prevoteCount++;
+//    }
+//
+//    public void sentProposal() {
+//        proposalCount++;
+//    }
+//
+//    public void sentPrecommit() {
+//        precommitCount++;
+//    }
 }
