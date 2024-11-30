@@ -685,7 +685,7 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
             this.messageLog.clearPanics();
 
             this.checkpointForNewView = false;
-            messageLog.appendCheckpoint(checkpoint, this.tolerance, this.speculativeHistory, this.getViewNumber());
+            this.messageLog.appendCheckpoint(checkpoint, this.tolerance, this.speculativeHistory, this.getViewNumber());
 
             if (checkpoint instanceof CheckpointIMessage) {            
                 CheckpointMessage checkpointII = new CheckpointIIMessage(

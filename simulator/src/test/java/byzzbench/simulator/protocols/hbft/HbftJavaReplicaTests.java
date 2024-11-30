@@ -16,11 +16,14 @@ import static org.mockito.Mockito.times;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.util.Assert;
 
+import byzzbench.simulator.protocols.hbft.message.CheckpointIIMessage;
 import byzzbench.simulator.protocols.hbft.message.CheckpointIMessage;
+import byzzbench.simulator.protocols.hbft.message.CheckpointMessage;
 import byzzbench.simulator.protocols.hbft.message.CommitMessage;
 import byzzbench.simulator.protocols.hbft.message.PanicMessage;
 import byzzbench.simulator.protocols.hbft.message.PrepareMessage;
 import byzzbench.simulator.protocols.hbft.message.RequestMessage;
+import byzzbench.simulator.protocols.hbft.message.ViewChangeMessage;
 import byzzbench.simulator.protocols.hbft.pojo.ReplicaRequestKey;
 import byzzbench.simulator.protocols.hbft.pojo.ReplicaTicketPhase;
 import byzzbench.simulator.scheduler.Scheduler;
@@ -332,5 +335,34 @@ public class HbftJavaReplicaTests {
         // It should not send checkpoint yet as it did not receive 2f+1 panics
         verify(spyReplica, times(0)).broadcastMessageIncludingSelf(Mockito.any(CheckpointIMessage.class));
 
+    }
+
+    @Test
+	void tectRecvCheckpointINotFromPrimary() {
+        HbftJavaReplica spyReplica = Mockito.spy(replicaA);
+        long viewNumber = 1;
+        long seqNumber = 1;
+        String clientId = "C0";
+        CheckpointMessage checkpoint = new CheckpointIMessage(0, null, replicaC.getId(), null);
+
+        spyReplica.recvCheckpoint(checkpoint);
+        
+        //verify(spyReplica, times(0)).getMessageLog().appendCheckpoint(checkpoint, 1, null, viewNumber);
+        verify(spyReplica, times(1)).sendViewChange(Mockito.any(ViewChangeMessage.class));
+    }
+
+    @Test
+	void tectRecvCorrectCheckpointI() {
+        HbftJavaReplica spyReplica = Mockito.spy(replicaA);
+        long viewNumber = 1;
+        long seqNumber = 1;
+        String clientId = "C0";
+        byte[] digest = spyReplica.digest(spyReplica.getSpeculativeHistory());
+        CheckpointMessage checkpoint = new CheckpointIMessage(0, digest, primary.getId(), null);
+
+        spyReplica.recvCheckpoint(checkpoint);
+        
+        verify(spyReplica, times(2)).clearTimeout(Mockito.any(String.class));
+        verify(spyReplica, times(1)).sendCheckpoint(Mockito.any(CheckpointIIMessage.class));
     }
 }
