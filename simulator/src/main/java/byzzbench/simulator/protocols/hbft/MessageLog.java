@@ -52,6 +52,7 @@ public class MessageLog implements Serializable {
     private final SortedMap<Long, SortedMap<String, ViewChangeMessage>> viewChanges = new TreeMap<>();
 
     // Panic messages from replicas
+    @Getter
     private final SortedMap<String, PanicMessage> panics = new TreeMap<>();
 
     private Checkpoint lastStableCheckpoint = new Checkpoint(0, null);

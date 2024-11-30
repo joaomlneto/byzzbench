@@ -278,11 +278,17 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
             return;
         }
 
+        String signedBy = panic.getSignedBy();
+        // Technically should never happen
+        if (signedBy == null) {
+            return;
+        }
+
         this.forwardPanic(panic);
         this.disgruntled = true;
 
-        this.messageLog.appendPanic(panic, this.getId());
-        if (this.messageLog.checkPanics(this.tolerance) && this.getId().equals(this.getPrimaryId())) {
+        this.messageLog.appendPanic(panic, signedBy);
+        if (signedBy.equals(panic.getClientId()) || this.messageLog.checkPanics(this.tolerance) && this.getId().equals(this.getPrimaryId())) {
             CheckpointMessage checkpoint = new CheckpointIMessage(
                         this.seqCounter.get(),
                         this.digest(this.speculativeHistory),
