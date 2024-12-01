@@ -755,7 +755,7 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
         this.broadcastMessage(checkpoint);
     }
 
-    private void enterNewView(long newViewNumber) {
+    public void enterNewView(long newViewNumber) {
         /*
          * Enter new view by resetting the disgruntled state, updating the
          * view number and clearing any prior timeouts that the replicas have
@@ -849,7 +849,7 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
          * 
          * For now I will choose option 1 and rely on the client.
          */
-        if (!messageLog.acceptNewView(newView)) {
+        if (!messageLog.acceptNewView(newView, this.tolerance)) {
             return;
         }
 

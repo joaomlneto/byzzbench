@@ -516,14 +516,109 @@ public class MessageLog implements Serializable {
         }
     }
 
-    public boolean acceptNewView(NewViewMessage newView) {
+    public boolean acceptNewView(NewViewMessage newView, long tolerance) {
         /*
          * When receiving a new view message the replicas will 
          * run a checkpoint sub-protocol (started by the primary)
          */
 
         // TODO: verify view-change
+        Collection<ViewChangeMessage> viewChanges = newView.getViewChangeProofs();
+        Checkpoint checkpoint = newView.getCheckpoint();
+        SpeculativeHistory requestsFromNewView = newView.getSpeculativeHistory();
 
+        if (checkpoint == null && this.lastStableCheckpoint != null || checkpoint != null && this.lastStableCheckpoint == null ) {
+            return false;
+        } else if (checkpoint != null && this.lastStableCheckpoint != null) {
+            // If any of the view-change messages are incorrect then dont accept
+            for (ViewChangeMessage viewChangeMessage : viewChanges) {
+                if (viewChangeMessage.getNewViewNumber() != newView.getNewViewNumber()) {
+                    return false;
+                }
+            }
+
+            // If the checkpoint is different than what should have been
+            // based on the view-change messages then dont accept
+            long threshold = tolerance * 2 + 1;
+            long count = 0;
+            for (ViewChangeMessage viewChangeMessage : viewChanges) {
+                if (viewChangeMessage.getSpeculativeHistoryP() != null 
+                    && (viewChangeMessage.getSpeculativeHistoryP().getGreatestSeqNumber() != checkpoint.getSequenceNumber()
+                    || viewChangeMessage.getSpeculativeHistoryP().getHistory() != checkpoint.getHistory())) {
+                    count++;
+                }
+            }
+
+            long thresholdForCheckpointI = tolerance + 1;
+            long countForCheckpiontI = 0;
+            for (ViewChangeMessage viewChangeMessage : viewChanges) {
+                if (viewChangeMessage.getSpeculativeHistoryQ() != null) {
+                    countForCheckpiontI++;
+                }
+            }
+
+            /* 
+            * If the checkpoint is not chosen from the view-change messages then,
+            * the new primary must pick its own last stable checkpoint,
+            * which should match for 2f + 1 replicas, otherwise the operation
+            * cannot continue. Even if the new primary is correct, this replica 
+            * can reject this new-view, however 2f + 1 replicas should accept, 
+            * and continue operating. This replica can rejoin at a checkpoint 
+            * sub-protocol.
+            */
+            if ((countForCheckpiontI < thresholdForCheckpointI || count < threshold) && checkpoint.equals(this.lastStableCheckpoint)) {
+                return false;
+            }
+        }
+
+        // Replica needs all the possibly executed requests for later
+        Map<Long, Integer> requestMap = new HashMap<>();
+        Collection<SortedMap<Long, RequestMessage>> allRequests = new ArrayList<>();
+
+        for (ViewChangeMessage viewChangePerReplica : viewChanges) {
+            SortedMap<Long, RequestMessage> requestsPerReplica = viewChangePerReplica.getRequestsR();
+            allRequests.add(requestsPerReplica);
+
+            for (long seqNum : requestsPerReplica.keySet()) {
+                requestMap.put(seqNum, requestMap.getOrDefault(seqNum, 0) + 1);
+            }
+        }
+
+        SpeculativeHistory sortedRequests = new SpeculativeHistory();
+
+        /*  
+         * Select every request in R if f+1 replicas include it
+         * And sequence number is greater than the largest in selectedHistoryM
+         */
+        for (SortedMap<Long, RequestMessage> requests : allRequests) {
+            for (Map.Entry<Long, RequestMessage> request : requests.entrySet()) {
+                if ((checkpoint == null || request.getKey() > checkpoint.getSequenceNumber()) && requestMap.get(request.getKey()) >= tolerance + 1) {
+                    sortedRequests.addEntry(request.getKey(), request.getValue());
+                } else if (checkpoint == null || request.getKey() > checkpoint.getSequenceNumber()) {
+                    sortedRequests.addEntry(request.getKey(), null);
+                }
+            }
+        }
+
+        if (checkpoint != null && checkpoint.getHistory() != null) {
+            SortedMap<Long, RequestMessage> historyMRequests = checkpoint.getHistory().getRequests();
+            for (long seqNumber : checkpoint.getHistory().getRequests().keySet()) {
+                sortedRequests.addEntry(seqNumber, historyMRequests.get(seqNumber));
+            }
+        }
+
+        if (!sortedRequests.getRequests().keySet().equals(requestsFromNewView.getRequests().keySet())) {
+            return false;
+        }
+
+        System.out.println("Locally sorted requests: " + sortedRequests + "\n Received: " + requestsFromNewView);
+        for (long seqNumber : sortedRequests.getRequests().keySet()) {
+            if (sortedRequests.getRequests().get(seqNumber) != requestsFromNewView.getRequests().get(seqNumber)
+                || (sortedRequests.getRequests().get(seqNumber) == null && requestsFromNewView.getRequests().get(seqNumber) != null)
+                || (sortedRequests.getRequests().get(seqNumber) != null && requestsFromNewView.getRequests().get(seqNumber) == null)) {
+                return false;
+            }
+        }
 
         long newViewNumber = newView.getNewViewNumber();
         this.gcNewView(newViewNumber);
