@@ -599,14 +599,14 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
                     this.setTimeout(this::sendViewChangeOnTimeout, timeout, "CHECKPOINT");
                 }
             } else if (ticket.isCommittedConflicting(this.tolerance)) {
-                ViewChangeMessage viewChangeMessage = this.messageLog.produceViewChange(this.getViewNumber() + 1, this.getId(), tolerance, this.speculativeRequests);
+                ViewChangeMessage viewChangeMessage = this.messageLog.produceViewChange(this.getViewNumber() + 1, this.getViewNumber(), this.getId(), tolerance, this.speculativeRequests);
                 this.sendViewChange(viewChangeMessage);
             }
         }
     }
 
-    private void sendViewChangeOnTimeout() {
-        ViewChangeMessage viewChangeMessage = this.messageLog.produceViewChange(this.getViewNumber() + 1, this.getId(), tolerance, this.speculativeRequests);
+    public void sendViewChangeOnTimeout() {
+        ViewChangeMessage viewChangeMessage = this.messageLog.produceViewChange(this.getViewNumber() + 1, this.getViewNumber(), this.getId(), tolerance, this.speculativeRequests);
         this.sendViewChange(viewChangeMessage);
     }
 
@@ -673,7 +673,7 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
              * then the replica sends a view-change.
              */
             this.checkpointForNewView = false;
-            ViewChangeMessage viewChangeMessage = messageLog.produceViewChange(this.getViewNumber() + 1, this.getId(), tolerance, this.speculativeRequests);
+            ViewChangeMessage viewChangeMessage = messageLog.produceViewChange(this.getViewNumber() + 1, this.getViewNumber(), this.getId(), tolerance, this.speculativeRequests);
             this.sendViewChange(viewChangeMessage);
         } else {
             // Upon receiving a checkpoint the replica gets out of disgruntled state
@@ -766,6 +766,7 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
         this.setView(newViewNumber);
         this.clearAllTimeouts();
         this.messageLog.clearPanics();
+        this.largestViewNumber = newViewNumber;
     }
 
     public void recvViewChange(ViewChangeMessage viewChange) {
@@ -783,7 +784,7 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
         ViewChangeResult result = messageLog.acceptViewChange(viewChange, this.getId(), curViewNumber, this.tolerance);
         if (result.isShouldBandwagon()) {
             ViewChangeMessage bandwagonViewChange = messageLog.produceViewChange(
-                    newViewNumber, this.getId(), this.tolerance, this.speculativeRequests);
+                    newViewNumber, this.getViewNumber(), this.getId(), this.tolerance, this.speculativeRequests);
             this.sendViewChange(bandwagonViewChange);
         }
 
@@ -813,7 +814,7 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
     }
 
     public void incrementViewChangeOnTimeout() {
-        ViewChangeMessage viewChangeMessage = this.messageLog.produceViewChange(this.largestViewNumber + 1, this.getId(), tolerance, this.speculativeRequests);
+        ViewChangeMessage viewChangeMessage = this.messageLog.produceViewChange(this.largestViewNumber + 1, this.getViewNumber(), this.getId(), tolerance, this.speculativeRequests);
         this.sendViewChange(viewChangeMessage);
     }
 

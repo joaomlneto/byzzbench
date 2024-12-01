@@ -4,7 +4,6 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Deque;
 import java.util.HashMap;
 import java.util.Map;
@@ -45,9 +44,9 @@ public class MessageLog implements Serializable {
     @Getter
     private final SortedMap<TicketKey, Ticket<?, ?>> tickets = new TreeMap<>();
 
-    private final SortedMap<Long, Collection<CheckpointMessage>> checkpointsI = new TreeMap<>();
-    private final SortedMap<Long, Collection<CheckpointMessage>> checkpointsII = new TreeMap<>();
-    private final SortedMap<Long, Collection<CheckpointMessage>> checkpointsIII = new TreeMap<>();
+    private final SortedMap<Long, SortedMap<String, CheckpointMessage>> checkpointsI = new TreeMap<>();
+    private final SortedMap<Long, SortedMap<String, CheckpointMessage>> checkpointsII = new TreeMap<>();
+    private final SortedMap<Long, SortedMap<String, CheckpointMessage>> checkpointsIII = new TreeMap<>();
     // Stored as (viewNumber, (replicaId, message))
     private final SortedMap<Long, SortedMap<String, ViewChangeMessage>> viewChanges = new TreeMap<>();
 
@@ -57,7 +56,9 @@ public class MessageLog implements Serializable {
 
     private Checkpoint lastStableCheckpoint = new Checkpoint(0, null);
 
-    private Checkpoint lastAcceptedCheckpointI;
+    // Stored as (viewNumber, Checkpoint)
+    private SortedMap<Long, Checkpoint> acceptedCheckpointIs = new TreeMap<>();
+
     private final SortedMap<Long, Collection<SpeculativeHistory>> cer1 = new TreeMap<>();
     private final SortedMap<Long, Collection<SpeculativeHistory>> cer2 = new TreeMap<>();
 
@@ -140,7 +141,7 @@ public class MessageLog implements Serializable {
         // TODO: I am not sure whether these should be cleared or not
         // this.cer1 = new TreeMap<>();
         // this.cer2 = new TreeMap<>();
-        this.lastAcceptedCheckpointI = null;
+        // this.lastAcceptedCheckpointI = null;
 
         this.lastStableCheckpoint = new Checkpoint(checkpoint, history);
 
@@ -175,14 +176,14 @@ public class MessageLog implements Serializable {
         long seqNumber = checkpoint.getLastSeqNumber();
 
         if (checkpoint instanceof CheckpointIMessage) {
-            Collection<CheckpointMessage> checkpointProofs = this.checkpointsI.computeIfAbsent(seqNumber, k -> new ConcurrentLinkedQueue<>());
-            checkpointProofs.add(checkpoint);
-            this.lastAcceptedCheckpointI = new Checkpoint(seqNumber, history);
+            SortedMap<String, CheckpointMessage> checkpointProofs = this.checkpointsI.computeIfAbsent(seqNumber, k -> new TreeMap<>());
+            checkpointProofs.put(checkpoint.getReplicaId(), checkpoint);
+            acceptedCheckpointIs.put(viewNumber, new Checkpoint(seqNumber, history));
         }
 
         if (checkpoint instanceof CheckpointIIMessage) {
-            Collection<CheckpointMessage> checkpointProofs = this.checkpointsII.computeIfAbsent(seqNumber, k -> new ConcurrentLinkedQueue<>());
-            checkpointProofs.add(checkpoint);
+            SortedMap<String, CheckpointMessage> checkpointProofs = this.checkpointsII.computeIfAbsent(seqNumber, k -> new TreeMap<>());
+            checkpointProofs.put(checkpoint.getReplicaId(), checkpoint);
 
             // Can produce duplicates
             Collection<SpeculativeHistory> cer1History = this.cer1.computeIfAbsent(viewNumber, k -> new ConcurrentLinkedQueue<>());
@@ -190,8 +191,8 @@ public class MessageLog implements Serializable {
         }
 
         if (checkpoint instanceof CheckpointIIIMessage) {
-            Collection<CheckpointMessage> checkpointProofs = this.checkpointsIII.computeIfAbsent(seqNumber, k -> new ConcurrentLinkedQueue<>());
-            checkpointProofs.add(checkpoint);
+            SortedMap<String, CheckpointMessage> checkpointProofs = this.checkpointsIII.computeIfAbsent(seqNumber, k -> new TreeMap<>());
+            checkpointProofs.put(checkpoint.getReplicaId(), checkpoint);
 
             // Can produce duplicates
             Collection<SpeculativeHistory> cer2History = this.cer2.computeIfAbsent(viewNumber, k -> new ConcurrentLinkedQueue<>());
@@ -200,7 +201,7 @@ public class MessageLog implements Serializable {
             final int stableCount = 2 * tolerance + 1;
             int matching = 0;
 
-            for (CheckpointMessage proof : checkpointProofs) {
+            for (CheckpointMessage proof : checkpointProofs.values()) {
                 if (Arrays.equals(proof.getDigest(), checkpoint.getDigest())) {
                     matching++;
 
@@ -216,12 +217,12 @@ public class MessageLog implements Serializable {
     public boolean isCER1(CheckpointMessage checkpoint, int tolerance) {
         long seqNumber = checkpoint.getLastSeqNumber();
         // Should there be at least one because we add the checkpoint before calling this function
-        Collection<CheckpointMessage> checkpointProofs = this.checkpointsII.computeIfAbsent(seqNumber, k -> new ConcurrentLinkedQueue<>());
+        SortedMap<String, CheckpointMessage> checkpointProofs = this.checkpointsII.computeIfAbsent(seqNumber, k -> new TreeMap<>());
         
         final int stableCount = 2 * tolerance + 1;
         int matching = 0;
 
-        for (CheckpointMessage proof : checkpointProofs) {
+        for (CheckpointMessage proof : checkpointProofs.values()) {
             if (Arrays.equals(proof.getDigest(), checkpoint.getDigest())) {
                 matching++;
             }
@@ -233,12 +234,12 @@ public class MessageLog implements Serializable {
     public boolean isCER2(CheckpointMessage checkpoint, int tolerance) {
         long seqNumber = checkpoint.getLastSeqNumber();
         // Should there be at least one because we add the checkpoint before calling this function
-        Collection<CheckpointMessage> checkpointProofs = this.checkpointsIII.computeIfAbsent(seqNumber, k -> new ConcurrentLinkedQueue<>());
+        SortedMap<String, CheckpointMessage> checkpointProofs = this.checkpointsIII.computeIfAbsent(seqNumber, k -> new TreeMap<>());
         
         final int stableCount = 2 * tolerance + 1;
         int matching = 0;
 
-        for (CheckpointMessage proof : checkpointProofs) {
+        for (CheckpointMessage proof : checkpointProofs.values()) {
             if (Arrays.equals(proof.getDigest(), checkpoint.getDigest())) {
                 matching++;
             }
@@ -265,7 +266,7 @@ public class MessageLog implements Serializable {
         return c == null || c.isEmpty();
     }
 
-    public ViewChangeMessage produceViewChange(long newViewNumber, String replicaId, int tolerance, SortedMap<Long,RequestMessage> speculativeRequests) {
+    public ViewChangeMessage produceViewChange(long newViewNumber, long currViewNumber, String replicaId, int tolerance, SortedMap<Long,RequestMessage> speculativeRequests) {
         /*
          * Produces a VIEW-CHANGE vote message in accordance with hBFT 4.3.
          *
@@ -274,11 +275,11 @@ public class MessageLog implements Serializable {
          */
         long checkpoint = this.lowWaterMark;
 
-        Collection<CheckpointMessage> checkpointProofs = checkpoint == 0 ?
-                Collections.emptyList() : this.checkpointsIII.get(checkpoint);
-        if (checkpointProofs == null) {
-            throw new IllegalStateException("Checkpoint has diverged without any proof");
-        }
+        // Collection<CheckpointMessage> checkpointProofs = checkpoint == 0 ?
+        //         Collections.emptyList() : this.checkpointsIII.get(checkpoint);
+        // if (checkpointProofs == null) {
+        //     throw new IllegalStateException("Checkpoint has diverged without any proof");
+        // }
 
         /* 
          * Speculatively executed requests with sequence number higher,
@@ -295,15 +296,15 @@ public class MessageLog implements Serializable {
          * Execution history from previous view
          * CER1(M, v-1)
          */
-        SpeculativeHistory historyP = this.isCER1inView(newViewNumber - 1, tolerance);
+        SpeculativeHistory historyP = this.isCER1inView(currViewNumber, tolerance);
 
         /* 
          * Q execution history from the accepted Checkpoint-I message
          * TODO: figure out which view is this
          */
         Checkpoint historyQ;
-        if (this.lastAcceptedCheckpointI != null) {
-            historyQ = this.lastAcceptedCheckpointI;
+        if (this.acceptedCheckpointIs.get(currViewNumber) != null) {
+            historyQ = this.acceptedCheckpointIs.get(currViewNumber);
         } else {
             historyQ = null;
         }
@@ -316,17 +317,6 @@ public class MessageLog implements Serializable {
             requestsR,
             replicaId);
 
-        /*
-         * Potentially non-standard behavior - PBFT 4.5.2 does not specify
-         * whether replicas include their own view change messages. For 3f + 1
-         * replicas in the system, then given the max f faulty nodes, 3f + 1 - f
-         * or 2f + 1 replicas are expected to vote, meaning that excluding the
-         * initiating replica reduces the total number of votes to 2f. Since
-         * PBFT 4.5.2 states that the next view change may only be initiated by
-         * a quorum of 2f + 1 replicas, then electing a faulty primary that does
-         * not multicast a NEW-VIEW message will cause the entire system to
-         * stall; therefore I do include the initiating replica here.
-         */
         SortedMap<String, ViewChangeMessage> newViewSet = this.viewChanges.computeIfAbsent(newViewNumber, k -> new TreeMap<>());
         newViewSet.put(replicaId, viewChange);
 

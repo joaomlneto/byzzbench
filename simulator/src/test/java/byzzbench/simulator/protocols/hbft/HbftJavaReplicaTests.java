@@ -16,6 +16,7 @@ import static org.mockito.Mockito.times;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.util.Assert;
 
+import byzzbench.simulator.protocols.hbft.message.CheckpointIIIMessage;
 import byzzbench.simulator.protocols.hbft.message.CheckpointIIMessage;
 import byzzbench.simulator.protocols.hbft.message.CheckpointIMessage;
 import byzzbench.simulator.protocols.hbft.message.CheckpointMessage;
@@ -338,25 +339,27 @@ public class HbftJavaReplicaTests {
     }
 
     @Test
-	void tectRecvCheckpointINotFromPrimary() {
+	void tectRecvIncorrectCheckpointI() {
         HbftJavaReplica spyReplica = Mockito.spy(replicaA);
-        long viewNumber = 1;
-        long seqNumber = 1;
-        String clientId = "C0";
-        CheckpointMessage checkpoint = new CheckpointIMessage(0, null, replicaC.getId(), null);
+        byte[] digest = spyReplica.digest(spyReplica.getSpeculativeHistory());
+        // Not from pirmary
+        CheckpointMessage checkpoint = new CheckpointIMessage(0, digest, replicaC.getId(), null);
+        // Wrong seq number
+        CheckpointMessage checkpoint2 = new CheckpointIMessage(1, digest, primary.getId(), null);
+        // Wrong speculativehistory digest
+        CheckpointMessage checkpoint3 = new CheckpointIMessage(0, null, primary.getId(), null);
 
         spyReplica.recvCheckpoint(checkpoint);
+        spyReplica.recvCheckpoint(checkpoint2);
+        spyReplica.recvCheckpoint(checkpoint3);
         
         //verify(spyReplica, times(0)).getMessageLog().appendCheckpoint(checkpoint, 1, null, viewNumber);
-        verify(spyReplica, times(1)).sendViewChange(Mockito.any(ViewChangeMessage.class));
+        verify(spyReplica, times(3)).sendViewChange(Mockito.any(ViewChangeMessage.class));
     }
 
     @Test
 	void tectRecvCorrectCheckpointI() {
         HbftJavaReplica spyReplica = Mockito.spy(replicaA);
-        long viewNumber = 1;
-        long seqNumber = 1;
-        String clientId = "C0";
         byte[] digest = spyReplica.digest(spyReplica.getSpeculativeHistory());
         CheckpointMessage checkpoint = new CheckpointIMessage(0, digest, primary.getId(), null);
 
@@ -365,4 +368,286 @@ public class HbftJavaReplicaTests {
         verify(spyReplica, times(2)).clearTimeout(Mockito.any(String.class));
         verify(spyReplica, times(1)).sendCheckpoint(Mockito.any(CheckpointIIMessage.class));
     }
+
+    @Test
+	void tectRecvEnoughCorrectCheckpointII() {
+        HbftJavaReplica spyReplica = Mockito.spy(replicaA);
+        byte[] digest = spyReplica.digest(spyReplica.getSpeculativeHistory());
+        CheckpointMessage checkpoint = new CheckpointIMessage(0, digest, primary.getId(), primary.getSpeculativeHistory());
+        CheckpointMessage checkpoint2 = new CheckpointIIMessage(0, digest, replicaC.getId(), replicaC.getSpeculativeHistory());
+        CheckpointMessage checkpoint3 = new CheckpointIIMessage(0, digest, replicaD.getId(), replicaD.getSpeculativeHistory());
+
+        spyReplica.recvCheckpoint(checkpoint);
+        spyReplica.recvCheckpoint(checkpoint2);
+
+        Assert.isTrue(!replicaA.getMessageLog().isCER1(checkpoint2, 1), "Cer1 should not be complete with this checkpoint!");
+
+        spyReplica.recvCheckpoint(checkpoint3);
+        
+        verify(spyReplica, times(1)).sendCheckpoint(Mockito.any(CheckpointIIMessage.class));
+        verify(spyReplica, times(1)).sendCheckpoint(Mockito.any(CheckpointIIIMessage.class));
+        Assert.isTrue(replicaA.getMessageLog().isCER1(checkpoint3, 1), "Cer1 should be complete with this checkpoint!");
+    }
+
+    @Test
+	void tectRecvDuplicateCorrectCheckpointII() {
+        HbftJavaReplica spyReplica = Mockito.spy(replicaA);
+        byte[] digest = spyReplica.digest(spyReplica.getSpeculativeHistory());
+        CheckpointMessage checkpoint = new CheckpointIMessage(0, digest, primary.getId(), primary.getSpeculativeHistory());
+        CheckpointMessage checkpoint2 = new CheckpointIIMessage(0, digest, replicaC.getId(), replicaC.getSpeculativeHistory());
+
+        spyReplica.recvCheckpoint(checkpoint);
+        spyReplica.recvCheckpoint(checkpoint2);
+        spyReplica.recvCheckpoint(checkpoint2);
+        
+        verify(spyReplica, times(1)).sendCheckpoint(Mockito.any(CheckpointIIMessage.class));
+        verify(spyReplica, times(0)).sendCheckpoint(Mockito.any(CheckpointIIIMessage.class));
+        Assert.isTrue(!replicaA.getMessageLog().isCER1(checkpoint2, 1), "Cer1 should not be complete with this checkpoint!");
+    }
+
+    @Test
+	void tectRecvDiffHistoryCheckpointII() {
+        HbftJavaReplica spyReplica = Mockito.spy(replicaA);
+        RequestMessage request = new RequestMessage("123", 0, "C0");
+        SpeculativeHistory history = new SpeculativeHistory();
+        history.addEntry(1, request);
+        byte[] digest = spyReplica.digest(history);
+        CheckpointMessage checkpoint = new CheckpointIMessage(1, digest, primary.getId(), history);
+        CheckpointMessage checkpoint2 = new CheckpointIIMessage(1, digest, replicaC.getId(), history);
+        CheckpointMessage checkpoint3 = new CheckpointIIMessage(1, digest, replicaD.getId(), history);
+        CheckpointMessage checkpoint4 = new CheckpointIIMessage(1, digest, primary.getId(), history);
+
+        spyReplica.recvCheckpoint(checkpoint);
+        spyReplica.recvCheckpoint(checkpoint2);
+        spyReplica.recvCheckpoint(checkpoint3);
+        spyReplica.recvCheckpoint(checkpoint4);
+        
+        verify(spyReplica, times(1)).sendViewChange(Mockito.any(ViewChangeMessage.class));
+        verify(spyReplica, times(0)).sendCheckpoint(Mockito.any(CheckpointIIMessage.class));
+        verify(spyReplica, times(1)).sendCheckpoint(Mockito.any(CheckpointIIIMessage.class));
+        Assert.isTrue(replicaA.getMessageLog().isCER1(checkpoint4, 1), "Cer1 should be complete with this checkpoint!");
+        Assert.isTrue(Arrays.equals(replicaA.digest(replicaA.getSpeculativeHistory()), digest), "Replica should have adopted the speculative hisotry!");
+    }
+
+    @Test
+	void tectRecvDiffHistoryCheckpointIII() {
+        HbftJavaReplica spyReplica = Mockito.spy(replicaA);
+        RequestMessage request = new RequestMessage("123", 0, "C0");
+        SpeculativeHistory history = new SpeculativeHistory();
+        history.addEntry(1, request);
+        byte[] digest = spyReplica.digest(history);
+        CheckpointMessage checkpoint = new CheckpointIMessage(1, digest, primary.getId(), history);
+        CheckpointMessage checkpoint2 = new CheckpointIIIMessage(1, digest, replicaC.getId(), history);
+        CheckpointMessage checkpoint3 = new CheckpointIIIMessage(1, digest, replicaD.getId(), history);
+        CheckpointMessage checkpoint4 = new CheckpointIIIMessage(1, digest, primary.getId(), history);
+
+        spyReplica.recvCheckpoint(checkpoint);
+        spyReplica.recvCheckpoint(checkpoint2);
+        spyReplica.recvCheckpoint(checkpoint3);
+        spyReplica.recvCheckpoint(checkpoint4);
+        
+        verify(spyReplica, times(1)).sendViewChange(Mockito.any(ViewChangeMessage.class));
+        verify(spyReplica, times(0)).sendCheckpoint(Mockito.any(CheckpointIIMessage.class));
+        verify(spyReplica, times(0)).sendCheckpoint(Mockito.any(CheckpointIIIMessage.class));
+        Assert.isTrue(replicaA.getMessageLog().isCER2(checkpoint4, 1), "Cer2 should be complete with this checkpoint!");
+        Assert.isTrue(Arrays.equals(replicaA.digest(replicaA.getSpeculativeHistory()), digest), "Replica should have adopted the speculative hisotry!");
+    }
+
+    @Test
+	void tectRecvEnoughCorrectViewChange() {
+        HbftJavaReplica spyReplica = Mockito.spy(replicaA);
+        ViewChangeMessage viewChange  = new ViewChangeMessage(2, null, null, null, replicaC.getId());
+        ViewChangeMessage viewChange2  = new ViewChangeMessage(2, null, null, null, replicaD.getId());
+        //ViewChangeMessage viewChange  = new ViewChangeMessage(2, null, null, null, replicaC.getId());
+
+
+        spyReplica.recvViewChange(viewChange);
+        spyReplica.recvViewChange(viewChange);
+
+        // ViewChanges are sorted per replica so a double vote
+        // should not lead to two separate viewChange messages
+        verify(spyReplica, times(0)).sendViewChange(Mockito.any(ViewChangeMessage.class));
+        spyReplica.recvViewChange(viewChange2);
+        verify(spyReplica, times(1)).sendViewChange(Mockito.any(ViewChangeMessage.class));
+    }
+
+    // TODO: Figure out how viewChanges with different views should be handled
+    @Test
+	void tectRecvWithTwoDifferentViewsViewChange() {
+        HbftJavaReplica spyReplica = Mockito.spy(replicaA);
+        ViewChangeMessage viewChange  = new ViewChangeMessage(2, null, null, null, replicaC.getId());
+        ViewChangeMessage viewChange2  = new ViewChangeMessage(3, null, null, null, replicaD.getId());
+        //ViewChangeMessage viewChange  = new ViewChangeMessage(2, null, null, null, replicaC.getId());
+
+
+        spyReplica.recvViewChange(viewChange);
+        spyReplica.recvViewChange(viewChange);
+
+        // ViewChanges are sorted per replica so a double vote
+        // should not lead to two separate viewChange messages
+        verify(spyReplica, times(0)).sendViewChange(Mockito.any(ViewChangeMessage.class));
+        spyReplica.recvViewChange(viewChange2);
+        //verify(spyReplica, times(1)).sendViewChange(Mockito.any(ViewChangeMessage.class));
+    }
+
+    @Test
+	void tectRecvViewChangeAndTimeout() {
+        HbftJavaReplica spyReplica = Mockito.spy(replicaA);
+        ViewChangeMessage viewChange  = new ViewChangeMessage(2, null, null, null, replicaC.getId());
+        ViewChangeMessage viewChange2  = new ViewChangeMessage(2, null, null, null, replicaD.getId());
+
+        spyReplica.recvViewChange(viewChange);
+        spyReplica.recvViewChange(viewChange2);
+
+        verify(spyReplica, times(1)).sendViewChange(Mockito.any(ViewChangeMessage.class));
+        // Timeout for viewChange
+        spyReplica.incrementViewChangeOnTimeout();
+        verify(spyReplica, times(1)).sendViewChange(Mockito.argThat(arg -> arg.getNewViewNumber() == 3L));
+    }
+
+    @Test
+	void tectIfViewChangeIsWellConstructed() {
+        HbftJavaReplica spyReplica = Mockito.spy(replicaA);
+        RequestMessage request = new RequestMessage("123", 0, "C0");
+        byte[] digest = replicaA.digest(request);
+        long viewNumber = 1;
+        long seqNumber = 1;
+        PrepareMessage prepare = new PrepareMessage(viewNumber, seqNumber, digest, request);
+        CommitMessage commit = new CommitMessage(viewNumber, seqNumber, digest, request, primary.getId(), primary.getSpeculativeHistory());
+        CommitMessage commit2 = new CommitMessage(viewNumber, seqNumber, digest, request, replicaC.getId(), replicaC.getSpeculativeHistory());
+        
+        spyReplica.recvPrepare(prepare);
+        spyReplica.recvCommit(commit);
+        spyReplica.recvCommit(commit2);
+
+        Assert.isTrue(replicaA.getSpeculativeHistory().getRequests().containsValue(request) && replicaA.getSpeculativeHistory().getRequests().containsKey(seqNumber), "Correct speculative history!");
+        
+        CheckpointMessage checkpoint = new CheckpointIMessage(seqNumber, replicaA.digest(replicaA.getSpeculativeHistory()), primary.getId(), replicaA.getSpeculativeHistory());
+        CheckpointMessage checkpoint2 = new CheckpointIIMessage(seqNumber, replicaA.digest(replicaA.getSpeculativeHistory()), replicaC.getId(), replicaA.getSpeculativeHistory());
+        CheckpointMessage checkpoint3 = new CheckpointIIMessage(seqNumber, replicaA.digest(replicaA.getSpeculativeHistory()), replicaD.getId(), replicaA.getSpeculativeHistory());
+        CheckpointMessage checkpoint4 = new CheckpointIIIMessage(seqNumber, replicaA.digest(replicaA.getSpeculativeHistory()), replicaC.getId(), replicaA.getSpeculativeHistory());
+        CheckpointMessage checkpoint5 = new CheckpointIIIMessage(seqNumber, replicaA.digest(replicaA.getSpeculativeHistory()), replicaD.getId(), replicaA.getSpeculativeHistory());
+
+        spyReplica.recvCheckpoint(checkpoint);
+        spyReplica.recvCheckpoint(checkpoint2);
+        spyReplica.recvCheckpoint(checkpoint3);
+        spyReplica.recvCheckpoint(checkpoint4);
+        spyReplica.recvCheckpoint(checkpoint5);
+
+        Assert.isTrue(replicaA.getMessageLog().isCER1inView(viewNumber, 1) == replicaA.getSpeculativeHistory(), "Cer1 should be in view!");
+
+        RequestMessage request2 = new RequestMessage("321", 10, "C0");
+        byte[] digest2 = replicaA.digest(request2);
+        long seqNumber2 = 2;
+        PrepareMessage prepare2 = new PrepareMessage(viewNumber, seqNumber2, digest2, request2);
+
+        spyReplica.recvPrepare(prepare2);
+
+        Assert.isTrue(replicaA.getSpeculativeRequests().containsValue(request) && replicaA.getSpeculativeRequests().containsValue(request2), "Correct speculatively executed requests!");
+
+        spyReplica.sendViewChangeOnTimeout();
+
+        verify(spyReplica, times(1))
+        .sendViewChange(Mockito.argThat(arg -> arg.getNewViewNumber() == viewNumber + 1 
+            && arg.getRequestsR().values().size() == 1
+            && arg.getRequestsR().get(arg.getRequestsR().lastKey()) == replicaA.getSpeculativeRequests().get(replicaA.getSpeculativeRequests().lastKey())
+            && arg.getSpeculativeHistoryP() == checkpoint.getHistory()
+            && arg.getSpeculativeHistoryQ().getHistory() == checkpoint.getHistory()));
+    }
+
+    @Test
+	void tectIfViewChangeIsWellConstructed2() {
+        HbftJavaReplica spyReplica = Mockito.spy(replicaA);
+        RequestMessage request = new RequestMessage("123", 0, "C0");
+        byte[] digest = replicaA.digest(request);
+        long viewNumber = 1;
+        long seqNumber = 1;
+        PrepareMessage prepare = new PrepareMessage(viewNumber, seqNumber, digest, request);
+        CommitMessage commit = new CommitMessage(viewNumber, seqNumber, digest, request, primary.getId(), primary.getSpeculativeHistory());
+        CommitMessage commit2 = new CommitMessage(viewNumber, seqNumber, digest, request, replicaC.getId(), replicaC.getSpeculativeHistory());
+        
+        spyReplica.recvPrepare(prepare);
+        spyReplica.recvCommit(commit);
+        spyReplica.recvCommit(commit2);
+
+        Assert.isTrue(replicaA.getSpeculativeHistory().getRequests().containsValue(request) && replicaA.getSpeculativeHistory().getRequests().containsKey(seqNumber), "Correct speculative history!");
+        
+        CheckpointMessage checkpoint = new CheckpointIIMessage(seqNumber, replicaA.digest(replicaA.getSpeculativeHistory()), primary.getId(), replicaA.getSpeculativeHistory());
+        CheckpointMessage checkpoint2 = new CheckpointIIMessage(seqNumber, replicaA.digest(replicaA.getSpeculativeHistory()), replicaC.getId(), replicaA.getSpeculativeHistory());
+        CheckpointMessage checkpoint3 = new CheckpointIIMessage(seqNumber, replicaA.digest(replicaA.getSpeculativeHistory()), replicaD.getId(), replicaA.getSpeculativeHistory());
+        CheckpointMessage checkpoint4 = new CheckpointIIIMessage(seqNumber, replicaA.digest(replicaA.getSpeculativeHistory()), replicaC.getId(), replicaA.getSpeculativeHistory());
+        CheckpointMessage checkpoint5 = new CheckpointIIIMessage(seqNumber, replicaA.digest(replicaA.getSpeculativeHistory()), replicaD.getId(), replicaA.getSpeculativeHistory());
+
+        spyReplica.recvCheckpoint(checkpoint);
+        spyReplica.recvCheckpoint(checkpoint2);
+        spyReplica.recvCheckpoint(checkpoint3);
+        spyReplica.recvCheckpoint(checkpoint4);
+        spyReplica.recvCheckpoint(checkpoint5);
+
+        Assert.isTrue(replicaA.getMessageLog().isCER1inView(viewNumber, 1) == replicaA.getSpeculativeHistory(), "Cer1 should be in view!");
+
+        RequestMessage request2 = new RequestMessage("321", 10, "C0");
+        byte[] digest2 = replicaA.digest(request2);
+        long seqNumber2 = 2;
+        PrepareMessage prepare2 = new PrepareMessage(viewNumber, seqNumber2, digest2, request2);
+
+        spyReplica.recvPrepare(prepare2);
+
+        Assert.isTrue(replicaA.getSpeculativeRequests().containsValue(request) && replicaA.getSpeculativeRequests().containsValue(request2), "Correct speculatively executed requests!");
+
+        spyReplica.sendViewChangeOnTimeout();
+
+        verify(spyReplica, times(1))
+        .sendViewChange(Mockito.argThat(arg -> arg.getNewViewNumber() == viewNumber + 1 
+            && arg.getRequestsR().values().size() == 1
+            && arg.getRequestsR().get(arg.getRequestsR().lastKey()) == replicaA.getSpeculativeRequests().get(replicaA.getSpeculativeRequests().lastKey())
+            && arg.getSpeculativeHistoryP() == checkpoint.getHistory()
+            && arg.getSpeculativeHistoryQ() == null));
+    }
+
+    @Test
+	void tectIfViewChangeIsWellConstructed3() {
+        HbftJavaReplica spyReplica = Mockito.spy(replicaA);
+        RequestMessage request = new RequestMessage("123", 0, "C0");
+        byte[] digest = replicaA.digest(request);
+        long viewNumber = 1;
+        long seqNumber = 1;
+        PrepareMessage prepare = new PrepareMessage(viewNumber, seqNumber, digest, request);
+        CommitMessage commit = new CommitMessage(viewNumber, seqNumber, digest, request, primary.getId(), primary.getSpeculativeHistory());
+        CommitMessage commit2 = new CommitMessage(viewNumber, seqNumber, digest, request, replicaC.getId(), replicaC.getSpeculativeHistory());
+        
+        spyReplica.recvPrepare(prepare);
+        spyReplica.recvCommit(commit);
+        spyReplica.recvCommit(commit2);
+
+        Assert.isTrue(replicaA.getSpeculativeHistory().getRequests().containsValue(request) && replicaA.getSpeculativeHistory().getRequests().containsKey(seqNumber), "Correct speculative history!");
+        
+        CheckpointMessage checkpoint = new CheckpointIMessage(seqNumber, replicaA.digest(replicaA.getSpeculativeHistory()), primary.getId(), replicaA.getSpeculativeHistory());;
+
+        spyReplica.recvCheckpoint(checkpoint);
+
+        Assert.isTrue(replicaA.getMessageLog().isCER1inView(viewNumber, 1) == null, "Cer1 should be null!");
+
+        RequestMessage request2 = new RequestMessage("321", 10, "C0");
+        byte[] digest2 = replicaA.digest(request2);
+        long seqNumber2 = 2;
+        PrepareMessage prepare2 = new PrepareMessage(viewNumber, seqNumber2, digest2, request2);
+
+        spyReplica.recvPrepare(prepare2);
+
+        Assert.isTrue(replicaA.getSpeculativeRequests().containsValue(request) && replicaA.getSpeculativeRequests().containsValue(request2), "Correct speculatively executed requests!");
+
+        spyReplica.sendViewChangeOnTimeout();
+
+        verify(spyReplica, times(1))
+        .sendViewChange(Mockito.argThat(arg -> arg.getNewViewNumber() == viewNumber + 1 
+            && arg.getRequestsR().values().size() == 2
+            && arg.getRequestsR().get(arg.getRequestsR().firstKey()) == replicaA.getSpeculativeRequests().get(replicaA.getSpeculativeRequests().firstKey())
+            && arg.getRequestsR().get(arg.getRequestsR().lastKey()) == replicaA.getSpeculativeRequests().get(replicaA.getSpeculativeRequests().lastKey())
+            && arg.getSpeculativeHistoryP() == null
+            && arg.getSpeculativeHistoryQ().getHistory() == replicaA.getSpeculativeHistory()));
+    }
+
+    
+
 }
