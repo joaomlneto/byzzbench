@@ -4,9 +4,11 @@ import byzzbench.simulator.protocols.tendermint.message.*;
 
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.java.Log;
 
 import java.util.*;
 
+@Log
 @RequiredArgsConstructor
 public class MessageLog {
     private final TendermintReplica node;
@@ -16,21 +18,28 @@ public class MessageLog {
     @Getter
     private final SortedMap<Block, Long> precommits = new TreeMap<>();
 
+    public static final Block NULL_BLOCK = new Block(Long.MIN_VALUE, Long.MIN_VALUE, Long.MIN_VALUE, "NULL VALUE");
+
+
     @Getter
     private long proposalCount = 0;
 
 
     public boolean addMessage(GenericMessage voteMessage) {
-        if (voteMessage.getBlock()==null) {
-            return false;
-        }
+        log.info("Adding message: " + voteMessage);
+        log.info(Messages.contains(voteMessage) + "");
+        log.info(Messages.toString());
         boolean added = Messages.add(voteMessage);
         if (added) {
             if (voteMessage instanceof PrecommitMessage) {
-                if(precommits.containsKey(voteMessage.getBlock())) {
-                    precommits.put(voteMessage.getBlock(), precommits.get(voteMessage.getBlock()) + 1);
+                Block block = voteMessage.getBlock();
+                if (block == null){
+                    block = NULL_BLOCK;
+                }
+                if(precommits.containsKey(block)) {
+                    precommits.put(block, precommits.get(block) + 1);
                 } else {
-                    precommits.put(voteMessage.getBlock(), 1L);
+                    precommits.put(block, 1L);
                 }
             } else if (voteMessage instanceof PrevoteMessage) {
                 if(prevotes.containsKey(voteMessage.getBlock())) {
@@ -50,10 +59,16 @@ public class MessageLog {
     }
 
     public boolean hasEnoughPreVotes(Block block) {
+        log.info("Checking if block has enough prevotes: " + block);
+        log.info(prevotes.getOrDefault(block, 0L).toString());
+        log.info("Tolerance: " + node.getTolerance());
         return prevotes.getOrDefault(block, 0L) >= 2 * node.getTolerance() + 1;
     }
 
     public boolean hasEnoughPreCommits(Block block) {
+        log.info("Checking if block has enough precommits: " + block);
+        log.info(precommits.getOrDefault(block, 0L).toString());
+        log.info("Tolerance: " + node.getTolerance());
         return precommits.getOrDefault(block, 0L) >= 2 * node.getTolerance() + 1;
     }
 
