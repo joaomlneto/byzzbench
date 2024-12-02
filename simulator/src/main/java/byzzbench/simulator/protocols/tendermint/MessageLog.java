@@ -26,23 +26,23 @@ public class MessageLog {
 
 
     public boolean addMessage(GenericMessage voteMessage) {
-        log.info("Adding message: " + voteMessage);
-        log.info(Messages.contains(voteMessage) + "");
-        log.info(Messages.toString());
+//        log.info("Adding message: " + voteMessage);
+//        log.info(Messages.contains(voteMessage) + "");
+//        log.info(Messages.toString());
         boolean added = Messages.add(voteMessage);
         if (added) {
             if (voteMessage instanceof PrecommitMessage) {
                 Block block = voteMessage.getBlock();
-                if (block == null){
+                if (block == null) {
                     block = NULL_BLOCK;
                 }
-                if(precommits.containsKey(block)) {
+                if (precommits.containsKey(block)) {
                     precommits.put(block, precommits.get(block) + 1);
                 } else {
                     precommits.put(block, 1L);
                 }
             } else if (voteMessage instanceof PrevoteMessage) {
-                if(prevotes.containsKey(voteMessage.getBlock())) {
+                if (prevotes.containsKey(voteMessage.getBlock())) {
                     prevotes.put(voteMessage.getBlock(), prevotes.get(voteMessage.getBlock()) + 1);
                 } else {
                     prevotes.put(voteMessage.getBlock(), 1L);
@@ -59,16 +59,16 @@ public class MessageLog {
     }
 
     public boolean hasEnoughPreVotes(Block block) {
-        log.info("Checking if block has enough prevotes: " + block);
-        log.info(prevotes.getOrDefault(block, 0L).toString());
-        log.info("Tolerance: " + node.getTolerance());
+//        log.info("Checking if block has enough prevotes: " + block);
+//        log.info(prevotes.getOrDefault(block, 0L).toString());
+//        log.info("Tolerance: " + node.getTolerance());
         return prevotes.getOrDefault(block, 0L) >= 2 * node.getTolerance() + 1;
     }
 
     public boolean hasEnoughPreCommits(Block block) {
-        log.info("Checking if block has enough precommits: " + block);
-        log.info(precommits.getOrDefault(block, 0L).toString());
-        log.info("Tolerance: " + node.getTolerance());
+//        log.info("Checking if block has enough precommits: " + block);
+//        log.info(precommits.getOrDefault(block, 0L).toString());
+//        log.info("Tolerance: " + node.getTolerance());
         return precommits.getOrDefault(block, 0L) >= 2 * node.getTolerance() + 1;
     }
 
@@ -78,6 +78,11 @@ public class MessageLog {
 
     public String getPrevoteCount(Block block) {
         return prevotes.getOrDefault(block, 0L).toString();
+    }
+
+    public boolean fPlus1MessagesInRound(GenericMessage message, long round) {
+        return Messages.stream().filter(m -> m.getRound() > round
+                && m.getRound() == message.getRound()).count() >= node.getTolerance() + 1;
     }
 
 //    public void sentPrevote() {

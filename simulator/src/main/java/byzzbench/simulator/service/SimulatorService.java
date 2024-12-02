@@ -178,6 +178,15 @@ public class SimulatorService {
         }
     }
 
+    public boolean optimalDecisionPresent() throws Exception{
+        Optional<EventDecision> decisionOptional = this.scenario.getScheduler().scheduleNext(this.scenario);
+        if (decisionOptional.isPresent()) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+
     public enum SimulatorServiceMode {
         STOPPED, RUNNING
     }

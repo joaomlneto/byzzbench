@@ -46,9 +46,11 @@ public class TendermintReplica extends LeaderBasedProtocolReplica {
     // Assigned powers of each replica in the network
     private final Map<String, Integer> votingPower = new HashMap<>();
 
-    private boolean precommitsCheck;
+    private boolean enoughPrecommitsCheck;
     private boolean preVoteFirstTime;
-    private boolean greaterThanPrevoteCheck;
+    private boolean prevoteOrMoreFirstTime;
+
+    private boolean readyToCommit;
 
     public static final Block NULL_BLOCK = new Block(Long.MIN_VALUE, Long.MIN_VALUE, Long.MIN_VALUE, "NULL VALUE");
 
@@ -64,8 +66,14 @@ public class TendermintReplica extends LeaderBasedProtocolReplica {
         this.validValue = null;
         this.validRound = -1;
         this.messageLog = new MessageLog(this);
-        this.precommitsCheck = true;
+        this.enoughPrecommitsCheck = true;
         this.preVoteFirstTime = true;
+        this.prevoteOrMoreFirstTime = true;
+        this.votingPower.put("A", 3);
+        this.votingPower.put("B", 2);
+        this.votingPower.put("C", 1);
+        this.votingPower.put("D", 1);
+        this.readyToCommit = false;
     }
 
     /**
@@ -79,14 +87,7 @@ public class TendermintReplica extends LeaderBasedProtocolReplica {
      * - Accept the proposal if valid, otherwise reject it.
      */
     protected void handleProposal(ProposalMessage proposalMessage) {
-        // Validate if the message is signed by the correct proposer
-        if (!proposalMessage.isSignedBy(proposer(height, round))) {
-            log.warning("Message not from proposer for this round: " + proposalMessage);
-            return;
-        }
-
         // Process the proposal
-        log.info("Valid proposal received: " + proposalMessage);
         boolean added = messageLog.addMessage(proposalMessage);
         if (!added) {
             log.info("Proposal already received: " + proposalMessage);
@@ -95,59 +96,118 @@ public class TendermintReplica extends LeaderBasedProtocolReplica {
             log.info("Proposal added to log: " + proposalMessage);
             broadcastGossipProposal(proposalMessage);
         }
-        // 22: upon ⟨PROPOSAL, hp, roundp, v, −1⟩ from proposer(hp, roundp) while stepp = propose do
-        if (validRoundIsNegative(proposalMessage)) {
+
+        log.info("The block is: " + proposalMessage.getBlock());
+        log.info("Boolean 28: " + boolean28(proposalMessage));
+        log.info("Boolean 36: " + boolean36(proposalMessage));
+        log.info("Boolean 49: " + boolean49(proposalMessage));
+        log.info("Is initial proposal: " + isInitialProposal(proposalMessage));
+
+        if (boolean28(proposalMessage)) {
+            handle28(proposalMessage);
+        } else if (boolean36(proposalMessage)) {
+            handle36(proposalMessage);
+        } else if (isInitialProposal(proposalMessage)) {
             initialProposal(proposalMessage);
+        } else if (boolean49(proposalMessage)) {
+            handle49(proposalMessage);
         } else {
-            // 28: 2f + 1 ⟨PREVOTE, hp, vr, id(v)⟩ while stepp = propose ∧ (vr ≥ 0 ∧ vr < roundp) do
-            if (messageLog.hasEnoughPreVotes(new Block(height, proposalMessage.getValidRound(), proposalMessage.getBlock().getId(), proposalMessage.getBlock().getValue()))
-                    && this.step == Step.PROPOSE
-                    && proposalMessage.getValidRound() >= 0 && proposalMessage.getValidRound() < this.round) {
-                log.info("2f + 1 ⟨PREVOTE, hp, vr, id(v)⟩ while stepp = propose ∧ (vr ≥ 0 ∧ vr < roundp)");
-                if (valid(proposalMessage.getBlock())
-                        && (lockedRound <= proposalMessage.getValidRound() || lockedValue.equals(proposalMessage.getBlock()))) {
-                    broadcastPrevote(height, round, proposalMessage.getBlock());
-                } else {
-                    broadcastPrevote(height, round, NULL_BLOCK);
-                }
-                step = Step.PREVOTE;
-                // 36: 2f + 1 ⟨PREVOTE, hp, roundp, id(v)⟩ while valid(v) ∧ stepp ≥ TODO: prevote for the first time
-            } else if (messageLog.hasEnoughPreVotes(new Block(height, round, proposalMessage.getBlock().getId(), proposalMessage.getBlock().getValue()))
-                    && valid(proposalMessage.getBlock())
-                    && (this.step.compareTo(Step.PREVOTE) >= 0)) {
-                log.info("2f + 1 ⟨PREVOTE, hp, roundp, id(v)⟩ while valid(v) ∧ stepp ≥ prevote for the first time");
-                if (this.step == Step.PREVOTE ){
-                    this.lockedValue = proposalMessage.getBlock();
-                    this.lockedRound = this.round;
-                    broadcastPrecommit(height, round, proposalMessage.getBlock());
-                    this.step = Step.PRECOMMIT;
-                }
-                this.validValue = proposalMessage.getBlock();
-                this.validRound = this.round;
-            } else if (messageLog.hasEnoughPreCommits(new Block(height, proposalMessage.getRound(), proposalMessage.getBlock().getId(), proposalMessage.getBlock().getValue()))
-                    && getCommitLog().get((int) height) == null) {
-                log.info("AND 2f + 1 ⟨PRECOMMIT, hp, r, id(v)⟩ while decisionp[hp] = nil");
-                if (valid(proposalMessage.getBlock())) {
-                    commitOperation(proposalMessage.getBlock());
-                    height++;
-                    reset();
-                    startRound(0);
-                }
-            }
-            else{
-                log.warning("Invalid proposal received: " + proposalMessage);
-                broadcastPrevote(height, round, NULL_BLOCK);
-            }
+            log.warning("Invalid proposal received: " + proposalMessage);
         }
+//        // 22: upon ⟨PROPOSAL, hp, roundp, v, −1⟩ from proposer(hp, roundp) while stepp = propose do
+//        if (validRoundIsNegative(proposalMessage)) {
+//            log.info("The block is: " + proposalMessage.getBlock());
+//            log.info("Boolean 49: " + boolean49(proposalMessage));
+//            log.info("Boolean 36: " + boolean36(proposalMessage));
+//            if (boolean49(proposalMessage)) {
+//                handle49(proposalMessage);
+//            }
+//            else if (boolean36(proposalMessage)) {
+//                handle36(proposalMessage);
+//            }
+//            else {
+//                initialProposal(proposalMessage);
+//            }
+//        } else {
+//            log.info("The block is: " + proposalMessage.getBlock());
+//            // 28: 2f + 1 ⟨PREVOTE, hp, vr, id(v)⟩ while stepp = propose ∧ (vr ≥ 0 ∧ vr < roundp) do
+//            log.info("Boolean 28: " + boolean28(proposalMessage));
+//            log.info("Boolean 36: " + boolean36(proposalMessage));
+//            log.info("Boolean 49: " + boolean49(proposalMessage));
+//            if (boolean28(proposalMessage)) {
+//                handle28(proposalMessage);
+//                // 36: 2f + 1 ⟨PREVOTE, hp, roundp, id(v)⟩ while valid(v) ∧ stepp ≥ prevote for the first time do
+//            } else if (boolean36(proposalMessage)) {
+//                handle36(proposalMessage);
+//            } else if (boolean49(proposalMessage)) {
+//                handle49(proposalMessage);
+//            }
+//            else{
+//                log.warning("Invalid proposal received: " + proposalMessage);
+//            }
+//        }
 
     }
 
-    private void initialProposal(ProposalMessage proposalMessage) {
-        if (valid(proposalMessage.getBlock())) {
-            log.info("[137] Initial proposal accepted : " + proposalMessage);
+    private void handle28(ProposalMessage proposalMessage) {
+        log.info("2f + 1 ⟨PREVOTE, hp, vr, id(v)⟩ while stepp = propose ∧ (vr ≥ 0 ∧ vr < roundp)");
+        if (valid(proposalMessage.getBlock())
+                && (lockedRound <= proposalMessage.getValidRound() || lockedValue.equals(proposalMessage.getBlock()))) {
             broadcastPrevote(height, round, proposalMessage.getBlock());
         } else {
-            log.info("[140] Initial proposal rejected: " + proposalMessage);
+            broadcastPrevote(height, round, NULL_BLOCK);
+        }
+        step = Step.PREVOTE;
+    }
+
+    private boolean boolean28(ProposalMessage proposalMessage) {
+        return proposalMessage.isSignedBy(proposer(height, proposalMessage.getRound()))
+                && messageLog.hasEnoughPreVotes(new Block(height, proposalMessage.getValidRound(), proposalMessage.getBlock().getId(), proposalMessage.getBlock().getValue()))
+                && this.step == Step.PROPOSE
+                && (proposalMessage.getValidRound() >= 0 && proposalMessage.getValidRound() < this.round);
+    }
+
+    private void handle36(ProposalMessage proposalMessage) {
+        this.prevoteOrMoreFirstTime = false;
+        log.info("2f + 1 ⟨PREVOTE, hp, roundp, id(v)⟩ while valid(v) ∧ stepp ≥ prevote for the first time");
+        if (this.step == Step.PREVOTE) {
+            this.lockedValue = proposalMessage.getBlock();
+            this.lockedRound = this.round;
+            broadcastPrecommit(height, round, proposalMessage.getBlock());
+            this.step = Step.PRECOMMIT;
+        }
+        this.validValue = proposalMessage.getBlock();
+        this.validRound = this.round;
+    }
+
+    private boolean boolean36(ProposalMessage proposalMessage) {
+        return proposalMessage.isSignedBy(proposer(height, round))
+                && messageLog.hasEnoughPreVotes(new Block(height, round, proposalMessage.getBlock().getId(), proposalMessage.getBlock().getValue()))
+                && valid(proposalMessage.getBlock())
+                && (this.step.compareTo(Step.PREVOTE) >= 0 && this.prevoteOrMoreFirstTime);
+    }
+
+    private void handle49(ProposalMessage proposalMessage) {
+        log.info("AND 2f + 1 ⟨PRECOMMIT, hp, r, id(v)⟩ while decisionp[hp] = nil");
+        if (valid(proposalMessage.getBlock())) {
+            commitOperation(proposalMessage.getBlock());
+            height++;
+            reset();
+            startRound(0);
+        }
+    }
+
+    private boolean boolean49(ProposalMessage proposalMessage) {
+        return proposalMessage.isSignedBy(proposer(height, round))
+                && messageLog.hasEnoughPreCommits(new Block(height, proposalMessage.getRound(), proposalMessage.getBlock().getId(), proposalMessage.getBlock().getValue()))
+                && getCommitLog().get((int) height) == null;
+    }
+
+    private void initialProposal(ProposalMessage proposalMessage) {
+        if (valid(proposalMessage.getBlock())
+            && this.lockedRound == -1 || this.lockedValue.equals(proposalMessage.getBlock())) {
+            broadcastPrevote(height, round, proposalMessage.getBlock());
+        } else {
             broadcastPrevote(height, round, NULL_BLOCK);
         }
         this.step = Step.PREVOTE;
@@ -162,8 +222,10 @@ public class TendermintReplica extends LeaderBasedProtocolReplica {
         this.lockedRound = -1;
         this.validValue = null;
         this.validRound = -1;
-        this.precommitsCheck = true;
+        this.enoughPrecommitsCheck = true;
         this.preVoteFirstTime = true;
+        this.prevoteOrMoreFirstTime = true;
+        this.messageLog = new MessageLog(this);
     }
 
     /**
@@ -176,34 +238,15 @@ public class TendermintReplica extends LeaderBasedProtocolReplica {
     }
 
     /**
-     * ⟨PROPOSAL, hp, roundp, v, vr⟩ from proposer(hp, roundp) AND 2f + 1 ⟨PREVOTE, hp, vr, id(v)⟩
-     *
-     * @param proposalMessage - the proposal message
-     * @return true if the proposal is a subsequent proposal
-     */
-    private boolean isSubsequentProposal(ProposalMessage proposalMessage) {
-        if (proposalMessage.getValidRound() != -1) {
-            // TODO: 2f + 1 ⟨PREVOTE, hp, vr, id(v)⟩ messages received
-            // for now just true
-            return true;
-        }
-        return false;
-    }
-
-    /**
      * ⟨PROPOSAL, hp, roundp, v, −1⟩ from proposer(hp, roundp) while stepp = propose do
      *
      * @param proposalMessage - the proposal message
      * @return true if the proposal is the initial proposal
      */
-    private boolean validRoundIsNegative(ProposalMessage proposalMessage) {
-        if (proposalMessage.getValidRound() == -1) {
-            if (proposer(height, round).equals(proposalMessage.getSignedBy()) && step == Step.PROPOSE) {
-                return true;
-            }
-            return false;
-        }
-        return false;
+    private boolean isInitialProposal(ProposalMessage proposalMessage) {
+        return proposalMessage.isSignedBy(proposer(height, round))
+                && proposalMessage.getValidRound() == -1
+                && step == Step.PROPOSE;
     }
 
     /**
@@ -256,10 +299,10 @@ public class TendermintReplica extends LeaderBasedProtocolReplica {
         if (messageLog.hasEnoughPreVotes(prevoteMessage.getBlock())) {
             log.info("Quorum reached at replica: " + this.getNodeId() + " for block id: " + prevoteMessage.getBlock().getId());
             log.info("Quorum reached for block hash: " + prevoteMessage.getBlock());
-            if (this.step == Step.PREVOTE && precommitsCheck) {
+            if (this.step == Step.PREVOTE && this.preVoteFirstTime) {
                 log.info("on timeout prevote");
                 onTimeoutPrevote(height, round);
-                precommitsCheck = false;
+                this.preVoteFirstTime = false;
             } else if (this.step == Step.PREVOTE) {
                 log.info("Broadcasting precommit for null block block: ");
                 broadcastPrecommit(height, round, NULL_BLOCK);
@@ -305,11 +348,9 @@ public class TendermintReplica extends LeaderBasedProtocolReplica {
      */
     protected void handlePrecommit(PrecommitMessage precommitMessage) {
         if (validateMessage(precommitMessage)) {
-            log.warning("Invalid precommit received: " + precommitMessage);
             return;
         }
 
-        log.info("Valid precommit received: " + precommitMessage);
         boolean added = messageLog.addMessage(precommitMessage);
         if (!added) {
             return;
@@ -318,7 +359,8 @@ public class TendermintReplica extends LeaderBasedProtocolReplica {
         }
 
         if (messageLog.hasEnoughPreCommits(new Block(height, round, precommitMessage.getBlock().getId(), precommitMessage.getBlock().getValue()))
-                && this.precommitsCheck) {
+                && this.enoughPrecommitsCheck) {
+            this.enoughPrecommitsCheck = false;
             log.info("on timeout precommit");
             onTimeoutPrecommit(height, round);
         }
@@ -335,7 +377,9 @@ public class TendermintReplica extends LeaderBasedProtocolReplica {
     }
 
     private void onTimeoutPrecommit(long height, long round) {
-        if (this.height == height && this.round == round && this.step == Step.PRECOMMIT) {
+        if (this.height == height
+                && this.round == round
+                && this.step == Step.PRECOMMIT) {
             startRound(this.round + 1);
         }
     }
@@ -386,11 +430,14 @@ public class TendermintReplica extends LeaderBasedProtocolReplica {
             log.warning("Invalid message received from " + sender);
             return;
         }
+
         if (message instanceof GossipMessage) {
             handleGossipMessage((GossipMessage) message);
         } else {
-            if (moveOn((GenericMessage) message)) {
-                startRound(((GenericMessage) message).getRound());
+            if (messageLog.fPlus1MessagesInRound((GenericMessage) message, round)) {
+                GenericMessage m = (GenericMessage) message;
+                log.info("f + 1 messages received in round: " + m.getRound());
+                startRound(m.getRound());
             } else {
                 if (message instanceof ProposalMessage) {
                     handleProposal((ProposalMessage) message);
@@ -411,7 +458,7 @@ public class TendermintReplica extends LeaderBasedProtocolReplica {
             log.warning("Invalid message received from " + message.getReplicaId());
             return;
         }
-        if (moveOn(message.getGossipMessage())) {
+        if (messageLog.fPlus1MessagesInRound(message.getGossipMessage(), round)) {
             startRound(message.getGossipMessage().getRound());
         }
         if (message.getGossipMessage() instanceof ProposalMessage) {
@@ -425,10 +472,6 @@ public class TendermintReplica extends LeaderBasedProtocolReplica {
         }
     }
 
-    private boolean moveOn(GenericMessage message) {
-        return message.getRound() > this.round;
-    }
-
     /**
      * Starts a new round of the consensus protocol.
      *
@@ -436,7 +479,7 @@ public class TendermintReplica extends LeaderBasedProtocolReplica {
      */
     private void startRound(long roundNumber) {
         log.info("START ROUND CALLED: " + roundNumber);
-        setRound(roundNumber);
+        this.round = roundNumber;
         step = Step.PROPOSE;
         Block proposal = new Block(height, round, messageLog.getMessageCount() + 1, null);
         if (proposer(height, roundNumber).equals(getNodeId())) {
@@ -447,8 +490,7 @@ public class TendermintReplica extends LeaderBasedProtocolReplica {
                 proposal = getValue();
             }
             broadcastProposal(height, round, proposal, validRound);
-        }
-        else {
+        } else {
             // WARNING: this only will work when the timeout is implemented
             // onTimeoutPropose(height, round);
         }
@@ -460,21 +502,29 @@ public class TendermintReplica extends LeaderBasedProtocolReplica {
         return new Block(height, round, messageLog.getMessageCount() + 1, "value");
     }
 
-    private void setRound(long roundNumber) {
-        String leaderId = proposer(height, roundNumber);
-        // view is the same as round in Tendermint
-        this.round = roundNumber;
-    }
-
     /**
-     * For now just returns A.
-     * We assume that the proposer selection function is weighted round-robin, where processes are
-     * rotated proportional to their voting power. A validator with more voting power is selected more frequently,
-     * proportional to its power. More precisely, during a sequence of rounds of size n, every process is proposer
-     * in a number of rounds equal to its voting power.
+     * Determines the proposer in a deterministic, weighted round-robin manner.
+     *
+     * @param height The current height of the blockchain.
+     * @param round  The current round of proposer selection.
+     * @return The node ID that is selected as proposer.
      */
     private String proposer(long height, long round) {
-        return "A";
+        // Generate the proposer list based on voting power
+        List<String> proposerList = new ArrayList<>();
+        for (Map.Entry<String, Integer> entry : votingPower.entrySet()) {
+            String node = entry.getKey();
+            int power = entry.getValue();
+            for (int i = 0; i < power; i++) {
+                proposerList.add(node);
+            }
+        }
+
+        // Calculate the index based on the height and round
+        // Using both height and round ensures determinism across rounds and heights
+        int index = (int) ((height + round) % proposerList.size());
+
+        return proposerList.get(index);
     }
 
 
