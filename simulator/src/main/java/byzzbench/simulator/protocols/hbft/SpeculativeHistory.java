@@ -37,6 +37,9 @@ public class SpeculativeHistory implements Serializable {
         return new SpeculativeHistory(filteredHistory);
     }
 
+    /* 
+     * Get the history before a given sequence number (including)
+     */
     public SpeculativeHistory getHistoryBefore(long sequenceNumber) {
         SortedMap<Long, RequestMessage> filteredHistory = new TreeMap<>();
         for (Long key : this.history.keySet()) {

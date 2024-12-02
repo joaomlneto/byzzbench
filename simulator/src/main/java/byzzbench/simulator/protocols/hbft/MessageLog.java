@@ -527,48 +527,48 @@ public class MessageLog implements Serializable {
         Checkpoint checkpoint = newView.getCheckpoint();
         SpeculativeHistory requestsFromNewView = newView.getSpeculativeHistory();
 
-        if (checkpoint == null && this.lastStableCheckpoint != null || checkpoint != null && this.lastStableCheckpoint == null ) {
+        // Should never be null
+        if (checkpoint == null) {
             return false;
-        } else if (checkpoint != null && this.lastStableCheckpoint != null) {
-            // If any of the view-change messages are incorrect then dont accept
-            for (ViewChangeMessage viewChangeMessage : viewChanges) {
-                if (viewChangeMessage.getNewViewNumber() != newView.getNewViewNumber()) {
-                    return false;
-                }
-            }
-
-            // If the checkpoint is different than what should have been
-            // based on the view-change messages then dont accept
-            long threshold = tolerance * 2 + 1;
-            long count = 0;
-            for (ViewChangeMessage viewChangeMessage : viewChanges) {
-                if (viewChangeMessage.getSpeculativeHistoryP() != null 
-                    && (viewChangeMessage.getSpeculativeHistoryP().getGreatestSeqNumber() != checkpoint.getSequenceNumber()
-                    || viewChangeMessage.getSpeculativeHistoryP().getHistory() != checkpoint.getHistory())) {
-                    count++;
-                }
-            }
-
-            long thresholdForCheckpointI = tolerance + 1;
-            long countForCheckpiontI = 0;
-            for (ViewChangeMessage viewChangeMessage : viewChanges) {
-                if (viewChangeMessage.getSpeculativeHistoryQ() != null) {
-                    countForCheckpiontI++;
-                }
-            }
-
-            /* 
-            * If the checkpoint is not chosen from the view-change messages then,
-            * the new primary must pick its own last stable checkpoint,
-            * which should match for 2f + 1 replicas, otherwise the operation
-            * cannot continue. Even if the new primary is correct, this replica 
-            * can reject this new-view, however 2f + 1 replicas should accept, 
-            * and continue operating. This replica can rejoin at a checkpoint 
-            * sub-protocol.
-            */
-            if ((countForCheckpiontI < thresholdForCheckpointI || count < threshold) && checkpoint.equals(this.lastStableCheckpoint)) {
+        }
+        // If any of the view-change messages are incorrect then dont accept
+        for (ViewChangeMessage viewChangeMessage : viewChanges) {
+            if (viewChangeMessage.getNewViewNumber() != newView.getNewViewNumber()) {
                 return false;
             }
+        }
+
+        // If the checkpoint is different than what should have been
+        // based on the view-change messages then dont accept
+        long threshold = tolerance * 2 + 1;
+        long count = 0;
+        for (ViewChangeMessage viewChangeMessage : viewChanges) {
+            if (viewChangeMessage.getSpeculativeHistoryP() != null 
+                && (viewChangeMessage.getSpeculativeHistoryP().getGreatestSeqNumber() != checkpoint.getSequenceNumber()
+                || viewChangeMessage.getSpeculativeHistoryP().getHistory() != checkpoint.getHistory())) {
+                count++;
+            }
+        }
+
+        long thresholdForCheckpointI = tolerance + 1;
+        long countForCheckpiontI = 0;
+        for (ViewChangeMessage viewChangeMessage : viewChanges) {
+            if (viewChangeMessage.getSpeculativeHistoryQ() != null) {
+                countForCheckpiontI++;
+            }
+        }
+
+        /* 
+        * If the checkpoint is not chosen from the view-change messages then,
+        * the new primary must pick its own last stable checkpoint,
+        * which should match for 2f + 1 replicas, otherwise the operation
+        * cannot continue. Even if the new primary is correct, this replica 
+        * can reject this new-view, however 2f + 1 replicas should accept, 
+        * and continue operating. This replica can rejoin at a checkpoint 
+        * sub-protocol.
+        */
+        if ((countForCheckpiontI < thresholdForCheckpointI || count < threshold) && !checkpoint.equals(this.lastStableCheckpoint)) {
+            return false;
         }
 
         // Replica needs all the possibly executed requests for later
@@ -607,11 +607,12 @@ public class MessageLog implements Serializable {
             }
         }
 
+        System.out.println("Locally sorted requests: " + sortedRequests + "\n Received: " + requestsFromNewView);
+
         if (!sortedRequests.getRequests().keySet().equals(requestsFromNewView.getRequests().keySet())) {
             return false;
         }
 
-        System.out.println("Locally sorted requests: " + sortedRequests + "\n Received: " + requestsFromNewView);
         for (long seqNumber : sortedRequests.getRequests().keySet()) {
             if (sortedRequests.getRequests().get(seqNumber) != requestsFromNewView.getRequests().get(seqNumber)
                 || (sortedRequests.getRequests().get(seqNumber) == null && requestsFromNewView.getRequests().get(seqNumber) != null)
