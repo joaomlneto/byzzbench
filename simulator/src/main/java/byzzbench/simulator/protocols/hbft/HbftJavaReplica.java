@@ -30,6 +30,15 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
     @Getter
     private final long timeout;
 
+    @Getter
+    private final long PANIC_TIMEOUT = 3;
+    @Getter
+    private final long CHECKPOINT_TIMEOUT = 5;
+    @Getter
+    private final long VIEWCHANGE_TIMEOUT = 5;
+    @Getter
+    private final long REQUEST_TIMEOUT = 10;
+
     /**
      * The current sequence number for the replica.
      */
@@ -164,7 +173,7 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
 
         // Start the timer for this request per hBFT 4.3
         // This timeout check whether a request is completed in a given time
-        this.setTimeout(this::sendViewChangeOnTimeout, timeout, "REQUEST");
+        this.setTimeout(this::sendViewChangeOnTimeout, this.REQUEST_TIMEOUT, "REQUEST");
 
         // hBFT 4.1 - If the request is received by a non-primary replica
         // send the request to the actual primary
@@ -302,7 +311,7 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
              * This timeout checks whether a checkpoint is received
              * within a time after receiving f + 1 PANICs
              */
-            this.setTimeout(this::sendViewChangeOnTimeout, timeout, "PANIC");
+            this.setTimeout(this::sendViewChangeOnTimeout, this.PANIC_TIMEOUT, "PANIC");
         }
     }
 
@@ -335,11 +344,15 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
          * its accepted if the seq number equals the local seq number or 
          * the local seq number + 1. The two latter cases will be further
          * evaluated in the tryAdvanceState function.
+         * 
+         * However, COMMIT messages should be accepted even if they arrive later
+         * as it doesn't make sense to reject them.
          */
+        // FIXME: SeqCounter will be updated to lower seqNumber (not good)
         if (message instanceof PrepareMessage) {
             return seqNumber == this.seqCounter.get() + 1;
         } else if (message instanceof CommitMessage) {
-            return seqNumber == this.seqCounter.get() + 1 || seqNumber == this.seqCounter.get();
+            return this.messageLog.isBetweenWaterMarks(seqNumber);
         }
 
         /* 
@@ -596,7 +609,7 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
                     // Log own checkpoint in accordance to hBFT 4.2
                     //messageLog.appendCheckpoint(checkpoint, this.tolerance, this.speculativeHistory, this.getViewNumber());
                 } else if (seqNumber % 2 == 0) {
-                    this.setTimeout(this::sendViewChangeOnTimeout, timeout, "CHECKPOINT");
+                    this.setTimeout(this::sendViewChangeOnTimeout, this.CHECKPOINT_TIMEOUT, "CHECKPOINT");
                 }
             } else if (ticket.isCommittedConflicting(this.tolerance)) {
                 ViewChangeMessage viewChangeMessage = this.messageLog.produceViewChange(this.getViewNumber() + 1, this.getViewNumber(), this.getId(), tolerance, this.speculativeRequests);
@@ -821,7 +834,7 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
     public void sendViewChange(ViewChangeMessage viewChange) {
         this.disgruntled = true;
         this.largestViewNumber = viewChange.getNewViewNumber();
-        this.setTimeout(this::incrementViewChangeOnTimeout, this.timeout, "VIEW-CHANGE");
+        this.setTimeout(this::incrementViewChangeOnTimeout, this.VIEWCHANGE_TIMEOUT, "VIEW-CHANGE");
         // hBFT 4.3 - Multicast VIEW-CHANGE vote
         this.broadcastMessage(viewChange);
     }
@@ -926,14 +939,21 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
         this.speculativeHistory.addEntry(seqNumber, request);
 
         System.out.println(messageLog.getTickets());
-        ReplicaRequestKey key = new ReplicaRequestKey(clientId, timestamp);
-        boolean completed = messageLog.completeTicket(key, currentViewNumber, seqNumber);
-        System.out.println("Completed ticket: " + completed + " in view: " + currentViewNumber + " seq: " + seqNumber);
+
+
+        Ticket<O, R> ticket = messageLog.getTicket(currentViewNumber, seqNumber);
+        if (ticket == null) {
+            ticket = messageLog.newTicket(currentViewNumber, seqNumber);
+        }
+        ticket.append(request);
 
         // Clear the timeout for request completion
         this.clearSpecificTimeout("REQUEST");
 
         if (this.replied(request.getClientId(), request.getTimestamp(), currentViewNumber, seqNumber)) {
+            ReplicaRequestKey key = new ReplicaRequestKey(clientId, timestamp);
+            boolean completed = messageLog.completeTicket(key, currentViewNumber, seqNumber);
+            System.out.println("Completed ticket: " + completed + " in view: " + currentViewNumber + " seq: " + seqNumber);
             return;
         }
 
@@ -947,6 +967,11 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
             this.speculativeHistory);
 
         this.sendReply(clientId, reply);
+
+        ticket.append(reply);
+        ReplicaRequestKey key = new ReplicaRequestKey(clientId, timestamp);
+        boolean completed = messageLog.completeTicket(key, currentViewNumber, seqNumber);
+        System.out.println("Completed ticket: " + completed + " in view: " + currentViewNumber + " seq: " + seqNumber);
     }
 
     private String computePrimaryId(long viewNumber, int numReplicas) {

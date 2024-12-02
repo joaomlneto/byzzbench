@@ -89,7 +89,7 @@ public class Client implements Serializable, Node {
     /**
      * Timeout for client in seconds
      */
-    private final long timeout = 5;
+    private final long timeout = 8;
 
 
     @Override
@@ -99,6 +99,15 @@ public class Client implements Serializable, Node {
         //System.out.println("CLIENT TIMEOUT SETUP");
         //this.setTimeout("sendRequest", this::sendRequest, Duration.ofSeconds(1));
     }
+
+    // /**
+    //  * Sends a request to a replica in the system.
+    //  */
+    // public void sendRequest() {
+    //     String recipientId = this.getScenario().getNodes().keySet().iterator().next();
+    //     String requestId = String.format("%s/%d", this.id, this.requestSequenceNumber.getAndIncrement());
+    //     this.getScenario().getTransport().sendClientRequest(this.id, requestId, recipientId);
+    // }
 
     /**
      * As of hBFT 4.1, sends a request to all replica in the system.
@@ -214,6 +223,9 @@ public class Client implements Serializable, Node {
      * if #replies < f + 1
      */
     public boolean shouldRetransmit(long tolerance) {
+        if (!replies.containsKey(this.requestSequenceNumber.get())) {
+            return true;
+        }
         for (Long key : replies.get(this.requestSequenceNumber.get()).keySet()) {
             return !(this.replies.get(this.requestSequenceNumber.get()).get(key).size() >= tolerance + 1);
         }

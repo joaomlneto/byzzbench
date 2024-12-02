@@ -6,6 +6,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Deque;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.SortedMap;
 import java.util.TreeMap;
@@ -112,28 +113,36 @@ public class MessageLog implements Serializable {
          * A stable checkpoint then allows the water marks to slide over to
          * the checkpoint < x <= checkpoint + watermarkInterval per hBFT 4.2.
          */
-        for (Map.Entry<ReplicaRequestKey, Ticket<?, ?>> entry : this.ticketCache.entrySet()) {
+        Iterator<Map.Entry<ReplicaRequestKey, Ticket<?, ?>>> iterator = this.ticketCache.entrySet().iterator();
+        while (iterator.hasNext()) {
+            Map.Entry<ReplicaRequestKey, Ticket<?, ?>> entry = iterator.next();
             Ticket<?, ?> ticket = entry.getValue();
             if (ticket.getSeqNumber() <= checkpoint) {
-                this.ticketCache.remove(entry.getKey());
+                iterator.remove(); 
             }
         }
 
-        for (Long seqNumber : this.checkpointsI.keySet()) {
+        Iterator<Long> iteratorI = this.checkpointsI.keySet().iterator();
+        while (iteratorI.hasNext()) {
+            Long seqNumber = iteratorI.next();
             if (seqNumber < checkpoint) {
-                this.checkpointsI.remove(seqNumber);
+                iteratorI.remove();
             }
         }
 
-        for (Long seqNumber : this.checkpointsII.keySet()) {
+        Iterator<Long> iteratorII = this.checkpointsII.keySet().iterator();
+        while (iteratorII.hasNext()) {
+            Long seqNumber = iteratorII.next();
             if (seqNumber < checkpoint) {
-                this.checkpointsII.remove(seqNumber);
+                iteratorII.remove();
             }
         }
 
-        for (Long seqNumber : this.checkpointsIII.keySet()) {
+        Iterator<Long> iteratorIII = this.checkpointsIII.keySet().iterator();
+        while (iteratorIII.hasNext()) {
+            Long seqNumber = iteratorIII.next();
             if (seqNumber < checkpoint) {
-                this.checkpointsIII.remove(seqNumber);
+                iteratorIII.remove();
             }
         }
 
@@ -410,7 +419,9 @@ public class MessageLog implements Serializable {
             }
 
             historyMap.put(pHistory, historyMap.getOrDefault(pHistory, 0) + 1);
-            checkpointMap.put(qHistory.getSequenceNumber(), checkpointMap.getOrDefault(qHistory.getSequenceNumber(), 0) + 1);
+            if (qHistory != null) {
+                checkpointMap.put(qHistory.getSequenceNumber(), checkpointMap.getOrDefault(qHistory.getSequenceNumber(), 0) + 1);
+            }
         }
 
         for (Map.Entry<SpeculativeHistory, Integer> entry : historyMap.entrySet()) {
@@ -509,9 +520,11 @@ public class MessageLog implements Serializable {
          */
         this.viewChanges.remove(newViewNumber);
 
-        for (TicketKey key : this.tickets.keySet()) {
+        Iterator<TicketKey> iterator = this.tickets.keySet().iterator();
+        while (iterator.hasNext()) {
+            TicketKey key = iterator.next();
             if (key.getViewNumber() != newViewNumber) {
-                this.tickets.remove(key);
+                iterator.remove();
             }
         }
     }
