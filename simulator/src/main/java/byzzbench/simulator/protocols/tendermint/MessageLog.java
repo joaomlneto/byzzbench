@@ -49,20 +49,20 @@ public class MessageLog {
         return Messages.size();
     }
 
-    public boolean hasEnoughPreVotes(PrevoteMessage prevoteMessage) {
-        return prevotes.getOrDefault(prevoteMessage.getBlock(), 0L) >= 2 * node.getTolerance() + 1;
+    public boolean hasEnoughPreVotes(Block block) {
+        return prevotes.getOrDefault(block, 0L) >= 2 * node.getTolerance() + 1;
     }
 
-    public boolean hasEnoughPreCommits(PrecommitMessage precommitMessage) {
-        return precommits.getOrDefault(precommitMessage.getBlock(), 0L) >= 2 * node.getTolerance() + 1;
+    public boolean hasEnoughPreCommits(Block block) {
+        return precommits.getOrDefault(block, 0L) >= 2 * node.getTolerance() + 1;
     }
 
     public boolean contains(PrevoteMessage prevoteMessage) {
         return Messages.contains(prevoteMessage);
     }
 
-    public String getPrevoteCount(PrevoteMessage prevoteMessage) {
-        return prevotes.getOrDefault(prevoteMessage.getBlock(), 0L).toString();
+    public String getPrevoteCount(Block block) {
+        return prevotes.getOrDefault(block, 0L).toString();
     }
 
 //    public void sentPrevote() {

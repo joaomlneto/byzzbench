@@ -1,7 +1,7 @@
 package byzzbench.simulator.protocols.tendermint;
 
-public enum Step {
+public enum Step implements Comparable<Step> {
     PROPOSE,
     PREVOTE,
-    PRECOMMIT
+    PRECOMMIT,
 }
