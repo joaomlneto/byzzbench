@@ -25,7 +25,7 @@ repositories {
     mavenCentral()
 }
 
-extra["vaadinVersion"] = "24.5.3"
+extra["vaadinVersion"] = "24.5.6"
 
 dependencies {
     implementation("org.springframework.boot:spring-boot-starter-web")
@@ -39,16 +39,16 @@ dependencies {
     //implementation("org.springdoc:springdoc-openapi-ui:1.8.0")
     // either API (just documentation) or API + UI (documentation + Swagger UI)
     //implementation("org.springdoc:springdoc-openapi-starter-webmvc-api:2.5.0")
-    implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.6.0")
+    implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.7.0")
     //implementation("jakarta.xml.bind:jakarta.xml.bind-api:4.0.2") // required for webmvc-ui
     //compileOnly("javax.servlet:javax.servlet-api:4.0.1")
 
-    implementation("com.fasterxml.jackson.core:jackson-core:2.18.1")
-    implementation("com.fasterxml.jackson.core:jackson-annotations:2.18.1")
-    implementation("com.fasterxml.jackson.core:jackson-databind:2.18.1")
-    implementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.18.1")
-    implementation("com.fasterxml.jackson.module:jackson-module-parameter-names:2.18.1")
-    implementation("com.fasterxml.jackson.datatype:jackson-datatype-jdk8:2.18.1")
+    implementation("com.fasterxml.jackson.core:jackson-core:2.18.2")
+    implementation("com.fasterxml.jackson.core:jackson-annotations:2.18.2")
+    implementation("com.fasterxml.jackson.core:jackson-databind:2.18.2")
+    implementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.18.2")
+    implementation("com.fasterxml.jackson.module:jackson-module-parameter-names:2.18.2")
+    implementation("com.fasterxml.jackson.datatype:jackson-datatype-jdk8:2.18.2")
 }
 
 dependencyManagement {
