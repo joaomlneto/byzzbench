@@ -43,8 +43,14 @@ public class TendermintScenarioExecutor extends BaseScenario {
 
     @Override
     public synchronized void run() {
-        // nothing to do at the moment
-        // TODO: genesis block creation logic should be moved here
+        // send a request message to node A
+        try {
+            this.setNumClients(1);
+            this.transport.sendClientRequest("C0", "123", "A");
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw new RuntimeException(e);
+        }
     }
 
     @Override
