@@ -18,11 +18,11 @@ springdoc:
 byzzbench:
   autostart: false # Whether to start running scenarios automatically on startup
   #outputPath: /tmp/byzzbench # The path to write the output to
-  outputSchedules: buggy # which schedules to write to file? one of 'all', 'buggy' or 'none'
+  outputSchedules: all # which schedules to write to file? one of 'all', 'buggy' or 'none'
 
   scheduler:
     id: "byzzfuzz" # The ID of the scheduler to use
-    maxDropMessages: 1 # Maximum number of messages to drop per scenario
+    maxDropMessages: 0 # Maximum number of messages to drop per scenario
     maxFaults: 1 # Maximum number of faults to inject per scenario
     params:
       numRoundsWithProcessFaults: 1

@@ -126,7 +126,9 @@ public class Client implements Serializable, Node {
         if (this.shouldRetransmit(tolerance)) {
             String requestId = String.format("%s/%d", this.id, this.requestSequenceNumber.get());
             // Based on hBFT 4.1 it uses the identical request
-            long timestamp = this.sentRequests.get(this.requestSequenceNumber.get()).getTimestamp();
+            // TODO: It probably should not be the same timestamp
+            //long timestamp = this.sentRequests.get(this.requestSequenceNumber.get()).getTimestamp();
+            long timestamp = System.currentTimeMillis();
             this.scenario.getTransport().multicastClientRequest(this.id, timestamp, requestId, this.scenario.getTransport().getNodeIds());
         } else if (this.shouldPanic(tolerance)) {
             RequestMessage message = this.sentRequests.get(this.requestSequenceNumber.get());

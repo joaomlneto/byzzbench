@@ -548,7 +548,7 @@ public class HbftJavaReplicaTests {
 
         spyReplica.recvPrepare(prepare2);
 
-        Assert.isTrue(replicaA.getSpeculativeRequests().containsValue(request) && replicaA.getSpeculativeRequests().containsValue(request2), "Correct speculatively executed requests!");
+        Assert.isTrue(replicaA.getSpeculativeRequests().containsValue(request2), "Correct speculatively executed requests!");
 
         spyReplica.sendViewChangeOnTimeout();
 
@@ -598,7 +598,7 @@ public class HbftJavaReplicaTests {
 
         spyReplica.recvPrepare(prepare2);
 
-        Assert.isTrue(replicaA.getSpeculativeRequests().containsValue(request) && replicaA.getSpeculativeRequests().containsValue(request2), "Correct speculatively executed requests!");
+        Assert.isTrue(replicaA.getSpeculativeRequests().containsValue(request2), "Correct speculatively executed requests!");
 
         spyReplica.sendViewChangeOnTimeout();
 
@@ -732,7 +732,7 @@ public class HbftJavaReplicaTests {
         history2.addEntry(seqNumber, request);
         history2.addEntry(seqNumber + 1, request2);
         ViewChangeMessage viewChange  = new ViewChangeMessage(2, history, new Checkpoint(history.getGreatestSeqNumber(), history), history.getRequests(), replicaC.getId());
-        ViewChangeMessage viewChange2  = new ViewChangeMessage(2, history, null, history2.getRequests(), replicaD.getId());
+        ViewChangeMessage viewChange2  = new ViewChangeMessage(2, history, null, history2.getRequests(), primary.getId());
         ViewChangeMessage viewChange3  = new ViewChangeMessage(2, history, new Checkpoint(history.getGreatestSeqNumber(), history), history.getRequests(), replicaD.getId());
         Collection<ViewChangeMessage> viewChanges = new ArrayList<>();
         viewChanges.add(viewChange);

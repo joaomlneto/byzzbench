@@ -284,12 +284,6 @@ public class MessageLog implements Serializable {
          */
         long checkpoint = this.lowWaterMark;
 
-        // Collection<CheckpointMessage> checkpointProofs = checkpoint == 0 ?
-        //         Collections.emptyList() : this.checkpointsIII.get(checkpoint);
-        // if (checkpointProofs == null) {
-        //     throw new IllegalStateException("Checkpoint has diverged without any proof");
-        // }
-
         /* 
          * Speculatively executed requests with sequence number higher,
          * than the last accepted checkpoint (lowWaterMark)
@@ -348,7 +342,7 @@ public class MessageLog implements Serializable {
         String replicaId = viewChange.getReplicaId();
 
         if (newViewNumber <= curViewNumber) {
-            return new ViewChangeResult(false, false);
+            return new ViewChangeResult(false, curViewNumber, false);
         }
 
         SortedMap<String, ViewChangeMessage> newViewSet = this.viewChanges.computeIfAbsent(newViewNumber, k -> new TreeMap<>());
@@ -356,18 +350,42 @@ public class MessageLog implements Serializable {
 
         final int bandwagonSize = tolerance + 1;
 
-        boolean shouldBandwagon = false;
-        boolean shouldSendNewView = false;
-        if (!newViewSet.keySet().contains(curReplicaId) && bandwagonSize == newViewSet.size()) {
-            shouldBandwagon = true;
+        int totalVotes = 0;
+        long smallestView = Long.MAX_VALUE;
+        for (SortedMap.Entry<Long, SortedMap<String, ViewChangeMessage>> entry : this.viewChanges.entrySet()) {
+            long entryView = entry.getKey();
+            if (entryView <= curViewNumber) {
+                continue;
+            }
+
+            SortedMap<String, ViewChangeMessage> votes = entry.getValue();
+            int entryVotes = votes.size();
+
+            /*
+             * See #produceViewChange(...)
+             * Subtract the current replica's vote to obtain the votes from the
+             * other replicas
+             */
+            if (votes.containsKey(curReplicaId)) {
+                entryVotes--;
+            }
+
+            totalVotes += entryVotes;
+
+            if (smallestView > entryView) {
+                smallestView = entryView;
+            }
         }
+
+        boolean shouldBandwagon = totalVotes == bandwagonSize;
+        boolean shouldSendNewView = false;
 
         final int newViewSize = 2 * tolerance + 1;
         if (newViewSize == newViewSet.size()) {
             shouldSendNewView = true;
         }
 
-        return new ViewChangeResult(shouldBandwagon, shouldSendNewView);
+        return new ViewChangeResult(shouldBandwagon, smallestView, shouldSendNewView);
     }
 
     public NewViewMessage produceNewView(long newViewNumber, String replicaId, int tolerance) {
@@ -557,8 +575,8 @@ public class MessageLog implements Serializable {
         long count = 0;
         for (ViewChangeMessage viewChangeMessage : viewChanges) {
             if (viewChangeMessage.getSpeculativeHistoryP() != null 
-                && (viewChangeMessage.getSpeculativeHistoryP().getGreatestSeqNumber() != checkpoint.getSequenceNumber()
-                || viewChangeMessage.getSpeculativeHistoryP().getHistory() != checkpoint.getHistory())) {
+                && (viewChangeMessage.getSpeculativeHistoryP().getGreatestSeqNumber() == checkpoint.getSequenceNumber()
+                || viewChangeMessage.getSpeculativeHistoryP().equals(checkpoint.getHistory()))) {
                 count++;
             }
         }

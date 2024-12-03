@@ -30,7 +30,7 @@ public class DummyReplica extends Replica {
     }
 
     @Override
-    public void handleClientRequest(String clientId, Serializable request) throws Exception {
+    public void handleClientRequest(String clientId, long timestamp, Serializable request) {
         this.getCommitLog().add(seqCounter.incrementAndGet(), new SerializableLogEntry(request));
         this.broadcastMessage(new ClientRequestMessage(request));
     }

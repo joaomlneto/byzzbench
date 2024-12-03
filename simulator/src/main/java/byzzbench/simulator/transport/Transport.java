@@ -339,6 +339,9 @@ public class Transport {
     public synchronized void dropEvent(long eventId) {
         // check if event is a message
         Event e = events.get(eventId);
+        if (e instanceof TimeoutEvent) {
+            return;
+        }
 
         if (e.getStatus() != Event.Status.QUEUED) {
             throw new IllegalArgumentException("Event not found or not in QUEUED state");

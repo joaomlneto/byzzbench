@@ -27,6 +27,22 @@ public class AgreementPredicate implements ScenarioPredicate {
                 .max(Integer::compareTo)
                 .orElse(0);
 
+        // check for duplicate entries in each replica's commit log
+        for (Replica replica : replicas) {
+            CommitLog commitLog = replica.getCommitLog();
+            for (int i = 0; i < commitLog.getLength(); i++) {
+                for (int j = i + 1; j < commitLog.getLength(); j++) {
+                    if (commitLog.get(i) == null || commitLog.get(j) == null) {
+                        continue;
+                    }
+                    if (commitLog.get(i).equals(commitLog.get(j))) {
+                        System.out.println("Replica " + replica.getId() + " has duplicate entries at indices " + i + " and " + j);
+                        return false; 
+                    }
+                }
+            }
+        }
+
         // check if the Nth entry in the commit log of each replica is the same
         for (int i = 0; i < commonPrefixLength; i++) {
             final int index = i;
@@ -36,12 +52,13 @@ public class AgreementPredicate implements ScenarioPredicate {
                     .filter(Objects::nonNull)
                     .distinct()
                     .toList();
+            
             if (distinctIthEntries.size() > 1) {
                 System.out.println("AgreementPredicate: Disagreement at index " + i);
                 System.out.println("REPLICAS:");
                 for (Replica replica : replicas) {
                     try {
-                        System.out.println(replica.getCommitLog().get(index));
+                        System.out.println(replica.getId() + ": " + replica.getCommitLog().get(index));
                     } catch (Exception e) {
                         //e.printStackTrace();
                     }
