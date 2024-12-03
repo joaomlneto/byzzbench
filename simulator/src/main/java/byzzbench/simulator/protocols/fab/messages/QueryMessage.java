@@ -14,7 +14,7 @@ import lombok.With;
 @EqualsAndHashCode(callSuper = true)
 @With
 public class QueryMessage extends MessagePayload {
-    private final Pair valueAndProposalNumber;
+    private final long viewNumber;
     private final ProgressCertificate progressCertificate;
 
     public String getType() {

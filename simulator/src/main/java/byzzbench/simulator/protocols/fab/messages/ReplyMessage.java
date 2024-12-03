@@ -12,8 +12,10 @@ import lombok.With;
 @Data
 @EqualsAndHashCode(callSuper = true)
 @With
-public class ResponseMessage extends MessagePayload {
+public class ReplyMessage extends MessagePayload {
     private final Pair valueAndProposalNumber;
+    private final boolean isSigned;
+    private final String sender;
 
     public String getType() {
         return "RESPONSE";
