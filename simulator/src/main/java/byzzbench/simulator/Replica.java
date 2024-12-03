@@ -194,8 +194,8 @@ public abstract class Replica implements Serializable, Node {
      *
      * @param operation the operation to commit
      */
-    public void commitOperation(LogEntry operation) {
-        this.commitLog.add(operation);
+    public void commitOperation(long sequenceNumber, LogEntry operation) {
+        this.commitLog.add(sequenceNumber, operation);
         this.notifyObserversLocalCommit(operation);
     }
 

@@ -164,7 +164,7 @@ public class FastHotStuffReplica extends LeaderBasedProtocolReplica {
         }
 
         // update the committed sequence
-        this.commit(b0);
+        this.commit(block.getRound(), b0);
         log.info(String.format("Committing block %s", b0));
     }
 
@@ -269,7 +269,7 @@ public class FastHotStuffReplica extends LeaderBasedProtocolReplica {
     }
 
     // Commits a block
-    public void commit(Block block) {
+    public void commit(long seqNumber, Block block) {
         System.out.println("COMITTING BLOCK: " + block);
         // Check if the parent is known
         if (block.getParentHash() != null && knownBlocks.get(block.getParentHash()) == null) {
@@ -282,7 +282,7 @@ public class FastHotStuffReplica extends LeaderBasedProtocolReplica {
             throw new IllegalArgumentException("Cannot commit block: parent not committed");
         }*/
 
-        this.commitOperation(block);
+        this.commitOperation(seqNumber, block);
     }
 
     // Adds a vote to the storage

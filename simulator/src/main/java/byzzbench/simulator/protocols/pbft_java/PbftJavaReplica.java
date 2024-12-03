@@ -467,7 +467,7 @@ public class PbftJavaReplica<O extends Serializable, R extends Serializable> ext
                 RequestMessage request = ticket.getRequest();
                 if (request != null) {
                     Serializable operation = request.getOperation();
-                    Serializable result = this.compute(new SerializableLogEntry(operation));
+                    Serializable result = this.compute(seqNumber, new SerializableLogEntry(operation));
 
                     String clientId = request.getClientId();
                     long timestamp = request.getTimestamp();
@@ -714,8 +714,8 @@ public class PbftJavaReplica<O extends Serializable, R extends Serializable> ext
         this.enterNewView(newViewNumber);
     }
 
-    public Serializable compute(LogEntry operation) {
-        this.commitOperation(operation);
+    public Serializable compute(long sequenceNumber, LogEntry operation) {
+        this.commitOperation(sequenceNumber, operation);
         return operation;
     }
 
