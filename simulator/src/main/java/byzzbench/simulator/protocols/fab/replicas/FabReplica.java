@@ -115,6 +115,7 @@ public class FabReplica extends LeaderBasedProtocolReplica {
         this.satisfiedProposerNodes = new TreeMap<>();
         this.learnersWithLearnedValue = new TreeMap<>();
         this.nodesSuspectingLeader = new ArrayList<>();
+        this.responses = new ArrayList<>();
     }
 
     public void onStart() {
@@ -238,6 +239,9 @@ public class FabReplica extends LeaderBasedProtocolReplica {
             isCurrentlyLeader.set(false);  // This replica is not the leader
         }
 
+        // Notify the other replicas of the new leader
+        multicastMessage(new ViewChangeMessage(getNodeId(), viewNumber, newLeader), this.getNodeIds());
+
         log.info("New leader elected: " + newLeader);
         onElected((int) viewNumber);
     }
@@ -258,6 +262,7 @@ public class FabReplica extends LeaderBasedProtocolReplica {
 
         // Send QUERY to all acceptors
         long endTime = System.currentTimeMillis() + messageTimeoutDuration + 10000L;
+        log.info("Leader " + getNodeId() + " sending QUERY to all acceptors...");
         while (System.currentTimeMillis() < endTime && responses.size() < numAcceptors) {
             multicastMessage(new QueryMessage(viewNumber, pc), acceptorNodeIds);
         }
@@ -306,6 +311,8 @@ public class FabReplica extends LeaderBasedProtocolReplica {
             handleSuspectMessage(sender, (SuspectMessage) message);
         } else if (message instanceof ReplyMessage) {
             handleReplyMessage(sender, (ReplyMessage) message);
+        } else if (message instanceof ViewChangeMessage) {
+            handleViewChangeMessage(sender, (ViewChangeMessage) message);
         }
 
         else {
@@ -459,6 +466,20 @@ public class FabReplica extends LeaderBasedProtocolReplica {
         if (learnedValue != null) {
             sendMessage(new LearnMessage(learnedValue), sender);
         }
+    }
+
+    private void handleViewChangeMessage(String sender, ViewChangeMessage viewChangeMessage) {
+        long newViewNumber = viewChangeMessage.getViewNumber();
+        String newLeaderId = viewChangeMessage.getLeaderId();
+
+        // If the new view number is greater than the current view number, update the view number and leader ID
+        if (newViewNumber > viewNumber) {
+            viewNumber = newViewNumber;
+            leaderId = newLeaderId;
+        }
+
+        onElected((int) viewNumber);
+        onStart();
     }
 
     /** Methods for checking the roles of the replica. **/
