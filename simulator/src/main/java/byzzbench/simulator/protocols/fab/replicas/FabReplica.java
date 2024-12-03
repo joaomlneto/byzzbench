@@ -14,6 +14,9 @@ import lombok.extern.java.Log;
 import java.io.Serializable;
 import java.security.SecureRandom;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -25,37 +28,39 @@ public class FabReplica extends LeaderBasedProtocolReplica {
     List<FabRole> roles;
 
     // The number of replicas with each role
-    private final int proposersNumber;
-    private final int acceptorsNumber;
-    private final int learnersNumber;
-    private final int byzantinesNumber;
+    private final int numProposers;
+    private final int numAcceptors;
+    private final int numLearners;
+    private final int numFaulty;
 
     // Acceptor role
-    private Pair acceptedValue;
+    private Pair currentAcceptedProposal;
 
     // Learner role
-    Pair[] accepted;
-    Pair[] learn;
-    Pair learned;
+    SortedMap<String, Pair> acceptorsWithAcceptedProposal;
+    SortedMap<String, Pair> proposersWithLearnedValue;
+    Pair learnedValue;
 
     // Proposer role
-    private final Map<String, Pair> satisfied;
-    private final Set<String> learnedNodes;
+    private Map<String, Pair> satisfiedProposerNodes;
+    private SortedMap<String, Pair> learnersWithLearnedValue;
     private long viewNumber;
     private byte[] proposedValue;
     private ProgressCertificate pc;
 
-    private boolean isLeader;
+    private final AtomicBoolean isCurrentlyLeader = new AtomicBoolean(false);
 
-    private final long timeout;
+    private final long messageTimeoutDuration;
 
     private long lastLeaderMessageTime = 0L;
 
     private String leaderId;
 
-    int queried;
-
     List<String> nodesSuspectingLeader;
+
+    SortedSet<String> acceptorNodeIds;
+    SortedSet<String> learnerNodeIds;
+    SortedSet<String> proposerNodeIds;
 
     /**
      * The log of received messages for the replica.
@@ -69,168 +74,151 @@ public class FabReplica extends LeaderBasedProtocolReplica {
             Transport transport,
             MessageLog messageLog,
             List<FabRole> roles,
-            boolean isLeader,
-            long timeout,
-            int proposersNumber, int acceptorsNumber, int learnersNumber, int byzantinesNumber) {
+            boolean isCurrentlyLeader,
+            long messageTimeoutDuration,
+            int numProposers, int numAcceptors, int numLearners, int numFaulty,
+            SortedSet<String> acceptorNodeIds,
+            SortedSet<String> learnerNodeIds,
+            SortedSet<String> proposerNodeIds,
+            String leaderId) {
         super(nodeId, nodeIds, transport, new TotalOrderCommitLog());
         this.messageLog = messageLog;
         this.roles = roles;
-        this.timeout = timeout;
-        this.satisfied = new HashMap<>();
-        this.learnedNodes = new HashSet<>();
-        this.isLeader = isLeader;
-        this.proposersNumber = proposersNumber;
-        this.acceptorsNumber = acceptorsNumber;
-        this.learnersNumber = learnersNumber;
-        this.byzantinesNumber = byzantinesNumber;
-        this.nodesSuspectingLeader = new ArrayList<>();
+        this.messageTimeoutDuration = messageTimeoutDuration;
+        this.isCurrentlyLeader.set(isCurrentlyLeader);
+        this.numProposers = numProposers;
+        this.numAcceptors = numAcceptors;
+        this.numLearners = numLearners;
+        this.numFaulty = numFaulty;
+        this.acceptorNodeIds = acceptorNodeIds;
+        this.learnerNodeIds = learnerNodeIds;
+        this.proposerNodeIds = proposerNodeIds;
+        this.leaderId = leaderId;
     }
 
     @Override
     public void initialize() {
         log.info("Initializing replica " + getNodeId());
-        this.setView(1);
 
-        // Initialize the replica based on the roles it has
-        if (isAcceptor()) {
-            log.info("Replica " + getNodeId() + " is an acceptor");
-            acceptedValue = null;
-        }
-
-        if (isLearner()) {
-            log.info("Replica " + getNodeId() + " is a learner");
-            accepted = new Pair[getNodeIds().size()];
-            learn = new Pair[getNodeIds().size()];
-            learned = null;
-        }
-
-        if (isProposer()) {
-            log.info("Replica " + getNodeId() + " is a proposer");
-            viewNumber = 0;
-            proposedValue = null;
-            pc = null;
-        }
+        initializeState();
 
         log.info("Replica " + getNodeId() + " initialized");
-        log.info("onStart method initialized");
         onStart();
-        log.info("onStart method finished");
+    }
+
+    private void initializeState() {
+        viewNumber = 1;
+        this.acceptorsWithAcceptedProposal = new TreeMap<>();
+        this.proposersWithLearnedValue = new TreeMap<>();
+        this.satisfiedProposerNodes = new TreeMap<>();
+        this.learnersWithLearnedValue = new TreeMap<>();
+        this.nodesSuspectingLeader = new ArrayList<>();
     }
 
     public void onStart() {
         log.info("Replica " + getNodeId() + " is starting");
 
-        if (isLeader()) leaderOnStart();
-        if (isProposer()) proposerOnStart();
-        if (isLearner()) learnerOnStart();
+        CompletableFuture<Void> leaderTask = isLeader() ? leaderOnStart() : CompletableFuture.completedFuture(null);
+        CompletableFuture<Void> proposerTask = isProposer() ? proposerOnStart() : CompletableFuture.completedFuture(null);
+        CompletableFuture<Void> learnerTask = isLearner() ? learnerOnStart() : CompletableFuture.completedFuture(null);
 
-        log.info("Replica " + getNodeId() + " is ready");
+        CompletableFuture.allOf(leaderTask, proposerTask, learnerTask).thenRun(() ->
+                log.info("Replica " + getNodeId() + " finished starting.")
+        );
     }
 
-    private void leaderOnStart() {
-        // Query the Acceptor replicas for their progress certificates
-        log.info("Replica " + getNodeId() + " is the leader and preparing to send a QUERY message to all ACCEPTOR nodes");
+    /**
+     * The LEADER starts by sending a PROPOSE message to all ACCEPTOR nodes. It keeps sending the message until
+     * the threshold is reached or the time runs out.
+     */
+    private CompletableFuture<Void> leaderOnStart() {
+        return CompletableFuture.runAsync(() -> {
+            log.info("Replica " + getNodeId() + " is the leader and preparing to send a QUERY message to all ACCEPTOR nodes");
 
-        this.viewNumber++;
-
-        // If the progress certificate is null, the leader is not in the recovery phase and can suggest any value
-        if (pc == null) {
-            SecureRandom random = new SecureRandom();
-            byte[] value = new byte[32];
-            random.nextBytes(value);
-            proposedValue = value;
-        }
-
-        // If the replica is a leader, send a PROPOSE message to all ACCEPTOR nodes
-        log.info("Replica " + getNodeId() + " is the leader and preparing to send a PROPOSE message to all ACCEPTOR nodes");
-
-        // Resend this message until (p (proposer replicas) + f + 1 ) / 2 <= satisfied.size()
-        // Count the number of proposer replicas
-
-        // Calculate the threshold for the number of satisfied messages needed
-        int threshold = (int) Math.floor((proposersNumber + byzantinesNumber + 1) / 2.0);
-
-        long startTime = System.currentTimeMillis();
-        long endTime = startTime + timeout;
-
-        log.info("Sending PROPOSE message to " + proposersNumber + " nodes...");
-        Pair proposal = new Pair(viewNumber, proposedValue);
-        while (System.currentTimeMillis() < endTime && satisfied.size() < threshold) {
-            getNodeIds().stream()
-                    .filter(nodeId -> roles.contains(FabRole.ACCEPTOR))
-                    .forEach(nodeId -> getTransport().
-                            sendMessage(getNodeId(),
-                                    new ProposeMessage(
-                                            this.getNodeId(),
-                                            proposal,
-                                            this.pc),
-                                    nodeId));
-
-            try {
-                Thread.sleep(500);
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-                log.severe("Thread was interrupted during retransmission: " + e.getMessage());
+            // If the progress certificate is null, the leader is not in the recovery phase and can suggest any value
+            if (pc == null) {
+                proposedValue = new byte[32];
+                new SecureRandom().nextBytes(proposedValue);
             }
-        }
 
-        if (satisfied.size() < threshold) {
+            log.info("Replica " + getNodeId() + " is the leader and preparing to send a PROPOSE message to all ACCEPTOR nodes");
+
+            // Resend this message until (p (proposer replicas) + f + 1 ) / 2 <= satisfied.size()
+            int threshold = (int) Math.floor((numProposers + numFaulty + 1) / 2.0);
+            long endTime = System.currentTimeMillis() + messageTimeoutDuration;
+            Pair proposal = new Pair(viewNumber, proposedValue);
+
+            sendProposeMessage(endTime, proposal, threshold);
+            isSatisfied(threshold);
+        }, Executors.newCachedThreadPool());
+    }
+
+    private void sendProposeMessage(long endTime, Pair proposal, int threshold) {
+        SortedSet<String> acceptorsReceipts = new TreeSet<>(List.of("A", "B", "C", "D", "E", "F"));
+        CompletableFuture.runAsync(() -> {
+            log.info("Sending PROPOSE message asynchronously to " + numProposers + " nodes...");
+            while (System.currentTimeMillis() < endTime && satisfiedProposerNodes.size() < threshold) {
+                multicastMessage(new ProposeMessage(this.getNodeId(), proposal, this.pc), acceptorsReceipts);
+                try {
+                    Thread.sleep(40000); // Note: Still blocking within async task
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    log.severe("Thread was interrupted during retransmission: " + e.getMessage());
+                }
+            }
+        }, Executors.newCachedThreadPool());
+    }
+
+    private void isSatisfied(int threshold) {
+        if (satisfiedProposerNodes.size() < threshold) {
             log.warning(String.format("The threshold for the number of satisfied messages was not reached, node %s is suspected", getNodeId()));
-
         } else {
             log.info("The threshold for the number of satisfied messages was reached");
             this.electNewLeader();
         }
     }
 
-    private void proposerOnStart() {
-        int learnedThreshold = (int) Math.floor((learnersNumber + byzantinesNumber + 1) / 2.0);
-        // If the replica is a proposer, wait for a timeout
-        long timeStarted = System.currentTimeMillis();
-        while (learn.length < learnedThreshold && System.currentTimeMillis() < timeStarted + timeout) {
-            try {
-                Thread.sleep(1000);
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-                log.severe("Thread was interrupted: " + e.getMessage());
+    /**
+     * The PROPOSER starts by waiting to learn the accepted value from the ACCEPTOR nodes.
+     * If the PROPOSER does not receive enough LEARN messages, it suspects the leader due to the lack of progress.
+     */
+    private CompletableFuture<Void> proposerOnStart() {
+        return CompletableFuture.runAsync(() -> {
+            int learnedThreshold = (int) Math.floor((numLearners + numFaulty + 1) / 2.0);
+            long endTime = System.currentTimeMillis() + messageTimeoutDuration;
+
+            while (proposersWithLearnedValue.size() < learnedThreshold && System.currentTimeMillis() < endTime) {
+                try {
+                    Thread.sleep(30000);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    log.severe("Thread was interrupted: " + e.getMessage());
+                }
             }
-        }
 
-        if (learn.length < learnedThreshold) {
-            // Suspect the leader.
-            log.warning("Leader suspected");
-            nodesSuspectingLeader.add(leaderId);
-            String leader = computePrimaryId(viewNumber, getNodeIds().size());
-
-            getTransport().multicast(
-                    getNodeId(),
-                    getNodeIds(),
-                    new SuspectMessage(this.getNodeId(), leader)
-            );
-        }
+            if (proposersWithLearnedValue.size() < learnedThreshold) {
+                log.warning("Leader suspected by proposer " + getNodeId());
+                nodesSuspectingLeader.add(getNodeId());
+                broadcastMessage(new SuspectMessage(getNodeId(), this.leaderId));
+            }
+        }, Executors.newCachedThreadPool());
     }
 
-    private void learnerOnStart() {
-        // If the replica is a learner, wait for a timeout
-        while (learned == null) {
-            try {
-                Thread.sleep(1000);
-                // Sent PULL message to all LEARNER nodes
-                log.info("Learner " + getNodeId() + " sending PULL to all learner...");
-                for (String nodeId : getNodeIds()) {
-                    if (roles.contains(FabRole.LEARNER)) {
-                        getTransport().sendMessage(
-                                getNodeId(),
-                                new PullMessage(),
-                                nodeId
-                        );
-                    }
+    /**
+     * The LEARNER, if it has not learned a value, sends a PULL message to all LEARNER nodes.
+     */
+    private CompletableFuture<Void> learnerOnStart() {
+        return CompletableFuture.runAsync(() -> {
+            while (this.learnedValue == null) {
+                try {
+                    Thread.sleep(40000);
+                    log.info("Learner " + getNodeId() + " sending PULL to all learners...");
+                    multicastMessage(new PullMessage(), this.learnerNodeIds);
+                } catch (InterruptedException e) {
+                    log.severe("Thread was interrupted: " + e.getMessage());
                 }
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-                log.severe("Thread was interrupted: " + e.getMessage());
             }
-        }
+        }, Executors.newCachedThreadPool());
     }
 
     public void electNewLeader() {
@@ -238,6 +226,10 @@ public class FabReplica extends LeaderBasedProtocolReplica {
         // Implement leader election logic here
         String newLeader = getNewLeader();
         this.setView(viewNumber);
+
+        if (newLeader.equals(getNodeId())) {
+            onElected((int) viewNumber);
+        }
     }
 
     private String getNewLeader() {
@@ -265,13 +257,13 @@ public class FabReplica extends LeaderBasedProtocolReplica {
 
     public void onElected(int newNumber) {
         // Check if this replica is the leader for the current number
-        if (!isLeader || viewNumber != newNumber) return;
+        if (!isCurrentlyLeader.get() || viewNumber != newNumber) return;
 
         this.viewNumber = Math.max(viewNumber, newNumber);
 
         Pair proposal = new Pair(this.viewNumber, this.proposedValue);
         // Send QUERY message to all ACCEPTOR nodes
-        while (System.currentTimeMillis() < lastLeaderMessageTime + timeout) {
+        while (System.currentTimeMillis() < lastLeaderMessageTime + messageTimeoutDuration) {
             getNodeIds().stream()
                     .filter(nodeId -> roles.contains(FabRole.ACCEPTOR))
                     .forEach(nodeId -> getTransport().
@@ -279,12 +271,12 @@ public class FabReplica extends LeaderBasedProtocolReplica {
                                     new QueryMessage(proposal, pc),
                                     nodeId));
 
-            try {
-                Thread.sleep(500);
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-                log.severe("Thread was interrupted during retransmission: " + e.getMessage());
-            }
+//            try {
+//                Thread.sleep(500);
+//            } catch (InterruptedException e) {
+//                Thread.currentThread().interrupt();
+//                log.severe("Thread was interrupted during retransmission: " + e.getMessage());
+//            }
         }
 
         // Send QUERY to all acceptors
@@ -334,38 +326,20 @@ public class FabReplica extends LeaderBasedProtocolReplica {
     @Override
     public void handleMessage(String sender, MessagePayload message) throws UnsupportedOperationException {
         log.info(String.format("Replica %s received a message from %s: %s", getNodeId(), sender, message));
-        // Possible messages: ProposeMessage, AcceptMessage, LearnMessage, SatisfiedMessage, QueryMessage, ResponseMessage
-        if (message instanceof ProposeMessage) {
-            // Acceptors must process PROPOSE messages
-            if (isAcceptor()) {
-                handleProposeMessage(sender, (ProposeMessage) message);
-                this.lastLeaderMessageTime = System.currentTimeMillis();
-            }
-        } else if (message instanceof AcceptMessage) {
-            // Learner replicas must process ACCEPT messages
-            if (isLearner()) {
-                handleAcceptMessage(sender, (AcceptMessage) message);
-            }
-        } else if (message instanceof SatisfiedMessage) {
-            // Proposers must process SATISFIED messages
-            if (isProposer()) {
-                handleSatisfiedMessage(sender, (SatisfiedMessage) message);
-            }
+
+        if (message instanceof ProposeMessage && isAcceptor()) {
+            handleProposeMessage(sender, (ProposeMessage) message);
+            this.lastLeaderMessageTime = System.currentTimeMillis();
+        } else if (message instanceof AcceptMessage && isLearner()) {
+            handleAcceptMessage(sender, (AcceptMessage) message);
+        } else if (message instanceof SatisfiedMessage && isProposer()) {
+            handleSatisfiedMessage(sender, (SatisfiedMessage) message);
         } else if (message instanceof LearnMessage) {
-            // Learner replicas must process LEARN messages
-            if (isProposer()) {
-                handleLearnMessageProposer(sender, (LearnMessage) message);
-            }
-            if (isLearner()) {
-                handleLearnMessageLearner(sender, (LearnMessage) message);
-            }
-        } else if (message instanceof PullMessage) {
-            // Learner replicas must process PULL messages
-            if (isLearner()) {
-                handlePullMessage(sender, (PullMessage) message);
-            }
-        }
-        else {
+            if (isProposer()) handleLearnMessageProposer(sender, (LearnMessage) message);
+            if (isLearner()) handleLearnMessageLearner(sender, (LearnMessage) message);
+        } else if (message instanceof PullMessage && isLearner()) {
+            handlePullMessage(sender, (PullMessage) message);
+        } else {
             throw new UnsupportedOperationException("Unknown message type: " + message.getType());
         }
     }
@@ -381,28 +355,30 @@ public class FabReplica extends LeaderBasedProtocolReplica {
         byte[] messageProposedValue = proposeMessage.getValueAndProposalNumber().getValue();
         ProgressCertificate progressCertificate = proposeMessage.getProgressCertificate();
 
-        if (messageViewNumber != this.viewNumber) return; // Only listen to current leader
-
-        if (acceptedValue != null && acceptedValue.getNumber() == messageViewNumber) return; // Ignore duplicate proposals
-
-        if (acceptedValue != null && !Arrays.equals(acceptedValue.getValue(), messageProposedValue) &&
-                !progressCertificate.vouchesFor(messageProposedValue)) {
-            return; // Change only allowed with a valid progress certificate
+        // Only listen to current leader
+        if (messageViewNumber != this.viewNumber) {
+            log.info("Acceptor " + getNodeId() + " ignoring PROPOSE message with round number " + messageViewNumber);
+            return;
         }
+
+        // Ignore duplicate proposals
+        if (currentAcceptedProposal != null && currentAcceptedProposal.getNumber() == messageViewNumber) {
+            log.info("Acceptor " + getNodeId() + " already accepted a proposal with round number " + messageViewNumber);
+            return;
+        }
+
+        // Change only allowed with a valid progress certificate
+//        if (acceptedValue != null && !Arrays.equals(acceptedValue.getValue(), messageProposedValue) &&
+//                !progressCertificate.vouchesFor(messageProposedValue)) {
+//            log.info("Acceptor " + getNodeId() + " ignoring PROPOSE message with round number " + messageViewNumber);
+//            return;
+//        }
 
         // Accept the proposal
-        acceptedValue = new Pair(messageViewNumber, messageProposedValue);
+        currentAcceptedProposal = new Pair(messageViewNumber, messageProposedValue);
+        log.info("Acceptor " + getNodeId() + " accepted proposal with value " + new String(messageProposedValue));
 
-        // Notify learners
-        for (String nodeId : getNodeIds()) {
-            if (roles.contains(FabRole.LEARNER)) {
-                getTransport().sendMessage(
-                        getNodeId(),
-                        new AcceptMessage(this.getNodeId(), acceptedValue),
-                        nodeId
-                );
-            }
-        }
+        multicastMessage(new AcceptMessage(getNodeId(), currentAcceptedProposal), this.learnerNodeIds);
     }
 
     /**
@@ -411,74 +387,59 @@ public class FabReplica extends LeaderBasedProtocolReplica {
      * @param acceptMessage : the ACCEPT message with the value and proposal number
      */
     private void handleAcceptMessage(String sender, AcceptMessage acceptMessage) {
+        log.info("Learner " + getNodeId() + " received ACCEPT from " + sender + " and proposal number " + acceptMessage.getValueAndProposalNumber().getNumber());
         Pair acceptValue = acceptMessage.getValueAndProposalNumber();
-        accepted[sender.charAt(0) - 'A'] = acceptValue;
+        acceptorsWithAcceptedProposal.put(sender, acceptValue);
 
         log.info("Acceptor " + getNodeId() + " received ACCEPT from " + sender + " and proposal number " + acceptValue.getNumber());
 
         byte[] acceptedValue = acceptMessage.getValueAndProposalNumber().getValue();
         long acceptedNumber = acceptMessage.getValueAndProposalNumber().getNumber();
-        int acceptedThreshold = (int) Math.floor((acceptorsNumber + (3 * byzantinesNumber) + 1) / 2.0);
+        int acceptedThreshold = (int) Math.floor((numAcceptors + (3 * numFaulty) + 1) / 2.0);
         AtomicInteger currentAccepted = new AtomicInteger();
         // If there are acceptedThreshold accepted values for the same proposalValue, send a LEARN message to all Proposer replicas
-        Arrays.stream(accepted).filter(Objects::nonNull).forEach(pair -> {
+        acceptorsWithAcceptedProposal.values().forEach(pair -> {
             if (pair.getNumber() == acceptedNumber && Arrays.equals(pair.getValue(), acceptedValue)) {
                 currentAccepted.getAndIncrement();
             }
         });
 
         log.info("The number of accepted values for the same proposal value is " + currentAccepted.get());
-
         if (currentAccepted.get() >= acceptedThreshold) {
-            // Send LEARN message to all LEARNER nodes
+            learnedValue = acceptValue;
             log.info("Acceptor " + getNodeId() + " sending LEARN to all proposer...");
-            for (String nodeId : getNodeIds()) {
-                if (roles.contains(FabRole.LEARNER)) {
-                    getTransport().sendMessage(
-                            getNodeId(),
-                            new LearnMessage(acceptValue),
-                            nodeId
-                    );
-                }
-            }
+            multicastMessage(new LearnMessage(acceptValue), this.proposerNodeIds);
         }
     }
 
     private void handleLearnMessageProposer(String sender, LearnMessage learnMessage) {
+        log.info("Proposer " + getNodeId() + " received LEARN from " + sender + " and proposal number " + learnMessage.getValueAndProposalNumber().getNumber());
         Pair learnValue = learnMessage.getValueAndProposalNumber();
-        learn[sender.charAt(0) - 'A'] = learnValue;
+        proposersWithLearnedValue.put(sender, learnValue);
 
-        int learnedThreshold = (int) Math.floor((learnersNumber + byzantinesNumber + 1) / 2.0);
-        if (learn.length >= learnedThreshold) {
+        int learnedThreshold = (int) Math.floor((numLearners + numFaulty + 1) / 2.0);
+        if (proposersWithLearnedValue.size() >= learnedThreshold) {
             // Send SATISFIED message to all PROPOSER nodes
             log.info("Proposer " + getNodeId() + " sending SATISFIED to all proposer...");
-            for (String nodeId : getNodeIds()) {
-                if (roles.contains(FabRole.PROPOSER)) {
-                    getTransport().sendMessage(
-                            getNodeId(),
-                            new SatisfiedMessage(this.getNodeId(), learn[0]),
-                            nodeId
-                    );
-                }
-            }
+            multicastMessage(new SatisfiedMessage(getNodeId(), learnValue), this.proposerNodeIds);
         }
-
     }
 
     private void handleLearnMessageLearner(String sender, LearnMessage learnMessage) {
+        log.info("Learner " + getNodeId() + " received LEARN from " + sender + " and proposal number " + learnMessage.getValueAndProposalNumber().getNumber());
         Pair learnValue = learnMessage.getValueAndProposalNumber();
-        learn[sender.charAt(0) - 'A'] = learnValue;
+        learnersWithLearnedValue.put(sender, learnValue);
 
         AtomicInteger currentLearnedWithSamePair = new AtomicInteger();
-        Arrays.stream(learn).filter(Objects::nonNull).forEach(pair -> {
-            if (pair.equals(learnValue)) {
+        proposersWithLearnedValue.values().forEach(pair -> {
+            if (pair.getNumber() == learnValue.getNumber() && Arrays.equals(pair.getValue(), learnValue.getValue())) {
                 currentLearnedWithSamePair.getAndIncrement();
             }
         });
 
-        int learningThreshold = byzantinesNumber + 1;
-        if (currentLearnedWithSamePair.get() >= learningThreshold) {
-            learned = learnValue;
+        int learningThreshold = numFaulty + 1;
+        if (currentLearnedWithSamePair.get() >= learningThreshold && learnedValue == null) {
+            learnedValue = learnValue;
         }
     }
 
@@ -488,27 +449,27 @@ public class FabReplica extends LeaderBasedProtocolReplica {
      * @param satisfiedMessage : the SATISFIED message with the value and proposal number
      */
     private void handleSatisfiedMessage(String sender, SatisfiedMessage satisfiedMessage) {
-        satisfied.put(sender, satisfiedMessage.getValueAndProposalNumber());
+        log.info("Proposer " + getNodeId() + " received SATISFIED from " + sender + " and proposal number " + satisfiedMessage.getValueAndProposalNumber().getNumber());
+        satisfiedProposerNodes.put(sender, satisfiedMessage.getValueAndProposalNumber());
     }
 
     private void handleQueryMessage(String sender, QueryMessage queryMessage) {
         long messageViewNumber = queryMessage.getValueAndProposalNumber().getNumber();
         ProgressCertificate proof = queryMessage.getProgressCertificate();
 
-        if (proof == null || proof.isValid(acceptorsNumber - byzantinesNumber) || messageViewNumber < this.viewNumber) return;
+        if (proof == null || proof.isValid(numAcceptors - numFaulty) || messageViewNumber < this.viewNumber) {
+            return;
+        }
 
         this.viewNumber = messageViewNumber;
 
     }
 
     private void handlePullMessage(String sender, PullMessage pullMessage) {
+        log.info("Learner " + getNodeId() + " received PULL from " + sender);
         // If this learner has learned a value, send it to the sender
-        if (learned != null) {
-            getTransport().sendMessage(
-                    getNodeId(),
-                    new LearnMessage(learned),
-                    sender
-            );
+        if (learnedValue != null) {
+            sendMessage(new LearnMessage(learnedValue), sender);
         }
     }
 
@@ -523,5 +484,9 @@ public class FabReplica extends LeaderBasedProtocolReplica {
 
     private boolean isLearner() {
         return this.roles.contains(FabRole.LEARNER);
+    }
+
+    private boolean isLeader() {
+        return this.isCurrentlyLeader.get();
     }
 }
