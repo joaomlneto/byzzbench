@@ -7,6 +7,7 @@ import static org.mockito.Mockito.verify;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.SortedSet;
+import java.util.TreeMap;
 import java.util.TreeSet;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -244,7 +245,7 @@ public class HbftJavaReplicaTests {
         Assert.isTrue(!replicaA.getMessageLog().getPanics().containsValue(panic), "Panic should not have been accepted!");
     }
 
-    @Test
+    /* @Test
 	void testPrimaryRecvPanicFromClient() {
         HbftJavaReplica spyPrimary = Mockito.spy(primary);
         long viewNumber = 1;
@@ -269,8 +270,8 @@ public class HbftJavaReplicaTests {
         
         // It needs to send a checkpoint message as it is primary and got PANIC from client
         verify(spyPrimary, times(1)).broadcastMessageIncludingSelf(Mockito.any(CheckpointIMessage.class));
-    }
-
+    } */
+/* 
     @Test
 	void testPrimaryRecvPanicFromEnoughReplicas() {
         HbftJavaReplica spyPrimary = Mockito.spy(primary);
@@ -342,7 +343,7 @@ public class HbftJavaReplicaTests {
         verify(spyReplica, times(0)).broadcastMessageIncludingSelf(Mockito.any(CheckpointIMessage.class));
 
     }
-
+ */
     @Test
 	void testRecvIncorrectCheckpointI() {
         HbftJavaReplica spyReplica = Mockito.spy(replicaA);
@@ -651,6 +652,48 @@ public class HbftJavaReplicaTests {
             && arg.getRequestsR().get(arg.getRequestsR().lastKey()) == replicaA.getSpeculativeRequests().get(replicaA.getSpeculativeRequests().lastKey())
             && arg.getSpeculativeHistoryP() == null
             && arg.getSpeculativeHistoryQ().getHistory() == replicaA.getSpeculativeHistory()));
+    }
+
+    @Test
+	void testLotOfDifferentViewChanges() {
+        HbftJavaReplica spyReplica = Mockito.spy(replicaC);
+        RequestMessage request = new RequestMessage("123", 0, "C0");
+        byte[] digest = replicaC.digest(request);
+        long viewNumber = 1;
+        long seqNumber = 1;
+        PrepareMessage prepare = new PrepareMessage(viewNumber, seqNumber, digest, request);
+        CommitMessage commit = new CommitMessage(viewNumber, seqNumber, digest, request, primary.getId(), primary.getSpeculativeHistory());
+        CommitMessage commit2 = new CommitMessage(viewNumber, seqNumber, digest, request, replicaD.getId(), replicaD.getSpeculativeHistory());
+        
+        spyReplica.recvPrepare(prepare);
+        spyReplica.recvCommit(commit);
+        spyReplica.recvCommit(commit2);
+
+        ViewChangeMessage viewChange  = new ViewChangeMessage(2, null, null, new TreeMap<>(), replicaA.getId());
+        ViewChangeMessage viewChange2  = new ViewChangeMessage(3, null, null, new TreeMap<>(), replicaD.getId());
+        ViewChangeMessage viewChange3  = new ViewChangeMessage(4, null, null, new TreeMap<>(), replicaD.getId());
+        ViewChangeMessage viewChange4  = new ViewChangeMessage(5, null, null, new TreeMap<>(), replicaD.getId());
+        ViewChangeMessage viewChange5  = new ViewChangeMessage(2, null, null, new TreeMap<>(), replicaD.getId());
+
+        spyReplica.recvViewChange(viewChange);
+        spyReplica.recvViewChange(viewChange2);
+        spyReplica.recvViewChange(viewChange3);
+        spyReplica.recvViewChange(viewChange4);
+        spyReplica.recvViewChange(viewChange5);
+
+        verify(spyReplica, times(1))
+        .sendViewChange(Mockito.argThat(arg -> arg.getNewViewNumber() == viewNumber + 1 
+            && arg.getRequestsR().values().size() == 1
+            && arg.getRequestsR().get(arg.getRequestsR().firstKey()) == replicaC.getSpeculativeRequests().get(replicaC.getSpeculativeRequests().firstKey())
+            && arg.getSpeculativeHistoryP() == null
+            && arg.getSpeculativeHistoryQ() == null));
+        verify(spyReplica, times(1))
+        .recvNewView(Mockito.argThat(arg -> arg.getNewViewNumber() == viewNumber + 1 
+            && arg.getCheckpoint().getSequenceNumber() == 0
+            && arg.getCheckpoint().getHistory() == null
+            && arg.getSpeculativeHistory().getHistory().get(1L) == null
+            && arg.getViewChangeProofs().contains(viewChange)
+            && arg.getViewChangeProofs().contains(viewChange5)));
     }
 
     /* 

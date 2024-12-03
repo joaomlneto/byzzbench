@@ -19,10 +19,13 @@ public class SpeculativeHistory implements Serializable {
         history.put(sequenceNumber, request);
     }
 
-    public void rollBack(long sequenceNumber) {
-        for (Long key : history.keySet()) {
-            if (key > sequenceNumber) {
-                this.history.remove(key);
+    public void fillMissing(SpeculativeHistory requests) {
+        for (Long key : requests.getHistory().keySet()) {
+            // If the history is different thats a problem and should throw exception
+            if (this.history.containsKey(key) && !this.history.get(key).equals(requests.getHistory().get(key))) {
+                System.out.println("HISTORY IS DIFFERENT: SAFETY VIOLATION");
+            } else {
+                this.history.put(key, requests.getHistory().get(key));
             }
         }
     }

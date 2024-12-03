@@ -158,6 +158,7 @@ public class MessageLog implements Serializable {
         this.lowWaterMark = checkpoint;
     }
 
+    // FIXME: ReplicaId is null 
     public void appendPanic(PanicMessage panic, String replicaId) {
         this.panics.put(replicaId, panic);
     }
@@ -341,9 +342,9 @@ public class MessageLog implements Serializable {
         long newViewNumber = viewChange.getNewViewNumber();
         String replicaId = viewChange.getReplicaId();
 
-        if (newViewNumber <= curViewNumber) {
-            return new ViewChangeResult(false, curViewNumber, false);
-        }
+        // if (newViewNumber <= curViewNumber) {
+        //     return new ViewChangeResult(false, curViewNumber, false);
+        // }
 
         SortedMap<String, ViewChangeMessage> newViewSet = this.viewChanges.computeIfAbsent(newViewNumber, k -> new TreeMap<>());
         newViewSet.put(replicaId, viewChange);

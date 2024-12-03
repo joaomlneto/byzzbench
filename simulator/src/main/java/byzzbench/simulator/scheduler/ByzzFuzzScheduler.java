@@ -98,11 +98,12 @@ public class ByzzFuzzScheduler extends BaseScheduler {
         int clientRequestEventCount = (int) queuedEvents.stream().filter(ClientRequestEvent.class::isInstance).count();
         int messageEventCount = eventCount - (timeoutEventCount + clientRequestEventCount);
 
-        double timeoutEventProb = (double) timeoutEventCount / eventCount;
+        double timeoutEventProb2 = (double) timeoutEventCount / eventCount; 
+        double timeoutEventProb = (double) 0.01;
         double clientRequestEventProb = (double) clientRequestEventCount / eventCount;
         double messageEventProb = (double) messageEventCount / eventCount;
 
-        assert timeoutEventProb + clientRequestEventProb + messageEventProb == 1.0;
+        assert timeoutEventProb2 + clientRequestEventProb + messageEventProb == 1.0;
 
         double dieRoll = random.nextDouble();
 

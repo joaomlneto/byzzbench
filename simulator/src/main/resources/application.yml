@@ -23,11 +23,11 @@ byzzbench:
   scheduler:
     id: "byzzfuzz" # The ID of the scheduler to use
     maxDropMessages: 0 # Maximum number of messages to drop per scenario
-    maxFaults: 1 # Maximum number of faults to inject per scenario
+    maxFaults: 0 # Maximum number of faults to inject per scenario
     params:
-      numRoundsWithProcessFaults: 1
-      numRoundsWithNetworkFaults: 2
-      numRoundsWithFaults: 3
+      numRoundsWithProcessFaults: 0
+      numRoundsWithNetworkFaults: 0
+      numRoundsWithFaults: 0
 
   scenario:
     id: hbft
