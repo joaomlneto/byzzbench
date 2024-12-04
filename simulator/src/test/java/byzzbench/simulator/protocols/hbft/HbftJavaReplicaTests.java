@@ -912,4 +912,43 @@ public class HbftJavaReplicaTests {
         verify(spyReplica, times(0)).enterNewView(newView.getNewViewNumber());
     }
 
+    @Test
+	void testNewViewAdoption() {
+        HbftJavaReplica spyReplica = Mockito.spy(replicaA);
+        RequestMessage request = new RequestMessage("123", 0, "C0");
+        RequestMessage request2 = new RequestMessage("321", 0, "C0");
+        RequestMessage request3 = new RequestMessage("333", 0, "C0");
+        long seqNumber = 1;
+        SpeculativeHistory history = new SpeculativeHistory();
+        history.addEntry(seqNumber, request);
+        history.addEntry(seqNumber + 1, request2);
+        SpeculativeHistory history2 = new SpeculativeHistory();
+        history2.addEntry(seqNumber + 1, request2);
+        history2.addEntry(seqNumber + 3, request3);
+        ViewChangeMessage viewChange  = new ViewChangeMessage(2, null, null, history.getRequests(), replicaC.getId());
+        ViewChangeMessage viewChange2  = new ViewChangeMessage(2, null, null, history2.getRequests(), replicaD.getId());
+        ViewChangeMessage viewChange3  = new ViewChangeMessage(2, null, null, history2.getRequests(), replicaA.getId());
+        Collection<ViewChangeMessage> viewChanges = new ArrayList<>();
+        viewChanges.add(viewChange);
+        viewChanges.add(viewChange2);
+        viewChanges.add(viewChange3);
+
+        SpeculativeHistory history3 = new SpeculativeHistory();
+        history3.addEntry(seqNumber + 1, request2);
+        history3.addEntry(seqNumber + 3, request3);
+        history3.addEntry(seqNumber, null);
+        NewViewMessage newView = new NewViewMessage(2, viewChanges, new Checkpoint(0, null), history3);
+
+        SpeculativeHistory historyExpected = new SpeculativeHistory();
+        historyExpected.addEntry(seqNumber + 1, request2);
+        historyExpected.addEntry(seqNumber + 3, request3);
+    
+        spyReplica.recvNewView(newView);
+        Assert.isTrue(replicaA.getMessageLog().acceptNewView(newView, 1), "Should accept the new view!");
+        verify(spyReplica, times(1)).enterNewView(newView.getNewViewNumber());
+        System.out.println(replicaA.getSpeculativeHistory());
+        Assert.isTrue(replicaA.getSpeculativeHistory().equals(historyExpected), "History should exclude noop");
+    }
+
+
 }

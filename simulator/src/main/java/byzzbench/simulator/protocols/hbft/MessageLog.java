@@ -55,6 +55,7 @@ public class MessageLog implements Serializable {
     @Getter
     private final SortedMap<String, PanicMessage> panics = new TreeMap<>();
 
+    @Getter
     private Checkpoint lastStableCheckpoint = new Checkpoint(0, null);
 
     // Stored as (viewNumber, Checkpoint)
@@ -379,14 +380,11 @@ public class MessageLog implements Serializable {
         }
 
         boolean shouldBandwagon = totalVotes == bandwagonSize;
-        boolean shouldSendNewView = false;
 
-        final int newViewSize = 2 * tolerance + 1;
-        if (newViewSize == newViewSet.size()) {
-            shouldSendNewView = true;
-        }
+        final int timerThreshold = 2 * tolerance + 1;
+        boolean beginNextVote = newViewSet.size() >= timerThreshold;
 
-        return new ViewChangeResult(shouldBandwagon, smallestView, shouldSendNewView);
+        return new ViewChangeResult(shouldBandwagon, smallestView, beginNextVote);
     }
 
     public NewViewMessage produceNewView(long newViewNumber, String replicaId, int tolerance) {
@@ -501,13 +499,6 @@ public class MessageLog implements Serializable {
             }
         }
 
-        if (selectedHistoryM != null) {
-            SortedMap<Long, RequestMessage> historyMRequests = selectedHistoryM.getRequests();
-            for (long seqNumber : selectedHistoryM.getRequests().keySet()) {
-                sortedRequests.addEntry(seqNumber, historyMRequests.get(seqNumber));
-            }
-        }
-
         /*  
          * If Rule A is correct then the selected Checkpoint
          * is the selectedHistoryM.
@@ -519,6 +510,15 @@ public class MessageLog implements Serializable {
             selectedCheckpoint = this.lastStableCheckpoint;
         } else {
             selectedCheckpoint = new Checkpoint(selectedHistoryM.getGreatestSeqNumber(), selectedHistoryM);
+        }
+
+
+        // TODO: Might need a fix
+        if (selectedCheckpoint != null && selectedCheckpoint.getHistory() != null) {
+            SortedMap<Long, RequestMessage> historyMRequests = selectedCheckpoint.getHistory().getRequests();
+            for (long seqNumber : selectedCheckpoint.getHistory().getRequests().keySet()) {
+                sortedRequests.addEntry(seqNumber, historyMRequests.get(seqNumber));
+            }
         }
 
         // Construct the New-View message with V, X (selected checkpoint), and M (speculative history)

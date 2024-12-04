@@ -8,5 +8,5 @@ import java.io.Serializable;
 public class ViewChangeResult implements Serializable {
     private final boolean shouldBandwagon;
     private final long bandwagonViewNumber;
-    private final boolean shouldSendNewView;
+    private final boolean beginNextVote;
 }

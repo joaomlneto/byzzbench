@@ -1,6 +1,7 @@
 package byzzbench.simulator.protocols.hbft;
 
 import java.io.Serializable;
+import java.util.Objects;
 import java.util.SortedMap;
 import java.util.TreeMap;
 
@@ -15,6 +16,12 @@ import lombok.NoArgsConstructor;
 public class SpeculativeHistory implements Serializable {
     private SortedMap<Long, RequestMessage> history = new TreeMap<>();
 
+    public void addAll(SortedMap<Long, RequestMessage> history) {
+        for (Long key : history.keySet()) {
+            this.history.put(key, history.get(key));
+        }
+    }
+
     public void addEntry(long sequenceNumber, RequestMessage request) {
         history.put(sequenceNumber, request);
     }
@@ -22,9 +29,9 @@ public class SpeculativeHistory implements Serializable {
     public void fillMissing(SpeculativeHistory requests) {
         for (Long key : requests.getHistory().keySet()) {
             // If the history is different thats a problem and should throw exception
-            if (this.history.containsKey(key) && !this.history.get(key).equals(requests.getHistory().get(key))) {
+            if (requests.getHistory().get(key) != null && this.history.containsKey(key) && !this.history.get(key).equals(requests.getHistory().get(key))) {
                 System.out.println("HISTORY IS DIFFERENT: SAFETY VIOLATION");
-            } else {
+            } else if (requests.getHistory().get(key) != null) {
                 this.history.put(key, requests.getHistory().get(key));
             }
         }
@@ -38,6 +45,11 @@ public class SpeculativeHistory implements Serializable {
             }
         }
         return new SpeculativeHistory(filteredHistory);
+    }
+
+    public void removeNullEntries() {
+        // Iterate over the map and remove entries with null values
+        this.history.values().removeIf(Objects::isNull);
     }
 
     /* 
