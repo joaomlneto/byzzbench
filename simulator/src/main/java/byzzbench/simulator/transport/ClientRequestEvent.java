@@ -5,8 +5,6 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.experimental.SuperBuilder;
 
-import java.io.Serializable;
-
 /**
  * Event that represents a request from a client to a node.
  *
@@ -16,5 +14,5 @@ import java.io.Serializable;
 @Data
 @JsonTypeName("ClientRequest")
 @SuperBuilder
-public class ClientRequestEvent extends BaseMessageEvent<Serializable> {
+public class ClientRequestEvent extends BaseMessageEvent<MessagePayload> {
 }

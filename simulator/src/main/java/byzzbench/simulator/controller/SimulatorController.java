@@ -1,12 +1,14 @@
 package byzzbench.simulator.controller;
 
 import byzzbench.simulator.Client;
-import byzzbench.simulator.Replica;
+import byzzbench.simulator.Node;
 import byzzbench.simulator.Scenario;
 import byzzbench.simulator.ScenarioPredicate;
+import byzzbench.simulator.config.ByzzBenchConfig;
 import byzzbench.simulator.faults.Fault;
-import byzzbench.simulator.faults.MessageMutationFault;
+import byzzbench.simulator.faults.faults.MessageMutationFault;
 import byzzbench.simulator.schedule.Schedule;
+import byzzbench.simulator.scheduler.Scheduler;
 import byzzbench.simulator.service.MessageMutatorService;
 import byzzbench.simulator.service.ScenarioService;
 import byzzbench.simulator.service.SchedulerFactoryService;
@@ -16,7 +18,6 @@ import byzzbench.simulator.state.adob.AdobDistributedState;
 import byzzbench.simulator.transport.Event;
 import byzzbench.simulator.transport.MailboxEvent;
 import com.fasterxml.jackson.databind.JsonNode;
-import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
@@ -34,9 +35,11 @@ public class SimulatorController {
     private final SimulatorService simulatorService;
     private final ScenarioService scenarioService;
     private final SchedulerFactoryService schedulerFactoryService;
+    private final ByzzBenchConfig byzzBenchConfig;
 
     /**
      * Get the status of the simulator.
+     *
      * @return The status of the simulator.
      */
     @GetMapping("/status")
@@ -46,6 +49,7 @@ public class SimulatorController {
 
     /**
      * Get the list of available client IDs in the current scenario.
+     *
      * @return The list of client IDs.
      */
     @GetMapping("/clients")
@@ -57,6 +61,7 @@ public class SimulatorController {
 
     /**
      * Get the client with the given ID.
+     *
      * @param clientId The ID of the client to get.
      * @return The client with the given ID.
      */
@@ -67,6 +72,7 @@ public class SimulatorController {
 
     /**
      * Get the list of available node IDs in the current scenario.
+     *
      * @return The list of node IDs.
      */
     @GetMapping("/nodes")
@@ -75,24 +81,36 @@ public class SimulatorController {
     }
 
     /**
+     * Get the list of available node IDs in the current scenario.
+     *
+     * @return The list of node IDs.
+     */
+    @GetMapping("/replicas")
+    public SortedSet<String> getReplicas() {
+        return simulatorService.getScenario().getReplicas().navigableKeySet();
+    }
+
+    /**
      * Get the internal state of the node with the given ID.
+     *
      * @param nodeId The ID of the node to get.
      * @return The internal state of the node with the given ID.
      */
     @GetMapping("/node/{nodeId}")
-    public Replica getNode(@PathVariable String nodeId) {
+    public Node getNode(@PathVariable String nodeId) {
         return simulatorService.getScenario().getNode(nodeId);
     }
 
     /**
      * Get the list of event IDs in the mailbox of the node with the given ID.
+     *
      * @param nodeId The ID of the node to get the mailbox of.
-     * @param type The type of the message to filter by.
+     * @param type   The type of the message to filter by.
      * @return The list of event IDs in the mailbox of the node with the given ID.
      */
     @GetMapping("/node/{nodeId}/mailbox")
     public List<Long> getNodeMailbox(@PathVariable String nodeId,
-                   @RequestParam(required = false) String type) {
+                                     @RequestParam(required = false) String type) {
         return simulatorService.getScenario()
                 .getTransport()
                 .getEventsInState(Event.Status.QUEUED)
@@ -105,6 +123,7 @@ public class SimulatorController {
 
     /**
      * Get the list of all event IDs in the scenario.
+     *
      * @return The list of all event IDs in the scenario.
      */
     @GetMapping("/events")
@@ -119,6 +138,7 @@ public class SimulatorController {
 
     /**
      * Get the event with the given ID.
+     *
      * @param eventId The ID of the event to get.
      * @return The event with the given ID.
      */
@@ -132,6 +152,7 @@ public class SimulatorController {
 
     /**
      * Get the list of event IDs in the QUEUED state.
+     *
      * @return The list of event IDs in the QUEUED state.
      */
     @GetMapping("/events/queued")
@@ -146,6 +167,7 @@ public class SimulatorController {
 
     /**
      * Get the list of event IDs in the DROPPED state.
+     *
      * @return The list of event IDs in the DROPPED state.
      */
     @GetMapping("/events/dropped")
@@ -160,6 +182,7 @@ public class SimulatorController {
 
     /**
      * Get the list of event IDs in the DELIVERED state.
+     *
      * @return The list of event IDs in the DELIVERED state.
      */
     @GetMapping("/events/delivered")
@@ -174,6 +197,7 @@ public class SimulatorController {
 
     /**
      * Get the current schedule of the simulator.
+     *
      * @return The list of delivered event IDs in order.
      */
     @GetMapping("/schedule")
@@ -183,6 +207,7 @@ public class SimulatorController {
 
     /**
      * Materializes a given schedule in a given scenario.
+     *
      * @param schedule The schedule to materialize.
      */
     @PutMapping("/schedule")
@@ -214,6 +239,7 @@ public class SimulatorController {
 
     /**
      * Get the event with the given ID.
+     *
      * @param eventId The ID of the event to get.
      * @return The event with the given ID.
      */
@@ -227,6 +253,7 @@ public class SimulatorController {
 
     /**
      * Get the list of mutators that can be applied to the event with the given ID.
+     *
      * @param eventId The ID of the event to get mutators for.
      * @return The list of mutators that can be applied to the event with the given ID.
      */
@@ -250,6 +277,7 @@ public class SimulatorController {
 
     /**
      * Deliver the event with the given ID.
+     *
      * @param eventId The ID of the event to deliver.
      * @throws Exception If the event cannot be delivered.
      */
@@ -260,6 +288,7 @@ public class SimulatorController {
 
     /**
      * Drop the event with the given ID.
+     *
      * @param eventId The ID of the event to drop.
      */
     @PostMapping("/event/{eventId}/drop")
@@ -269,7 +298,8 @@ public class SimulatorController {
 
     /**
      * Mutate a message using a mutator.
-     * @param eventId The ID of the message to mutate.
+     *
+     * @param eventId   The ID of the message to mutate.
      * @param mutatorId The ID of the mutator to apply.
      */
     @PostMapping("/event/{eventId}/mutate/{mutatorId}")
@@ -280,6 +310,7 @@ public class SimulatorController {
 
     /**
      * Get the list of enabled mutators.
+     *
      * @return The list of enabled mutators.
      */
     @GetMapping("/mutators")
@@ -294,6 +325,7 @@ public class SimulatorController {
 
     /**
      * Get the mutator with the given ID.
+     *
      * @param mutatorId The ID of the mutator to get.
      * @return The mutator with the given ID.
      */
@@ -313,6 +345,7 @@ public class SimulatorController {
 
     /**
      * Schedule N actions, according to the scheduler policy.
+     *
      * @param numActions The number of events to schedule.
      * @throws Exception If the scheduler fails to schedule the next event.
      */
@@ -325,6 +358,7 @@ public class SimulatorController {
 
     /**
      * Get the current distributed system state as per the ADoB oracle.
+     *
      * @return The current distributed system state.
      */
     @GetMapping("/adob")
@@ -339,6 +373,7 @@ public class SimulatorController {
 
     /**
      * Get the list of caches in the ADoB oracle.
+     *
      * @return The list of caches in the ADoB oracle.
      */
     @GetMapping("/adob/caches")
@@ -353,6 +388,7 @@ public class SimulatorController {
 
     /**
      * Get the cache with the given ID in the ADoB oracle.
+     *
      * @param cacheId The ID of the cache to get.
      * @return The cache with the given ID in the ADoB oracle.
      */
@@ -368,6 +404,7 @@ public class SimulatorController {
 
     /**
      * Get the list of scenarios available in the simulator.
+     *
      * @return The list of scenario IDs.
      */
     @GetMapping("/scenarios")
@@ -377,6 +414,7 @@ public class SimulatorController {
 
     /**
      * Change the scenario to the one with the given ID.
+     *
      * @param scenarioId The ID of the scenario to change to.
      */
     @PostMapping("/change-scenario")
@@ -386,6 +424,7 @@ public class SimulatorController {
 
     /**
      * Get the ID of the current scenario.
+     *
      * @return The ID of the current scenario.
      */
     @GetMapping("/current-scenario-id")
@@ -395,6 +434,7 @@ public class SimulatorController {
 
     /**
      * Get the list of schedulers available in the simulator.
+     *
      * @return The list of scheduler IDs.
      */
     @GetMapping("/schedulers")
@@ -403,7 +443,18 @@ public class SimulatorController {
     }
 
     /**
+     * Get the list of schedulers available in the simulator.
+     *
+     * @return The list of scheduler IDs.
+     */
+    @GetMapping("/scheduler")
+    public Scheduler getScheduler() {
+        return simulatorService.getScenario().getScheduler();
+    }
+
+    /**
      * Get the list of saved schedules.
+     *
      * @return The
      */
     @GetMapping("/saved-schedules")
@@ -415,6 +466,7 @@ public class SimulatorController {
 
     /**
      * Get the list of saved schedules.
+     *
      * @return The list of saved schedules.
      */
     @GetMapping("/saved-schedules/buggy")
@@ -429,6 +481,7 @@ public class SimulatorController {
 
     /**
      * Get a given saved schedule.
+     *
      * @param scenarioId The ID of the scenario to get the schedule for.
      * @return The schedule for the scenario with the given ID.
      */
@@ -441,17 +494,18 @@ public class SimulatorController {
     // parameters: numRuns, eventsPerRun
     // returns: list of schedules
     @PostMapping("/start")
-    public void start(@RequestParam int eventsPerRun) {
-        //System.out.println("Starting simulator with " + eventsPerRun + " events per run");
-        simulatorService.start(eventsPerRun);
+    public void start() {
+        simulatorService.start();
     }
 
+    /**
+     * Stop the current scenario.
+     */
     @PostMapping("/stop")
     public void stop() {
         if (!simulatorService.getMode().equals(SimulatorService.SimulatorServiceMode.RUNNING)) {
             throw new IllegalStateException("Simulator is not running");
         }
-        //System.out.println("Stopping simulator");
         simulatorService.stop();
     }
 
@@ -463,6 +517,14 @@ public class SimulatorController {
     @GetMapping("/network-faults")
     public SortedSet<String> getNetworkFaults() {
         return simulatorService.getScenario().getTransport().getNetworkFaults().keySet()
+                .stream()
+                .sorted()
+                .collect(Collectors.toCollection(TreeSet::new));
+    }
+
+    @GetMapping("/automatic-faults")
+    public SortedSet<String> getAutomaticFaults() {
+        return simulatorService.getScenario().getTransport().getAutomaticFaults().keySet()
                 .stream()
                 .sorted()
                 .collect(Collectors.toCollection(TreeSet::new));
@@ -482,6 +544,11 @@ public class SimulatorController {
     @GetMapping("/network-faults/{faultId}")
     public Fault getNetworkFault(@PathVariable String faultId) {
         return simulatorService.getScenario().getTransport().getNetworkFault(faultId);
+    }
+
+    @GetMapping("/automatic-faults/{faultId}")
+    public Fault getAutomaticFault(@PathVariable String faultId) {
+        return simulatorService.getScenario().getTransport().getAutomaticFaults().get(faultId);
     }
 
     @PostMapping("/network-fault/{faultId}")
@@ -509,14 +576,8 @@ public class SimulatorController {
                 .collect(Collectors.toMap(ScenarioPredicate::getId, p -> p.test(simulatorService.getScenario()))));
     }
 
-    @PutMapping("/test")
-    public void testDeserialize(@RequestBody MyThing thing) {
-        System.out.println("thing: " + thing);
-    }
-
-    @Data
-    public class MyThing {
-        String name;
-        int age;
+    @GetMapping("/config")
+    public ByzzBenchConfig getConfig() {
+        return byzzBenchConfig;
     }
 }

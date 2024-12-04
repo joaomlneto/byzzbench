@@ -20,4 +20,3 @@ public class PrePrepareMessage extends IPhaseMessage {
         return "PRE-PREPARE";
     }
 }
-
