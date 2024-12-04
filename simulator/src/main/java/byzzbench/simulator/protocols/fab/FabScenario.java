@@ -1,7 +1,6 @@
 package byzzbench.simulator.protocols.fab;
 
 import byzzbench.simulator.BaseScenario;
-import byzzbench.simulator.TerminationCondition;
 import byzzbench.simulator.protocols.fab.replicas.FabReplica;
 import byzzbench.simulator.protocols.fab.replicas.FabRole;
 import byzzbench.simulator.scheduler.Scheduler;
@@ -46,7 +45,7 @@ public class FabScenario extends BaseScenario {
             List<FabRole> proposerAndAcceptor = List.of(FabRole.PROPOSER, FabRole.ACCEPTOR);
             FabReplica replica1 = new FabReplica(
                     "A",
-                    nodesIds, transport, null, proposerAndAcceptor, true, timeout, p, a, l, f,
+                    nodesIds, transport, this,null, proposerAndAcceptor, true, timeout, p, a, l, f,
                     new TreeSet<>(List.of("B", "C", "D", "E", "F")),
                     new TreeSet<>(List.of("C", "D", "E", "F")),
                     new TreeSet<>(List.of("B", "C", "D")),
@@ -54,7 +53,7 @@ public class FabScenario extends BaseScenario {
             replicas.add(replica1);
             this.addNode(replica1);
 
-            FabReplica replica2 = new FabReplica("B", nodesIds, transport, null, proposerAndAcceptor, false, timeout, p, a, l, f,
+            FabReplica replica2 = new FabReplica("B", nodesIds, transport, this, null, proposerAndAcceptor, false, timeout, p, a, l, f,
                     new TreeSet<>(List.of("A", "C", "D", "E", "F")),
                     new TreeSet<>(List.of("C", "D", "E", "F")),
                     new TreeSet<>(List.of("A", "C", "D")),
@@ -64,7 +63,7 @@ public class FabScenario extends BaseScenario {
 
             List<FabRole> proposerAndAcceptorAndLearner = List.of(FabRole.PROPOSER, FabRole.ACCEPTOR, FabRole.LEARNER);
 
-            FabReplica replica3 = new FabReplica("C", nodesIds, transport, null, proposerAndAcceptorAndLearner, false, timeout, p, a, l, f,
+            FabReplica replica3 = new FabReplica("C", nodesIds, transport, this, null, proposerAndAcceptorAndLearner, false, timeout, p, a, l, f,
                     new TreeSet<>(List.of("A", "B", "D", "E", "F")),
                     new TreeSet<>(List.of("D", "E", "F")),
                     new TreeSet<>(List.of("A", "B", "D")),
@@ -72,7 +71,7 @@ public class FabScenario extends BaseScenario {
             replicas.add(replica3);
             this.addNode(replica3);
 
-            FabReplica replica4 = new FabReplica("D", nodesIds, transport, null, proposerAndAcceptorAndLearner, false, timeout, p, a, l, f,
+            FabReplica replica4 = new FabReplica("D", nodesIds, transport, this, null, proposerAndAcceptorAndLearner, false, timeout, p, a, l, f,
                     new TreeSet<>(List.of("A", "B", "C", "E", "F")),
                     new TreeSet<>(List.of("C", "E", "F")),
                     new TreeSet<>(List.of("A", "B", "C")),
@@ -81,7 +80,7 @@ public class FabScenario extends BaseScenario {
             this.addNode(replica4);
 
             List<FabRole> learnerAndAcceptor = List.of(FabRole.ACCEPTOR, FabRole.LEARNER);
-            FabReplica replica5 = new FabReplica("E", nodesIds, transport, null, learnerAndAcceptor, false, timeout, p, a, l, f,
+            FabReplica replica5 = new FabReplica("E", nodesIds, transport, this, null, learnerAndAcceptor, false, timeout, p, a, l, f,
                     new TreeSet<>(List.of("A", "B", "C", "D", "F")),
                     new TreeSet<>(List.of("C", "D", "F")),
                     new TreeSet<>(List.of("A", "B", "C", "D")),
@@ -89,7 +88,7 @@ public class FabScenario extends BaseScenario {
             replicas.add(replica5);
             this.addNode(replica5);
 
-            FabReplica replica6 = new FabReplica("F", nodesIds, transport, null, learnerAndAcceptor, false, timeout, p, a, l, f,
+            FabReplica replica6 = new FabReplica("F", nodesIds, transport, this, null, learnerAndAcceptor, false, timeout, p, a, l, f,
                     new TreeSet<>(List.of("A", "B", "C", "D", "E")),
                     new TreeSet<>(List.of("C", "D", "E")),
                     new TreeSet<>(List.of("A", "B", "C", "D")),
@@ -110,10 +109,5 @@ public class FabScenario extends BaseScenario {
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
-    }
-
-    @Override
-    public TerminationCondition getTerminationCondition() {
-        return null;
     }
 }
