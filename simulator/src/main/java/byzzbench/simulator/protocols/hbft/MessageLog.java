@@ -153,6 +153,9 @@ public class MessageLog implements Serializable {
         // this.cer2 = new TreeMap<>();
         // this.lastAcceptedCheckpointI = null;
 
+        // TODO: probably fine to clear
+        this.viewChanges.clear();
+
         this.lastStableCheckpoint = new Checkpoint(checkpoint, history);
 
         this.highWaterMark = checkpoint + this.watermarkInterval;
@@ -343,11 +346,15 @@ public class MessageLog implements Serializable {
         long newViewNumber = viewChange.getNewViewNumber();
         String replicaId = viewChange.getReplicaId();
 
-        // if (newViewNumber <= curViewNumber) {
-        //     return new ViewChangeResult(false, curViewNumber, false);
-        // }
-
         SortedMap<String, ViewChangeMessage> newViewSet = this.viewChanges.computeIfAbsent(newViewNumber, k -> new TreeMap<>());
+
+        // If the replica already sent a view-change for the same view,
+        // we disregard it
+        // TODO: might cause problems when a view change doesnt happen
+        if (newViewSet.containsKey(replicaId)) {
+            return new ViewChangeResult(false, newViewNumber, false);
+        }
+
         newViewSet.put(replicaId, viewChange);
 
         final int bandwagonSize = tolerance + 1;
@@ -382,9 +389,9 @@ public class MessageLog implements Serializable {
         boolean shouldBandwagon = totalVotes == bandwagonSize;
 
         final int timerThreshold = 2 * tolerance + 1;
-        boolean beginNextVote = newViewSet.size() >= timerThreshold;
+        boolean newView = newViewSet.size() == timerThreshold;
 
-        return new ViewChangeResult(shouldBandwagon, smallestView, beginNextVote);
+        return new ViewChangeResult(shouldBandwagon, smallestView, newView);
     }
 
     public NewViewMessage produceNewView(long newViewNumber, String replicaId, int tolerance) {

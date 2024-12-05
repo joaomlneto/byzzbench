@@ -87,6 +87,11 @@ public class Client implements Serializable, Node {
     private final SortedMap<Long, RequestMessage> sentRequests = new TreeMap<>();
 
     /**
+     * timeouts
+     */
+    private final SortedMap<Long, Long> timeouts = new TreeMap<>();
+
+    /**
      * Timeout for client in seconds
      */
     private final long timeout = 8;
@@ -118,7 +123,10 @@ public class Client implements Serializable, Node {
         RequestMessage request = new RequestMessage(requestId, timestamp, this.id);
         this.sentRequests.put(this.requestSequenceNumber.get(), request);
         this.getScenario().getTransport().multicastClientRequest(this.id, timestamp, requestId, this.scenario.getTransport().getNodeIds());
-        this.setTimeout(this::retransmitOrPanic, this.timeout);
+
+        // Set timeout
+        Long timeoutId = this.setTimeout("REQUEST", this::retransmitOrPanic, this.timeout);
+        timeouts.put(this.requestSequenceNumber.get(), timeoutId);
     }
 
     public void retransmitOrPanic() {
@@ -128,14 +136,15 @@ public class Client implements Serializable, Node {
             // Based on hBFT 4.1 it uses the identical request
             // TODO: It probably should not be the same timestamp
             long timestamp = this.sentRequests.get(this.requestSequenceNumber.get()).getTimestamp();
-            //long timestamp = System.currentTimeMillis();
             this.scenario.getTransport().multicastClientRequest(this.id, timestamp, requestId, this.scenario.getTransport().getNodeIds());
         } else if (this.shouldPanic(tolerance)) {
             RequestMessage message = this.sentRequests.get(this.requestSequenceNumber.get());
             PanicMessage panic = new PanicMessage(this.digest(message), System.currentTimeMillis(), this.id);
             this.scenario.getTransport().multicast(this.id, this.scenario.getTransport().getNodeIds(), panic);
-            this.setTimeout(this::retransmitOrPanic, this.timeout);
         }
+        this.clearTimeout(this.timeouts.get(this.requestSequenceNumber.get()));
+        Long timeoutId = this.setTimeout("REQUEST", this::retransmitOrPanic, this.timeout);
+        timeouts.put(this.requestSequenceNumber.get(), timeoutId);
     }
 
     /**
@@ -156,9 +165,9 @@ public class Client implements Serializable, Node {
         if (this.completedReplies(tolerance, seqNumber) 
             && !this.completedRequests.contains(seqNumber) 
             && this.requestSequenceNumber.get() <= this.maxRequests) {
-            this.completedRequests.add(seqNumber);
-            this.sendRequest();
-            this.clearAllTimeouts();
+                this.completedRequests.add(seqNumber);
+                this.clearTimeout(this.timeouts.get(this.requestSequenceNumber.get()));
+                this.sendRequest();
         }
     }
 

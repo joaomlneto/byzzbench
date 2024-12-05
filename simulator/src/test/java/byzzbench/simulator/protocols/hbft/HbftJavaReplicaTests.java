@@ -81,6 +81,33 @@ public class HbftJavaReplicaTests {
     }
 
     @Test
+	void testRecvDoubleRequestWithinView() {
+        HbftJavaReplica spyReplica = Mockito.spy(replicaA);
+        RequestMessage request = new RequestMessage("123", 0, "C0");
+        
+        spyReplica.recvRequest(request);
+        spyReplica.recvRequest(request);
+        verify(spyReplica, times(1)).sendRequest(primary.getId(), request);
+        Assert.isTrue(replicaA.getReceivedRequests().get(request.getTimestamp()) != null, "Request should already be received");
+    }
+
+    @Test
+	void testRecvDoubleRequestAccrossViews() {
+        HbftJavaReplica spyReplica = Mockito.spy(replicaA);
+        RequestMessage request = new RequestMessage("123", 0, "C0");
+        
+        spyReplica.recvRequest(request);
+        spyReplica.enterNewView(2);
+        spyReplica.setCheckpointForNewView(false);
+        Assert.isTrue(replicaA.getReceivedRequests().get(request.getTimestamp()) == null, "Request should not be stored!");
+        spyReplica.recvRequest(request);
+        verify(spyReplica, times(1)).sendRequest(primary.getId(), request);
+        verify(spyReplica, times(1)).sendRequest(replicaC.getId(), request);
+        Assert.isTrue(replicaA.getReceivedRequests().get(request.getTimestamp()) != null, "Request should be stored!");
+    }
+
+
+    @Test
 	void testRecvPrepare() {
         long viewNumber = 1;
         long seqNumber = 1;
