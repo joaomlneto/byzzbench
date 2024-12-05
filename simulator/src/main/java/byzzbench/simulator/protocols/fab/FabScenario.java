@@ -19,6 +19,7 @@ public class FabScenario extends BaseScenario {
 
     public FabScenario(Scheduler scheduler) {
         super("fab-java", scheduler);
+        this.terminationCondition = new FabTerminationCondition();
     }
     @Override
     protected void loadScenarioParameters(JsonNode parameters) {
@@ -32,7 +33,7 @@ public class FabScenario extends BaseScenario {
         int a = 6;
         int l = 4;
         int f = 1;
-        long timeout = 50000L;
+        long timeout = 80000L;
         try {
             SortedSet<String> nodesIds = new TreeSet<>();
             for (int i = 0; i < NUM_NODES; i++) {
@@ -104,8 +105,8 @@ public class FabScenario extends BaseScenario {
     protected void run() {
         // send a request message to node A
         try {
-            this.setNumClients(1);
-            this.transport.sendClientRequest("C0", "123", "A");
+//            this.setNumClients(1);
+//            this.transport.sendClientRequest("C0", "123", "A");
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
