@@ -38,9 +38,6 @@ public class MessageLog {
      */
     public boolean addMessage(GenericMessage voteMessage) {
         boolean added = messages.add(voteMessage); // Add to the global set of messages
-        if (voteMessage instanceof PrecommitMessage)
-            log.info("added precommit?: " + added);
-            log.info(messages.stream().filter(m -> m instanceof PrecommitMessage).count() + " precommit messages");
         if (added) {
             Block block = voteMessage.getBlock() == null ? NULL_BLOCK : voteMessage.getBlock();
 
