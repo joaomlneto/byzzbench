@@ -1,4 +1,4 @@
-package byzzbench.simulator.protocols.fab.replicas;
+package byzzbench.simulator.protocols.fab.replica;
 
 import lombok.Getter;
 import lombok.extern.java.Log;

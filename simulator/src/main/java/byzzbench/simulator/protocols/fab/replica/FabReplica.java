@@ -1,12 +1,13 @@
-package byzzbench.simulator.protocols.fab.replicas;
+package byzzbench.simulator.protocols.fab.replica;
 
 import byzzbench.simulator.LeaderBasedProtocolReplica;
 import byzzbench.simulator.Scenario;
 import byzzbench.simulator.protocols.fab.ProgressCertificate;
 import byzzbench.simulator.protocols.fab.SignedResponse;
 import byzzbench.simulator.protocols.fab.messages.*;
-import byzzbench.simulator.protocols.pbft_java.MessageLog;
+import byzzbench.simulator.protocols.fab.MessageLog;
 import byzzbench.simulator.state.TotalOrderCommitLog;
+import byzzbench.simulator.transport.DefaultClientRequestPayload;
 import byzzbench.simulator.transport.MessagePayload;
 import byzzbench.simulator.transport.Transport;
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -66,6 +67,8 @@ public class FabReplica extends LeaderBasedProtocolReplica {
     private final Transport transport;
     private final ExecutorService executor = Executors.newFixedThreadPool(3);
 
+    private String clientId;
+
     /**
      * The log of received messages for the replica.
      */
@@ -111,7 +114,6 @@ public class FabReplica extends LeaderBasedProtocolReplica {
         initializeState();
 
         log.info("Replica " + getId() + " initialized");
-        onStart();
     }
 
     private void initializeState() {
@@ -174,16 +176,12 @@ public class FabReplica extends LeaderBasedProtocolReplica {
                 log.warning(String.format("The threshold for the number of satisfied messages was not reached, node %s is suspected", getId()));
             } else {
                 log.info("The threshold for the number of satisfied messages was reached");
+                this.sendReplyToClient(clientId, proposedValue);
                 executor.shutdownNow();
-//                initialize();
+//                electNewLeader();
             }
         }, executor);
     }
-
-//    private void isSatisfied(int threshold) {
-//
-//
-//    }
 
     /**
      * The PROPOSER starts by waiting to learn the accepted value from the ACCEPTOR nodes.
@@ -311,7 +309,10 @@ public class FabReplica extends LeaderBasedProtocolReplica {
 
     @Override
     public void handleClientRequest(String clientId, Serializable request) throws UnsupportedOperationException {
-        throw new UnsupportedOperationException("Client requests not supported in Fast Byzantine Consensus");
+//        throw new UnsupportedOperationException("Client requests not supported in Fast Byzantine Consensus");
+        this.clientId = clientId;
+//        this.proposedValue = (byte[]) request;
+        onStart();
     }
 
     @Override
@@ -337,6 +338,8 @@ public class FabReplica extends LeaderBasedProtocolReplica {
             handleReplyMessage(sender, (ReplyMessage) message);
         } else if (message instanceof ViewChangeMessage) {
             handleViewChangeMessage(sender, (ViewChangeMessage) message);
+        } else if (message instanceof DefaultClientRequestPayload clientRequest) {
+            handleClientRequest(sender, clientRequest.getOperation());
         }
 
         else {
@@ -547,6 +550,7 @@ public class FabReplica extends LeaderBasedProtocolReplica {
             leaderId = newLeaderId;
         }
 
+        executor.shutdownNow();
         initialize();
     }
 

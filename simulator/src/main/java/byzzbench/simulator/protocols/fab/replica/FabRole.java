@@ -1,4 +1,4 @@
-package byzzbench.simulator.protocols.fab.replicas;
+package byzzbench.simulator.protocols.fab.replica;
 
 /**
  * The role of a replica in the FAB protocol. A replica can act as more than one type of agents.

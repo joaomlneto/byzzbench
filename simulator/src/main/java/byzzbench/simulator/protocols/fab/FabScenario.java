@@ -1,8 +1,8 @@
 package byzzbench.simulator.protocols.fab;
 
 import byzzbench.simulator.BaseScenario;
-import byzzbench.simulator.protocols.fab.replicas.FabReplica;
-import byzzbench.simulator.protocols.fab.replicas.FabRole;
+import byzzbench.simulator.protocols.fab.replica.FabReplica;
+import byzzbench.simulator.protocols.fab.replica.FabRole;
 import byzzbench.simulator.scheduler.Scheduler;
 import com.fasterxml.jackson.databind.JsonNode;
 import lombok.extern.java.Log;
@@ -33,7 +33,7 @@ public class FabScenario extends BaseScenario {
         int a = 6;
         int l = 4;
         int f = 1;
-        long timeout = 80000L;
+        long timeout = 8000L;
         try {
             SortedSet<String> nodesIds = new TreeSet<>();
             for (int i = 0; i < NUM_NODES; i++) {
@@ -105,7 +105,8 @@ public class FabScenario extends BaseScenario {
     protected void run() {
         // send a request message to node A
         try {
-//            this.setNumClients(1);
+            this.setNumClients(1);
+            this.transport.sendClientRequest("C0", "123", "A");
 //            this.transport.sendClientRequest("C0", "123", "A");
         } catch (Exception e) {
             throw new RuntimeException(e);
