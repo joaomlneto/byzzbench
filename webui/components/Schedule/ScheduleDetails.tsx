@@ -57,7 +57,9 @@ export const ScheduleDetails = ({
     <Container size="sm">
       {!hideTitle && <Title order={4}>{title}</Title>}
       {!hideScenario && (
-        <Title order={6}>Scenario: {schedule.scenarioId}</Title>
+        <Title order={6}>
+          Scenario: {schedule.scenarioId} ({schedule.eventCount} events)
+        </Title>
       )}
       <Group gap="xs">
         {!hideMaterializeButton && (
