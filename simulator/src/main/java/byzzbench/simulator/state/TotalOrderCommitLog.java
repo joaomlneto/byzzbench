@@ -10,14 +10,16 @@ import java.util.List;
  */
 @Getter
 public class TotalOrderCommitLog extends CommitLog {
-  private final List<LogEntry> log = new ArrayList<>();
+    private final List<LogEntry> log = new ArrayList<>();
 
-  public void add(LogEntry operation) { log.add(operation); }
+    public void add(LogEntry operation) {
+        log.add(operation);
+    }
 
-  @Override
-  public int getLength() {
-    return log.size();
-  }
+    @Override
+    public int getLength() {
+        return log.size();
+    }
 
     @Override
     public LogEntry get(int index) {

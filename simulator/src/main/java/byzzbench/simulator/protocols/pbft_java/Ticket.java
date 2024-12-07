@@ -4,7 +4,6 @@ import byzzbench.simulator.protocols.pbft_java.message.CommitMessage;
 import byzzbench.simulator.protocols.pbft_java.message.PrePrepareMessage;
 import byzzbench.simulator.protocols.pbft_java.message.PrepareMessage;
 import byzzbench.simulator.protocols.pbft_java.message.RequestMessage;
-import byzzbench.simulator.protocols.pbft_java.pojo.ReplicaTicketPhase;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 

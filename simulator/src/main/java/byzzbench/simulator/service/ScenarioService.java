@@ -4,6 +4,7 @@ import byzzbench.simulator.Scenario;
 import byzzbench.simulator.ScenarioFactory;
 import com.fasterxml.jackson.databind.JsonNode;
 import lombok.Getter;
+import lombok.extern.java.Log;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
@@ -14,6 +15,7 @@ import java.util.*;
  */
 @Service
 @Getter
+@Log
 public class ScenarioService {
     private final MessageMutatorService messageMutatorService;
 
@@ -40,6 +42,7 @@ public class ScenarioService {
 
     /**
      * Get a scenario by id
+     *
      * @param id the id of the scenario
      * @return the scenario
      * @throws IllegalArgumentException if the scenario id is unknown
@@ -47,6 +50,11 @@ public class ScenarioService {
     public Scenario generateScenario(String id, JsonNode parameters) {
         ScenarioFactory scenario = scenarioFactories.get(id);
         if (scenario == null) {
+            log.severe("Unknown scenario: " + id);
+            log.severe("Available scenarios:");
+            for (String scenarioId : scenarioFactories.keySet()) {
+                log.severe("- " + scenarioId);
+            }
             throw new IllegalArgumentException("Unknown scenario id: " + id);
         }
         Scenario s = scenario.createScenario(messageMutatorService, parameters);
@@ -56,6 +64,7 @@ public class ScenarioService {
 
     /**
      * Get the ids of all registered scenarios
+     *
      * @return the ids of all registered scenarios
      */
     public List<String> getScenarioIds() {

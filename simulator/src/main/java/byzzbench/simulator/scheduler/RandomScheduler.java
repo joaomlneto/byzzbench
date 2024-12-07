@@ -1,7 +1,7 @@
 package byzzbench.simulator.scheduler;
 
 import byzzbench.simulator.Scenario;
-import byzzbench.simulator.faults.MessageMutationFault;
+import byzzbench.simulator.faults.faults.MessageMutationFault;
 import byzzbench.simulator.service.MessageMutatorService;
 import byzzbench.simulator.transport.ClientRequestEvent;
 import byzzbench.simulator.transport.Event;
@@ -54,6 +54,11 @@ public class RandomScheduler extends BaseScheduler {
                 deliverMessageProbability != 1) {
             throw new IllegalArgumentException("Invalid probabilities: they must sum to 1");
         }
+    }
+
+    @Override
+    public void initializeScenario(Scenario scenario) {
+        // no initialization needed
     }
 
     @Override
