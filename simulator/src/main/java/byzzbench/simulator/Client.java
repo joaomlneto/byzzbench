@@ -134,8 +134,8 @@ public class Client implements Serializable, Node {
         this.getScenario().getTransport().multicastClientRequest(this.id, timestamp, requestId, this.scenario.getTransport().getNodeIds());
 
         // Set timeout
-        Long timeoutId = this.setTimeout("REQUEST", this::retransmitOrPanic, this.timeout);
-        timeouts.put(this.requestSequenceNumber.get(), timeoutId);
+        // Long timeoutId = this.setTimeout("REQUEST", this::retransmitOrPanic, this.timeout);
+        // timeouts.put(this.requestSequenceNumber.get(), timeoutId);
     }
 
     public void retransmitOrPanic() {
@@ -151,9 +151,9 @@ public class Client implements Serializable, Node {
             PanicMessage panic = new PanicMessage(this.digest(message), System.currentTimeMillis(), this.id);
             this.scenario.getTransport().multicast(this.id, this.scenario.getTransport().getNodeIds(), panic);
         }
-        this.clearTimeout(timeouts.get(this.requestSequenceNumber.get()));
-        Long timeoutId = this.setTimeout("REQUEST", this::retransmitOrPanic, this.timeout);
-        timeouts.put(this.requestSequenceNumber.get(), timeoutId);
+        // this.clearTimeout(timeouts.get(this.requestSequenceNumber.get()));
+        // Long timeoutId = this.setTimeout("REQUEST", this::retransmitOrPanic, this.timeout);
+        // timeouts.put(this.requestSequenceNumber.get(), timeoutId);
     }
 
     /**
@@ -181,7 +181,7 @@ public class Client implements Serializable, Node {
             && !this.completedRequests.contains(key) 
             && this.requestSequenceNumber.get() <= this.maxRequests) {
                 this.completedRequests.add(key);
-                this.clearTimeout(this.timeouts.get(this.requestSequenceNumber.get()));
+                //this.clearTimeout(this.timeouts.get(this.requestSequenceNumber.get()));
                 this.sendRequest();
         }
     }

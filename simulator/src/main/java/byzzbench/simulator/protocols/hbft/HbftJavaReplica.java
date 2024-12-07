@@ -63,7 +63,7 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
      * for the request.
      */
     @Getter
-    @JsonIgnore
+    //@JsonIgnore
     private SpeculativeHistory speculativeHistory;
 
     /**
@@ -73,7 +73,7 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
      * by the replica, either through prepare or f + 1 COMMITs.
      */
     @Getter
-    @JsonIgnore
+    //@JsonIgnore
     private final SortedMap<Long, RequestMessage> speculativeRequests;
 
     @Getter
