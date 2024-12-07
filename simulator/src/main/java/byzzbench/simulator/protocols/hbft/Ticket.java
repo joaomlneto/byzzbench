@@ -44,16 +44,9 @@ public class Ticket<O extends Serializable, R extends Serializable> implements S
                 this.request = requestMessage;
             } else if (message instanceof PrepareMessage prepareMessage) {
                 this.request = prepareMessage.getRequest();
-                if (this.prepare == null) {
-                    this.prepare = prepareMessage;
-                }
+                this.prepare = prepareMessage;
             } else if (message instanceof ReplyMessage replyMessage) {
                 this.reply = replyMessage;
-            } else if (message instanceof CommitMessage commitMessage) {
-                if (this.prepare == null) {
-                    this.request = commitMessage.getRequest();
-                    this.prepare = commitMessage.getPrepare();
-                }
             }
         //}
     }
@@ -100,13 +93,6 @@ public class Ticket<O extends Serializable, R extends Serializable> implements S
         }
 
         return false;
-    }
-
-    public boolean isPreparedConflicting(PrepareMessage prepareMessage) {
-        // if (this.prepare == null) {
-        //     return false;
-        // }
-        return !this.prepare.equals(prepareMessage);
     }
 
     public boolean casPhase(ReplicaTicketPhase old, ReplicaTicketPhase next) {
