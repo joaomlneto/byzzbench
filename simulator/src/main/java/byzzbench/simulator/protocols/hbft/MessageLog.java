@@ -388,8 +388,8 @@ public class MessageLog implements Serializable {
 
         boolean shouldBandwagon = totalVotes == bandwagonSize;
 
-        final int timerThreshold = 2 * tolerance + 1;
-        boolean newView = newViewSet.size() == timerThreshold;
+        final int newViewThreshold = 2 * tolerance;
+        boolean newView = totalVotes == newViewThreshold;
 
         return new ViewChangeResult(shouldBandwagon, smallestView, newView);
     }

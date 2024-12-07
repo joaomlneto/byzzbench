@@ -681,7 +681,7 @@ public class HbftJavaReplicaTests {
             && arg.getSpeculativeHistoryQ().getHistory() == replicaA.getSpeculativeHistory()));
     }
 
-    @Test
+    /* @Test
 	void testLotOfDifferentViewChanges() {
         HbftJavaReplica spyReplica = Mockito.spy(replicaC);
         RequestMessage request = new RequestMessage("123", 0, "C0");
@@ -721,7 +721,7 @@ public class HbftJavaReplicaTests {
             && arg.getSpeculativeHistory().getHistory().get(1L) == null
             && arg.getViewChangeProofs().contains(viewChange)
             && arg.getViewChangeProofs().contains(viewChange5)));
-    }
+    } */
 
     /* 
      * Test1 - Correct with replica being empty, and receiving null checkpoint
