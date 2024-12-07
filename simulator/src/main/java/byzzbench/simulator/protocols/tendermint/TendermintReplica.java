@@ -243,7 +243,8 @@ public class TendermintReplica extends LeaderBasedProtocolReplica {
         boolean uponRule3Condition = this.step.equals(Step.PREVOTE);
         uponRules[3] = (!nullBlocks_height_round_2fPlus1.isEmpty() && uponRule3Condition);
         log.info("Upon rules: " + Arrays.toString(uponRules));
-        pickAndExecuteRandomRule(uponRules, proposals_height_round_validRound, proposals_height_round, nullBlocks_height_round_2fPlus1);
+
+        prevoteRandomOrderExecute(uponRules, proposals_height_round_validRound, proposals_height_round, nullBlocks_height_round_2fPlus1);
     }
 
     private void executePrevoteRule0(Set<ProposalMessage> matchingProposals) {
@@ -289,64 +290,56 @@ public class TendermintReplica extends LeaderBasedProtocolReplica {
         }
     }
 
-    private void pickAndExecuteRandomRule(boolean[] uponRules,
-                                          Set<ProposalMessage> proposals_height_round_validRound,
-                                          Set<ProposalMessage> proposals_height_round,
-                                          Set<Block> nullBlocksHeightRound2fPlus1) {
+    private void prevoteRandomOrderExecute(boolean[] uponRules,
+                                           Set<ProposalMessage> proposals_height_round_validRound,
+                                           Set<ProposalMessage> proposals_height_round,
+                                           Set<Block> nullBlocksHeightRound2fPlus1) {
         List<Integer> trueIndices = new ArrayList<>();
 
-        // Collect indices of `true` values
+        // Collect indices of true values
         for (int i = 0; i < uponRules.length; i++) {
             if (uponRules[i]) {
                 trueIndices.add(i);
             }
         }
 
-        // If there are no true values, return null
+        // If there are no true values, return
         if (trueIndices.isEmpty()) {
             log.info("No Prevote rule to execute");
             return;
         }
 
-        // Use a deterministic hash or mapping function
-        int hash = computeDeterministicHash(uponRules);
-        int selectedIndex = hash % trueIndices.size();
-        log.info("Selected index: " + selectedIndex + " from " + trueIndices.toString() + " with hash: " + hash);
+        // Shuffle the indices to randomize the execution order
+        Collections.shuffle(trueIndices);
 
-        switch (trueIndices.get(selectedIndex)) {
-            case 0:
-                log.info("Executing Prevote Rule 0");
-                executePrevoteRule0(proposals_height_round_validRound);
-                break;
-            case 1:
-                log.info("Executing Prevote Rule 1");
-                executePrevoteRule1();
-                break;
-            case 2:
-                log.info("Executing Prevote Rule 2");
-                executePrevoteRule2(proposals_height_round);
-                break;
-            case 3:
-                log.info("Executing Prevote Rule 3");
-                executePrevoteRule3(nullBlocksHeightRound2fPlus1);
-                break;
-            default:
-                break;
-        }
-    }
+        log.info("Shuffled indices for execution: " + trueIndices.toString());
 
-    private static int computeDeterministicHash(boolean[] booleans) {
-        int hash = 0;
-
-        // Compute a simple deterministic hash based on the boolean values
-        for (int i = 0; i < booleans.length; i++) {
-            if (booleans[i]) {
-                hash += (i + 1) * 31; // Use a prime multiplier to reduce collisions
+        // Execute each rule in the randomized order
+        for (int index : trueIndices) {
+            switch (index) {
+                case 0:
+                    log.info("Executing Prevote Rule 0");
+                    executePrevoteRule0(proposals_height_round_validRound);
+                    break;
+                case 1:
+                    log.info("Executing Prevote Rule 1");
+                    executePrevoteRule1();
+                    break;
+                case 2:
+                    log.info("Executing Prevote Rule 2");
+                    executePrevoteRule2(proposals_height_round);
+                    break;
+                case 3:
+                    log.info("Executing Prevote Rule 3");
+                    executePrevoteRule3(nullBlocksHeightRound2fPlus1);
+                    break;
+                default:
+                    log.warning("Unexpected index: " + index);
+                    break;
             }
         }
-
-        return Math.abs(hash); // Ensure non-negative hash value
     }
+
 
     private boolean getAnyBlocks_height_round_2fPlus1() {
         return messageLog.getPrevotesCount() >= (2 * tolerance + 1);
