@@ -72,7 +72,7 @@ public class Client implements Serializable, Node {
     /**
      * The maximum number of requests that can be sent by the client.
      */
-    private final long maxRequests = 7;
+    private final long maxRequests = 100;
 
     /**
      * The replies received by the client.
@@ -88,6 +88,11 @@ public class Client implements Serializable, Node {
      * The sent requests.
      */
     private final SortedMap<Long, RequestMessage> sentRequests = new TreeMap<>();
+
+    /**
+     * The sent requests by timestamp.
+     */
+    private final SortedMap<Long, String> sentRequestsByTimestamp = new TreeMap<>();
 
     /**
      * timeouts
@@ -125,6 +130,7 @@ public class Client implements Serializable, Node {
         long timestamp = System.currentTimeMillis();
         RequestMessage request = new RequestMessage(requestId, timestamp, this.id);
         this.sentRequests.put(this.requestSequenceNumber.get(), request);
+        this.sentRequestsByTimestamp.put(timestamp, requestId);
         this.getScenario().getTransport().multicastClientRequest(this.id, timestamp, requestId, this.scenario.getTransport().getNodeIds());
 
         // Set timeout
@@ -161,7 +167,8 @@ public class Client implements Serializable, Node {
             return;
         }
         ClientReplyKey key = new ClientReplyKey(((ReplyMessage) reply).getResult().toString(), seqNumber);
-        String currRequest = String.format("%s/%d", this.id, this.requestSequenceNumber.get());
+        // Default is for testing only
+        String currRequest = this.sentRequestsByTimestamp.getOrDefault(((ReplyMessage) reply).getTimestamp(), "C/0");
         this.replies.putIfAbsent(currRequest, new TreeMap<>());
         this.replies.get(currRequest).putIfAbsent(key, new ArrayList<>());
         this.replies.get(currRequest).get(key).add(reply);
@@ -270,6 +277,9 @@ public class Client implements Serializable, Node {
      */
     public boolean completedReplies(long tolerance) {
         String currRequest = String.format("%s/%d", this.id, this.requestSequenceNumber.get());
+        if (!replies.containsKey(currRequest)) {
+            return false;
+        }
         for (ClientReplyKey key : replies.get(currRequest).keySet()) {
             if (this.replies.get(currRequest).get(key).size() >= 2 * tolerance + 1) {
                 return true;
