@@ -204,7 +204,7 @@ public class Transport {
      * @param recipient The ID of the client receiving the response
      * @param tolerance the tolerance of the protocol (used for hbft)
      */
-    public synchronized void sendClientResponse(String sender, Serializable response, String recipient, long tolerance, long seqNumber) {
+    public synchronized void sendClientResponse(String sender, MessagePayload response, String recipient, long tolerance, long seqNumber) {
         // assert that the sender exists
         if (!this.scenario.getNodes().containsKey(sender)) {
             throw new IllegalArgumentException("Replica not found: " + sender);

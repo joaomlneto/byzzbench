@@ -18,6 +18,13 @@ public class CommitMessage extends IPhaseMessage {
     private final String replicaId;
     // Speculative execution history
     private final SpeculativeHistory speculativeHistory;
+    /*  
+     * As of hBFT 4.4 PREPARE is included in the COMMIT
+     * Almost-MAC agreement
+     * 
+     * Should be signed by primary so cannot be faked
+     */
+    private final PrepareMessage prepare;
 
     @Override
     public String getType() {

@@ -243,7 +243,8 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
             this.digest(request),
             request,
             this.getId(),
-            this.speculativeHistory);
+            this.speculativeHistory,
+            prepare);
 
         this.broadcastMessage(commit);
 
@@ -505,7 +506,8 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
             digest,
             request,
             this.getId(),
-            this.speculativeHistory);
+            this.speculativeHistory,
+            prepare);
         this.broadcastMessage(commit);
 
         // hBFT 4.1 - Add COMMIT to the log
@@ -532,10 +534,11 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
         }
     }
 
-    private void tryAdvanceState(Ticket<O, R> ticket, IPhaseMessage message) {
+    private void tryAdvanceState(Ticket<O, R> ticket, CommitMessage message) {
         long currentViewNumber = message.getViewNumber();
         long seqNumber = message.getSequenceNumber();
         byte[] digest = message.getDigest();
+        PrepareMessage prepareMessage = message.getPrepare();
 
         ReplicaTicketPhase phase = ticket.getPhase();
 
@@ -544,8 +547,8 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
              * Per hBFT 4.1 if the replica is in PREPARE phase, waiting for a PREPARE message,
              * then if it has f + 1 COMMIT messages in the log it can also COMMIT and REPLY
              */
-            if (ticket.isPrepared(this.tolerance) && ticket.casPhase(phase, ReplicaTicketPhase.COMMIT)) {
-                System.out.println("Replica " + this.getId() + " received f + 1 COMMIT in PREPARE phase so should also COMMIT and REPLY");
+            if (!ticket.isPreparedConflicting(prepareMessage) && ticket.casPhase(phase, ReplicaTicketPhase.COMMIT)) {
+                System.out.println("Replica " + this.getId() + " received a PREPARE thorugh a COMMIT message!");
                 RequestMessage request = ticket.getRequest();
 
                 // Checks whether the replica has executed the request
@@ -583,7 +586,8 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
                         digest,
                         request,
                         this.getId(),
-                        this.speculativeHistory);
+                        this.speculativeHistory,
+                        prepareMessage);
                     
                     // Send to self as well in order to trigger the check for 2f + 1 COMMIT messages
                     this.broadcastMessage(commit);
@@ -646,7 +650,7 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
                 } else if (seqNumber % messageLog.getCheckpointInterval() == 0) {
                     //this.setTimeout(this::sendViewChangeOnTimeout, this.CHECKPOINT_TIMEOUT, "CHECKPOINT");
                 }
-            } else if (ticket.isCommittedConflicting(this.tolerance)) {
+            } else if (ticket.isCommittedConflicting(this.tolerance) || ticket.isPreparedConflicting(prepareMessage)) {
                 ViewChangeMessage viewChangeMessage = this.messageLog.produceViewChange(this.getViewNumber() + 1, this.getViewNumber(), this.getId(), tolerance, this.speculativeRequests);
                 this.sendViewChange(viewChangeMessage);
             }

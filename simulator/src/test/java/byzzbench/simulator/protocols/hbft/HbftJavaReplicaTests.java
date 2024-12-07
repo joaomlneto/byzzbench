@@ -196,17 +196,17 @@ public class HbftJavaReplicaTests {
         long seqNumber = 1;
         RequestMessage request = new RequestMessage("123", 0, "C0");
         byte[] digest = replicaA.digest(request);
-        //PrepareMessage prepare = new PrepareMessage(viewNumber, seqNumber, digest, request);
-        CommitMessage commit = new CommitMessage(viewNumber, seqNumber, digest, request, "B", this.replicaA.getSpeculativeHistory());
+        PrepareMessage prepare = new PrepareMessage(viewNumber, seqNumber, digest, request);
+        CommitMessage commit = new CommitMessage(viewNumber, seqNumber, digest, request, "B", this.replicaA.getSpeculativeHistory(), prepare);
 
         replicaA.recvCommit(commit);
 
         // Commit message should be accepted
         Assert.isTrue(replicaA.getMessageLog().getTicket(viewNumber, seqNumber).getMessages().contains(commit), "Commit message with correct seqNum and viewNum should be accepted!");
         Assert.isTrue(!replicaA.getMessageLog().getTicket(viewNumber, seqNumber).isCommittedLocal(tolerance), "This commit should not accept local commit!");
-        Assert.isTrue(replicaA.getMessageLog().getTicket(viewNumber, seqNumber).getPhase() == ReplicaTicketPhase.PREPARE, "replicaA should still be in prepare phase!");
+        Assert.isTrue(replicaA.getMessageLog().getTicket(viewNumber, seqNumber).getPhase() == ReplicaTicketPhase.COMMIT, "replicaA should be in COMMIT!");
 
-        CommitMessage commit2 = new CommitMessage(viewNumber, seqNumber, digest, request, "C", this.replicaA.getSpeculativeHistory());
+        CommitMessage commit2 = new CommitMessage(viewNumber, seqNumber, digest, request, "C", this.replicaA.getSpeculativeHistory(), prepare);
         replicaA.recvCommit(commit2);
 
         ReplicaRequestKey key = new ReplicaRequestKey("C0", 0);
@@ -221,7 +221,7 @@ public class HbftJavaReplicaTests {
         RequestMessage request = new RequestMessage("123", 0, "C0");
         byte[] digest = replicaA.digest(request);
         PrepareMessage prepare = new PrepareMessage(viewNumber, seqNumber, digest, request);
-        CommitMessage commit = new CommitMessage(viewNumber, seqNumber, digest, request, "B", this.replicaA.getSpeculativeHistory());
+        CommitMessage commit = new CommitMessage(viewNumber, seqNumber, digest, request, "B", this.replicaA.getSpeculativeHistory(), prepare);
 
         replicaA.recvPrepare(prepare);
         replicaA.recvCommit(commit);
@@ -230,7 +230,7 @@ public class HbftJavaReplicaTests {
         Assert.isTrue(!replicaA.getMessageLog().getTicket(viewNumber, seqNumber).isCommittedLocal(tolerance), "This commit should not accept local commit!");
         Assert.isTrue(replicaA.getMessageLog().getTicket(viewNumber, seqNumber).getPhase() == ReplicaTicketPhase.COMMIT, "replicaA should be in commit phase!");
 
-        CommitMessage commit2 = new CommitMessage(viewNumber, seqNumber, digest, request, "B", this.replicaA.getSpeculativeHistory());
+        CommitMessage commit2 = new CommitMessage(viewNumber, seqNumber, digest, request, "B", this.replicaA.getSpeculativeHistory(), prepare);
         replicaA.recvCommit(commit2);
 
         ReplicaRequestKey key = new ReplicaRequestKey("C0", 0);
@@ -546,8 +546,8 @@ public class HbftJavaReplicaTests {
         long viewNumber = 1;
         long seqNumber = 1;
         PrepareMessage prepare = new PrepareMessage(viewNumber, seqNumber, digest, request);
-        CommitMessage commit = new CommitMessage(viewNumber, seqNumber, digest, request, primary.getId(), primary.getSpeculativeHistory());
-        CommitMessage commit2 = new CommitMessage(viewNumber, seqNumber, digest, request, replicaC.getId(), replicaC.getSpeculativeHistory());
+        CommitMessage commit = new CommitMessage(viewNumber, seqNumber, digest, request, primary.getId(), primary.getSpeculativeHistory(), prepare);
+        CommitMessage commit2 = new CommitMessage(viewNumber, seqNumber, digest, request, replicaC.getId(), replicaC.getSpeculativeHistory(), prepare);
         
         spyReplica.recvPrepare(prepare);
         spyReplica.recvCommit(commit);
@@ -596,8 +596,8 @@ public class HbftJavaReplicaTests {
         long viewNumber = 1;
         long seqNumber = 1;
         PrepareMessage prepare = new PrepareMessage(viewNumber, seqNumber, digest, request);
-        CommitMessage commit = new CommitMessage(viewNumber, seqNumber, digest, request, primary.getId(), primary.getSpeculativeHistory());
-        CommitMessage commit2 = new CommitMessage(viewNumber, seqNumber, digest, request, replicaC.getId(), replicaC.getSpeculativeHistory());
+        CommitMessage commit = new CommitMessage(viewNumber, seqNumber, digest, request, primary.getId(), primary.getSpeculativeHistory(), prepare);
+        CommitMessage commit2 = new CommitMessage(viewNumber, seqNumber, digest, request, replicaC.getId(), replicaC.getSpeculativeHistory(), prepare);
         
         spyReplica.recvPrepare(prepare);
         spyReplica.recvCommit(commit);
@@ -646,8 +646,8 @@ public class HbftJavaReplicaTests {
         long viewNumber = 1;
         long seqNumber = 1;
         PrepareMessage prepare = new PrepareMessage(viewNumber, seqNumber, digest, request);
-        CommitMessage commit = new CommitMessage(viewNumber, seqNumber, digest, request, primary.getId(), primary.getSpeculativeHistory());
-        CommitMessage commit2 = new CommitMessage(viewNumber, seqNumber, digest, request, replicaC.getId(), replicaC.getSpeculativeHistory());
+        CommitMessage commit = new CommitMessage(viewNumber, seqNumber, digest, request, primary.getId(), primary.getSpeculativeHistory(), prepare);
+        CommitMessage commit2 = new CommitMessage(viewNumber, seqNumber, digest, request, replicaC.getId(), replicaC.getSpeculativeHistory(), prepare);
         
         spyReplica.recvPrepare(prepare);
         spyReplica.recvCommit(commit);

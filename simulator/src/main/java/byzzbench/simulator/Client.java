@@ -24,6 +24,9 @@ import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicLong;
 
+import byzzbench.simulator.protocols.hbft.message.ReplyMessage;
+import byzzbench.simulator.protocols.hbft.pojo.ClientReplyKey;
+
 
 /**
  * Represents a client in the system. Each client has a unique identifier.
@@ -69,17 +72,17 @@ public class Client implements Serializable, Node {
     /**
      * The maximum number of requests that can be sent by the client.
      */
-    private final long maxRequests = 3;
+    private final long maxRequests = 7;
 
     /**
      * The replies received by the client.
      */
-    private final SortedMap<Long, SortedMap<Long, Collection<Serializable>>> replies = new TreeMap<>();
+    private final SortedMap<String, SortedMap<ClientReplyKey, Collection<MessagePayload>>> replies = new TreeMap<>();
 
     /**
      * The request sequence number already completed.
      */
-    private final Set<Long> completedRequests = new HashSet<>();
+    private final Set<ClientReplyKey> completedRequests = new HashSet<>();
 
     /**
      * The sent requests.
@@ -153,19 +156,24 @@ public class Client implements Serializable, Node {
      * @param reply The reply received by the client.
      * @param tolerance the tolerance of the protocol (used for hbft)
      */
-    public void handleReply(String senderId, Serializable reply, long tolerance, long seqNumber) {
-        this.replies.putIfAbsent(this.requestSequenceNumber.get(), new TreeMap<>());
-        this.replies.get(this.requestSequenceNumber.get()).putIfAbsent(seqNumber, new ArrayList<>());
-        this.replies.get(this.requestSequenceNumber.get()).get(seqNumber).add(reply);
+    public void handleReply(String senderId, MessagePayload reply, long tolerance, long seqNumber) {
+        if (!(reply instanceof ReplyMessage)) {
+            return;
+        }
+        ClientReplyKey key = new ClientReplyKey(((ReplyMessage) reply).getResult().toString(), seqNumber);
+        String currRequest = String.format("%s/%d", this.id, this.requestSequenceNumber.get());
+        this.replies.putIfAbsent(currRequest, new TreeMap<>());
+        this.replies.get(currRequest).putIfAbsent(key, new ArrayList<>());
+        this.replies.get(currRequest).get(key).add(reply);
 
         /**
          * If the client received 2f + 1 correct replies,
          * and the request has not been completed yet.
          */
-        if (this.completedReplies(tolerance, seqNumber) 
-            && !this.completedRequests.contains(seqNumber) 
+        if (this.completedReplies(tolerance) 
+            && !this.completedRequests.contains(key) 
             && this.requestSequenceNumber.get() <= this.maxRequests) {
-                this.completedRequests.add(seqNumber);
+                this.completedRequests.add(key);
                 //this.clearTimeout(this.timeouts.get(this.requestSequenceNumber.get()));
                 this.sendRequest();
         }
@@ -180,9 +188,9 @@ public class Client implements Serializable, Node {
     public void handleMessage(String senderId, MessagePayload reply) {
         // this.replies.putIfAbsent(this.requestSequenceNumber.get(), new ArrayList<>());
         // this.replies.get(this.requestSequenceNumber.get()).add(reply);
-        if (this.requestSequenceNumber.get() < this.maxRequests) {
-            this.sendRequest();
-        }
+        // if (this.requestSequenceNumber.get() < this.maxRequests) {
+        //     this.sendRequest();
+        // }
     }
 
     /**
@@ -234,11 +242,12 @@ public class Client implements Serializable, Node {
      * if #replies < f + 1
      */
     public boolean shouldRetransmit(long tolerance) {
-        if (!replies.containsKey(this.requestSequenceNumber.get())) {
+        String currRequest = String.format("%s/%d", this.id, this.requestSequenceNumber.get());
+        if (!replies.containsKey(currRequest)) {
             return true;
         }
-        for (Long key : replies.get(this.requestSequenceNumber.get()).keySet()) {
-            return !(this.replies.get(this.requestSequenceNumber.get()).get(key).size() >= tolerance + 1);
+        for (ClientReplyKey key : replies.get(currRequest).keySet()) {
+            return !(this.replies.get(currRequest).get(key).size() >= tolerance + 1);
         }
         return true;
     }
@@ -248,9 +257,10 @@ public class Client implements Serializable, Node {
      * if f + 1 <= #replies < 2f + 1
      */
     public boolean shouldPanic(long tolerance) {
-        for (Long key : replies.get(this.requestSequenceNumber.get()).keySet()) {
-            return this.replies.get(this.requestSequenceNumber.get()).get(key).size() >= tolerance + 1 
-                && this.replies.get(this.requestSequenceNumber.get()).get(key).size() < tolerance * 2 + 1;
+        String currRequest = String.format("%s/%d", this.id, this.requestSequenceNumber.get());
+        for (ClientReplyKey key : replies.get(currRequest).keySet()) {
+            return this.replies.get(currRequest).get(key).size() >= tolerance + 1 
+                && this.replies.get(currRequest).get(key).size() < tolerance * 2 + 1;
         }
         return false;
     }
@@ -258,9 +268,10 @@ public class Client implements Serializable, Node {
     /**
      * Checks whether it has received 2f + 1 replies
      */
-    public boolean completedReplies(long tolerance, long seqNumber) {
-        for (Long key : replies.get(this.requestSequenceNumber.get()).keySet()) {
-            if (this.replies.get(this.requestSequenceNumber.get()).get(key).size() >= 2 * tolerance + 1) {
+    public boolean completedReplies(long tolerance) {
+        String currRequest = String.format("%s/%d", this.id, this.requestSequenceNumber.get());
+        for (ClientReplyKey key : replies.get(currRequest).keySet()) {
+            if (this.replies.get(currRequest).get(key).size() >= 2 * tolerance + 1) {
                 return true;
             }
         }

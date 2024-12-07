@@ -175,7 +175,7 @@ public abstract class Replica implements Serializable, Node {
      * @param reply the reply payload
      * @param tolerance the tolerance of the protocol (used for hbft)
      */
-    public void sendReplyToClient(String clientId, Serializable reply, long tolerance, long seqNumber) {
+    public void sendReplyToClient(String clientId, MessagePayload reply, long tolerance, long seqNumber) {
         this.scenario.getTransport().sendClientResponse(this.id, reply, clientId, tolerance, seqNumber);
     }
 
