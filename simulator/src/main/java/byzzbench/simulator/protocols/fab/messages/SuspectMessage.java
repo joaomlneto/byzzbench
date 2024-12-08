@@ -14,6 +14,7 @@ import lombok.ToString;
 public class SuspectMessage extends MessagePayload {
     private final String senderId;
     private final String suspectId;
+    private final long viewNumber;
 
     @Override
     public String getType() {

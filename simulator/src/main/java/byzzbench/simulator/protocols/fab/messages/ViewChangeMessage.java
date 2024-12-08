@@ -13,8 +13,8 @@ import lombok.ToString;
 @ToString
 public class ViewChangeMessage extends MessagePayload {
     private final String senderId;
-    private final long viewNumber;
-    private final String leaderId;
+    private final long newViewNumber;
+    private final String newLeaderId;
 
     public String getType() {
         return "VIEW_CHANGE";

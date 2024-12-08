@@ -6,6 +6,6 @@ import byzzbench.simulator.ScenarioPredicate;
 public class FabTerminationCondition implements ScenarioPredicate {
     @Override
     public boolean test(Scenario scenario) {
-        return scenario.getSchedule().getEvents().size() > 20;
+        return scenario.getSchedule().getEvents().size() > 100;
     }
 }

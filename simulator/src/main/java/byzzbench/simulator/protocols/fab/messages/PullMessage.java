@@ -12,6 +12,8 @@ import lombok.With;
 @EqualsAndHashCode(callSuper = true)
 @With
 public class PullMessage extends MessagePayload {
+    private final long viewNumber;
+
     public String getType() {
         return "PULL";
     }
