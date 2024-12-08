@@ -2,7 +2,8 @@ package byzzbench.simulator.protocols.tendermint;
 
 import byzzbench.simulator.BaseScenario;
 import byzzbench.simulator.Replica;
-import byzzbench.simulator.TerminationCondition;
+//import byzzbench.simulator.TerminationCondition;
+import byzzbench.simulator.protocols.pbft_java.PbftTerminationPredicate;
 import byzzbench.simulator.protocols.tendermint.MessageLog;
 import byzzbench.simulator.scheduler.Scheduler;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -17,6 +18,7 @@ public class TendermintScenarioExecutor extends BaseScenario {
 
     public TendermintScenarioExecutor(Scheduler scheduler) {
         super("tendermint", scheduler);
+        this.terminationCondition = new TendermintTerminationPredicate();
     }
 
     @Override
@@ -33,9 +35,11 @@ public class TendermintScenarioExecutor extends BaseScenario {
             }
 
             nodeIds.forEach(nodeId -> {
-                Replica replica = new TendermintReplica(nodeId, nodeIds, transport);
+                Replica replica = new TendermintReplica(nodeId, nodeIds, this);
                 this.addNode(replica);
             });
+
+            this.setNumClients(1);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -43,23 +47,13 @@ public class TendermintScenarioExecutor extends BaseScenario {
 
     @Override
     public synchronized void run() {
-        // send a request message to node A
-        try {
-            this.setNumClients(1);
-            this.transport.sendClientRequest("C0", "123", "A");
-        } catch (Exception e) {
-            e.printStackTrace();
-            throw new RuntimeException(e);
-        }
-    }
-
-    @Override
-    public TerminationCondition getTerminationCondition() {
-        return new TerminationCondition() {
-            @Override
-            public boolean shouldTerminate() {
-                return false;
-            }
-        };
+//        // send a request message to node A
+//        try {
+//            this.setNumClients(1);
+//            this.transport.sendClientRequest("C0", "123", "A");
+//        } catch (Exception e) {
+//            e.printStackTrace();
+//            throw new RuntimeException(e);
+//        }
     }
 }

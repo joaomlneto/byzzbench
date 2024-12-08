@@ -1,6 +1,7 @@
 package byzzbench.simulator.protocols.tendermint;
 
 import byzzbench.simulator.LeaderBasedProtocolReplica;
+import byzzbench.simulator.Scenario;
 import byzzbench.simulator.protocols.tendermint.message.ReplyMessage;
 import byzzbench.simulator.protocols.tendermint.message.RequestMessage;
 import byzzbench.simulator.protocols.tendermint.message.*;
@@ -55,9 +56,9 @@ public class TendermintReplica extends LeaderBasedProtocolReplica {
     public static final Block NULL_BLOCK = new Block(Long.MIN_VALUE, Long.MIN_VALUE, Long.MIN_VALUE, "NULL VALUE", null);
 
 
-    public TendermintReplica(String nodeId, SortedSet<String> nodeIds, Transport transport) {
+    public TendermintReplica(String nodeId, SortedSet<String> nodeIds, Scenario scenario) {
         // Initialize replica with node ID, a list of other nodes, transport, and a commit log
-        super(nodeId, nodeIds, new TotalOrderCommitLog());
+        super(nodeId, scenario, new TotalOrderCommitLog());
         this.height = 0;
         this.round = 0;
         this.step = Step.PROPOSE;
@@ -155,7 +156,7 @@ public class TendermintReplica extends LeaderBasedProtocolReplica {
                             this.height,
                             proposal.getBlock().getRequestMessage().getTimestamp(),
                             proposal.getBlock().getRequestMessage().getClientId(),
-                            getNodeId(),
+                            this.getId(),
                             proposal.getBlock().getRequestMessage().getOperation());
                     log.info("Sending reply: " + replyMessage);
                     sendReply(proposal.getBlock().getRequestMessage().getClientId(), replyMessage);
@@ -197,9 +198,9 @@ public class TendermintReplica extends LeaderBasedProtocolReplica {
      * - Send a proposal message containing the block details to all peers.
      */
     protected void broadcastProposal(long height, long round, Block proposal, long validRound) {
-        log.info("Broadcasting proposal as leader: " + getNodeId());
+        log.info("Broadcasting proposal as leader: " + getId());
 //        messageLog.sentProposal();
-        ProposalMessage proposalMessage = new ProposalMessage(getNodeId(), height, round, validRound, proposal);
+        ProposalMessage proposalMessage = new ProposalMessage(getId(), height, round, validRound, proposal);
         broadcastMessage(proposalMessage);
     }
 
@@ -426,7 +427,7 @@ public class TendermintReplica extends LeaderBasedProtocolReplica {
      */
     private void broadcastPrevote(long height, long round, Block block) {
 //        messageLog.sentPrevote();
-        PrevoteMessage prevoteMessage = new PrevoteMessage(height, round, this.getNodeId(), block);
+        PrevoteMessage prevoteMessage = new PrevoteMessage(height, round, this.getId(), block);
         broadcastMessage(prevoteMessage);
     }
 
@@ -498,7 +499,7 @@ public class TendermintReplica extends LeaderBasedProtocolReplica {
                                 this.height,
                                 matchingProposal.getBlock().getRequestMessage().getTimestamp(),
                                 matchingProposal.getBlock().getRequestMessage().getClientId(),
-                                getNodeId(),
+                                getId(),
                                 matchingProposal.getBlock().getRequestMessage().getOperation());
                         log.info("Sending reply: " + replyMessage);
                         sendReply(matchingProposal.getBlock().getRequestMessage().getClientId(), replyMessage);
@@ -518,7 +519,7 @@ public class TendermintReplica extends LeaderBasedProtocolReplica {
     }
 
     protected void broadcastPrecommit(long height, long round, Block block) {
-        PrecommitMessage precommitMessage = new PrecommitMessage(height, round, this.getNodeId(), block);
+        PrecommitMessage precommitMessage = new PrecommitMessage(height, round, this.getId(), block);
         broadcastMessage(precommitMessage);
     }
 
@@ -636,13 +637,13 @@ public class TendermintReplica extends LeaderBasedProtocolReplica {
      * @param roundNumber The round number to start.
      */
     private void startRound(long roundNumber, RequestMessage m) {
-        log.info(this.getNodeId() + ": START ROUND CALLED: " + roundNumber);
+        log.info(this.getId() + ": START ROUND CALLED: " + roundNumber);
         this.round = roundNumber;
         step = Step.PROPOSE;
         Block proposal = new Block(height, round, messageLog.getMessageCount() + 1, null, null);
         log.info("Valid value: " + validValue);
 
-        if (proposer(height, roundNumber).equals(getNodeId())) {
+        if (proposer(height, roundNumber).equals(getId())) {
             if (validValue != null && m == null) {
                 proposal = validValue;
             } else if (m != null) {
@@ -715,7 +716,7 @@ public class TendermintReplica extends LeaderBasedProtocolReplica {
     }
 
     private void receiveRequest(RequestMessage m) {
-        if (proposer(height, round).equals(getNodeId())) {
+        if (proposer(height, round).equals(getId())) {
             startRound(0, null);
         }
     }
@@ -725,7 +726,7 @@ public class TendermintReplica extends LeaderBasedProtocolReplica {
      */
     @Override
     public void initialize() {
-        log.info("Initialized Tendermint replica: " + getNodeId());
+        log.info("Initialized Tendermint replica: " + getId());
     }
 
     public void sendReply(String clientId, ReplyMessage reply) {
