@@ -11,7 +11,7 @@ import java.io.Serializable;
 @EqualsAndHashCode(callSuper = true)
 @With
 public class ReplyMessage extends MessagePayload {
-    private final long viewNumber;
+    private final long height;
     private final long timestamp;
     private final String clientId;
     private final String replicaId;

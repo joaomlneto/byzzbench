@@ -24,7 +24,7 @@ public class MessageLog {
     @Getter
     private final SortedMap<Block, List<ProposalMessage>> proposals = new TreeMap<>();
 
-    public static final Block NULL_BLOCK = new Block(Long.MIN_VALUE, Long.MIN_VALUE, Long.MIN_VALUE, "NULL VALUE");
+    public static final Block NULL_BLOCK = new Block(Long.MIN_VALUE, Long.MIN_VALUE, Long.MIN_VALUE, "NULL VALUE", null);
 
     @Getter
     private long proposalCount = 0;

@@ -18,6 +18,8 @@ public class Block implements LogEntry, Comparable<Block> {
     private final long id;
     private final String value;
 
+    private final RequestMessage requestMessage;
+
     public String getType() {
         return "BLOCK";
     }
