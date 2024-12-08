@@ -1,67 +1,59 @@
 "use client";
 
-import { ClientList } from "@/components/ClientList";
-import { DroppedMessagesList } from "@/components/Events";
-import { ScenarioEnabledFaultsList } from "@/components/FaultsList";
-import { NodeList } from "@/components/NodeList";
-import { PredicateList } from "@/components/PredicateList";
-import { RunningSimulatorStats } from "@/components/RunningSimulatorStats";
-import { ScheduleDetails } from "@/components/Schedule";
-import { useGetMode, useGetSchedule } from "@/lib/byzzbench-client";
-import {
-  Accordion,
-  AppShell,
-  Container,
-  Group,
-  ScrollArea,
-  Stack,
-  Text,
-  Title,
-} from "@mantine/core";
-import { useLocalStorage } from "@mantine/hooks";
+import {ClientList} from "@/components/ClientList";
+import {DroppedMessagesList} from "@/components/Events";
+import {ScenarioEnabledFaultsList} from "@/components/FaultsList";
+import {NodeList} from "@/components/NodeList";
+import {PredicateList} from "@/components/PredicateList";
+import {RunningSimulatorStats} from "@/components/RunningSimulatorStats";
+import {ScheduleDetails} from "@/components/Schedule";
+import {ScenarioScheduledFaultsList} from "@/components/ScheduledFaultsList";
+import {useGetMode, useGetSchedule} from "@/lib/byzzbench-client";
+import {Accordion, AppShell, Container, Group, ScrollArea, Stack, Title,} from "@mantine/core";
+import {useLocalStorage} from "@mantine/hooks";
 import dynamic from "next/dynamic";
 import React from "react";
 
 const AdoBStateDiagram = dynamic<{}>(
-  () =>
-    import("@/components/adob/AdoBStateDiagram").then(
-      (m) => m.AdoBStateDiagram,
-    ),
-  {
-    ssr: false,
-  },
+    () =>
+        import("@/components/adob/AdoBStateDiagram").then(
+            (m) => m.AdoBStateDiagram,
+        ),
+    {
+        ssr: false,
+    },
 );
 
 export default function Home() {
-  const [selectedAccordionEntries, setSelectedAccordionEntries] =
-    useLocalStorage<string[]>({
-      key: "byzzbench/selectedAccordionEntries",
-      defaultValue: ["nodes", "schedule"],
-    });
+    const [selectedAccordionEntries, setSelectedAccordionEntries] =
+        useLocalStorage<string[]>({
+            key: "byzzbench/selectedAccordionEntries",
+            defaultValue: ["nodes", "schedule"],
+        });
 
-  const { data: schedule } = useGetSchedule();
+    const {data: schedule} = useGetSchedule();
 
-  const mode = useGetMode();
+    const mode = useGetMode();
 
-  if (mode.data?.data === "RUNNING") {
+    if (mode.data?.data === "RUNNING") {
+        return (
+            <Container fluid p="xl">
+                <RunningSimulatorStats/>
+            </Container>
+        );
+    }
+
     return (
-      <Container fluid p="xl">
-        <RunningSimulatorStats />
-      </Container>
-    );
-  }
-
-  return (
-    <Container fluid p="xl">
-      <Stack gap="md">
-        <Accordion
-          multiple
-          variant="separated"
-          value={selectedAccordionEntries}
-          onChange={setSelectedAccordionEntries}
-        >
-          <Group wrap="nowrap" gap="xs">
-            <Text>Invariants:</Text>
+        <Container fluid p="xl">
+            <Stack gap="md">
+                <Accordion
+                    multiple
+                    variant="separated"
+                    value={selectedAccordionEntries}
+                    onChange={setSelectedAccordionEntries}
+                >
+                    <Group wrap="nowrap" gap="xs" align="center">
+                        <Title order={3}>{schedule?.data.scenarioId}</Title>
             <PredicateList />
           </Group>
           <Accordion.Item key="clients" value="clients">
@@ -104,13 +96,15 @@ export default function Home() {
                 )}
               </div>
             </ScrollArea>
-            <Title order={5}>Trigger Faults</Title>
-            <ScenarioEnabledFaultsList />
+            <Title order={5}>Trigger Faulty Behaviors</Title>
+                    <ScenarioEnabledFaultsList/>
+                    <Title order={5}>ScheduledFaults</Title>
+            <ScenarioScheduledFaultsList />
             <Title order={5}>Discarded Events</Title>
             <DroppedMessagesList />
           </Stack>
         </ScrollArea>
-      </AppShell.Aside>
-    </Container>
-  );
+            </AppShell.Aside>
+        </Container>
+    );
 }

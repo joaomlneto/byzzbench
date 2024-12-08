@@ -14,6 +14,7 @@ import java.util.function.Predicate;
 public interface Fault extends Predicate<FaultContext>, FaultBehavior, Serializable {
     /**
      * Gets the unique id of the fault.
+     *
      * @return the id of the fault
      */
     @NonNull
@@ -21,6 +22,7 @@ public interface Fault extends Predicate<FaultContext>, FaultBehavior, Serializa
 
     /**
      * Gets a human-readable name of the fault.
+     *
      * @return the name of the fault
      */
     @NonNull
@@ -28,6 +30,7 @@ public interface Fault extends Predicate<FaultContext>, FaultBehavior, Serializa
 
     /**
      * Checks if the fault can be applied to the given state
+     *
      * @param state the state of the system
      * @return True if the fault can be applied, false otherwise
      */
@@ -36,8 +39,23 @@ public interface Fault extends Predicate<FaultContext>, FaultBehavior, Serializa
 
     /**
      * Applies a fault to the state of the system
+     *
      * @param state the state of the system
      */
     @Override
     void accept(FaultContext state);
+
+    /**
+     * Checks if the fault can be applied to the given state and applies it if it can
+     *
+     * @param state the state of the system
+     * @return True if the fault was applied, false otherwise
+     */
+    default boolean testAndAccept(FaultContext state) {
+        if (test(state)) {
+            accept(state);
+            return true;
+        }
+        return false;
+    }
 }

@@ -1,7 +1,7 @@
 package byzzbench.simulator.service;
 
-import byzzbench.simulator.faults.MessageMutationFault;
-import byzzbench.simulator.faults.MessageMutatorFactory;
+import byzzbench.simulator.faults.factories.MessageMutatorFactory;
+import byzzbench.simulator.faults.faults.MessageMutationFault;
 import byzzbench.simulator.transport.Event;
 import byzzbench.simulator.transport.MessageEvent;
 import lombok.Getter;

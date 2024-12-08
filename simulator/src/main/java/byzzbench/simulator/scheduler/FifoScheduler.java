@@ -15,39 +15,46 @@ import java.util.Optional;
  */
 @Component
 public class FifoScheduler extends BaseScheduler {
-  public FifoScheduler(MessageMutatorService messageMutatorService) { super("FIFO", messageMutatorService); }
-
-  @Override
-  public Optional<EventDecision> scheduleNext(Scenario scenario) throws Exception {
-    // Get the next event
-    Optional<Event> event =
-        scenario.getTransport()
-            .getEventsInState(Event.Status.QUEUED)
-            .stream()
-            .filter(MessageEvent.class ::isInstance)
-            .min(Comparator.comparingLong(Event::getEventId));
-
-    if (event.isPresent()) {
-      scenario.getTransport().deliverEvent(event.get().getEventId());
-      EventDecision decision = new EventDecision(EventDecision.DecisionType.DELIVERED, event.get().getEventId());
-      return Optional.of(decision);
-    } else {
-      return Optional.empty();
+    public FifoScheduler(MessageMutatorService messageMutatorService) {
+        super("FIFO", messageMutatorService);
     }
-  }
 
-  @Override
-  public void stopDropMessages() {
-    this.dropMessages = false;
-  }
+    @Override
+    public void initializeScenario(Scenario scenario) {
+        // no initialization needed
+    }
 
-  @Override
-  public void reset() {
-    this.dropMessages = true;
-  }
+    @Override
+    public Optional<EventDecision> scheduleNext(Scenario scenario) throws Exception {
+        // Get the next event
+        Optional<Event> event =
+                scenario.getTransport()
+                        .getEventsInState(Event.Status.QUEUED)
+                        .stream()
+                        .filter(MessageEvent.class::isInstance)
+                        .min(Comparator.comparingLong(Event::getEventId));
 
-  @Override
-  public void loadSchedulerParameters(JsonNode parameters) {
-    // no parameters to load
-  }
+        if (event.isPresent()) {
+            scenario.getTransport().deliverEvent(event.get().getEventId());
+            EventDecision decision = new EventDecision(EventDecision.DecisionType.DELIVERED, event.get().getEventId());
+            return Optional.of(decision);
+        } else {
+            return Optional.empty();
+        }
+    }
+
+    @Override
+    public void stopDropMessages() {
+        this.dropMessages = false;
+    }
+
+    @Override
+    public void reset() {
+        this.dropMessages = true;
+    }
+
+    @Override
+    public void loadSchedulerParameters(JsonNode parameters) {
+        // no parameters to load
+    }
 }
