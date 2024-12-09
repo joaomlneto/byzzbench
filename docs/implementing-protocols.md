@@ -50,6 +50,11 @@ check whether safety invariants of distributed consensus are broken.
 
 - **Non-determinism**: For reproducibility we require the removal of any non-determinism! This can manifest itself in
   many ways:
-  - Avoid interfaces and collections that do not guarantee order, such as `Set` or `Map`: use the `OrderedSet` or
-    `OrderedMap` interfaces instead, and `TreeSet` or `LinkedHashMap` implementations to ensure order.
+    - Avoid interfaces and collections that do not guarantee order, such as `Set` or `Map`: use the `OrderedSet` or
+      `OrderedMap` interfaces instead, and `TreeSet` or `LinkedHashMap` implementations to ensure order.
+    - Avoid the use of Java's `CompletableFuture`: the implementation in Java is non-deterministic, as it uses a
+      `ForkJoinPool`
+      that can execute tasks in parallel - tasks that are submitted to the `CompletableFuture` can be executed in any
+      order, and this can lead to non-deterministic behavior. Use our own `DeterministicCompletableFuture`, which will
+      execute the tasks in the order they were submitted to it.
 

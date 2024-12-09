@@ -1,9 +1,9 @@
 "use client";
 
+import { NodeCard } from "@/components/NodeCard";
 import { useGetClients } from "@/lib/byzzbench-client";
 import { Grid } from "@mantine/core";
 import React from "react";
-import { ClientCard } from "./ClientCard";
 
 export const ClientList = () => {
   const { data: clientIds } = useGetClients({ query: { retry: true } });
@@ -11,7 +11,7 @@ export const ClientList = () => {
     <Grid gutter="md">
       {clientIds?.data.map((clientId) => (
         <Grid.Col span="auto" key={clientId}>
-          <ClientCard clientId={clientId} />
+          <NodeCard nodeId={clientId} />
         </Grid.Col>
       ))}
     </Grid>

@@ -1,6 +1,7 @@
 package byzzbench.simulator.scheduler;
 
 import byzzbench.simulator.Scenario;
+import byzzbench.simulator.config.ByzzBenchConfig;
 import byzzbench.simulator.service.MessageMutatorService;
 import byzzbench.simulator.transport.ClientRequestEvent;
 import byzzbench.simulator.transport.Event;
@@ -12,22 +13,33 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Abstract base class for a scheduler.
  */
 @RequiredArgsConstructor
 public abstract class BaseScheduler implements Scheduler {
-    @NonNull
+    /**
+     * The remaining number of drop messages for each scenario.
+     * If the number of remaining drop messages is 0, the scheduler will not drop messages.
+     */
+    protected final Map<Scenario, Integer> remainingDropMessages = new HashMap<>();
+    /**
+     * The remaining number of mutate messages for each scenario.
+     * If the number of remaining mutate messages is 0, the scheduler will not mutate messages.
+     */
+    protected final Map<Scenario, Integer> remainingMutateMessages = new HashMap<>();
+    /**
+     * ByzzBench configuration
+     */
     @Getter
-    private final String id;
+    private final ByzzBenchConfig config;
     @NonNull
     @Getter(AccessLevel.PROTECTED)
     private final transient MessageMutatorService messageMutatorService;
-    @Getter
-    protected boolean dropMessages = true;
-
 
     /**
      * Loads the parameters for the scheduler from a JSON object.
@@ -35,11 +47,6 @@ public abstract class BaseScheduler implements Scheduler {
      * @param parameters The JSON object containing the parameters for the scheduler.
      */
     public final void loadParameters(JsonNode parameters) {
-        // check if drop messages
-        if (parameters != null && parameters.has("dropMessages")) {
-            this.dropMessages = parameters.get("dropMessages").asBoolean();
-        }
-
         this.loadSchedulerParameters(parameters);
     }
 
@@ -93,4 +100,51 @@ public abstract class BaseScheduler implements Scheduler {
      * @param parameters The JSON object containing the parameters for the scheduler.
      */
     protected abstract void loadSchedulerParameters(JsonNode parameters);
+
+    /**
+     * Returns the weight of delivering a message
+     *
+     * @return The weight of delivering a message
+     */
+    public int deliverMessageWeight() {
+        return config.getScheduler().getDeliverMessageWeight();
+    }
+
+    /**
+     * Returns the weight of triggering a timeout
+     *
+     * @return The weight of triggering a timeout
+     */
+    public int deliverTimeoutWeight() {
+        return config.getScheduler().getDeliverTimeoutWeight();
+    }
+
+    /**
+     * Returns the weight of delivering a request from a client
+     *
+     * @return The weight of delivering a request from a client
+     */
+    public int deliverClientRequestWeight() {
+        return config.getScheduler().getDeliverClientRequestWeight();
+    }
+
+    /**
+     * Returns the weight of delivering a request from a client
+     *
+     * @return The weight of delivering a request from a client
+     */
+    public int dropMessageWeight(Scenario scenario) {
+        int remaining = remainingDropMessages.computeIfAbsent(scenario, s -> config.getScheduler().getMaxDropMessages());
+        return remaining > 0 ? config.getScheduler().getDropMessageWeight() : 0;
+    }
+
+    /**
+     * Returns the weight of mutating and delivering a message
+     *
+     * @return The weight of mutating and delivering a message
+     */
+    public int mutateMessageWeight(Scenario scenario) {
+        int remaining = remainingMutateMessages.computeIfAbsent(scenario, s -> config.getScheduler().getMaxMutateMessages());
+        return remaining > 0 ? config.getScheduler().getMutateMessageWeight() : 0;
+    }
 }
