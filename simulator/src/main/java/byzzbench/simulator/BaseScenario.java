@@ -153,12 +153,8 @@ public abstract class BaseScenario implements Scenario {
     }
 
     @Override
-    public synchronized Replica getNode(String nodeId) {
-        Node node = this.getNodes().get(nodeId);
-        if (!(node instanceof Replica replica)) {
-            throw new IllegalArgumentException("Node with ID " + nodeId + " is not a replica.");
-        }
-        return replica;
+    public synchronized Node getNode(String nodeId) {
+        return this.getNodes().get(nodeId);
     }
 
     /**
