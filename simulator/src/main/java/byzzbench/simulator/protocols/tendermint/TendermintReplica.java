@@ -6,6 +6,8 @@ import byzzbench.simulator.protocols.tendermint.message.ReplyMessage;
 import byzzbench.simulator.protocols.tendermint.message.RequestMessage;
 import byzzbench.simulator.protocols.tendermint.message.*;
 import byzzbench.simulator.state.TotalOrderCommitLog;
+import byzzbench.simulator.transport.DefaultClientReplyPayload;
+import byzzbench.simulator.transport.DefaultClientRequestPayload;
 import byzzbench.simulator.transport.MessagePayload;
 import byzzbench.simulator.transport.Transport;
 
@@ -544,7 +546,7 @@ public class TendermintReplica extends LeaderBasedProtocolReplica {
      */
     protected boolean validateMessage(MessagePayload message) {
         // Check if the message type matches a known type
-        if (!(message instanceof ProposalMessage || message instanceof PrevoteMessage || message instanceof PrecommitMessage || message instanceof GossipMessage)) {
+        if (!(message instanceof ProposalMessage || message instanceof PrevoteMessage || message instanceof PrecommitMessage || message instanceof GossipMessage || message instanceof DefaultClientRequestPayload)) {
             log.warning("Unknown message type: " + message.getType());
             return true;
         }
@@ -571,13 +573,12 @@ public class TendermintReplica extends LeaderBasedProtocolReplica {
      */
     @Override
     public void handleMessage(String sender, MessagePayload message) throws Exception {
-//        if (message instanceof RequestMessage) {
-//            log.info("Received request message: " + message);
-//            receiveRequest((RequestMessage) message);
-//            return;
-//        }
+        if (message instanceof DefaultClientRequestPayload) {
+            RequestMessage r = new RequestMessage(((DefaultClientRequestPayload) message).getOperation(), System.currentTimeMillis(), sender);
+            receiveRequest(r);
+            return;
+        }
         if (validateMessage(message)) {
-            log.warning("Invalid message received from " + sender);
             return;
         }
 
@@ -586,7 +587,6 @@ public class TendermintReplica extends LeaderBasedProtocolReplica {
         } else {
             if (messageLog.fPlus1MessagesInRound((GenericMessage) message, round)) {
                 GenericMessage m = (GenericMessage) message;
-                log.info("f + 1 messages received in round: " + m.getRound());
                 startRound(m.getRound(), null);
             } else {
                 if (message instanceof ProposalMessage) {
@@ -638,16 +638,20 @@ public class TendermintReplica extends LeaderBasedProtocolReplica {
      */
     private void startRound(long roundNumber, RequestMessage m) {
         log.info(this.getId() + ": START ROUND CALLED: " + roundNumber);
+        this.setView(height, roundNumber);
         this.round = roundNumber;
         step = Step.PROPOSE;
         Block proposal = new Block(height, round, messageLog.getMessageCount() + 1, null, null);
-        log.info("Valid value: " + validValue);
-
-        if (proposer(height, roundNumber).equals(getId())) {
+        log.info("message" + m);
+        if (this.getLeaderId().equals(getId())) {
             if (validValue != null && m == null) {
                 proposal = validValue;
             } else if (m != null) {
-                proposal = new Block(height, round, messageLog.getMessageCount() + 1, m.getOperation().toString(), m);
+                proposal = new Block(height,
+                        round,
+                        messageLog.getMessageCount() + 1,
+                        m.getOperation().toString(),
+                        m);
             } else {
                 // TODO: implement getValue()
                 proposal = getValue();
@@ -717,7 +721,8 @@ public class TendermintReplica extends LeaderBasedProtocolReplica {
 
     private void receiveRequest(RequestMessage m) {
         if (proposer(height, round).equals(getId())) {
-            startRound(0, null);
+
+            startRound(0, m);
         }
     }
 
@@ -727,6 +732,13 @@ public class TendermintReplica extends LeaderBasedProtocolReplica {
     @Override
     public void initialize() {
         log.info("Initialized Tendermint replica: " + getId());
+        setView(0, 0);
+    }
+
+    public void setView(long height, long round) {
+        log.info("Setting view: " + height);
+        log.info("Proposer: " + proposer(height, round));
+        this.setView(height, proposer(height, round));
     }
 
     public void sendReply(String clientId, ReplyMessage reply) {

@@ -39,7 +39,10 @@ public class TendermintScenarioExecutor extends BaseScenario {
                 this.addNode(replica);
             });
 
+            log.info(this.getNodes().toString());
+
             this.setNumClients(1);
+            log.info(this.getNodes().toString());
         } catch (Exception e) {
             throw new RuntimeException(e);
         }

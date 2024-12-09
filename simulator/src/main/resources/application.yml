@@ -36,7 +36,7 @@ byzzbench:
       numRoundsWithFaults: 5
 
   scenario:
-    id: pbft-java
+    id: tendermint
     params:
       replicas: 4
     scheduledFaults:
