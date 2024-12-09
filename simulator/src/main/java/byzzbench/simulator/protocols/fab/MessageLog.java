@@ -3,18 +3,19 @@ package byzzbench.simulator.protocols.fab;
 import byzzbench.simulator.protocols.fab.messages.*;
 import byzzbench.simulator.protocols.fab.replica.FabReplica;
 import byzzbench.simulator.protocols.fab.replica.Pair;
+import byzzbench.simulator.transport.DefaultClientRequestPayload;
 import byzzbench.simulator.transport.MessagePayload;
 import lombok.Getter;
+import lombok.Setter;
 import lombok.extern.java.Log;
 
+import java.io.Serializable;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
 @Log
 public class MessageLog {
     private final FabReplica replica;
-    private long viewNumber = 1;
     private SortedMap<String, Pair> acceptorsWithAcceptedProposal;
     @Getter
     private SortedMap<String, Pair> proposersWithLearnedValue;
@@ -35,6 +36,10 @@ public class MessageLog {
     private final SortedMap<Long, List<SuspectMessage>> suspectMessages = new TreeMap<>();
     private final SortedMap<Long, List<QueryMessage>> queryMessages = new TreeMap<>();
     private final SortedMap<Long, List<ViewChangeMessage>> viewChangeMessages = new TreeMap<>();
+    private final SortedMap<String, List<DefaultClientRequestPayload>> clientRequestMessages = new TreeMap<>();
+
+    @Setter
+    private String clientId;
 
     public MessageLog(FabReplica replica) {
         this.replica = replica;
@@ -46,7 +51,7 @@ public class MessageLog {
         this.responses = new ArrayList<>();
     }
 
-    public void addMessage(MessagePayload message) {
+    public void addMessage(String sender, MessagePayload message) {
         if (message instanceof ProposeMessage) {
             proposeMessages.computeIfAbsent(((ProposeMessage) message).getValueAndProposalNumber().getNumber(), k -> new ArrayList<>()).add((ProposeMessage) message);
         } else if (message instanceof AcceptMessage acceptMessage) {
@@ -65,15 +70,46 @@ public class MessageLog {
             queryMessages.computeIfAbsent(queryMessage.getViewNumber(), k -> new ArrayList<>()).add(queryMessage);
         } else if (message instanceof ViewChangeMessage viewChangeMessage) {
             viewChangeMessages.computeIfAbsent(viewChangeMessage.getNewViewNumber(), k -> new ArrayList<>()).add(viewChangeMessage);
+        } else if (message instanceof DefaultClientRequestPayload clientRequestMessage) {
+            clientRequestMessages.computeIfAbsent(sender, k -> new ArrayList<>()).add(clientRequestMessage);
         }
+    }
+
+    public void resolveClientRequest(String clientId, Serializable request) {
+        DefaultClientRequestPayload clientRequest = new DefaultClientRequestPayload(request);
+        clientRequestMessages.get(clientId).remove(clientRequest);
+
+        // Reset the message log
+        reset();
+    }
+
+    public void reset() {
+        acceptorsWithAcceptedProposal.clear();
+        proposersWithLearnedValue.clear();
+        satisfiedProposerNodes.clear();
+        learnersWithLearnedValue.clear();
+        nodesSuspectingLeader.clear();
+        learnedValue = null;
+        acceptedProposal = null;
+        responses.clear();
+        proposeMessages.clear();
+        acceptMessages.clear();
+        learnMessages.clear();
+        satisfiedMessages.clear();
+        replyMessages.clear();
+        pullMessages.clear();
+        suspectMessages.clear();
+        queryMessages.clear();
+        viewChangeMessages.clear();
+        clientRequestMessages.clear();
     }
 
     public boolean onPropose(String senderId, ProposeMessage proposeMessage, int vouchingThreshold) {
         // If the PROPOSE message has a higher round number than the current round number, update the round number
         // Remove message from the proposeMessages queue
         proposeMessages.get(proposeMessage.getValueAndProposalNumber().getNumber()).remove(proposeMessage);
-        if (proposeMessage.getValueAndProposalNumber().getNumber() > this.viewNumber) {
-            this.viewNumber = proposeMessage.getValueAndProposalNumber().getNumber();
+        if (proposeMessage.getValueAndProposalNumber().getNumber() > this.replica.getViewNumber()) {
+            this.replica.setView(proposeMessage.getValueAndProposalNumber().getNumber());
         }
 
         Pair proposeValue = proposeMessage.getValueAndProposalNumber();
@@ -81,18 +117,22 @@ public class MessageLog {
         byte[] messageProposedValue = proposeMessage.getValueAndProposalNumber().getValue();
         ProgressCertificate progressCertificate = proposeMessage.getProgressCertificate();
 
-        if (messageViewNumber != this.viewNumber) {
+        if (messageViewNumber != this.replica.getViewNumber()) {
+            log.info("The view number of the PROPOSE message is not the same as the current view number");
             return false; // Only listen to current leader
         }
 
-        if (acceptedProposal != null && learnedValue.getNumber() == messageViewNumber) {
+        if (acceptedProposal != null && acceptedProposal.getNumber() == messageViewNumber) {
+            log.info("duplicate proposal");
             return false; // Ignore duplicate proposals
         }
 
         if (acceptedProposal != null && !Arrays.equals(acceptedProposal.getValue(), messageProposedValue) &&
                 !progressCertificate.vouchesFor(messageProposedValue, vouchingThreshold)) {
+            log.info("The proposal is not vouched for by the progress certificate");
             return false; // Ignore proposals that are not vouched for by the progress certificate
         }
+
         acceptedProposal = proposeValue; // Accept the proposal
         return true;
     }
@@ -107,13 +147,13 @@ public class MessageLog {
         AtomicInteger currentAccepted = new AtomicInteger();
         // If there are acceptedThreshold accepted values for the same proposalValue, send a LEARN message to all Proposer replicas
         acceptorsWithAcceptedProposal.values().forEach(pair -> {
-            if (pair.getNumber() == viewNumber && Arrays.equals(pair.getValue(), acceptedValue)) {
+            if (pair.getNumber() == this.replica.getViewNumber() && Arrays.equals(pair.getValue(), acceptedValue)) {
                 currentAccepted.getAndIncrement();
             }
         });
 
         log.info("The number of accepted values for the same proposal value is " + currentAccepted.get());
-        this.learnedValue = new Pair(viewNumber, acceptedValue);
+        this.learnedValue = new Pair(this.replica.getViewNumber(), acceptedValue);
         // Remove message from the acceptMessages map
         acceptMessages.get(viewNumber).remove(acceptMessage);
     }
@@ -185,12 +225,12 @@ public class MessageLog {
         long messageViewNumber = queryMessage.getViewNumber();
 
         // Ignore bad requests.
-        if (messageViewNumber < this.viewNumber) {
+        if (messageViewNumber < this.replica.getViewNumber()) {
             return null;
         }
 
         // Update the view number.
-        this.viewNumber = messageViewNumber;
+        this.replica.setView(messageViewNumber);
 
         if (learnedValue == null) return new Pair(messageViewNumber, new byte[0]);
 
@@ -199,6 +239,10 @@ public class MessageLog {
 
     public void onReply(String sender, ReplyMessage replyMessage) {
         replyMessages.get(replyMessage.getValueAndProposalNumber().getNumber()).remove(replyMessage);
+
+        if (replyMessage.getValueAndProposalNumber().getNumber() != this.replica.getViewNumber()) {
+            return;
+        }
 
         byte[] value = replyMessage.getValueAndProposalNumber().getValue();
         long viewNumber = replyMessage.getValueAndProposalNumber().getNumber();
@@ -218,7 +262,7 @@ public class MessageLog {
         }
 
         // Accept the new view
-        this.viewNumber = latestViewNumber;
+        this.replica.setView(latestViewNumber);
 
     }
 
@@ -229,7 +273,7 @@ public class MessageLog {
         } else {
             log.info("Leader " + replica.getId() + " received enough responses to the QUERY message");
             // Combine the received responses into a progress certificate (PC)
-            ProgressCertificate progressCertificate = new ProgressCertificate(this.viewNumber, responses);
+            ProgressCertificate progressCertificate = new ProgressCertificate(this.replica.getViewNumber(), responses);
             if (pcIsValid(progressCertificate, quorum)) {
                 return progressCertificate;
             } else {

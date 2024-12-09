@@ -3,7 +3,6 @@ package byzzbench.simulator.protocols.fab.replica;
 import byzzbench.simulator.LeaderBasedProtocolReplica;
 import byzzbench.simulator.Scenario;
 import byzzbench.simulator.protocols.fab.ProgressCertificate;
-import byzzbench.simulator.protocols.fab.SignedResponse;
 import byzzbench.simulator.protocols.fab.messages.*;
 import byzzbench.simulator.protocols.fab.MessageLog;
 import byzzbench.simulator.state.TotalOrderCommitLog;
@@ -19,6 +18,7 @@ import java.security.SecureRandom;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Supplier;
 
 /**
  * A replica in the FAB protocol.
@@ -53,7 +53,7 @@ public class FabReplica extends LeaderBasedProtocolReplica {
 
     private final SortedSet<String> nodeIds;
     private final Transport transport;
-    private final ExecutorService executor = Executors.newFixedThreadPool(3);
+    private final ExecutorService executor = Executors.newFixedThreadPool(5);
 
     private String clientId;
 
@@ -90,14 +90,13 @@ public class FabReplica extends LeaderBasedProtocolReplica {
         this.learnerNodeIds = learnerNodeIds;
         this.proposerNodeIds = proposerNodeIds;
         this.leaderId = leaderId;
-        this.viewNumber = 1;
         this.messageLog = new MessageLog(this);
     }
 
     @Override
     public void initialize() {
         log.info("Initializing replica " + getId());
-        onStart();
+        this.setView(1);
         log.info("Replica " + getId() + " initialized");
     }
 
@@ -133,24 +132,61 @@ public class FabReplica extends LeaderBasedProtocolReplica {
 
         // Resend this message until (p (proposer replicas) + f + 1 ) / 2 <= satisfied.size()
         int threshold = (int) Math.ceil((numProposers + numFaulty + 1) / 2.0);
-        Pair proposal = new Pair(viewNumber, proposedValue);
+        Pair proposal = new Pair(this.viewNumber, proposedValue);
         SortedSet<String> acceptorReceipts = new TreeSet<>(List.of("A", "B", "C", "D", "E", "F"));
         ProposeMessage proposeMessage = new ProposeMessage(this.getId(), proposal, this.pc);
 
+//        return CompletableFuture.runAsync(() -> {
+//            while (!messageLog.isSatisfied(threshold)) {
+//                multicastMessage(proposeMessage, acceptorReceipts);
+//                try {
+//                    Thread.sleep(10);
+//                } catch (InterruptedException e) {
+//                    Thread.currentThread().interrupt();
+//                    log.severe("Thread was interrupted during retransmission: " + e.getMessage());
+//                }
+//            }
+//
+//            log.info("The threshold for the number of satisfied messages was reached");
+//            this.sendReplyToClient(clientId, proposedValue);
+//        }, executor);
+
+        // Recursive condition checking with CompletableFuture
         return CompletableFuture.runAsync(() -> {
-            while (!messageLog.isSatisfied(threshold)) {
-                multicastMessage(proposeMessage, acceptorReceipts);
+                    multicastMessage(proposeMessage, acceptorReceipts); // Send the message initially
+                }, executor).thenComposeAsync(v -> waitForCondition(() -> messageLog.isSatisfied(threshold), 10))
+                .thenRun(() -> {
+                    log.info("The threshold for the number of satisfied messages was reached");
+                    this.sendReplyToClient(clientId, proposedValue);
+                    this.viewNumber++;
+                });
+    }
+
+    /**
+     * Waits for a condition to be true by polling it repeatedly at a fixed interval.
+     *
+     * @param condition The condition to check
+     * @param intervalMs The interval in milliseconds between condition checks
+     * @return A CompletableFuture that completes when the condition is true
+     */
+    private CompletableFuture<Void> waitForCondition(Supplier<Boolean> condition, int intervalMs) {
+        CompletableFuture<Void> future = new CompletableFuture<>();
+        executor.execute(() -> {
+            while (true) {
+                if (condition.get()) {
+                    future.complete(null); // Condition met, complete the future
+                    break;
+                }
                 try {
-                    Thread.sleep(1000);
+                    Thread.sleep(intervalMs); // Short non-blocking sleep for efficiency
                 } catch (InterruptedException e) {
                     Thread.currentThread().interrupt();
-                    log.severe("Thread was interrupted during retransmission: " + e.getMessage());
+                    future.completeExceptionally(e);
+                    break;
                 }
             }
-
-            log.info("The threshold for the number of satisfied messages was reached");
-//            this.sendReplyToClient(clientId, proposedValue);
-        }, executor);
+        });
+        return future;
     }
 
     /**
@@ -183,15 +219,15 @@ public class FabReplica extends LeaderBasedProtocolReplica {
      */
     private CompletableFuture<Void> learnerOnStart() {
         return CompletableFuture.runAsync(() -> {
-            while (messageLog.getLearnedValue() == null) {
-                try {
-                    Thread.sleep(5000);
+//            while (messageLog.getLearnedValue() == null) {
+//                try {
+//                    Thread.sleep(5000);
                     log.info("Learner " + getId() + " sending PULL to all learners...");
                     multicastMessage(new PullMessage(this.viewNumber), this.learnerNodeIds);
-                } catch (InterruptedException e) {
-                    log.severe("Thread was interrupted: " + e.getMessage());
-                }
-            }
+//                } catch (InterruptedException e) {
+//                    log.severe("Thread was interrupted: " + e.getMessage());
+//                }
+//            }
         }, executor);
     }
 
@@ -241,20 +277,24 @@ public class FabReplica extends LeaderBasedProtocolReplica {
     @Override
     public void handleClientRequest(String clientId, Serializable request) throws UnsupportedOperationException {
         this.clientId = clientId;
-//        this.proposedValue = (byte[]) request;
         CompletableFuture<Void> leaderTask = isLeader() ? leaderOnStart() : CompletableFuture.completedFuture(null);
-        CompletableFuture.allOf(leaderTask).thenRun(() -> {
-                    log.info("Replica " + getId() + " finished handling client request.");
-                    this.sendReplyToClient(clientId, proposedValue);
-                }
-        );
+
+        leaderTask.thenRun(() -> {
+            log.info("Finished handling client request");
+            messageLog.resolveClientRequest(clientId, request);
+//            this.sendReplyToClient(clientId, proposedValue);
+        }).exceptionally(ex -> {
+            // Handle any exceptions that might occur during the leader task or subsequent operations
+            log.info("Error occurred while handling client request: " + ex.getMessage());
+            return null;
+        });
     }
 
     @Override
     public void handleMessage(String sender, MessagePayload message) throws UnsupportedOperationException {
         log.info(String.format("Replica %s received a message from %s: %s", getId(), sender, message));
 
-        messageLog.addMessage(message);
+        messageLog.addMessage(sender, message);
 
         if (message instanceof ProposeMessage && isAcceptor()) {
             handleProposeMessage(sender, (ProposeMessage) message);
@@ -276,6 +316,7 @@ public class FabReplica extends LeaderBasedProtocolReplica {
         } else if (message instanceof ViewChangeMessage) {
             handleViewChangeMessage(sender, (ViewChangeMessage) message);
         } else if (message instanceof DefaultClientRequestPayload clientRequest) {
+            messageLog.setClientId(sender);
             handleClientRequest(sender, clientRequest.getOperation());
         }
 
