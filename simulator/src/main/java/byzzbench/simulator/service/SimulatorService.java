@@ -3,6 +3,7 @@ package byzzbench.simulator.service;
 import byzzbench.simulator.Scenario;
 import byzzbench.simulator.config.ByzzBenchConfig;
 import byzzbench.simulator.scheduler.EventDecision;
+import byzzbench.simulator.state.ErroredPredicate;
 import byzzbench.simulator.transport.Event;
 import byzzbench.simulator.transport.messages.MessageWithRound;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -21,6 +22,7 @@ import java.nio.file.Path;
 import java.time.Instant;
 import java.util.Optional;
 import java.util.OptionalLong;
+import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -131,7 +133,7 @@ public class SimulatorService {
                             this.invokeScheduleNext();
                             long numEvents = this.scenario.getSchedule().getEvents().size();
                             long terminationSamplingFreq = this.byzzBenchConfig.getScenario().getTermination().getSamplingFrequency();
-                            boolean shouldCheckTermination = numEvents % terminationSamplingFreq == 0;
+                            boolean shouldCheckTermination = (numEvents % terminationSamplingFreq) == 0;
 
                             // if the invariants do not hold, terminate the run
                             if (!this.scenario.invariantsHold()) {
@@ -161,9 +163,10 @@ public class SimulatorService {
                                 long currentRound = minQueuedRound.orElse(maxDeliveredRound.orElse(0));
 
                                 if (numEvents >= byzzBenchConfig.getScenario().getTermination().getMinEvents()
-                                        && currentRound >= byzzBenchConfig.getScenario().getTermination().getMinRounds()) {
-                                    log.info("Reached min # of events and rounds for this run, terminating. . .");
+                                        || currentRound >= byzzBenchConfig.getScenario().getTermination().getMinRounds()) {
+                                    log.info("Reached min # of events or rounds for this run, terminating. . .");
                                     numMaxedOut++;
+                                    scenario.getSchedule().finalizeSchedule();
                                     break;
                                 }
                             }
@@ -173,6 +176,7 @@ public class SimulatorService {
                     } catch (Exception e) {
                         System.out.println("Error in schedule " + scenarioId + ": " + e);
                         e.printStackTrace();
+                        scenario.getSchedule().finalizeSchedule(Set.of(new ErroredPredicate()));
                         numErr += 1;
                     }
 
