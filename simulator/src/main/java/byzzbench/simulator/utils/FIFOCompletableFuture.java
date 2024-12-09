@@ -19,6 +19,4 @@ public class FIFOCompletableFuture<T> extends CompletableFuture<T> {
     public final Executor defaultExecutor() {
         return executor;
     }
-
-
 }
