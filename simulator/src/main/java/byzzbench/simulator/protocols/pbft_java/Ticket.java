@@ -4,6 +4,7 @@ import byzzbench.simulator.protocols.pbft_java.message.CommitMessage;
 import byzzbench.simulator.protocols.pbft_java.message.PrePrepareMessage;
 import byzzbench.simulator.protocols.pbft_java.message.PrepareMessage;
 import byzzbench.simulator.protocols.pbft_java.message.RequestMessage;
+import byzzbench.simulator.utils.FIFOCompletableFuture;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
@@ -26,7 +27,7 @@ public class Ticket<O extends Serializable, R extends Serializable> implements S
     private final Collection<Serializable> messages = new ConcurrentLinkedQueue<>();
     private final transient AtomicReference<ReplicaTicketPhase> phase = new AtomicReference<>(ReplicaTicketPhase.PRE_PREPARE);
     @Getter
-    private final transient CompletableFuture<R> result = new CompletableFuture<>();
+    private final transient CompletableFuture<R> result = new FIFOCompletableFuture<>();
     @Getter
     private volatile RequestMessage request;
 
