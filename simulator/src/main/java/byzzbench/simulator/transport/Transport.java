@@ -259,7 +259,7 @@ public class Transport {
 
         this.observers.forEach(o -> o.onEventDelivered(e));
 
-        log.info("Delivered " + e);
+//        log.info("Delivered " + e);
     }
 
     /**
@@ -398,7 +398,7 @@ public class Transport {
                 .build();
         this.appendEvent(timeoutEvent);
         this.observers.forEach(o -> o.onTimeout(timeoutEvent));
-        log.info("Timeout set for " + node.getId() + " in " + timeout + "ms: " + timeoutEvent);
+//        log.info("Timeout set for " + node.getId() + " in " + timeout + "ms: " + timeoutEvent);
         return timeoutEvent.getEventId();
     }
 

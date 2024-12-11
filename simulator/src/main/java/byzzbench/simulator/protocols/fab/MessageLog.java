@@ -38,8 +38,6 @@ public class MessageLog {
     private final SortedMap<Long, List<ViewChangeMessage>> viewChangeMessages = new TreeMap<>();
     private final SortedMap<String, List<DefaultClientRequestPayload>> clientRequestMessages = new TreeMap<>();
 
-    @Setter
-    private String clientId;
 
     public MessageLog(FabReplica replica) {
         this.replica = replica;
@@ -81,6 +79,7 @@ public class MessageLog {
 
         // Reset the message log
         reset();
+//        this.replica.setView(this.replica.getViewNumber() + 1);
     }
 
     public void reset() {
@@ -253,17 +252,23 @@ public class MessageLog {
 
     public void acceptViewChange() {
         // Accept latest view change from viewChanges map
-        long latestViewNumber = viewChangeMessages.lastKey();
-        long firstViewNumber = viewChangeMessages.firstKey();
-
-        // Clear all messages from the previous views
-        for (long i = firstViewNumber; i < latestViewNumber; i++) {
-            deletePreviousRoundMessages(i);
+//        long latestViewNumber = viewChangeMessages.lastKey();
+//        long firstViewNumber = viewChangeMessages.firstKey();
+//
+//        // Clear all messages from the previous views
+//        for (long i = firstViewNumber; i < latestViewNumber; i++) {
+//            deletePreviousRoundMessages(i);
+//        }
+//
+//        // Accept the new view
+//        this.replica.setView(latestViewNumber);
+        reset();
+        this.replica.setView(this.replica.getViewNumber() + 1);
+        for (long eventId : this.replica.getTransport().getEvents().keySet()) {
+            if (eventId < this.replica.getViewNumber()) {
+                this.replica.getTransport().dropEvent(eventId);
+            }
         }
-
-        // Accept the new view
-        this.replica.setView(latestViewNumber);
-
     }
 
     public ProgressCertificate electNewLeader(int quorum) {

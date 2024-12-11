@@ -34,25 +34,25 @@ export const NodeCard = ({ nodeId }: NodeCardProps) => {
       m="xs"
       style={{ minWidth: 350, maxWidth: 400 }}
     >
-      {data && (
-        <NodeStateNavLink
-          // data={data.data}
-          // label={
-          //   <Group justify="space-between">
-          //     <Tooltip label="Node ID">
-          //       <Title order={4}>{nodeId}</Title>
-          //     </Tooltip>
-          //     {partitionsQuery.data?.data[nodeId] && (
-          //       <Tooltip label="Network partition ID">
-          //         <Text>P{partitionsQuery.data.data[nodeId] ?? 0}</Text>
-          //       </Tooltip>
-          //     )}
-          //   </Group>
-          // }
-          defaultOpened
-          opened={false}
-        />
-      )}
+      {/*{data && (*/}
+      {/*  <NodeStateNavLink*/}
+      {/*    data={data.data}*/}
+      {/*    label={*/}
+      {/*      <Group justify="space-between">*/}
+      {/*        <Tooltip label="Node ID">*/}
+      {/*          <Title order={4}>{nodeId}</Title>*/}
+      {/*        </Tooltip>*/}
+      {/*        {partitionsQuery.data?.data[nodeId] && (*/}
+      {/*          <Tooltip label="Network partition ID">*/}
+      {/*            <Text>P{partitionsQuery.data.data[nodeId] ?? 0}</Text>*/}
+      {/*          </Tooltip>*/}
+      {/*        )}*/}
+      {/*      </Group>*/}
+      {/*    }*/}
+      {/*    defaultOpened*/}
+      {/*    opened={false}*/}
+      {/*  />*/}
+      {/*)}*/}
       <Space h="xs" />
       <NodeMailbox nodeId={nodeId} />
     </Card>
