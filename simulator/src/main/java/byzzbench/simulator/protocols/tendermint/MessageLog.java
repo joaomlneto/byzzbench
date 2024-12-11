@@ -2,6 +2,7 @@ package byzzbench.simulator.protocols.tendermint;
 
 import byzzbench.simulator.protocols.tendermint.message.*;
 
+import byzzbench.simulator.transport.DefaultClientRequestPayload;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.java.Log;
@@ -23,6 +24,9 @@ public class MessageLog {
     private final SortedMap<Block, List<PrecommitMessage>> precommits = new TreeMap<>();
     @Getter
     private final SortedMap<Block, List<ProposalMessage>> proposals = new TreeMap<>();
+
+    @Getter
+    private final Queue<DefaultClientRequestPayload> passOnRequests = new LinkedList<>();
 
     public static final Block NULL_BLOCK = new Block(Long.MIN_VALUE, Long.MIN_VALUE, Long.MIN_VALUE, "NULL VALUE", null);
 
@@ -104,5 +108,9 @@ public class MessageLog {
         return messages.stream()
                 .filter(m -> m.getRound() > round && m.getRound() == message.getRound())
                 .count() >= node.getTolerance() + 1;
+    }
+
+    public void bufferRequest(PassOnRequest message) {
+        passOnRequests.add(message.getRequest());
     }
 }

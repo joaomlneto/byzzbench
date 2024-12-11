@@ -6,6 +6,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.java.Log;
 
 import java.io.Serializable;
 import java.time.Duration;
@@ -20,6 +21,7 @@ import java.util.concurrent.atomic.AtomicLong;
 @Getter
 @Builder
 @RequiredArgsConstructor
+@Log
 public class Client implements Serializable, Node {
     /**
      * The scenario object that this client belongs to.
@@ -42,7 +44,7 @@ public class Client implements Serializable, Node {
     /**
      * The maximum number of requests that can be sent by the client.
      */
-    private final long maxRequests = 3;
+    private final long maxRequests = 100;
 
     /**
      * The replies received by the client.
@@ -73,9 +75,16 @@ public class Client implements Serializable, Node {
      * @param reply    The reply received by the client.
      */
     public void handleMessage(String senderId, MessagePayload reply) {
-        this.replies.add(reply);
-        if (this.requestSequenceNumber.get() < this.maxRequests) {
-            this.sendRequest();
+        log.info("Client received this message type" + reply.getType());
+        switch (reply.getType()) {
+            case "DefaultClientRequest":
+                this.replies.add(reply);
+                if (this.requestSequenceNumber.get() < this.maxRequests) {
+                    this.sendRequest();
+                }
+                break;
+            default:
+                break;
         }
     }
 

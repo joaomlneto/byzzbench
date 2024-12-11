@@ -42,6 +42,6 @@ byzzbench:
     scheduledFaults:
       factories: [ ]
     termination: # Success condition for the scenario - terminates it when all conditions are met
-      minEvents: 50 # check if N events have been scheduled. If so, can terminate
+      minEvents: 500 # check if N events have been scheduled. If so, can terminate
       minRounds: 3 # check if N rounds have elapsed. If so, can terminate
       samplingFrequency: 10 # check if should terminate every N scheduler decisions
