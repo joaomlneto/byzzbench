@@ -246,9 +246,6 @@ public abstract class Replica implements Serializable, Node {
         this.observers.forEach(observer -> observer.onTimeout(this));
     }
 
-    /**
-     * Get the current time from the timekeeper.
-     */
     public Instant getCurrentTime() {
         return this.scenario.getTimekeeper().getTime(this);
     }
