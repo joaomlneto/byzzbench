@@ -5,11 +5,9 @@ import { useSavedSchedulesStore } from "@/hooks/useSavedSchedules";
 import { ActionIcon, Container, Group, Stack } from "@mantine/core";
 import { modals } from "@mantine/modals";
 import { IconX } from "@tabler/icons-react";
-import { useQueryClient } from "@tanstack/react-query";
 import React, { memo } from "react";
 
 export const ScheduleList = memo(() => {
-  const queryClient = useQueryClient();
   const schedules = useSavedSchedulesStore((state) => state.schedules);
   const removeSchedule = useSavedSchedulesStore(
     (state) => state.removeSchedule,
@@ -17,7 +15,7 @@ export const ScheduleList = memo(() => {
 
   return (
     <Container size="xs">
-      <Stack gap="xs">
+      <Stack gap="sm">
         {schedules.map((schedule) => (
           <Group key={schedule.id} justify="space-between">
             <ScheduleDetails
