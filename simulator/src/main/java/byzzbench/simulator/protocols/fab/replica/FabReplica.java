@@ -11,6 +11,7 @@ import byzzbench.simulator.transport.MessagePayload;
 import byzzbench.simulator.transport.Transport;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Getter;
+import lombok.Setter;
 import lombok.extern.java.Log;
 
 import java.io.Serializable;
@@ -18,6 +19,7 @@ import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * A replica in the FAB protocol.
@@ -33,7 +35,8 @@ public class FabReplica extends LeaderBasedProtocolReplica {
     private byte[] proposedValue;
     private ProgressCertificate pc;
     private final long messageTimeoutDuration;
-
+    private int proposalNumber;
+    @Setter
     private String leaderId;
     private final AtomicBoolean isCurrentlyLeader = new AtomicBoolean(false);
 
@@ -80,22 +83,21 @@ public class FabReplica extends LeaderBasedProtocolReplica {
         this.proposerNodeIds = proposerNodeIds;
         this.leaderId = leaderId;
         this.messageLog = new MessageLog(this);
-        this.viewNumber = 1;
     }
 
     @Override
     public void initialize() {
-        // Nothing to do
-//        onStart();
+        // Starting the protocol - a new leader has been elected only once
+        this.viewNumber = 1;
     }
 
-    public void onStart() {
+    public CompletableFuture<Void> onStart() {
         log.info("Replica " + getId() + " is starting");
 
         CompletableFuture<Void> proposerTask = isProposer() ? proposerOnStart() : CompletableFuture.completedFuture(null);
         CompletableFuture<Void> learnerTask = isLearner() ? learnerOnStart() : CompletableFuture.completedFuture(null);
 
-        CompletableFuture.allOf(proposerTask, learnerTask).thenRun(() ->
+        return CompletableFuture.allOf(proposerTask, learnerTask).thenRun(() ->
                 log.info("Replica " + getId() + " finished starting.")
         ).exceptionally(e -> {
             log.severe("Replica " + getId() + " failed to start: " + e.getMessage());
@@ -114,17 +116,13 @@ public class FabReplica extends LeaderBasedProtocolReplica {
         SortedSet<String> acceptorReceipts = new TreeSet<>(List.of("A", "B", "C", "D", "E", "F"));
 
         return CompletableFuture.runAsync(() -> {
-            long id = 0L;
             while (!messageLog.isSatisfied(threshold)) {
-                id = this.setTimeout("leader-timeout", () -> {
-                    log.info("Leader " + getId() + " sending PROPOSE to all acceptors...");
+                long id = this.setTimeout("leader-timeout", () -> {
                     multicastMessage(proposeMessage, acceptorReceipts);
-                }, Duration.ofMillis(50000));
+                }, Duration.ofMillis(4000));
 
                 this.clearTimeout(id);
             }
-
-            // Clear the timeout if the leader has satisfied the threshold
         });
     }
 
@@ -135,15 +133,18 @@ public class FabReplica extends LeaderBasedProtocolReplica {
      */
     private CompletableFuture<Void> proposerOnStart() {
         int learnedThreshold = (int) Math.ceil((l + f + 1) / 2.0);
-        return CompletableFuture.runAsync(() -> {
-            long id = this.setTimeout("proposer-timeout", () -> {
-                if (!messageLog.proposerHasLearned(learnedThreshold)) {
-                    log.warning("Leader suspected by proposer " + getId());
-                    broadcastMessage(new SuspectMessage(getId(), this.leaderId, this.viewNumber));
-                }
-            }, Duration.ofMillis(9000));
+        AtomicLong id = new AtomicLong();
+        //                    log.warning("Leader suspected by proposer " + getId());
 
-            this.clearTimeout(id);
+        return CompletableFuture.runAsync(() -> {
+             id.set(this.setTimeout("proposer-timeout", () -> {
+                 if (!messageLog.proposerHasLearned(learnedThreshold)) {
+//                    log.warning("Leader suspected by proposer " + getId());
+                     broadcastMessage(new SuspectMessage(getId(), this.leaderId, this.viewNumber));
+                 }
+             }, Duration.ofMillis(900000)));
+
+            this.clearTimeout(id.get());
         }, executor);
     }
 
@@ -152,21 +153,25 @@ public class FabReplica extends LeaderBasedProtocolReplica {
      * The LEARNER, if it has not learned a value, sends a PULL message to all LEARNER nodes.
      */
     private CompletableFuture<Void> learnerOnStart() {
+        AtomicLong id = new AtomicLong(0L);
+        //                log.info("Learner " + getId() + " has not learned a value. Sending PULL message...");
+        // Clear the timeout if the learner has learned a value
+
         return CompletableFuture.runAsync(() -> {
-            long id = 0L;
             while (messageLog.getLearnedValue() == null) {
-                log.info("Learner " + getId() + " has not learned a value. Sending PULL message...");
-                id = pullLearnedValue();
+//                log.info("Learner " + getId() + " has not learned a value. Sending PULL message...");
+                id.set(pullLearnedValue());
             }
 
-            this.clearTimeout(id);  // Clear the timeout if the learner has learned a value
-            log.info("Learner " + getId() + " learned value: " + Arrays.toString(messageLog.getLearnedValue().getValue()));
+            this.clearTimeout(id.get());
+            // Clear the timeout if the learner has learned a value
+            log.info("Learner " + getId() + " ¬learned value: " + Arrays.toString(messageLog.getLearnedValue().getValue()));
         }, executor);
     }
 
     public long pullLearnedValue() {
         return this.setTimeout("learner-timeout", () -> {
-            log.info("Learner " + getId() + " sending PULL to all learner nodes...");
+//            log.info("Learner " + getId() + " sending PULL to all learner nodes...");
             multicastMessage(new PullMessage(this.viewNumber), this.learnerNodeIds);
         }, Duration.ofMillis(4000));
     }
@@ -175,27 +180,21 @@ public class FabReplica extends LeaderBasedProtocolReplica {
     public void handleClientRequest(String clientId, Serializable request) throws UnsupportedOperationException {
         if (!isLeader()) {
             log.info("Replica " + getId() + " is not the leader. Forwarding client request to leader.");
-            sendMessage(new ForwardClientRequest(request, this.clientId), leaderId);
             return;
         }
 
-        if (pc == null) {
-            proposedValue = request.toString().getBytes();
-        }
-
         /* Sending the PROPOSE message for the first time. */
+        if (pc == null) { proposedValue = request.toString().getBytes(); }
         this.clientId = clientId;
-        Pair proposal = new Pair(this.viewNumber, this.proposedValue);
-        ProposeMessage proposeMessage = new ProposeMessage(this.getId(), proposal, this.pc);
+        ProposeMessage proposeMessage = new ProposeMessage(this.getId(), new Pair(this.viewNumber, this.proposedValue), this.pc);
         this.multicastMessage(proposeMessage, this.nodeIds);
 
         /* Starting the leader task. */
-        CompletableFuture<Void> leaderTask = isLeader() ? leaderOnStart(proposeMessage) : CompletableFuture.completedFuture(null);
-        leaderTask.thenRun(() -> {
+        onStart().thenRun(() -> log.info("Replica " + getId() + " finished starting."));
+        leaderOnStart(proposeMessage).thenRun(() -> {
             log.info("Finished handling client request");
+            multicastMessage(new ViewChangeMessage(getId(), viewNumber + 1, leaderId), this.nodeIds);
             messageLog.resolveClientRequest(clientId, request);
-            multicastMessage(new ViewChangeMessage(getId(), viewNumber, leaderId), this.nodeIds);
-            this.viewNumber++;
             this.sendReplyToClient(clientId, proposedValue);
         }).exceptionally(ex -> {
             // Handle any exceptions that might occur during the leader task or subsequent operations
@@ -206,7 +205,7 @@ public class FabReplica extends LeaderBasedProtocolReplica {
 
     @Override
     public void handleMessage(String sender, MessagePayload message) throws UnsupportedOperationException {
-        log.info(String.format("Replica %s received a message from %s: %s", getId(), sender, message));
+//        log.info(String.format("Replica %s received a message from %s: %s", getId(), sender, message));
         messageLog.addMessage(sender, message);
 
         switch (message) {
@@ -224,7 +223,6 @@ public class FabReplica extends LeaderBasedProtocolReplica {
             case ReplyMessage replyMessage -> handleReplyMessage(sender, replyMessage);
             case ViewChangeMessage viewChangeMessage -> handleViewChangeMessage(sender, viewChangeMessage);
             case DefaultClientRequestPayload clientRequest -> {
-//                onStart();
                 this.clientId = sender;
                 handleClientRequest(sender, clientRequest.getOperation());
             }
@@ -373,48 +371,36 @@ public class FabReplica extends LeaderBasedProtocolReplica {
      * @param viewChangeMessage : the VIEW_CHANGE message with the new view number and leader ID
      */
     private void handleViewChangeMessage(String sender, ViewChangeMessage viewChangeMessage) {
-        messageLog.acceptViewChange();
+        messageLog.acceptViewChange(viewChangeMessage);
     }
 
+    /**
+     * LEADER election mechanism.
+     * Elect a new leader based on the view number and node IDs.
+     * Once a new leader is elected, notify all other replicas of the new leader through a view change message.
+     */
     public void electNewLeader() {
         log.info("Electing a new leader...");
-        messageLog.deletePreviousRoundMessages(this.viewNumber);
+        messageLog.reset();
 
         // Select the new leader based on the view number and node IDs
         String newLeader = getNewLeader();
-        this.viewNumber++;  // Increment the view number to signify a new round
+        log.info("New leader candidate: " + newLeader);
+        this.viewNumber++;
         this.leaderId = newLeader;  // Set the new leader
 
         isCurrentlyLeader.set(newLeader.equals(getId()));  // This replica is the new leader
 
         // Notify the other replicas of the new leader
         multicastMessage(new ViewChangeMessage(getId(), viewNumber, newLeader), this.getNodeIds());
-
-        log.info("New leader elected: " + newLeader);
-        onElected(viewNumber);
     }
 
     private String getNewLeader() {
-        log.info("Initiating leader election...");
-        // Get random node ID from the list of node IDs
-        List<String> nodeIdsList = new ArrayList<>(nodeIds);
-        Collections.shuffle(nodeIdsList);
-        return nodeIdsList.getFirst();
+        // Select the new leader based on the view number and node IDs
+        return new ArrayList<>(nodeIds).get((int) (viewNumber % nodeIds.size()));
     }
 
     public void onElected(long newViewNumber) {
-        // Update view number to the maximum of the current and new numbers
-        viewNumber = Math.max(viewNumber, newViewNumber);
-
-        // If this replica is not the leader for the current number, return
-        if (!isLeader()) return;
-
-        // Send QUERY to all acceptors
-        log.info("Leader " + getId() + " sending QUERY to all acceptors...");
-        multicastMessage(new QueryMessage(viewNumber, pc), acceptorNodeIds);
-
-        // Start the protocol again
-        onStart();
     }
 
     /** Methods for checking the roles of the replica. **/

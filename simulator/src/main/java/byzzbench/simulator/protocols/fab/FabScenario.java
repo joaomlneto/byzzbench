@@ -107,6 +107,12 @@ public class FabScenario extends BaseScenario {
         try {
             this.setNumClients(1);
             this.transport.sendClientRequest("C0", "123", "A");
+            this.transport.sendClientRequest("C0", "123", "B");
+            this.transport.sendClientRequest("C0", "123", "C");
+            this.transport.sendClientRequest("C0", "123", "D");
+            this.transport.sendClientRequest("C0", "123", "E");
+            this.transport.sendClientRequest("C0", "123", "F");
+
         } catch (Exception e) {
             throw new RuntimeException(e);
         }

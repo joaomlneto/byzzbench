@@ -4,6 +4,7 @@ import byzzbench.simulator.protocols.fab.messages.*;
 import byzzbench.simulator.protocols.fab.replica.FabReplica;
 import byzzbench.simulator.protocols.fab.replica.Pair;
 import byzzbench.simulator.transport.DefaultClientRequestPayload;
+import byzzbench.simulator.transport.Event;
 import byzzbench.simulator.transport.MessagePayload;
 import lombok.Getter;
 import lombok.Setter;
@@ -37,7 +38,7 @@ public class MessageLog {
     private final SortedMap<Long, List<QueryMessage>> queryMessages = new TreeMap<>();
     private final SortedMap<Long, List<ViewChangeMessage>> viewChangeMessages = new TreeMap<>();
     private final SortedMap<String, List<DefaultClientRequestPayload>> clientRequestMessages = new TreeMap<>();
-
+    private final SortedMap<String, Integer> nodesAndProposalNumber = new TreeMap<>();
 
     public MessageLog(FabReplica replica) {
         this.replica = replica;
@@ -67,7 +68,7 @@ public class MessageLog {
         } else if (message instanceof QueryMessage queryMessage) {
             queryMessages.computeIfAbsent(queryMessage.getViewNumber(), k -> new ArrayList<>()).add(queryMessage);
         } else if (message instanceof ViewChangeMessage viewChangeMessage) {
-            viewChangeMessages.computeIfAbsent(viewChangeMessage.getNewViewNumber(), k -> new ArrayList<>()).add(viewChangeMessage);
+            viewChangeMessages.computeIfAbsent(viewChangeMessage.getProposalNumber(), k -> new ArrayList<>()).add(viewChangeMessage);
         } else if (message instanceof DefaultClientRequestPayload clientRequestMessage) {
             clientRequestMessages.computeIfAbsent(sender, k -> new ArrayList<>()).add(clientRequestMessage);
         }
@@ -76,10 +77,9 @@ public class MessageLog {
     public void resolveClientRequest(String clientId, Serializable request) {
         DefaultClientRequestPayload clientRequest = new DefaultClientRequestPayload(request);
         clientRequestMessages.get(clientId).remove(clientRequest);
-
-        // Reset the message log
         reset();
-//        this.replica.setView(this.replica.getViewNumber() + 1);
+        learnedValue = null;
+        acceptedProposal = null;
     }
 
     public void reset() {
@@ -88,8 +88,6 @@ public class MessageLog {
         satisfiedProposerNodes.clear();
         learnersWithLearnedValue.clear();
         nodesSuspectingLeader.clear();
-        learnedValue = null;
-        acceptedProposal = null;
         responses.clear();
         proposeMessages.clear();
         acceptMessages.clear();
@@ -107,21 +105,26 @@ public class MessageLog {
         // If the PROPOSE message has a higher round number than the current round number, update the round number
         // Remove message from the proposeMessages queue
         proposeMessages.get(proposeMessage.getValueAndProposalNumber().getNumber()).remove(proposeMessage);
-        if (proposeMessage.getValueAndProposalNumber().getNumber() > this.replica.getViewNumber()) {
-            this.replica.setView(proposeMessage.getValueAndProposalNumber().getNumber());
+
+        if (nodesAndProposalNumber.containsKey(senderId)) {
+            if (proposeMessage.getValueAndProposalNumber().getNumber() > this.nodesAndProposalNumber.get(senderId)) {
+                nodesAndProposalNumber.put(senderId, (int) proposeMessage.getValueAndProposalNumber().getNumber());
+            }
+        } else {
+            nodesAndProposalNumber.put(senderId, (int) proposeMessage.getValueAndProposalNumber().getNumber());
         }
 
-        Pair proposeValue = proposeMessage.getValueAndProposalNumber();
-        long messageViewNumber = proposeMessage.getValueAndProposalNumber().getNumber();
+        Pair proposed = proposeMessage.getValueAndProposalNumber();
+        long proposalNumber = proposeMessage.getValueAndProposalNumber().getNumber();
         byte[] messageProposedValue = proposeMessage.getValueAndProposalNumber().getValue();
         ProgressCertificate progressCertificate = proposeMessage.getProgressCertificate();
 
-        if (messageViewNumber != this.replica.getViewNumber()) {
+        if (proposalNumber != nodesAndProposalNumber.get(senderId)) {
             log.info("The view number of the PROPOSE message is not the same as the current view number");
             return false; // Only listen to current leader
         }
 
-        if (acceptedProposal != null && acceptedProposal.getNumber() == messageViewNumber) {
+        if (acceptedProposal != null && acceptedProposal.getNumber() == proposalNumber) {
             log.info("duplicate proposal");
             return false; // Ignore duplicate proposals
         }
@@ -132,7 +135,7 @@ public class MessageLog {
             return false; // Ignore proposals that are not vouched for by the progress certificate
         }
 
-        acceptedProposal = proposeValue; // Accept the proposal
+        acceptedProposal = proposed; // Accept the proposal
         return true;
     }
 
@@ -250,25 +253,22 @@ public class MessageLog {
         responses.add(new SignedResponse(value, viewNumber, isSigned, replySender));
     }
 
-    public void acceptViewChange() {
+    public void acceptViewChange(ViewChangeMessage viewChangeMessage) {
         // Accept latest view change from viewChanges map
-//        long latestViewNumber = viewChangeMessages.lastKey();
-//        long firstViewNumber = viewChangeMessages.firstKey();
-//
-//        // Clear all messages from the previous views
-//        for (long i = firstViewNumber; i < latestViewNumber; i++) {
-//            deletePreviousRoundMessages(i);
-//        }
-//
-//        // Accept the new view
-//        this.replica.setView(latestViewNumber);
-        reset();
-        this.replica.setView(this.replica.getViewNumber() + 1);
-        for (long eventId : this.replica.getTransport().getEvents().keySet()) {
-            if (eventId < this.replica.getViewNumber()) {
-                this.replica.getTransport().dropEvent(eventId);
-            }
+        if (viewChangeMessage.getProposalNumber() <= this.replica.getViewNumber()) {
+            log.info("The view number of the VIEW-CHANGE message is not greater than the current view number");
+            return;
         }
+
+        this.replica.setView(Math.max(this.replica.getViewNumber(), viewChangeMessage.getProposalNumber()));
+        this.replica.setLeaderId(viewChangeMessage.getNewLeaderId());
+
+        this.viewChangeMessages.remove(viewChangeMessage.getProposalNumber());
+        for (Event event: this.replica.getTransport().getEventsInState(Event.Status.QUEUED)) {
+            this.replica.getTransport().dropEvent(event.getEventId());
+        }
+
+        reset();
     }
 
     public ProgressCertificate electNewLeader(int quorum) {
