@@ -26,6 +26,7 @@ public class MessageLog {
     @Getter
     private Pair learnedValue;
     private Pair acceptedProposal;
+    @Getter
     private List<SignedResponse> responses;
 
     private final SortedMap<Long, List<ProposeMessage>> proposeMessages = new TreeMap<>();
@@ -37,6 +38,7 @@ public class MessageLog {
     private final SortedMap<Long, List<SuspectMessage>> suspectMessages = new TreeMap<>();
     private final SortedMap<Long, List<QueryMessage>> queryMessages = new TreeMap<>();
     private final SortedMap<Long, List<ViewChangeMessage>> viewChangeMessages = new TreeMap<>();
+    private final SortedMap<Long, List<NewViewMessage>> newViewMessages = new TreeMap<>();
     private final SortedMap<String, List<DefaultClientRequestPayload>> clientRequestMessages = new TreeMap<>();
     private final SortedMap<String, Integer> nodesAndProposalNumber = new TreeMap<>();
 
@@ -69,6 +71,8 @@ public class MessageLog {
             queryMessages.computeIfAbsent(queryMessage.getViewNumber(), k -> new ArrayList<>()).add(queryMessage);
         } else if (message instanceof ViewChangeMessage viewChangeMessage) {
             viewChangeMessages.computeIfAbsent(viewChangeMessage.getProposalNumber(), k -> new ArrayList<>()).add(viewChangeMessage);
+        } else if (message instanceof NewViewMessage newViewMessage) {
+            newViewMessages.computeIfAbsent(newViewMessage.getViewNumber(), k -> new ArrayList<>()).add(newViewMessage);
         } else if (message instanceof DefaultClientRequestPayload clientRequestMessage) {
             clientRequestMessages.computeIfAbsent(sender, k -> new ArrayList<>()).add(clientRequestMessage);
         }
@@ -260,13 +264,32 @@ public class MessageLog {
             return;
         }
 
-        this.replica.setView(Math.max(this.replica.getViewNumber(), viewChangeMessage.getProposalNumber()));
+        this.replica.setView(viewChangeMessage.getProposalNumber());
         this.replica.setLeaderId(viewChangeMessage.getNewLeaderId());
 
         this.viewChangeMessages.remove(viewChangeMessage.getProposalNumber());
         for (Event event: this.replica.getTransport().getEventsInState(Event.Status.QUEUED)) {
             this.replica.getTransport().dropEvent(event.getEventId());
         }
+        reset();
+    }
+
+    public void acceptNewView(NewViewMessage newViewMessage) {
+        // Accept latest new view from newViews map
+        if (newViewMessage.getViewNumber() <= this.replica.getViewNumber()) {
+            log.info("The view number of the NEW-VIEW message is not greater than the current view number");
+            return;
+        }
+
+        this.replica.setView(newViewMessage.getViewNumber());
+
+        this.newViewMessages.remove(newViewMessage.getViewNumber());
+        List<Event> queuedEvents = this.replica.getTransport().getEventsInState(Event.Status.QUEUED);
+        log.info("Last event: " +  queuedEvents.getLast());
+
+//        for (Event event: queuedEvents) {
+//            this.replica.getTransport().dropEvent(event.getEventId());
+//        }
 
         reset();
     }
