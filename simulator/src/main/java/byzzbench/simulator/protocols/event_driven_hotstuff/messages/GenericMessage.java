@@ -1,14 +1,14 @@
 package byzzbench.simulator.protocols.event_driven_hotstuff.messages;
 
-import byzzbench.simulator.protocols.event_driven_hotstuff.Node;
+import byzzbench.simulator.protocols.event_driven_hotstuff.EDHSNode;
 import lombok.Getter;
 
 @Getter
 public class GenericMessage extends AbstractMessage{
-    Node node;
+    EDHSNode node;
 
-    public GenericMessage(Node node) {
-        super(MessageType.GENERIC);
+    public GenericMessage(long viewNumber, EDHSNode node) {
+        super(MessageType.GENERIC, viewNumber);
         this.node = node;
     }
 }

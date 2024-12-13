@@ -1,6 +1,7 @@
 package byzzbench.simulator.protocols.basic_hotstuff;
 
 import byzzbench.simulator.LeaderBasedProtocolReplica;
+import byzzbench.simulator.Scenario;
 import byzzbench.simulator.protocols.basic_hotstuff.messages.*;
 import byzzbench.simulator.state.CommitLog;
 import byzzbench.simulator.state.LogEntry;
@@ -29,8 +30,8 @@ public class BHotStuffReplica extends LeaderBasedProtocolReplica {
     private ArrayList<PreCommitVote> preCommitVotes;
     private ArrayList<CommitVote> commitVotes;
 
-    protected BHotStuffReplica(String nodeId, SortedSet<String> nodeIds, Transport transport) {
-        super(nodeId, nodeIds, transport, new TotalOrderCommitLog());
+    protected BHotStuffReplica(String nodeId, Scenario scenario) {
+        super(nodeId, scenario, new TotalOrderCommitLog());
     }
 
     @Override
@@ -80,7 +81,7 @@ public class BHotStuffReplica extends LeaderBasedProtocolReplica {
             PrepareMessage prepareMessage = (PrepareMessage) message;
             if (!prepareMessage.getNode().getParent().equals(prepareMessage.getJustify().getNode())) return;
             if (!safeNode(prepareMessage.getNode(), prepareMessage.getJustify())) return;
-            sendMessage(new PrepareVote(viewNumber, prepareMessage.getNode(), getNodeId()), getLeaderId());
+            sendMessage(new PrepareVote(viewNumber, prepareMessage.getNode(), getId()), getLeaderId());
             currentPhase = BHotStuffPhase.PRE_COMMIT;
         }
     }
@@ -101,7 +102,7 @@ public class BHotStuffReplica extends LeaderBasedProtocolReplica {
             PreCommitMessage preCommitMessage = (PreCommitMessage) message;
             if (preCommitMessage.getJustify().match(MessageType.PREPARE, viewNumber)) {
                 prepareQC = preCommitMessage.getJustify();
-                sendMessage(new PreCommitVote(viewNumber, prepareQC.getNode(), getNodeId()), getLeaderId());
+                sendMessage(new PreCommitVote(viewNumber, prepareQC.getNode(), getId()), getLeaderId());
                 currentPhase = BHotStuffPhase.COMMIT;
             }
         }
@@ -123,7 +124,7 @@ public class BHotStuffReplica extends LeaderBasedProtocolReplica {
             CommitMessage commitMessage = (CommitMessage) message;
             if (commitMessage.getJustify().match(MessageType.PRE_COMMIT, viewNumber)) {
                 lockedQC = commitMessage.getJustify();
-                sendMessage(new CommitVote(viewNumber, lockedQC.getNode(), getNodeId()), getLeaderId());
+                sendMessage(new CommitVote(viewNumber, lockedQC.getNode(), getId()), getLeaderId());
                 currentPhase = BHotStuffPhase.DECIDE;
             }
         }
@@ -152,7 +153,7 @@ public class BHotStuffReplica extends LeaderBasedProtocolReplica {
     }
 
     public boolean isLeader() {
-        return getLeaderId().equals(getNodeId());
+        return getLeaderId().equals(getId());
     }
 
     public int getMinValidReplicas() {

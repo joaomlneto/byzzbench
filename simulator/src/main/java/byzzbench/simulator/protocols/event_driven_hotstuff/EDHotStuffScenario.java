@@ -2,11 +2,11 @@ package byzzbench.simulator.protocols.event_driven_hotstuff;
 
 import byzzbench.simulator.BaseScenario;
 import byzzbench.simulator.Replica;
-import byzzbench.simulator.TerminationCondition;
 import byzzbench.simulator.scheduler.Scheduler;
 import com.fasterxml.jackson.databind.JsonNode;
 import lombok.extern.java.Log;
 
+import java.util.ArrayList;
 import java.util.SortedSet;
 import java.util.TreeSet;
 
@@ -26,14 +26,16 @@ public class EDHotStuffScenario extends BaseScenario {
     @Override
     protected void setup() {
         try {
-            SortedSet<String> nodeIds = new TreeSet<>();
+            ArrayList<String> nodeIds = new ArrayList<>();
             for (int i = 0; i < NUM_NODES; i++) nodeIds.add(Character.toString((char) ('A' + i)));
 
             nodeIds.forEach(nodeId -> {
-                Replica replica = new EDHotStuffReplica(nodeId, nodeIds, transport);
+                Replica replica = new EDHotStuffReplica(nodeId, this, nodeIds);
                 System.out.println(nodeId);
                 this.addNode(replica);
             });
+
+            this.addClient(new EDHotStuffClient(this, "Client_A"));
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -41,22 +43,12 @@ public class EDHotStuffScenario extends BaseScenario {
 
     @Override
     protected void run() {
-        try {
+        /*try {
             this.setNumClients(1);
             this.transport.sendClientRequest("C0", "123", "A");
         } catch (Exception e) {
             e.printStackTrace();
             throw new RuntimeException(e);
-        }
-    }
-
-    @Override
-    public TerminationCondition getTerminationCondition() {
-        return new TerminationCondition() {
-            @Override
-            public boolean shouldTerminate() {
-                return false;
-            }
-        };
+        }*/
     }
 }

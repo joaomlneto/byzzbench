@@ -7,8 +7,8 @@ import lombok.Getter;
 public class NewViewMessage extends AbstractMessage {
     QuorumCertificate justify;
 
-    public NewViewMessage(QuorumCertificate justify) {
-        super(MessageType.NEW_VIEW);
+    public NewViewMessage(long viewNumber, QuorumCertificate justify) {
+        super(MessageType.NEW_VIEW, viewNumber);
         this.justify = justify;
     }
 }

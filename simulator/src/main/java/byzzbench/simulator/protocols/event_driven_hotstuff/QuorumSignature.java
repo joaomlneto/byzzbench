@@ -5,13 +5,14 @@ import lombok.Getter;
 
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.HashSet;
 
 @Getter
 @EqualsAndHashCode
 public class QuorumSignature implements Serializable {
-    private ArrayList<PartialSignature> partialSignatures;
+    private HashSet<PartialSignature> partialSignatures;
 
-    public QuorumSignature(ArrayList<PartialSignature> partialSignatures) {
+    public QuorumSignature(HashSet<PartialSignature> partialSignatures) {
         this.partialSignatures = partialSignatures;
     }
 
