@@ -126,8 +126,13 @@ public abstract class Replica implements Serializable, Node {
         this.scenario.getTransport().multicast(this.id, this.getNodeIds(), message);
     }
 
+    /**
+     * Return the set of replica IDs in the system visible to this node.
+     *
+     * @return the set of replica IDs in the system visible to this node
+     */
     public SortedSet<String> getNodeIds() {
-        return this.scenario.getNodeIds(this);
+        return this.scenario.getReplicaIds(this);
     }
 
     /**

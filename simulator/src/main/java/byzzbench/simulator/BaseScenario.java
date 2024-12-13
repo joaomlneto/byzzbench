@@ -116,6 +116,7 @@ public abstract class BaseScenario implements Scenario {
      * @param numClients The number of clients to set.
      */
     protected void setNumClients(int numClients) {
+        this.removeAllClients();
         for (int i = 0; i < numClients; i++) {
             String clientId = String.format("C%d", i);
             Client client = Client.builder().id(clientId).scenario(this).build();
@@ -252,6 +253,11 @@ public abstract class BaseScenario implements Scenario {
     @Override
     public SortedSet<String> getNodeIds(Node node) {
         return new TreeSet<>(this.getNodes().keySet());
+    }
+
+    @Override
+    public SortedSet<String> getReplicaIds(Node node) {
+        return new TreeSet<>(this.getReplicas().keySet());
     }
 
     @Override
