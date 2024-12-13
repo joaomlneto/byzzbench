@@ -7,10 +7,14 @@ import java.io.Serializable;
 import java.util.List;
 
 @Data
-public class CommitCertificate implements Serializable {
+public abstract class CommitCertificate implements Serializable {
     final long sequenceNumber;
     final long viewNumber;
-    List<String> replicaIds;
     List<SpeculativeResponse> speculativeResponses;
-    String clientId;
+
+    public CommitCertificate(long sequenceNumber, long viewNumber, List<SpeculativeResponse> speculativeResponses) {
+        this.sequenceNumber = sequenceNumber;
+        this.viewNumber = viewNumber;
+        this.speculativeResponses = speculativeResponses;
+    }
 }

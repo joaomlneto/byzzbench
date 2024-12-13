@@ -1,6 +1,6 @@
 package byzzbench.simulator.protocols.Zyzzyva.message;
 
-import byzzbench.simulator.protocols.Zyzzyva.CommitCertificate;
+import byzzbench.simulator.protocols.Zyzzyva.ClientCommitCertificate;
 import byzzbench.simulator.transport.MessagePayload;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -11,7 +11,7 @@ import lombok.With;
 @With
 public class CommitMessage extends MessagePayload {
     private final String clientId;
-    private final CommitCertificate commitCertificate;
+    private final ClientCommitCertificate commitCertificate;
 
     @Override
     public String getType() {

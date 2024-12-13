@@ -17,6 +17,7 @@ import java.util.*;
 
 /// TODO: check if everything is signed correctly
 /// TODO: checkpoints
+/// TODO: when checkpointing, create a new maxCC
 @Log
 @ToString(callSuper = true)
 public class ZyzzyvaReplica extends LeaderBasedProtocolReplica {
@@ -97,13 +98,14 @@ public class ZyzzyvaReplica extends LeaderBasedProtocolReplica {
             case FillHoleReply fillHoleReply -> {
                 handleFillHoleMessageReply(sender, fillHoleReply);
             }
-            // in progress
+            // done
             case CommitMessage commitmessage -> {
                 if (this.disgruntled) {
                     return;
                 }
                 handleCommitMessage(sender, commitmessage);
             }
+            // done
             case IHateThePrimaryMessage iHateThePrimaryMessage -> {
                 handleIHateThePrimaryMessage(sender, iHateThePrimaryMessage);
             }
@@ -111,7 +113,7 @@ public class ZyzzyvaReplica extends LeaderBasedProtocolReplica {
             case ViewChangeMessageWrapper viewChangeMessageWrapper -> {
                 handleViewChangeMessageWrapper(sender, viewChangeMessageWrapper);
             }
-
+            // done
             case ProofOfMisbehaviorMessage proofOfMisbehaviorMessage -> {
                 handleProofOfMisbehaviourMessage(sender, proofOfMisbehaviorMessage);
             }
@@ -258,6 +260,7 @@ public class ZyzzyvaReplica extends LeaderBasedProtocolReplica {
                 m.getTimestamp()
         );
         sr.sign(this.getNodeId());
+        this.getMessageLog().getSpeculativeResponses().put(orm.getSequenceNumber(), sr);
         return new SpeculativeResponseWrapper(sr, this.getNodeId(), m, orm);
     }
 
@@ -356,6 +359,7 @@ public class ZyzzyvaReplica extends LeaderBasedProtocolReplica {
     }
 
     private void handleFillHoleMessageReply(String sender, FillHoleReply fillHoleReply) {
+        /// TODO: add speculative replies to message log
         if (fillHoleReply.getOrderedRequestMessage().getViewNumber() != this.viewNumber) {
             log.warning("Received a fill hole reply with a different view number");
         } else {
@@ -407,7 +411,7 @@ public class ZyzzyvaReplica extends LeaderBasedProtocolReplica {
             log.warning("Received an invalid commit message");
             return;
         }
-        CommitCertificate cc = commitMessage.getCommitCertificate();
+        ClientCommitCertificate cc = commitMessage.getCommitCertificate();
         // We don't trust the client, so we check if everything matches
         SpeculativeResponse firstResponse = cc.getSpeculativeResponses().getFirst();
         // checks if the speculative responses are equal
@@ -418,7 +422,7 @@ public class ZyzzyvaReplica extends LeaderBasedProtocolReplica {
             }
         }
         // check if the history is consistent with the one certified by CC
-        if (firstResponse.getHistory() != this.getHistory().getLast()) {
+        if (firstResponse.getHistory() != this.getHistory().get(firstResponse.getSequenceNumber())) {
             log.warning("Received a commit certificate with an inconsistent history");
             if (cc.getSequenceNumber() > this.getHighestSequenceNumber() + 1) {
                 this.fillHole(firstResponse.getSequenceNumber());
@@ -429,24 +433,33 @@ public class ZyzzyvaReplica extends LeaderBasedProtocolReplica {
                 this.broadcastMessageIncludingSelf(ihtpm);
             }
         } else {
-            CommitCertificate currentCC = this.getMessageLog().getMaxCC();
-            if (currentCC == null || cc.getSequenceNumber() > currentCC.getSequenceNumber()) {
-                this.getMessageLog().setMaxCC(cc);
-            }
+            // if the history is consistent, then we commit the operation
+            this.handleCommitCertificate(cc);
         }
-        /// TODO: add the operations to the commit log
+    }
 
+    private void handleCommitCertificate(ClientCommitCertificate cc) {
+        CommitCertificate currentCC = this.getMessageLog().getMaxCC();
+        if (currentCC == null || cc.getSequenceNumber() > currentCC.getSequenceNumber()) {
+            long oldSeqNum = (currentCC != null) ? currentCC.getSequenceNumber() + 1 : 0;
+            for (long i = oldSeqNum; i < cc.getSequenceNumber(); i++) {
+                this.commitOperation(new SerializableLogEntry(this.getMessageLog().getOrderedMessages().get(i).getRequestMessage().getOperation()));
+            }
+            this.getMessageLog().setMaxCC(cc);
+        }
     }
 
     // done
-    private boolean isValidCommitCertificate(CommitCertificate cc) {
+    private boolean isValidCommitCertificate(ClientCommitCertificate cc) {
         if (cc.getSpeculativeResponses().isEmpty()) {
             log.warning("Received a commit certificate with no replicas");
             return false;
         }
 
-        if (cc.getReplicaIds().size() != this.getNodeIds().size()) {
-            log.warning("Received a commit certificate with an incorrect number of replicas");
+        if (cc.getReplicaIds().size() < 2 * this.faultsTolerated + 1) {
+            log.warning("Received a commit certificate with an incorrect number of replicas, " +
+                    "got " + cc.getReplicaIds().size() +
+                    " expected " + (2 * this.faultsTolerated + 1));
             return false;
         }
 
@@ -513,7 +526,6 @@ public class ZyzzyvaReplica extends LeaderBasedProtocolReplica {
             cc = this.getMessageLog().getMaxCC();
         }
 
-        // if there is a maxCC, then we send a view change message with the maxCC
         ViewChangeMessage vcm = new ViewChangeMessage(
                 this.viewNumber + 1,
                 cc,
@@ -527,10 +539,9 @@ public class ZyzzyvaReplica extends LeaderBasedProtocolReplica {
     }
 
     private void handleViewChangeMessageWrapper(String sender, ViewChangeMessageWrapper viewChangeMessageWrapper) {
-        /// TODO: make sure that it belongs to the same view because otherwise we could receive out of order view change messages
         ViewChangeMessage vcm = viewChangeMessageWrapper.getViewChangeMessage();
         long viewNumber = vcm.getViewNumber();
-        if (viewNumber != this.viewNumber + 1) {
+        if (viewNumber < this.viewNumber + 1) {
             log.warning("Received a view change message with an incorrect view number");
             return;
         }
@@ -549,7 +560,6 @@ public class ZyzzyvaReplica extends LeaderBasedProtocolReplica {
     /**
      * Corresponds to VC3 in the paper
      */
-
     private void viewChange(long viewNumber) {
         // primary logic
         if (this.computePrimaryId(viewNumber).equals(this.getNodeId())) {
@@ -583,19 +593,47 @@ public class ZyzzyvaReplica extends LeaderBasedProtocolReplica {
                         // if we have not received a new-view message, then we send a ihatetheprimary message
                         // we can check using the message log if we haven't received a new-view message for the last rounds
                         /// TODO: implement logic for setting timeout and new-view message
-
                     },
                     timeout
             );
-
         }
-
     }
 
     private void handleViewChange() {
-        /// TODO: deal with the message log, delete the ihatetheprimaries
         this.setViewNumber(this.getViewNumber() + 1);
+        this.getMessageLog().getIHateThePrimaries().clear();
+        this.getMessageLog().getFillHoleMessages().clear();
 
+        // Create a new CC
+        CommitCertificate maxCC = this.messageLog.getMaxCC();
+        ViewChangeCommitCertificate newCC;
+        if (maxCC != null) {
+            List<SpeculativeResponse> specResponses = this.getMessageLog().getSpeculativeResponseHistory(maxCC.getSequenceNumber());
+            newCC = new ViewChangeCommitCertificate(
+                    // max seq number
+                    specResponses.getLast().getSequenceNumber(),
+                    // view number
+                    this.getViewNumber(),
+                    // speculative responses
+                    specResponses,
+                    this.getNodeId()
+                    );
+            this.getMessageLog().setMaxCC(newCC);
+        } else {
+            List<SpeculativeResponse> specResponses = this.getMessageLog().getSpeculativeResponseHistory(0);
+            newCC = new ViewChangeCommitCertificate(
+                    // max seq number
+                    specResponses.getLast().getSequenceNumber(),
+                    // view number
+                    this.getViewNumber(),
+                    // speculative responses
+                    specResponses,
+                    this.getNodeId()
+            );
+        }
+        this.getMessageLog().setMaxCC(newCC);
+        this.getMessageLog().getOrderedMessages().clear();
+        this.getHistory().truncate();
     }
 
     /// TODO: Repair the history after receiving fillholes

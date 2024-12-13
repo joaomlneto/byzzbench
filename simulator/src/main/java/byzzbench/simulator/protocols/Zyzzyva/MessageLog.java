@@ -17,6 +17,9 @@ public class MessageLog implements Serializable {
     private final SortedMap<Long, OrderedRequestMessageWrapper> orderedMessages = new TreeMap<>();
 
     @Getter
+    private final SortedMap<Long, SpeculativeResponse> speculativeResponses = new TreeMap<>();
+
+    @Getter
     // ReplicaId, IHateThePrimaryMessage
     private final SortedMap<String, IHateThePrimaryMessage> iHateThePrimaries = new TreeMap<>();
 
@@ -55,5 +58,14 @@ public class MessageLog implements Serializable {
             orderedRequestHistory.add(this.orderedMessages.get(i));
         }
         return orderedRequestHistory;
+    }
+
+    public List<SpeculativeResponse> getSpeculativeResponseHistory(long index) {
+        long maxSeqNum = this.getSpeculativeResponses().pollLastEntry().getValue().getSequenceNumber();
+        List<SpeculativeResponse> speculativeResponseHistory = new ArrayList<>();
+        for (long i = index + 1; i <= maxSeqNum; i++) {
+            speculativeResponseHistory.add(this.speculativeResponses.get(i));
+        }
+        return speculativeResponseHistory;
     }
 }
