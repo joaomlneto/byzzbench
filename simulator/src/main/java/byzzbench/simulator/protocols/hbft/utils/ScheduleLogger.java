@@ -9,9 +9,15 @@ public class ScheduleLogger {
     private final String LOG_FOLDER_PATH = "../schedule-logs";
     private int currentRunNumber = 1;
     private File logFile = null;
+    private boolean shouldLog = true;
 
     // Clears and/or creates a folder every 
-    public void initialize() {
+    public void initialize(boolean shouldLog) {
+        this.shouldLog = shouldLog;
+        if (!shouldLog) {
+            return;
+        }
+
         File folder = new File(LOG_FOLDER_PATH);
         if (!folder.exists()) {
             folder.mkdirs(); // Ensure the folder exists
@@ -27,6 +33,10 @@ public class ScheduleLogger {
 
     // Write a log to a new file
     public void writeLog(String logContent) {
+        if (!this.shouldLog) {
+            return;
+        }
+
         if (logFile == null) {
             throw new IllegalStateException("Log file not initialized");
         }
