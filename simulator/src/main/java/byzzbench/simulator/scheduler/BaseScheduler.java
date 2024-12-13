@@ -13,6 +13,7 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -75,13 +76,21 @@ public abstract class BaseScheduler implements Scheduler {
     }
 
     /**
-     * Returns the queued timeout events in the scenario
+     * Returns the timeout events in the scenario that can be delivered.
      *
      * @param scenario The scenario
      * @return The list of timeout events
      */
     public List<TimeoutEvent> getQueuedTimeoutEvents(Scenario scenario) {
-        return getQueuedEventsOfType(scenario, TimeoutEvent.class);
+        List<TimeoutEvent> events = getQueuedEventsOfType(scenario, TimeoutEvent.class).stream()
+                .sorted(Comparator.comparing(TimeoutEvent::getExpiresAt))
+                .toList();
+        Map<String, TimeoutEvent> firstTimeoutForEachReplica = new HashMap<>();
+        for (TimeoutEvent event : events) {
+            firstTimeoutForEachReplica.putIfAbsent(event.getRecipientId(), event);
+        }
+
+        return events;
     }
 
     /**

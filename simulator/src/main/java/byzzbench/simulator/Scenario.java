@@ -99,6 +99,15 @@ public interface Scenario extends Serializable {
     SortedSet<String> getNodeIds(Node node);
 
     /**
+     * Return the set of replica IDs in the system visible to the given node.
+     * This excludes e.g. client nodes.
+     *
+     * @param node The node to get the replica IDs for.
+     * @return The set of replica IDs in the system visible to the given node.
+     */
+    SortedSet<String> getReplicaIds(Node node);
+
+    /**
      * Get the observers in the scenario.
      *
      * @return A list of observer objects.

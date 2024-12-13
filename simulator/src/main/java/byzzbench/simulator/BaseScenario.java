@@ -256,6 +256,11 @@ public abstract class BaseScenario implements Scenario {
     }
 
     @Override
+    public SortedSet<String> getReplicaIds(Node node) {
+        return new TreeSet<>(this.getReplicas().keySet());
+    }
+
+    @Override
     public NavigableMap<String, Client> getClients() {
         NavigableMap<String, Client> clients = new TreeMap<>();
         this.getNodes()
