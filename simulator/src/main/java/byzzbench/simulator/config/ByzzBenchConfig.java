@@ -26,6 +26,11 @@ public class ByzzBenchConfig {
     private boolean autostart = false;
 
     /**
+     * The number of scenarios to run at a time. Defaults to Integer.MAX_VALUE.
+     */
+    private int numScenarios = Integer.MAX_VALUE;
+
+    /**
      * The path to the output directory. Defaults to "./output".
      */
     private Path outputPath = Path.of("output");
