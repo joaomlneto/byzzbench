@@ -482,6 +482,7 @@ public class Transport {
                 .description(description)
                 .nodeId(replica.getId())
                 .timeout(timeout)
+                .expiresAt(replica.getCurrentTime().plus(timeout))
                 .task(runnable)
                 .build();
         this.appendEvent(timeoutEvent);
@@ -495,11 +496,13 @@ public class Transport {
 
     public synchronized long setClientTimeout(String clientId, Runnable runnable,
                            Duration timeout) {
+        Client client = getScenario().getClients().get(clientId);
         TimeoutEvent timeoutEvent = TimeoutEvent.builder()
                 .eventId(this.eventSeqNum.getAndIncrement())
                 .description("CLIENT TIMEOUT")
                 .nodeId(clientId)
                 .timeout(timeout)
+                .expiresAt(client.getCurrentTime().plus(timeout))
                 .task(runnable)
                 .build();
         this.appendEvent(timeoutEvent);
