@@ -6,6 +6,7 @@ import byzzbench.simulator.protocols.hbft.message.*;
 import byzzbench.simulator.protocols.hbft.pojo.ReplicaRequestKey;
 import byzzbench.simulator.protocols.hbft.pojo.ReplicaTicketPhase;
 import byzzbench.simulator.protocols.hbft.pojo.ViewChangeResult;
+import byzzbench.simulator.protocols.hbft.utils.ScheduleLogger;
 import byzzbench.simulator.state.LogEntry;
 import byzzbench.simulator.state.SerializableLogEntry;
 import byzzbench.simulator.state.TotalOrderCommitLog;
@@ -66,6 +67,8 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
     //@JsonIgnore
     private SpeculativeHistory speculativeHistory;
 
+    private ScheduleLogger logger = new ScheduleLogger();
+
     /**
      * The speculatively executed requests.
      * This is not the same as speuclative history.
@@ -100,6 +103,7 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
         this.messageLog = messageLog;
         this.speculativeHistory = new SpeculativeHistory();
         this.speculativeRequests = new TreeMap<>();
+        this.logger.initialize();
     }
 
     @Override
@@ -145,6 +149,7 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
     private void recvRequest(RequestMessage request, boolean wasRequestBuffered) {
         String clientId = request.getClientId();
         long timestamp = request.getTimestamp();
+        logger.writeLog(String.format("REQUEST from %s to %s with (timestamp: %d, request: %s)", clientId, this.getId(), timestamp, request.getOperation()));
 
         /*
          * At this stage, the request does not have a sequence number yet.
@@ -310,6 +315,7 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
      */
     // FIXME: For now, this will only be called once
     public void recvPanic(PanicMessage panic) {
+        logger.writeLog(String.format("PANIC from %s to %s with (timestamp: %d)", panic.getClientId(), this.getId(), panic.getTimestamp()));
         // If this replica didnt exectue the request,
         // it cannot accept the PANIC message
         if (!this.executedRequest(panic.getDigest()) || this.disgruntled) {
@@ -423,6 +429,12 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
     }
 
     public void recvPrepare(PrepareMessage prepare) {
+        logger.writeLog(String.format("PREPARE from %s to %s with (seqNum: %d, viewNum: %d, request: %s)", 
+            prepare.getSignedBy(),
+            this.getId(),
+            prepare.getSequenceNumber(),
+            prepare.getViewNumber(),
+            prepare.getRequest().getOperation()));
         if (!this.verifyPhaseMessage(prepare)) {
             return;
         }
@@ -523,6 +535,12 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
     }
 
     public void recvCommit(CommitMessage commit) {
+        logger.writeLog(String.format("COMMIT from %s to %s with (seqNum: %d, viewNum: %d, request: %s)", 
+            commit.getReplicaId(),
+            this.getId(),
+            commit.getSequenceNumber(),
+            commit.getViewNumber(),
+            commit.getRequest().getOperation()));
         Ticket<O, R> ticket = this.recvPhaseMessage(commit);
 
         if (ticket != null) {
@@ -701,6 +719,11 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
     }
 
     public void recvCheckpoint(CheckpointMessage checkpoint) {
+        logger.writeLog(String.format("%s from %s to %s with (seqNum: %d, history: " + checkpoint.getHistory() + ")", 
+            checkpoint.getType(),
+            checkpoint.getReplicaId(),
+            this.getId(),
+            checkpoint.getLastSeqNumber()));
         /*
          * Per hBFT 4.2, there is a 3 phase checkpoint subprotocol,
          * where the protocol starts with the primary sending Checkpoint-I message, 
@@ -896,6 +919,10 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
     }
 
     public void recvViewChange(ViewChangeMessage viewChange) {
+        logger.writeLog(String.format("VIEW-CHANGE from %s to %s with (newView: %d, P: " + viewChange.getSpeculativeHistoryP() + ", Q: " + viewChange.getSpeculativeHistoryQ() + ", R: " + viewChange.getRequestsR() + ")", 
+            viewChange.getReplicaId(),
+            this.getId(),
+            viewChange.getNewViewNumber()));
         long curViewNumber = this.getViewNumber();
         long newViewNumber = viewChange.getNewViewNumber();
         String newPrimaryId = this.getRoundRobinPrimaryId(newViewNumber);
@@ -958,6 +985,10 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
     }
 
     public void recvNewView(NewViewMessage newView) {
+        logger.writeLog(String.format("NEW-VIEW from %s to %s with (newView: %d, view-changes: " + newView.getViewChangeProofs() + ", Checkpoints: " + newView.getCheckpoint() + ", History: " + newView.getSpeculativeHistory() + ")", 
+            newView.getSignedBy(),
+            this.getId(),
+            newView.getNewViewNumber()));
         System.out.println(newView);
         /*
          * Probably non standard behaviour: hBFT does not state
