@@ -17,13 +17,13 @@ import byzzbench.simulator.state.adob.AdobCache;
 import byzzbench.simulator.state.adob.AdobDistributedState;
 import byzzbench.simulator.transport.Event;
 import byzzbench.simulator.transport.MailboxEvent;
+import byzzbench.simulator.utils.NonNull;
 import com.fasterxml.jackson.databind.JsonNode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.*;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 
 /**
  * REST API for interacting with the simulator.
@@ -458,25 +458,21 @@ public class SimulatorController {
      * @return The
      */
     @GetMapping("/saved-schedules")
-    public List<Integer> getNumSavedSchedules() {
-        return IntStream.range(0, scenarioService.getScenarios().size())
-                .boxed()
-                .toList();
-    }
-
-    /**
-     * Get the list of saved schedules.
-     *
-     * @return The list of saved schedules.
-     */
-    @GetMapping("/saved-schedules/buggy")
-    public List<Integer> getBuggyScheduleIds() {
+    public SavedSchedulesInfo getAllScheduleIds() {
         List<Scenario> scenarios = scenarioService.getScenarios();
-        return scenarios.stream()
-                .map(Scenario::getSchedule)
-                .filter(Schedule::isBuggy)
-                .map(scenarios::indexOf)
-                .toList();
+        synchronized (scenarios) {
+            List<Integer> buggySchedules = scenarios.stream()
+                    .filter(scenario -> scenario.getSchedule().isBuggy())
+                    .map(scenarios::indexOf)
+                    .toList();
+            List<Integer> correctSchedules = scenarios.stream()
+                    .filter(scenario -> !scenario.getSchedule().isBuggy())
+                    .map(scenarios::indexOf)
+                    .toList();
+            return new SavedSchedulesInfo(
+                    buggySchedules,
+                    correctSchedules);
+        }
     }
 
     /**
@@ -579,5 +575,9 @@ public class SimulatorController {
     @GetMapping("/config")
     public ByzzBenchConfig getConfig() {
         return byzzBenchConfig;
+    }
+
+    public record SavedSchedulesInfo(@NonNull List<Integer> buggySchedules,
+                                     @NonNull List<Integer> correctSchedules) {
     }
 }

@@ -97,6 +97,18 @@ To build and run the benchmarking suite, run the following command:
 ./gradlew bootRun
 ```
 
+### Configuring
+
+To configure the simulator, you can modify the [
+`application.properties` file](simulator/src/main/resources/application.yml) in the `simulator` module.
+
+It has two main subsections:
+
+- `scheduler`: The scheduler configuration: which scheduler to use, and its parameters such as the probability of
+  dropping messages.
+- `scenario`: The scenario configuration: which scenario to run, and its parameters such as conditions to stop the
+  simulation.
+
 ## Web Interface
 
 The web UI is a simple React application (using NextJS/TypeScript) that allows you to interact with the simulator. It is

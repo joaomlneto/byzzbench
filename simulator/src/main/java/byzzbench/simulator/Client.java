@@ -15,6 +15,7 @@ import java.io.Serializable;
 import java.time.Duration;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
@@ -191,6 +192,11 @@ public class Client implements Serializable, Node {
         // if (this.requestSequenceNumber.get() < this.maxRequests) {
         //     this.sendRequest();
         // }
+    }
+
+    @Override
+    public Instant getCurrentTime() {
+        return this.scenario.getTimekeeper().getTime(this);
     }
 
     /**

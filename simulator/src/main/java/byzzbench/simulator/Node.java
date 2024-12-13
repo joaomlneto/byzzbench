@@ -3,6 +3,7 @@ package byzzbench.simulator;
 import byzzbench.simulator.transport.MessagePayload;
 
 import java.io.Serializable;
+import java.time.Instant;
 
 /**
  * Represents a node in a distributed system, such as a client, a replica, or any other entity.
@@ -27,4 +28,9 @@ public interface Node extends Serializable {
      * @throws Exception if an error occurs while handling the message
      */
     void handleMessage(String sender, MessagePayload message) throws Exception;
+    
+    /**
+     * Get the current time from the timekeeper.
+     */
+    Instant getCurrentTime();
 }
