@@ -1,6 +1,7 @@
 package byzzbench.simulator.transport;
 
 import byzzbench.simulator.Client;
+import byzzbench.simulator.HbftClient;
 import byzzbench.simulator.Node;
 import byzzbench.simulator.Replica;
 import byzzbench.simulator.Scenario;
@@ -216,7 +217,12 @@ public class Transport {
 
         // deliver the reply directly to the client to handle
         Client c = this.scenario.getClients().get(recipient);
-        c.handleReply(sender, response, tolerance, seqNumber);
+        if (c instanceof HbftClient client) {
+            client.handleReply(sender, response, tolerance, seqNumber);
+        } else {
+            return;
+        }
+        
     }
 
     /**
