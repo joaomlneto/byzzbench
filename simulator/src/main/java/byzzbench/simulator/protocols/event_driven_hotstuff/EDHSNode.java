@@ -13,11 +13,11 @@ import java.util.Objects;
 public class EDHSNode {
     private String parentHash;
     private ClientRequest clientRequest;
-    private QuorumCertificate justify;
+    private EDHSQuorumCertificate justify;
     private int height;
     private String hash;
 
-    public EDHSNode(String parentHash, ClientRequest clientRequest, QuorumCertificate justify, int height) throws NoSuchAlgorithmException {
+    public EDHSNode(String parentHash, ClientRequest clientRequest, EDHSQuorumCertificate justify, int height) throws NoSuchAlgorithmException {
         this.parentHash = parentHash;
         this.clientRequest = clientRequest;
         this.justify = justify;

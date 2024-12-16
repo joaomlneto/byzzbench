@@ -1,9 +1,10 @@
 package byzzbench.simulator.protocols.event_driven_hotstuff;
 
+import byzzbench.simulator.protocols.event_driven_hotstuff.messages.NewViewMessage;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Getter;
 
-import java.security.NoSuchAlgorithmException;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 
@@ -11,61 +12,68 @@ import java.util.List;
 public class LeaderViewState {
     @JsonIgnore
     private final transient EDHotStuffReplica replica;
+    @JsonIgnore
+    private final transient EDHSPacemaker pacemaker;
     private final long viewNumber;
 
-    private EDHSNode previousNode;
-    private final HashSet<PartialSignature> signatures;
+    private final HashSet<Long> newViewMessages;
+    private final HashMap<String, HashSet<PartialSignature>> signatures;
     private boolean done;
+    private boolean madeQC;
 
     public LeaderViewState(EDHotStuffReplica replica, long viewNumber) {
         this.replica = replica;
+        this.pacemaker = replica.getPacemaker();
         this.viewNumber = viewNumber;
-        signatures = new HashSet<>();
+        signatures = new HashMap<>();
+        newViewMessages = new HashSet<>();
         done = false;
+        madeQC = false;
     }
 
-    private boolean hasPreviousNode() {
-        return previousNode != null;
+    public void addNewViewMessage(NewViewMessage message) {
+        if(message.getViewNumber() == viewNumber) newViewMessages.add(message.getViewNumber());
+        if(hasNewViewQuorum()) pacemaker.onNewViewQuorum();
     }
 
-    public void setPreviousNode(EDHSNode previousNode) {
-        if (hasPreviousNode()) return;
-        this.previousNode = previousNode;
-
-        createQCIfReady();
+    public boolean hasNewViewQuorum() {
+        return newViewMessages.size() >= replica.getMinValidVotes();
     }
 
     public void addSignature(PartialSignature signature) {
-        signatures.add(signature);
+        // TODO: make sure we have processed the node we collect votes on
+        if(!signatures.containsKey(signature.proposedNodeHash)) signatures.put(signature.proposedNodeHash, new HashSet<>());
+        HashSet<PartialSignature> signatureSet = signatures.get(signature.proposedNodeHash);
 
-        createQCIfReady();
-    }
+        signatureSet.add(signature);
 
-    public boolean isReady() {
-        if (!hasPreviousNode()) return false;
-        List<PartialSignature> filteredSignatures = signatures.stream().filter(s -> s.getProposedNodeHash().equals(previousNode.getHash())).toList();
-
-        return filteredSignatures.size() >= replica.getMinValidVotes();
-    }
-
-    public boolean isAbleToSend() {
-        return (!isDone()) && isReady();
+        makeQCIfReady();
     }
 
     public void setViewActionDone() {
         done = true;
     }
 
-    private void createQCIfReady() {
-        if (isReady()) {
-            String nodeHash = previousNode.getHash();
-            QuorumCertificate newQC = new QuorumCertificate(nodeHash, new QuorumSignature(signatures));
-            replica.updateHighQC(newQC);
+    public boolean hasMadeQC() { return madeQC; }
 
-            try {
-                replica.onBeat();
-            } catch (NoSuchAlgorithmException ignored) {
-            }
+    public HashSet<PartialSignature> getQuorumVotes() {
+        List<HashSet<PartialSignature>> quorumSets = signatures.values().stream().filter(signaturesSet -> signaturesSet.size() >= replica.getMinValidVotes()).toList();
+        if(quorumSets.isEmpty()) return null;
+
+        return quorumSets.getFirst();
+    }
+
+    private void makeQCIfReady() {
+        if(madeQC) return;
+
+        HashSet<PartialSignature> quorumVotes = getQuorumVotes();
+        if (quorumVotes != null) {
+            String quorumNodeHash = quorumVotes.iterator().next().getProposedNodeHash();
+            EDHSQuorumCertificate newQC = new EDHSQuorumCertificate(quorumNodeHash, new QuorumSignature(quorumVotes));
+            pacemaker.updateHighQC(newQC);
+            madeQC = true;
+
+            pacemaker.onNewQC();
         }
     }
 }

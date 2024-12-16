@@ -20,14 +20,14 @@ public class EDHotStuffReplica extends LeaderBasedProtocolReplica {
 
     @Getter
     int lastVoteHeight;
-    @Getter
-    EDHSNode leafNode;
+    //@Getter
+    //EDHSNode leafNode;
     @Getter
     EDHSNode lockedNode;
     @Getter
     EDHSNode execNode;
-    @Getter
-    QuorumCertificate highQC;
+    //@Getter
+    //QuorumCertificate highQC;
 
     @Getter
     HashMap<String, EDHSNode> hashNodeMap;
@@ -48,6 +48,9 @@ public class EDHotStuffReplica extends LeaderBasedProtocolReplica {
     @Getter
     ArrayList<String> debugLog;
 
+    @Getter
+    EDHSPacemaker pacemaker;
+
     public void log(String message) {
         debugLog.add(message);
         System.out.println("Replica " + getId() + ": " + message);
@@ -58,49 +61,27 @@ public class EDHotStuffReplica extends LeaderBasedProtocolReplica {
         this.replicaIds = replicaIds;
     }
 
-    public boolean isLeader(long viewNumber) {
-        String leaderId = getLeaderId(viewNumber);
-        return getId().equals(leaderId);
+    public EDHSNode getNode(String nodeHash) {
+        return hashNodeMap.get(nodeHash);
     }
 
-    public boolean isLeader() {
-        return isLeader(getViewNumber());
-    }
-
-    public String getLeaderId(long viewNumber) {
-        int leaderIndex = (int) (viewNumber % (replicaIds.size()));
-
-        return replicaIds.get(leaderIndex);
-    }
-
-    public Integer getHighQCHeight() {
-        EDHSNode node = hashNodeMap.get(highQC.getNodeHash());
-        if (node == null) return Integer.MIN_VALUE;
-        return node.getHeight();
+    public LeaderViewState getLeaderViewState(long viewNumber) {
+        if (!pacemaker.isLeader(viewNumber)) return null;
+        if (!leaderViewStateMap.containsKey(viewNumber))
+            leaderViewStateMap.put(viewNumber, new LeaderViewState(this, viewNumber));
+        return leaderViewStateMap.get(viewNumber);
     }
 
     public LeaderViewState getLeaderViewState() {
         return getLeaderViewState(getViewNumber());
     }
 
-    public LeaderViewState getLeaderViewState(long viewNumber) {
-        if (!isLeader(viewNumber)) return null;
-        if (!leaderViewStateMap.containsKey(viewNumber))
-            leaderViewStateMap.put(viewNumber, new LeaderViewState(this, viewNumber));
-        return leaderViewStateMap.get(viewNumber);
-    }
-
     public void nextView() {
-        //clearAllTimeouts();
-
         long nextViewNumber = getViewNumber() + 1;
-        String nextLeaderId = getLeaderId(nextViewNumber);
+        String nextLeaderId = pacemaker.getLeaderId(nextViewNumber);
         setView(nextViewNumber, nextLeaderId);
 
-        sendMessage(new NewViewMessage(getViewNumber(), highQC), nextLeaderId);
-
         log("View change. This is view " + getViewNumber());
-        //setTimeout(this::nextView, 30000);
     }
 
     public int getMinValidVotes() {
@@ -124,39 +105,41 @@ public class EDHotStuffReplica extends LeaderBasedProtocolReplica {
         pendingProposals = new PriorityQueue<>(messageComparator);
 
         try {
-            QuorumCertificate genesisQC0 = new QuorumCertificate("GENESIS", new QuorumSignature(new HashSet<>()));
+            EDHSQuorumCertificate genesisQC0 = new EDHSQuorumCertificate("GENESIS", new QuorumSignature(new HashSet<>()));
             EDHSNode genesisNode0 = new EDHSNode("GENESIS", new ClientRequest("GENESIS", "GENESIS", "GENESIS"), genesisQC0, -3);
             hashNodeMap.put(genesisNode0.getHash(), genesisNode0);
             System.out.println("GENESIS 0 HASH: " + genesisNode0.getHash());
 
-            QuorumCertificate genesisQC1 = new QuorumCertificate(genesisNode0.getHash(), new QuorumSignature(new HashSet<>()));
+            EDHSQuorumCertificate genesisQC1 = new EDHSQuorumCertificate(genesisNode0.getHash(), new QuorumSignature(new HashSet<>()));
             EDHSNode genesisNode1 = new EDHSNode(genesisNode0.getHash(), new ClientRequest("GENESIS", "GENESIS", "GENESIS"), genesisQC1, -2);
             hashNodeMap.put(genesisNode1.getHash(), genesisNode1);
             System.out.println("GENESIS 1 HASH: " + genesisNode1.getHash());
 
-            QuorumCertificate genesisQC2 = new QuorumCertificate(genesisNode1.getHash(), new QuorumSignature(new HashSet<>()));
+            EDHSQuorumCertificate genesisQC2 = new EDHSQuorumCertificate(genesisNode1.getHash(), new QuorumSignature(new HashSet<>()));
             EDHSNode genesisNode2 = new EDHSNode(genesisNode1.getHash(), new ClientRequest("GENESIS", "GENESIS", "GENESIS"), genesisQC2, -1);
             hashNodeMap.put(genesisNode2.getHash(), genesisNode2);
             System.out.println("GENESIS 2 HASH: " + genesisNode2.getHash());
 
-            QuorumCertificate genesisQC3 = new QuorumCertificate(genesisNode2.getHash(), new QuorumSignature(new HashSet<>()));
+            EDHSQuorumCertificate genesisQC3 = new EDHSQuorumCertificate(genesisNode2.getHash(), new QuorumSignature(new HashSet<>()));
             EDHSNode genesisNode3 = new EDHSNode(genesisNode2.getHash(), new ClientRequest("GENESIS", "GENESIS", "GENESIS"), genesisQC3, 0);
             hashNodeMap.put(genesisNode3.getHash(), genesisNode3);
             System.out.println("GENESIS 3 HASH: " + genesisNode3.getHash());
 
-            QuorumCertificate genesisQC4 = new QuorumCertificate(genesisNode3.getHash(), new QuorumSignature(new HashSet<>()));
+            EDHSQuorumCertificate genesisQC4 = new EDHSQuorumCertificate(genesisNode3.getHash(), new QuorumSignature(new HashSet<>()));
 
-            leafNode = genesisNode3;
-            lockedNode = genesisNode2;
             execNode = genesisNode1;
-            highQC = genesisQC4;
+            lockedNode = genesisNode2;
+            //leafNode = genesisNode3;
+            //highQC = genesisQC4;
+            this.pacemaker = new EDHSPacemaker(this, genesisNode3, genesisQC4);
+
             lastVoteHeight = 0;
 
             nextView();
 
             LeaderViewState firstLeaderState = getLeaderViewState();
             if (firstLeaderState != null) {
-                firstLeaderState.setPreviousNode(genesisNode3);
+                //firstLeaderState.setPreviousNode(genesisNode3);
                 replicaIds.forEach(rId -> firstLeaderState.addSignature(new PartialSignature(rId, genesisNode3.getHash())));
             }
 
@@ -171,7 +154,7 @@ public class EDHotStuffReplica extends LeaderBasedProtocolReplica {
             log("Received client request");
 
             pendingRequests.add((ClientRequest) request);
-            onBeat();
+            pacemaker.onClientRequest();
         }
 
     }
@@ -182,7 +165,7 @@ public class EDHotStuffReplica extends LeaderBasedProtocolReplica {
             case DefaultClientRequestPayload clientRequest -> handleClientRequest(sender, clientRequest.getOperation());
             case NewViewMessage newViewMessage -> onReceiveNewView(newViewMessage);
             case GenericVote genericVote -> onReceiveVote(genericVote);
-            case GenericMessage genericMessage -> onReceiveProposal(genericMessage);
+            case GenericMessage genericMessage -> rememberProposal(genericMessage);
             default -> throw new IllegalStateException("Message type not supported.");
         }
     }
@@ -190,20 +173,24 @@ public class EDHotStuffReplica extends LeaderBasedProtocolReplica {
     // NEW-VIEW
     private void onReceiveNewView(NewViewMessage newViewMessage) {
         log("Received NEW-VIEW message");
-        updateHighQC((newViewMessage).getJustify());
+        pacemaker.onReceiveNewView(newViewMessage);
+
+        long newViewNumber = newViewMessage.getViewNumber();
+        LeaderViewState leaderViewState = getLeaderViewState(newViewNumber);
+        if(leaderViewState != null) leaderViewState.addNewViewMessage(newViewMessage);
     }
 
     // GENERIC
-    private void onReceiveProposal(GenericMessage proposal) {
+    private void rememberProposal(GenericMessage proposal) {
         long proposalView = proposal.getViewNumber();
 
         log("Received GENERIC message for view " + proposalView + ", current view is " + getViewNumber());
 
         if (proposalView == getViewNumber()) {
-            processProposal(proposal);
+            onReceiveProposal(proposal);
             while (pendingProposals.peek() != null && pendingProposals.peek().getViewNumber() <= getViewNumber()) {
                 GenericMessage nextProposal = pendingProposals.poll();
-                if (nextProposal.getViewNumber() == getViewNumber()) processProposal(nextProposal);
+                if (nextProposal.getViewNumber() == getViewNumber()) onReceiveProposal(nextProposal);
             }
         } else if (proposalView > getViewNumber()) {
             log("Saving proposal for a future view");
@@ -212,15 +199,16 @@ public class EDHotStuffReplica extends LeaderBasedProtocolReplica {
 
     }
 
-    private void processProposal(GenericMessage proposal) {
-        // viewChange
-        nextView();
-
+    private void onReceiveProposal(GenericMessage proposal) {
         EDHSNode proposedNode = proposal.getNode();
         hashNodeMap.put(proposedNode.getHash(), proposedNode);
 
-        ClientRequest clientRequest = proposedNode.getClientRequest();
+        // viewChange
+        // TODO make sure proposal is valid
+        nextView();
 
+        // Remember client request to avoid duplicates
+        ClientRequest clientRequest = proposedNode.getClientRequest();
         log("Processing proposal with height " + proposedNode.getHeight() + " for request " + clientRequest.getRequestId());
         if (commitedRequests.contains(clientRequest)) {
             log("Received proposal of already commited request. RequestId: " + clientRequest.getRequestId());
@@ -235,26 +223,30 @@ public class EDHotStuffReplica extends LeaderBasedProtocolReplica {
         }
         requestNodeMap.put(clientRequest, proposedNode);
 
-        // update procedure
-        EDHSNode node2 = hashNodeMap.get(proposedNode.getJustify().getNodeHash());
-        EDHSNode node1 = hashNodeMap.get(node2.getJustify().getNodeHash());
-        EDHSNode node0 = hashNodeMap.get(node1.getJustify().getNodeHash());
-        //
-
         // vote
+        EDHSNode node2 = hashNodeMap.get(proposedNode.getJustify().getNodeHash());
         if ((proposedNode.getHeight() > lastVoteHeight) && ((proposedNode.isExtensionOf(lockedNode, hashNodeMap)) || (node2.getHeight() > lockedNode.getHeight()))) {
             lastVoteHeight = proposedNode.getHeight();
             long voteView = proposal.getViewNumber() + 1;
-            sendMessage(new GenericVote(voteView, proposedNode, getId()), getLeaderId(voteView));
+            sendMessage(new GenericVote(voteView, proposedNode, getId()), pacemaker.getLeaderId(voteView));
             log("Sent vote for node " + proposedNode.getHash() + " with height " + proposedNode.getHeight());
         } else {
             log("Deciding NOT to vote for node " + proposedNode.getHash() + " with height " + proposedNode.getHeight());
         }
 
-        // update procedure
+        update(proposedNode);
+
+        /*LeaderViewState leaderViewState = getLeaderViewState();
+        if (leaderViewState != null) leaderViewState.setPreviousNode(proposedNode);*/
+    }
+
+    private void update(EDHSNode proposedNode) {
+        EDHSNode node2 = hashNodeMap.get(proposedNode.getJustify().getNodeHash());
+        EDHSNode node1 = hashNodeMap.get(node2.getJustify().getNodeHash());
+        EDHSNode node0 = hashNodeMap.get(node1.getJustify().getNodeHash());
 
         // PRE-COMMIT
-        updateHighQC(proposedNode.getJustify());
+        pacemaker.updateHighQC(proposedNode.getJustify());
         // COMMIT
         if (node1.getHeight() > lockedNode.getHeight()) {
             lockedNode = node1;
@@ -266,10 +258,6 @@ public class EDHotStuffReplica extends LeaderBasedProtocolReplica {
             execNode = node0;
             log("DECIDE. node " + node0.getHash() + " with height " + node0.getHeight());
         }
-
-        LeaderViewState leaderViewState = getLeaderViewState();
-        if (leaderViewState != null) leaderViewState.setPreviousNode(proposedNode);
-
     }
 
     private void onCommit(EDHSNode node) {
@@ -280,18 +268,10 @@ public class EDHotStuffReplica extends LeaderBasedProtocolReplica {
             log("Commiting node " + node.getHash() + " with height " + node.getHeight() + ", clientRequest " + node.getClientRequest().getRequestId());
 
             ClientRequest clientRequest = node.getClientRequest();
-            if (isLeader() && !clientRequest.getClientId().equals("GENESIS")) {
+            if (pacemaker.isLeader() && !clientRequest.getClientId().equals("GENESIS")) {
                 sendReplyToClient(clientRequest);
             }
         }
-    }
-
-    public void sendReplyToClient(ClientRequest clientRequest) {
-        String requestId = clientRequest.getRequestId();
-        ClientReply clientReply = new ClientReply(getId(), requestId, "Reply to: " + requestId);
-        sendReplyToClient(clientRequest.getClientId(), clientReply);
-
-        log("Sent reply (" + requestId + ") to client " + clientRequest.getClientId());
     }
 
     // GENERIC-VOTE
@@ -308,20 +288,23 @@ public class EDHotStuffReplica extends LeaderBasedProtocolReplica {
         leaderViewState.addSignature(vote.getPartialSignature());
     }
 
-    public void updateHighQC(QuorumCertificate newQC) {
-        if (newQC.equals(highQC)) return;
-
-        EDHSNode newQCNode = hashNodeMap.get(newQC.getNodeHash());
-        EDHSNode highQCNode = hashNodeMap.get(highQC.getNodeHash());
-
-        if (newQCNode.getHeight() > highQCNode.getHeight()) {
-            log("Updating highQC with QC for node " + newQCNode.getHash() + " with height " + newQCNode.getHeight());
-            highQC = newQC;
-            leafNode = newQCNode;
-        }
+    public EDHSNode onPropose(EDHSNode leaf, ClientRequest clientRequest, EDHSQuorumCertificate highQC) throws NoSuchAlgorithmException {
+        EDHSNode newNode = new EDHSNode(leaf.getHash(), clientRequest, highQC, leaf.getHeight() + 1);
+        hashNodeMap.put(newNode.getHash(), newNode);
+        requestNodeMap.put(clientRequest, newNode);
+        broadcastToAllReplicas(new GenericMessage(getViewNumber(), newNode));
+        return newNode;
     }
 
-    private ClientRequest nextClientRequest() {
+    public void sendReplyToClient(ClientRequest clientRequest) {
+        String requestId = clientRequest.getRequestId();
+        ClientReply clientReply = new ClientReply(getId(), requestId, "Reply to: " + requestId);
+        sendReplyToClient(clientRequest.getClientId(), clientReply);
+
+        log("Sent reply (" + requestId + ") to client " + clientRequest.getClientId());
+    }
+
+    public ClientRequest nextClientRequest() {
         ClientRequest clientRequest = pendingRequests.poll();
         if (clientRequest == null) return null;
 
@@ -337,31 +320,6 @@ public class EDHotStuffReplica extends LeaderBasedProtocolReplica {
         }
 
         return clientRequest;
-    }
-
-    public void onBeat() throws NoSuchAlgorithmException {
-        LeaderViewState viewState = getLeaderViewState();
-        if (viewState == null) {
-            log("Cannot create proposal. Not leader for view " + getViewNumber());
-            return;
-        }
-
-        if (viewState.isAbleToSend()) {
-            ClientRequest clientRequest = nextClientRequest();
-            if (clientRequest != null) {
-                leafNode = proposeNext(leafNode, clientRequest, highQC);
-                viewState.setViewActionDone();
-                log("Created proposal with height " + leafNode.getHeight() + " for request " + clientRequest.getRequestId());
-            } else log("Cannot create proposal. No known client requests.");
-        } else log("Cannot create proposal. QC not ready.");
-    }
-
-    private EDHSNode proposeNext(EDHSNode leaf, ClientRequest clientRequest, QuorumCertificate highQC) throws NoSuchAlgorithmException {
-        EDHSNode newNode = new EDHSNode(leaf.getHash(), clientRequest, highQC, leaf.getHeight() + 1);
-        hashNodeMap.put(newNode.getHash(), newNode);
-        requestNodeMap.put(clientRequest, newNode);
-        broadcastToAllReplicas(new GenericMessage(getViewNumber(), newNode));
-        return newNode;
     }
 
     private void broadcastToAllReplicas(AbstractMessage message) {

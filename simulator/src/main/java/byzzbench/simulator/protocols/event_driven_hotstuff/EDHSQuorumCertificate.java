@@ -7,11 +7,11 @@ import java.io.Serializable;
 
 @Getter
 @EqualsAndHashCode
-public class QuorumCertificate implements Serializable {
+public class EDHSQuorumCertificate implements Serializable {
     private String nodeHash;
     private QuorumSignature signature;
 
-    public QuorumCertificate(String nodeHash, QuorumSignature signature) {
+    public EDHSQuorumCertificate(String nodeHash, QuorumSignature signature) {
         this.nodeHash = nodeHash;
         this.signature = signature;
     }
