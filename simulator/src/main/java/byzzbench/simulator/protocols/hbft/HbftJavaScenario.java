@@ -40,7 +40,7 @@ public class HbftJavaScenario extends BaseScenario {
                 Replica replica = new HbftJavaReplica<String, String>(nodeId, nodeIds, 1, 2, messageLog, this);
                 this.addNode(replica);
             });
-            this.setNumClients(1);
+            this.setNumHbftClients(1);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
