@@ -48,6 +48,10 @@ public abstract class LeaderBasedProtocolReplica extends Replica {
      * @return The ID of the primary replica.
      */
     public String getRoundRobinPrimaryId() {
+        if (this.viewNumber < 0) {
+            throw new IllegalStateException("View number has not yet been set!");
+        }
+
         return this.getRoundRobinPrimaryId(this.viewNumber);
     }
 
@@ -58,6 +62,10 @@ public abstract class LeaderBasedProtocolReplica extends Replica {
      * @return The ID of the primary replica.
      */
     public String getRoundRobinPrimaryId(long view) {
+        if (view < 0) {
+            throw new IllegalStateException("Invalid view number: " + view);
+        }
+
         List<String> sortedNodeIds = new ArrayList<>(this.getScenario().getReplicaIds(this));
         int numNodes = sortedNodeIds.size();
         return sortedNodeIds.get((int) (view % numNodes));
