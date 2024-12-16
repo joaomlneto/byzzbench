@@ -146,4 +146,14 @@ public interface Scenario extends Serializable {
      * @return True if the invariants hold, false otherwise.
      */
     boolean invariantsHold();
+
+    /**
+     * Create a copy of a replica.
+     *
+     * @param replica The replica to clone.
+     * @return A copy of the replica.
+     */
+    default Replica cloneReplica(Replica replica) {
+        throw new UnsupportedOperationException("Not implemented!");
+    }
 }
