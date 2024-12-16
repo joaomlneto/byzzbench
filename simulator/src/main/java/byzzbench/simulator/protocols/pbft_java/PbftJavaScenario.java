@@ -30,26 +30,28 @@ public class PbftJavaScenario extends BaseScenario {
 
     @Override
     protected void setup() {
-        try {
-            SortedSet<String> nodeIds = new TreeSet<>();
-            for (int i = 0; i < numReplicas; i++) {
-                nodeIds.add(Character.toString((char) ('A' + i)));
-            }
-
-            nodeIds.forEach(nodeId -> {
-                MessageLog messageLog = new MessageLog(100, 100, 200);
-                Replica replica = new PbftJavaReplica<String, String>(nodeId, this, 1, 1000, messageLog);
-                this.addNode(replica);
-            });
-
-            this.setNumClients(1);
-        } catch (Exception e) {
-            throw new RuntimeException(e);
+        SortedSet<String> nodeIds = new TreeSet<>();
+        for (int i = 0; i < numReplicas; i++) {
+            nodeIds.add(Character.toString((char) ('A' + i)));
         }
+
+        nodeIds.forEach(nodeId -> {
+            MessageLog messageLog = new MessageLog(100, 100, 200);
+            Replica replica = new PbftJavaReplica<String, String>(nodeId, this, 1, 1000, messageLog);
+            this.addNode(replica);
+        });
+
+        this.setNumClients(1);
     }
 
     @Override
     public synchronized void run() {
         // nothing to do
+    }
+
+    @Override
+    public Replica cloneReplica(Replica replica) {
+        MessageLog messageLog = new MessageLog(100, 100, 200);
+        return new PbftJavaReplica<String, String>(replica.getId(), this, 1, 1000, messageLog);
     }
 }
