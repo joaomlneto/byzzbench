@@ -58,7 +58,7 @@ public abstract class LeaderBasedProtocolReplica extends Replica {
      * @return The ID of the primary replica.
      */
     public String getRoundRobinPrimaryId(long view) {
-        List<String> sortedNodeIds = new ArrayList<>(this.getScenario().getNodeIds(this));
+        List<String> sortedNodeIds = new ArrayList<>(this.getScenario().getReplicaIds(this));
         int numNodes = sortedNodeIds.size();
         return sortedNodeIds.get((int) (view % numNodes));
     }
