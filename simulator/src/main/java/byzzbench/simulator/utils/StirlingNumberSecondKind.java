@@ -66,7 +66,7 @@ public class StirlingNumberSecondKind {
      * @param elements the elements to partition
      * @param k        the number of non-empty subsets
      * @param <T>      the type of the elements
-     * @return k partitions of the elements
+     * @return all possible partitions of the elements into k non-empty subsets
      */
     public static <T> List<List<List<T>>> getPartitions(List<T> elements, int k) {
         // initialize result
@@ -85,6 +85,24 @@ public class StirlingNumberSecondKind {
     }
 
     /**
+     * Generate all possible partitions of the elements into non-empty subsets.
+     *
+     * @param elements the elements to partition
+     * @param <T>      the type of the elements
+     * @return all possible partitions of the elements
+     */
+    public static <T> List<List<List<T>>> getPartitions(List<T> elements) {
+        // initialize result
+        List<List<List<T>>> result = new ArrayList<>();
+
+        for (int k = 1; k <= elements.size(); k++) {
+            result.addAll(getPartitions(elements, k));
+        }
+
+        return result;
+    }
+
+    /**
      * Recursive helper function to compute partitions.
      */
     private static <T> void getPartitions(
@@ -95,9 +113,8 @@ public class StirlingNumberSecondKind {
             int empty,
             int n,
             int m,
-            int lastfilled) {
+            int lastFilled) {
         if (m == n) {
-            //System.out.println("m == n: " + parts);
             List<List<T>> partition = new ArrayList<>();
             for (List<T> part : parts) {
                 partition.add(new ArrayList<>(part));
@@ -107,12 +124,12 @@ public class StirlingNumberSecondKind {
         }
         int start = (n - m == empty) ? (k - empty) : 0;
 
-        for (int i = start; i < Math.min(k, lastfilled + 2); i++) {
+        for (int i = start; i < Math.min(k, lastFilled + 2); i++) {
             parts.get(i).add(elements.get(m));
             if (parts.get(i).size() == 1) {
                 empty -= 1;
             }
-            getPartitions(result, parts, elements, k, empty, n, m + 1, Math.max(i, lastfilled));
+            getPartitions(result, parts, elements, k, empty, n, m + 1, Math.max(i, lastFilled));
             parts.get(i).removeLast();
             if (parts.get(i).isEmpty()) {
                 empty += 1;
