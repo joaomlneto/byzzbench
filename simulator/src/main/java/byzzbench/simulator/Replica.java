@@ -230,8 +230,6 @@ public abstract class Replica implements Serializable, Node {
      * @param newLeaderId the new leader ID
      */
     public void notifyObserversLeaderChange(String newLeaderId) {
-        System.out.println("Notifying observers of leader change: " + newLeaderId);
-        System.out.println("Observers: " + this.observers);
         this.observers.forEach(observer -> observer.onLeaderChange(this, newLeaderId));
     }
 
