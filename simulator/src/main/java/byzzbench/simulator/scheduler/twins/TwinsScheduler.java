@@ -34,9 +34,6 @@ public class TwinsScheduler extends RandomScheduler {
         Replica replica = scenario.getReplicas().firstEntry().getValue();
         log.info("Creating " + numReplicas + " twins for replica " + replica.getId());
         scenario.getNodes().put(replica.getId(), new TwinsReplica(replica, numReplicas));
-
-        // print replica class names
-        scenario.getReplicas().forEach((id, r) -> log.info("Replica " + id + " is of class " + r.getClass().getName()));
     }
 
     @Override
