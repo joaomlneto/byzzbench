@@ -15,7 +15,6 @@ import java.util.TreeSet;
  */
 @Log
 public class PbftJavaScenario extends BaseScenario {
-    private final PbftTerminationPredicate terminationCondition;
     private final int numReplicas = 4;
 
     public PbftJavaScenario(Scheduler scheduler) {
