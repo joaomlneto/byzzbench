@@ -94,7 +94,7 @@ public abstract class Replica implements Serializable, Node {
      */
     public void sendMessage(MessagePayload message, String recipient) {
         message.sign(this.id);
-        this.transport.sendMessage(this.id, message, recipient);
+        this.transport.sendMessage(this, message, recipient);
     }
 
     /**
@@ -105,7 +105,7 @@ public abstract class Replica implements Serializable, Node {
      */
     public void multicastMessage(MessagePayload message, SortedSet<String> recipients) {
         message.sign(this.id);
-        this.transport.multicast(this.id, recipients, message);
+        this.transport.multicast(this, recipients, message);
     }
 
     /**
@@ -119,7 +119,7 @@ public abstract class Replica implements Serializable, Node {
                 .collect(java.util.stream.Collectors.toCollection(TreeSet::new));
 
         message.sign(this.id);
-        this.transport.multicast(this.id, otherNodes, message);
+        this.transport.multicast(this, otherNodes, message);
     }
 
     /**
@@ -129,7 +129,7 @@ public abstract class Replica implements Serializable, Node {
      */
     public void broadcastMessageIncludingSelf(MessagePayload message) {
         message.sign(this.id);
-        this.transport.multicast(this.id, this.getNodeIds(), message);
+        this.transport.multicast(this, this.getNodeIds(), message);
     }
 
     /**
