@@ -56,6 +56,8 @@ public class TendermintReplica extends LeaderBasedProtocolReplica {
 
     public static final Block NULL_BLOCK = new Block(Long.MIN_VALUE, Long.MIN_VALUE, Long.MIN_VALUE, "NULL VALUE", null);
 
+    public final int TIMEOUT = 5;
+
 
     public TendermintReplica(String nodeId, SortedSet<String> nodeIds, Scenario scenario) {
         // Initialize replica with node ID, a list of other nodes, transport, and a commit log
@@ -641,7 +643,7 @@ public class TendermintReplica extends LeaderBasedProtocolReplica {
      * 18: proposal ← getV alue()
      * 19: broadcast ⟨PROPOSAL, hp, roundp, proposal, validRoundp⟩
      * 20: else
-     * 21: schedule OnTimeoutPropose(hp, roundp) to be executed after timeoutP ropose(roundp)
+     * 21: schedule OnTimeoutPropose(hp, roundp) to be executed after timeoutPropose(roundp)
      *
      * @param roundNumber The round number to start.
      */
@@ -661,8 +663,7 @@ public class TendermintReplica extends LeaderBasedProtocolReplica {
             if (proposal != null)
                 broadcastProposal(height, round, proposal, validRound);
         } else {
-            // WARNING: this only will work when the timeout is implemented
-            // onTimeoutPropose(height, round);
+            this.setTimeout("Timeout Propose", this::onTimeoutPropose(height, round), this.TIMEOUT);
         }
 
     }
