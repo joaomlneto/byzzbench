@@ -6,14 +6,13 @@ import byzzbench.simulator.protocols.tendermint.message.ReplyMessage;
 import byzzbench.simulator.protocols.tendermint.message.RequestMessage;
 import byzzbench.simulator.protocols.tendermint.message.*;
 import byzzbench.simulator.state.TotalOrderCommitLog;
-import byzzbench.simulator.transport.DefaultClientReplyPayload;
 import byzzbench.simulator.transport.DefaultClientRequestPayload;
 import byzzbench.simulator.transport.MessagePayload;
-import byzzbench.simulator.transport.Transport;
 
 
 import java.io.Serializable;
 import java.util.*;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import lombok.Getter;
@@ -155,6 +154,7 @@ public class TendermintReplica extends LeaderBasedProtocolReplica {
                 if (getCommitLog().get((int) height) == null && valid(proposal.getBlock())) {
                     log.info("Committing block: " + proposal.getBlock());
                     commitOperation(proposal.getBlock());
+                    messageLog.removeRequest(proposal.getBlock());
                     ReplyMessage replyMessage = new ReplyMessage(
                             this.height,
                             proposal.getBlock().getRequestMessage().getTimestamp(),
@@ -165,7 +165,7 @@ public class TendermintReplica extends LeaderBasedProtocolReplica {
                     sendReply(proposal.getBlock().getRequestMessage().getClientId(), replyMessage);
                     height++;
                     reset();
-                    startRound(0, null);
+                    startRound(0);
                 }
             }
         }
@@ -183,7 +183,6 @@ public class TendermintReplica extends LeaderBasedProtocolReplica {
         this.enoughPrecommitsCheck = true;
         this.preVoteFirstTime = true;
         this.prevoteOrMoreFirstTime = true;
-        this.messageLog = new MessageLog(this);
     }
 
     /**
@@ -498,6 +497,7 @@ public class TendermintReplica extends LeaderBasedProtocolReplica {
                 if (matchingProposal != null) {
                     if (getCommitLog().get((int) height) == null && valid(precommit.getBlock())) {
                         commitOperation(precommit.getBlock());
+                        messageLog.removeRequest(precommit.getBlock());
                         log.info("Committing block: " + precommit.getBlock());
                         ReplyMessage replyMessage = new ReplyMessage(
                                 this.height,
@@ -509,7 +509,7 @@ public class TendermintReplica extends LeaderBasedProtocolReplica {
                         sendReply(matchingProposal.getBlock().getRequestMessage().getClientId(), replyMessage);
                         height++;
                         reset();
-//                        startRound(0, null);
+                        startRound(0);
                     }
                 }
             }
@@ -529,7 +529,7 @@ public class TendermintReplica extends LeaderBasedProtocolReplica {
 
     private void onTimeoutPrecommit(long height, long round) {
         if (this.height == height && this.round == round && this.step == Step.PRECOMMIT) {
-            startRound(this.round + 1, null);
+            startRound(this.round + 1);
         }
     }
 
@@ -548,7 +548,7 @@ public class TendermintReplica extends LeaderBasedProtocolReplica {
      */
     protected boolean validateMessage(MessagePayload message) {
         // Check if the message type matches a known type
-        if (!(message instanceof ProposalMessage || message instanceof PrevoteMessage || message instanceof PrecommitMessage || message instanceof GossipMessage || message instanceof DefaultClientRequestPayload || message instanceof PassOnRequest)) {
+        if (!(message instanceof ProposalMessage || message instanceof PrevoteMessage || message instanceof PrecommitMessage || message instanceof GossipMessage || message instanceof DefaultClientRequestPayload || message instanceof GossipRequest)) {
             log.warning("Unknown message type: " + message.getType());
             return true;
         }
@@ -576,10 +576,10 @@ public class TendermintReplica extends LeaderBasedProtocolReplica {
     @Override
     public void handleMessage(String sender, MessagePayload message) throws Exception {
         if (message instanceof DefaultClientRequestPayload) {
-            receiveRequest(sender, (DefaultClientRequestPayload) message);
+            receiveRequest(sender, new RequestMessage(((DefaultClientRequestPayload) message).getOperation(), System.currentTimeMillis(), message.getSignedBy()));
             return;
-        } else if (message instanceof PassOnRequest) {
-            handlePassOnRequest((PassOnRequest) message);
+        } else if (message instanceof GossipRequest) {
+            handleGossipRequest((GossipRequest) message);
             return;
         }
         if (validateMessage(message)) {
@@ -592,7 +592,7 @@ public class TendermintReplica extends LeaderBasedProtocolReplica {
             assert message instanceof GenericMessage;
             if (messageLog.fPlus1MessagesInRound((GenericMessage) message, round)) {
                 GenericMessage m = (GenericMessage) message;
-                startRound(m.getRound(), null);
+                startRound(m.getRound());
             } else {
                 if (message instanceof ProposalMessage) {
                     handleProposal((ProposalMessage) message);
@@ -608,8 +608,8 @@ public class TendermintReplica extends LeaderBasedProtocolReplica {
         }
     }
 
-    private void handlePassOnRequest(PassOnRequest message) {
-        messageLog.bufferRequest(message);
+    private void handleGossipRequest(GossipRequest message) {
+        messageLog.bufferRequest(message.getRequest());
     }
 
     private void handleGossipMessage(GossipMessage message) {
@@ -618,7 +618,7 @@ public class TendermintReplica extends LeaderBasedProtocolReplica {
             return;
         }
         if (messageLog.fPlus1MessagesInRound(message.getGossipMessage(), round)) {
-            startRound(message.getGossipMessage().getRound(), null);
+            startRound(message.getGossipMessage().getRound());
         }
         switch (message.getGossipMessage()) {
             case ProposalMessage proposalMessage -> handleProposal(proposalMessage);
@@ -645,28 +645,21 @@ public class TendermintReplica extends LeaderBasedProtocolReplica {
      *
      * @param roundNumber The round number to start.
      */
-    private void startRound(long roundNumber, RequestMessage m) {
+    private void startRound(long roundNumber) {
         log.info(this.getId() + ": START ROUND CALLED: " + roundNumber);
         this.setView(height, roundNumber);
         this.round = roundNumber;
         step = Step.PROPOSE;
         Block proposal = new Block(height, round, messageLog.getMessageCount() + 1, null, null);
-        log.info("message" + m);
         if (this.getLeaderId().equals(getId())) {
-            if (validValue != null && m == null) {
+            if (validValue != null) {
                 proposal = validValue;
-            } else if (m != null) {
-                proposal = new Block(height,
-                        round,
-                        messageLog.getMessageCount() + 1,
-                        m.getOperation().toString(),
-                        m);
             } else {
-                // TODO: implement getValue()
                 proposal = getValue();
             }
             log.info("Proposal: " + proposal);
-            broadcastProposal(height, round, proposal, validRound);
+            if (proposal != null)
+                broadcastProposal(height, round, proposal, validRound);
         } else {
             // WARNING: this only will work when the timeout is implemented
             // onTimeoutPropose(height, round);
@@ -677,12 +670,35 @@ public class TendermintReplica extends LeaderBasedProtocolReplica {
 
     private Block getValue() {
         log.info("Getting value");
-        DefaultClientRequestPayload requestPayload = messageLog.getPassOnRequests().poll();
-        if (requestPayload == null) {
-            return new Block(height, round, messageLog.getMessageCount() + 1, "NULL VALUE", null);
+
+        // Retrieve the first request message from the message log
+        Optional<RequestMessage> requestPayload = messageLog.getRequests().stream().findFirst();
+        Set<RequestMessage> rs = messageLog.getRequests();
+        for (RequestMessage r : rs){
+            log.info(r.toString());
         }
-        return new Block(height, round, messageLog.getMessageCount() + 1, requestPayload.getOperation().toString(), new RequestMessage(requestPayload, System.currentTimeMillis(), requestPayload.getOperation().toString().split("/")[0]));
+        // If the requestPayload is empty, return a Block with default "NULL VALUE"
+        if (requestPayload.isEmpty()) {
+            return null;
+        }
+
+        // Extract the operation and clientId from the found requestPayload
+        RequestMessage payload = requestPayload.get();
+        String operationString = payload.getOperation().toString();
+        String clientId = operationString.contains("/")
+                ? operationString.split("/")[0]
+                : "UNKNOWN_CLIENT";
+
+        // Return a Block with the extracted values
+        return new Block(
+                height,
+                round,
+                messageLog.getMessageCount() + 1,
+                operationString,
+                new RequestMessage(payload.getOperation(), System.currentTimeMillis(), clientId)
+        );
     }
+
 
     /**
      * Determines the proposer in a deterministic, weighted round-robin manner.
@@ -731,19 +747,15 @@ public class TendermintReplica extends LeaderBasedProtocolReplica {
         // FIXME: should not get timestamp from system time
         log.info("Received client request: " + request);
         RequestMessage m = new RequestMessage(request, System.currentTimeMillis(), clientId);
-        startRound(0, m);
+        startRound(0);
     }
 
-    private void receiveRequest(String sender, DefaultClientRequestPayload m) {
-        if (step == Step.NONE) {
-            if (proposer(height, round).equals(getId())) {
-                RequestMessage r = new RequestMessage((m).getOperation(), System.currentTimeMillis(), sender);
-                startRound(0, r);
-            }
-        } else {
-            broadcastMessage(new PassOnRequest(getId(), m));
+    private void receiveRequest(String sender, RequestMessage m) {
+        messageLog.bufferRequest(m);
+        broadcastMessage(new GossipRequest(this.getId(), m));
+        if(proposer(this.height, this.round).equals(this.getId()) && this.step == Step.NONE) {
+            startRound(this.round);
         }
-
     }
 
     /**

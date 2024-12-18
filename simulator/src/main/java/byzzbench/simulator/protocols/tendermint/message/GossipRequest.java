@@ -9,13 +9,12 @@ import lombok.With;
 @Data
 @EqualsAndHashCode(callSuper = true)
 @With
-public class PassOnRequest extends MessagePayload {
+public class GossipRequest extends MessagePayload {
     private final String replicaId;
-    private final DefaultClientRequestPayload request;
-
+    private final RequestMessage request;
 
     @Override
     public String getType() {
-        return "PASS_ON_REQUEST";
+        return "GOSSIP REQUEST";
     }
 }

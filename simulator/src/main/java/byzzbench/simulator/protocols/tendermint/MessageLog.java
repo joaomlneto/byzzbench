@@ -8,6 +8,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.java.Log;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Log
 @RequiredArgsConstructor
@@ -26,7 +27,7 @@ public class MessageLog {
     private final SortedMap<Block, List<ProposalMessage>> proposals = new TreeMap<>();
 
     @Getter
-    private final Queue<DefaultClientRequestPayload> passOnRequests = new LinkedList<>();
+    private final Set<RequestMessage> requests = new HashSet<>();
 
     public static final Block NULL_BLOCK = new Block(Long.MIN_VALUE, Long.MIN_VALUE, Long.MIN_VALUE, "NULL VALUE", null);
 
@@ -110,7 +111,15 @@ public class MessageLog {
                 .count() >= node.getTolerance() + 1;
     }
 
-    public void bufferRequest(PassOnRequest message) {
-        passOnRequests.add(message.getRequest());
+    public void bufferRequest(RequestMessage request) {
+        requests.add(request);
+    }
+
+    public void removeRequest(Block block) {
+        Set<RequestMessage> toDelete = requests.stream().filter(r -> r.getOperation() == block.getRequestMessage().getOperation()).collect(Collectors.toSet());
+        for (RequestMessage d : toDelete){
+            log.info("removing: " + d.toString());
+            requests.remove(d);
+        }
     }
 }
