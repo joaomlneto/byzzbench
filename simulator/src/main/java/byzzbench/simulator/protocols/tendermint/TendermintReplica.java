@@ -11,6 +11,7 @@ import byzzbench.simulator.transport.MessagePayload;
 
 
 import java.io.Serializable;
+import java.time.Duration;
 import java.util.*;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -663,7 +664,7 @@ public class TendermintReplica extends LeaderBasedProtocolReplica {
             if (proposal != null)
                 broadcastProposal(height, round, proposal, validRound);
         } else {
-            this.setTimeout("Timeout Propose", this::onTimeoutPropose(height, round), this.TIMEOUT);
+            this.setTimeout("Timeout Propose", () -> this.onTimeoutPropose(height, round), this.TIMEOUT);
         }
 
     }
