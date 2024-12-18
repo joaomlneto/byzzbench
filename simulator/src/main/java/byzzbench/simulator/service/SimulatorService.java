@@ -124,7 +124,7 @@ public class SimulatorService {
             int numErr = 0;
             try {
                 // run the scenario until the stop flag is set
-                while (!this.shouldStop) {
+                for (int i = 0; !this.shouldStop && i < this.byzzBenchConfig.getNumScenarios(); i++) {
                     int scenarioId = this.scenarioService.getScenarios().size() + 1;
                     System.out.println("Running scenario #" + scenarioId);
 

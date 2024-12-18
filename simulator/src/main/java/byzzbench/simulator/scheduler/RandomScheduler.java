@@ -50,7 +50,7 @@ public class RandomScheduler extends BaseScheduler {
             return Optional.empty();
         }
 
-        List<Event> timeoutEvents = availableEvents.stream().filter(TimeoutEvent.class::isInstance).collect(Collectors.toList());
+        List<TimeoutEvent> timeoutEvents = this.getQueuedTimeoutEvents(scenario);
         List<Event> clientRequestEvents = availableEvents.stream().filter(ClientRequestEvent.class::isInstance).collect(Collectors.toList());
         List<Event> messageEvents = availableEvents.stream().filter(MessageEvent.class::isInstance).collect(Collectors.toList());
 

@@ -1,16 +1,19 @@
 package byzzbench.simulator;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Getter;
 import lombok.extern.java.Log;
 
+import java.io.Serializable;
 import java.time.Duration;
 import java.time.Instant;
 
 @Log
-public class Timer {
+public class Timer implements Serializable {
     /**
      * The parent replica object.
      */
+    @JsonIgnore
     private transient final Replica replica;
     /**
      * The name of the timer.
@@ -25,7 +28,8 @@ public class Timer {
      * The function to run when the timer expires.
      */
     @Getter
-    private final Runnable callback;
+    @JsonIgnore
+    private final transient Runnable callback;
     /**
      * The unique identifier of the ByzzBench event associated with this timer.
      */

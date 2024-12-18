@@ -10,6 +10,7 @@ import lombok.extern.java.Log;
 
 import java.io.Serializable;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
@@ -86,6 +87,11 @@ public class Client implements Serializable, Node {
             default:
                 break;
         }
+    }
+
+    @Override
+    public Instant getCurrentTime() {
+        return this.scenario.getTimekeeper().getTime(this);
     }
 
     /**
