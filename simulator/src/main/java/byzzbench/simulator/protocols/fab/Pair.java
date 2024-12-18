@@ -1,6 +1,5 @@
-package byzzbench.simulator.protocols.fab.replica;
-
-import lombok.Getter;
+package byzzbench.simulator.protocols.fab;
+import lombok.Data;
 import lombok.extern.java.Log;
 
 import java.util.Arrays;
@@ -10,10 +9,10 @@ import java.util.Arrays;
  *
  */
 @Log
-@Getter
+@Data
 public class Pair implements Comparable<Pair> {
     private final byte[] value;
-    private final long number;
+    private final Long number;
 
     public Pair(long number, byte[] value) {
         this.value = value;

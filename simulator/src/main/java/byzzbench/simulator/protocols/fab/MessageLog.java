@@ -1,22 +1,19 @@
 package byzzbench.simulator.protocols.fab;
 
 import byzzbench.simulator.protocols.fab.messages.*;
-import byzzbench.simulator.protocols.fab.replica.FabReplica;
-import byzzbench.simulator.protocols.fab.replica.Pair;
 import byzzbench.simulator.transport.DefaultClientRequestPayload;
-import byzzbench.simulator.transport.Event;
 import byzzbench.simulator.transport.MessagePayload;
 import lombok.Getter;
-import lombok.Setter;
 import lombok.extern.java.Log;
 
 import java.io.Serializable;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 @Log
 public class MessageLog {
-    private final FabReplica replica;
+    private final FastByzantineReplica replica;
     private SortedMap<String, Pair> acceptorsWithAcceptedProposal;
     @Getter
     private SortedMap<String, Pair> proposersWithLearnedValue;
@@ -40,9 +37,8 @@ public class MessageLog {
     private final SortedMap<Long, List<ViewChangeMessage>> viewChangeMessages = new TreeMap<>();
     private final SortedMap<Long, List<NewViewMessage>> newViewMessages = new TreeMap<>();
     private final SortedMap<String, List<DefaultClientRequestPayload>> clientRequestMessages = new TreeMap<>();
-    private final SortedMap<String, Integer> nodesAndProposalNumber = new TreeMap<>();
 
-    public MessageLog(FabReplica replica) {
+    public MessageLog(FastByzantineReplica replica) {
         this.replica = replica;
         this.acceptorsWithAcceptedProposal = new TreeMap<>();
         this.proposersWithLearnedValue = new TreeMap<>();
@@ -86,6 +82,12 @@ public class MessageLog {
         acceptedProposal = null;
     }
 
+    public void resolve() {
+        reset();
+        learnedValue = null;
+        acceptedProposal = null;
+    }
+
     public void reset() {
         acceptorsWithAcceptedProposal.clear();
         proposersWithLearnedValue.clear();
@@ -108,22 +110,14 @@ public class MessageLog {
     public boolean onPropose(String senderId, ProposeMessage proposeMessage, int vouchingThreshold) {
         // If the PROPOSE message has a higher round number than the current round number, update the round number
         // Remove message from the proposeMessages queue
+        long proposalNumber = proposeMessage.getValueAndProposalNumber().getNumber();
         proposeMessages.get(proposeMessage.getValueAndProposalNumber().getNumber()).remove(proposeMessage);
 
-        if (nodesAndProposalNumber.containsKey(senderId)) {
-            if (proposeMessage.getValueAndProposalNumber().getNumber() > this.nodesAndProposalNumber.get(senderId)) {
-                nodesAndProposalNumber.put(senderId, (int) proposeMessage.getValueAndProposalNumber().getNumber());
-            }
-        } else {
-            nodesAndProposalNumber.put(senderId, (int) proposeMessage.getValueAndProposalNumber().getNumber());
-        }
-
         Pair proposed = proposeMessage.getValueAndProposalNumber();
-        long proposalNumber = proposeMessage.getValueAndProposalNumber().getNumber();
         byte[] messageProposedValue = proposeMessage.getValueAndProposalNumber().getValue();
         ProgressCertificate progressCertificate = proposeMessage.getProgressCertificate();
 
-        if (proposalNumber != nodesAndProposalNumber.get(senderId)) {
+        if (proposalNumber != this.replica.getViewNumber()) {
             log.info("The view number of the PROPOSE message is not the same as the current view number");
             return false; // Only listen to current leader
         }
@@ -176,7 +170,7 @@ public class MessageLog {
         learnMessages.get(learnValue.getNumber()).remove(learnMessage);
     }
 
-    public void learnerHasLearnedValue(Pair learnValue, int quorum) {
+    public boolean learnerHasLearnedValue(Pair learnValue, int quorum) {
         AtomicInteger currentLearnedWithSamePair = new AtomicInteger();
         learnersWithLearnedValue.values().forEach(pair -> {
             if (pair.getNumber() == learnValue.getNumber() && Arrays.equals(pair.getValue(), learnValue.getValue())) {
@@ -185,8 +179,11 @@ public class MessageLog {
         });
 
         if (currentLearnedWithSamePair.get() >= quorum && learnedValue == null) {
-         this.learnedValue = learnValue;
+            this.learnedValue = learnValue;
+            return true;
         }
+
+        return false;
     }
 
     public boolean proposerHasLearned(int quorum) {
@@ -247,6 +244,7 @@ public class MessageLog {
         replyMessages.get(replyMessage.getValueAndProposalNumber().getNumber()).remove(replyMessage);
 
         if (replyMessage.getValueAndProposalNumber().getNumber() != this.replica.getViewNumber()) {
+            log.info("The view number of the REPLY message is not the same as the current view number");
             return;
         }
 
@@ -259,67 +257,18 @@ public class MessageLog {
 
     public void acceptViewChange(ViewChangeMessage viewChangeMessage) {
         // Accept latest view change from viewChanges map
-        if (viewChangeMessage.getProposalNumber() <= this.replica.getViewNumber()) {
+        if (viewChangeMessage.getProposalNumber() < this.replica.getViewNumber()) {
+            log.info(this.replica.getViewNumber() + " " + viewChangeMessage.getProposalNumber());
             log.info("The view number of the VIEW-CHANGE message is not greater than the current view number");
             return;
         }
 
-        this.replica.setView(viewChangeMessage.getProposalNumber());
         this.replica.setLeaderId(viewChangeMessage.getNewLeaderId());
-
-        this.viewChangeMessages.remove(viewChangeMessage.getProposalNumber());
-        for (Event event: this.replica.getTransport().getEventsInState(Event.Status.QUEUED)) {
-            this.replica.getTransport().dropEvent(event.getEventId());
+        if (this.replica.getId().equals(viewChangeMessage.getNewLeaderId())) {
+            this.replica.setIsCurrentlyLeader(new AtomicBoolean(true));
+            this.replica.setRecovered(false);
         }
         reset();
-    }
-
-    public void acceptNewView(NewViewMessage newViewMessage) {
-        // Accept latest new view from newViews map
-        if (newViewMessage.getViewNumber() <= this.replica.getViewNumber()) {
-            log.info("The view number of the NEW-VIEW message is not greater than the current view number");
-            return;
-        }
-
-        this.replica.setView(newViewMessage.getViewNumber());
-
-        this.newViewMessages.remove(newViewMessage.getViewNumber());
-        List<Event> queuedEvents = this.replica.getTransport().getEventsInState(Event.Status.QUEUED);
-        log.info("Last event: " +  queuedEvents.getLast());
-
-//        for (Event event: queuedEvents) {
-//            this.replica.getTransport().dropEvent(event.getEventId());
-//        }
-
-        reset();
-    }
-
-    public ProgressCertificate electNewLeader(int quorum) {
-        if (responses.size() < quorum) {
-            log.warning("Leader " + replica.getId() + " did not receive enough responses to the QUERY message");
-            return null;
-        } else {
-            log.info("Leader " + replica.getId() + " received enough responses to the QUERY message");
-            // Combine the received responses into a progress certificate (PC)
-            ProgressCertificate progressCertificate = new ProgressCertificate(this.replica.getViewNumber(), responses);
-            if (pcIsValid(progressCertificate, quorum)) {
-                return progressCertificate;
-            } else {
-                log.warning("Leader " + replica.getId() + " could not form a valid progress certificate");
-                return null;
-            }
-        }
-    }
-
-    public boolean pcIsValid(ProgressCertificate progressCertificate, int quorum) {
-        // If PC vouches for the value, update the value
-        Optional<byte[]> vouchedValue = progressCertificate.majorityValue(quorum);
-        if (vouchedValue.isPresent()) {
-            return true;
-        } else {
-            log.warning("Progress certificate does not vouch for the value");
-            return false;
-        }
     }
 
     public boolean isSatisfied(int quorum) {

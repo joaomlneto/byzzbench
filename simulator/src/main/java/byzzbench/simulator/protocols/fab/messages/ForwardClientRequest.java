@@ -1,12 +1,19 @@
 package byzzbench.simulator.protocols.fab.messages;
 
 import byzzbench.simulator.transport.MessagePayload;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
+import lombok.With;
 
 import java.io.Serializable;
 
-@Getter
+@Data
+@EqualsAndHashCode(callSuper = true)
+@With
 public class ForwardClientRequest extends MessagePayload {
+    @JsonManagedReference
     private final Serializable operation;
     private final String clientId;
 

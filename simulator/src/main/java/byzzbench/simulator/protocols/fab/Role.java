@@ -1,4 +1,4 @@
-package byzzbench.simulator.protocols.fab.replica;
+package byzzbench.simulator.protocols.fab;
 
 /**
  * The role of a replica in the FAB protocol. A replica can act as more than one type of agents.
@@ -6,7 +6,7 @@ package byzzbench.simulator.protocols.fab.replica;
  * ACCEPTOR - choosing a single correct value
  * LEARNERS - learning the chosen value
  */
-public enum FabRole {
+public enum Role {
     ACCEPTOR,
     PROPOSER,
     LEARNER

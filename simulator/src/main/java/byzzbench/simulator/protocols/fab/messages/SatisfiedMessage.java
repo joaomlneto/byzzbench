@@ -1,6 +1,6 @@
 package byzzbench.simulator.protocols.fab.messages;
 
-import byzzbench.simulator.protocols.fab.replica.Pair;
+import byzzbench.simulator.protocols.fab.Pair;
 import byzzbench.simulator.transport.MessagePayload;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
