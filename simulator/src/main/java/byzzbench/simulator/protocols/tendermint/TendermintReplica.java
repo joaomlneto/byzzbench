@@ -186,6 +186,7 @@ public class TendermintReplica extends LeaderBasedProtocolReplica {
         this.enoughPrecommitsCheck = true;
         this.preVoteFirstTime = true;
         this.prevoteOrMoreFirstTime = true;
+        this.clearAllTimeouts();
     }
 
     /**
@@ -277,7 +278,8 @@ public class TendermintReplica extends LeaderBasedProtocolReplica {
 
     private void executePrevoteRule1() {
         preVoteFirstTime = false;
-        log.info("Scheduling on timeout prevote");
+        Duration duration = Duration.ofSeconds(this.TIMEOUT);
+        this.setTimeout("Timeout Prevote", () -> this.onTimeoutPrevote(height, round), duration);
     }
 
     private void executePrevoteRule2(Set<ProposalMessage> matchingProposals) {
@@ -480,7 +482,8 @@ public class TendermintReplica extends LeaderBasedProtocolReplica {
         for (List<PrecommitMessage> precommitList : precommitsWithEnoughVotes) {
             if (enoughPrecommitsCheck) {
                 enoughPrecommitsCheck = false;
-                log.info("TODO: Schedule on timeout precommit for precommits: " + precommitList);
+                Duration duration = Duration.ofSeconds(this.TIMEOUT);
+                this.setTimeout("Timeout Precommit", () -> this.onTimeoutPrecommit(height, round), duration);
             }
         }
 
@@ -664,7 +667,8 @@ public class TendermintReplica extends LeaderBasedProtocolReplica {
             if (proposal != null)
                 broadcastProposal(height, round, proposal, validRound);
         } else {
-            this.setTimeout("Timeout Propose", () -> this.onTimeoutPropose(height, round), this.TIMEOUT);
+            Duration duration = Duration.ofSeconds(this.TIMEOUT);
+            this.setTimeout("Timeout Propose", () -> this.onTimeoutPropose(height, round), duration);
         }
 
     }
