@@ -14,10 +14,10 @@ public class EDHSNode {
     private String parentHash;
     private ClientRequest clientRequest;
     private EDHSQuorumCertificate justify;
-    private int height;
+    private long height;
     private String hash;
 
-    public EDHSNode(String parentHash, ClientRequest clientRequest, EDHSQuorumCertificate justify, int height) throws NoSuchAlgorithmException {
+    public EDHSNode(String parentHash, ClientRequest clientRequest, EDHSQuorumCertificate justify, long height) throws NoSuchAlgorithmException {
         this.parentHash = parentHash;
         this.clientRequest = clientRequest;
         this.justify = justify;

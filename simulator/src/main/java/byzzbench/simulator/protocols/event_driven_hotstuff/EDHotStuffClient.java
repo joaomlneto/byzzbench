@@ -36,11 +36,13 @@ public class EDHotStuffClient extends Client {
             Serializable reply = replyPayload.getReply();
             if (reply instanceof ClientReply clientReply) {
                 String requestId = clientReply.getRequestId();
-                pendingRequests.remove(requestId);
+                if(pendingRequests.containsKey(requestId)) {
+                    pendingRequests.remove(requestId);
 
-                this.getReplies().add(reply);
-                if (this.getRequestSequenceNumber().get() < this.maxRequests) {
-                    this.sendRequest();
+                    this.getReplies().add(reply);
+                    if (this.getRequestSequenceNumber().get() < this.maxRequests) {
+                        this.sendRequest();
+                    }
                 }
             }
         }
@@ -52,19 +54,7 @@ public class EDHotStuffClient extends Client {
 
         ClientRequest clientRequest = new ClientRequest(requestId, this.getId(), "cmd/" + requestId);
         pendingRequests.put(requestId, clientRequest);
-        resendRequest(clientRequest);
-    }
-
-    private void resendRequest(ClientRequest clientRequest) {
-        if (pendingRequests.containsKey(clientRequest.getRequestId())) {
-            sendRequestToAll(clientRequest);
-            /*
-            setTimeout(
-                    clientRequest.getRequestId() + " resend timeout",
-                    () -> resendRequest(clientRequest),
-                    Duration.ofSeconds(30)
-            );*/
-        }
+        sendRequestToAll(clientRequest);
     }
 
     private void sendRequestToAll(ClientRequest request) {

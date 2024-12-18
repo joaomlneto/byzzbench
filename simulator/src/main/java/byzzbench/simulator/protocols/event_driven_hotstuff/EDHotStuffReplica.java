@@ -2,15 +2,13 @@ package byzzbench.simulator.protocols.event_driven_hotstuff;
 
 import byzzbench.simulator.LeaderBasedProtocolReplica;
 import byzzbench.simulator.Scenario;
-import byzzbench.simulator.protocols.event_driven_hotstuff.messages.AbstractMessage;
-import byzzbench.simulator.protocols.event_driven_hotstuff.messages.GenericMessage;
-import byzzbench.simulator.protocols.event_driven_hotstuff.messages.GenericVote;
-import byzzbench.simulator.protocols.event_driven_hotstuff.messages.NewViewMessage;
+import byzzbench.simulator.protocols.event_driven_hotstuff.messages.*;
 import byzzbench.simulator.state.SerializableLogEntry;
 import byzzbench.simulator.state.TotalOrderCommitLog;
 import byzzbench.simulator.transport.DefaultClientRequestPayload;
 import byzzbench.simulator.transport.MessagePayload;
 import lombok.Getter;
+import org.apache.commons.lang3.tuple.Pair;
 
 import java.io.Serializable;
 import java.security.NoSuchAlgorithmException;
@@ -19,7 +17,7 @@ import java.util.*;
 public class EDHotStuffReplica extends LeaderBasedProtocolReplica {
 
     @Getter
-    int lastVoteHeight;
+    long lastVoteHeight;
     //@Getter
     //EDHSNode leafNode;
     @Getter
@@ -50,6 +48,9 @@ public class EDHotStuffReplica extends LeaderBasedProtocolReplica {
 
     @Getter
     EDHSPacemaker pacemaker;
+
+    @Getter
+    HashMap<String, ArrayList<IncompleteMessage>> incompleteMessages;
 
     public void log(String message) {
         debugLog.add(message);
@@ -163,15 +164,19 @@ public class EDHotStuffReplica extends LeaderBasedProtocolReplica {
     public void handleMessage(String sender, MessagePayload message) throws Exception {
         switch (message) {
             case DefaultClientRequestPayload clientRequest -> handleClientRequest(sender, clientRequest.getOperation());
-            case NewViewMessage newViewMessage -> onReceiveNewView(newViewMessage);
-            case GenericVote genericVote -> onReceiveVote(genericVote);
-            case GenericMessage genericMessage -> rememberProposal(genericMessage);
+            case NewViewMessage newViewMessage -> onReceiveNewView(newViewMessage, sender);
+            case GenericVote genericVote -> onReceiveVote(genericVote, sender);
+            case GenericMessage genericMessage -> rememberProposal(genericMessage, sender);
+            case AskMessage askMessage -> provideNode(askMessage, sender);
+            case CatchUpMessage catchUpMessage -> catchUp(catchUpMessage, sender);
             default -> throw new IllegalStateException("Message type not supported.");
         }
     }
 
     // NEW-VIEW
-    private void onReceiveNewView(NewViewMessage newViewMessage) {
+    private void onReceiveNewView(NewViewMessage newViewMessage, String senderId) {
+        if(isQCNodeMissing(newViewMessage, senderId)) return;
+
         log("Received NEW-VIEW message");
         pacemaker.onReceiveNewView(newViewMessage);
 
@@ -181,7 +186,9 @@ public class EDHotStuffReplica extends LeaderBasedProtocolReplica {
     }
 
     // GENERIC
-    private void rememberProposal(GenericMessage proposal) {
+    private void rememberProposal(GenericMessage proposal, String senderId) {
+        if(isQCNodeMissing(proposal, senderId)) return;
+
         long proposalView = proposal.getViewNumber();
 
         log("Received GENERIC message for view " + proposalView + ", current view is " + getViewNumber());
@@ -199,12 +206,23 @@ public class EDHotStuffReplica extends LeaderBasedProtocolReplica {
 
     }
 
+    public boolean isProposalValid(GenericMessage proposal) {
+        EDHSNode proposedNode = proposal.getNode();
+
+        if(proposedNode.getHeight() != proposal.getViewNumber()) return false;
+
+        return true;
+    }
+
     private void onReceiveProposal(GenericMessage proposal) {
         EDHSNode proposedNode = proposal.getNode();
         hashNodeMap.put(proposedNode.getHash(), proposedNode);
 
-        // viewChange
+        // validate proposal
         // TODO make sure proposal is valid
+        if(!isProposalValid(proposal)) return;
+
+        // viewChange
         nextView();
 
         // Remember client request to avoid duplicates
@@ -234,10 +252,8 @@ public class EDHotStuffReplica extends LeaderBasedProtocolReplica {
             log("Deciding NOT to vote for node " + proposedNode.getHash() + " with height " + proposedNode.getHeight());
         }
 
+        // update
         update(proposedNode);
-
-        /*LeaderViewState leaderViewState = getLeaderViewState();
-        if (leaderViewState != null) leaderViewState.setPreviousNode(proposedNode);*/
     }
 
     private void update(EDHSNode proposedNode) {
@@ -275,7 +291,9 @@ public class EDHotStuffReplica extends LeaderBasedProtocolReplica {
     }
 
     // GENERIC-VOTE
-    private void onReceiveVote(GenericVote vote) {
+    private void onReceiveVote(GenericVote vote, String senderId) {
+        if(isQCNodeMissing(vote, senderId)) return;
+
         log("Received vote for node " + vote.getNode().getHash());
 
         long voteView = vote.getViewNumber();
@@ -289,11 +307,65 @@ public class EDHotStuffReplica extends LeaderBasedProtocolReplica {
     }
 
     public EDHSNode onPropose(EDHSNode leaf, ClientRequest clientRequest, EDHSQuorumCertificate highQC) throws NoSuchAlgorithmException {
-        EDHSNode newNode = new EDHSNode(leaf.getHash(), clientRequest, highQC, leaf.getHeight() + 1);
+        // leaf.getHeight() + 1 is replaced with getViewNumber() to create implicit dummy nodes.
+        EDHSNode newNode = new EDHSNode(leaf.getHash(), clientRequest, highQC, getViewNumber());
         hashNodeMap.put(newNode.getHash(), newNode);
         requestNodeMap.put(clientRequest, newNode);
         broadcastToAllReplicas(new GenericMessage(getViewNumber(), newNode));
         return newNode;
+    }
+
+    // Catch up mechanism
+    // only use for messages with QC
+    public boolean isQCNodeMissing(AbstractMessage message, String senderId) {
+        EDHSQuorumCertificate qc;
+        switch (message) {
+            case NewViewMessage newViewMessage -> qc = newViewMessage.getJustify();
+            case GenericMessage genericMessage -> qc = genericMessage.getNode().getJustify();
+            case GenericVote genericVote -> qc = genericVote.getNode().getJustify();
+            case CatchUpMessage catchUpMessage -> qc = catchUpMessage.getNode().getJustify();
+            default -> throw new IllegalStateException("isQCNodeMissing: Unsupported message type");
+        }
+        String nodeHash = qc.getNodeHash();
+        if (hashNodeMap.containsKey(nodeHash)) return false;
+        else {
+            sendMessage(new AskMessage(getViewNumber(), nodeHash), senderId);
+            if(!incompleteMessages.containsKey(nodeHash)) incompleteMessages.put(nodeHash, new ArrayList<>());
+            ArrayList<IncompleteMessage> incompleteMessagesForNode = incompleteMessages.get(nodeHash);
+            incompleteMessagesForNode.add(new IncompleteMessage(message, senderId));
+            return true;
+        }
+    }
+
+    public void provideNode(AskMessage askMessage, String senderId) {
+        if(hashNodeMap.containsKey(askMessage.getNodeHash())) {
+            EDHSNode requestedNode = hashNodeMap.get(askMessage.getNodeHash());
+            sendMessage(new CatchUpMessage(getViewNumber(), requestedNode), senderId);
+        }
+    }
+
+    public void catchUp(CatchUpMessage catchUpMessage, String senderId) {
+        if(!incompleteMessages.containsKey(catchUpMessage.getNode().getHash())) return;
+        if(isQCNodeMissing(catchUpMessage, senderId)) return;
+
+        EDHSNode catchUpNode = catchUpMessage.getNode();
+        if(hashNodeMap.containsKey(catchUpNode.getHash())) return;
+        hashNodeMap.put(catchUpNode.getHash(), catchUpNode);
+
+        requestNodeMap.put(catchUpNode.getClientRequest(), catchUpNode);
+        update(catchUpNode);
+
+        ArrayList<IncompleteMessage> incompleteMessagesForNode = incompleteMessages.get(catchUpNode.getHash());
+        incompleteMessagesForNode.forEach(im -> {
+            switch (im.getMessage()) {
+                case NewViewMessage m -> onReceiveNewView(m, im.getSenderId());
+                case GenericMessage m -> rememberProposal(m, im.getSenderId());
+                case GenericVote m -> onReceiveVote(m, im.getSenderId());
+                case CatchUpMessage m -> catchUp(m, im.getSenderId());
+                default -> throw new IllegalStateException("catchUp: Unsupported message type");
+            }
+        });
+        incompleteMessages.remove(catchUpNode.getHash());
     }
 
     public void sendReplyToClient(ClientRequest clientRequest) {

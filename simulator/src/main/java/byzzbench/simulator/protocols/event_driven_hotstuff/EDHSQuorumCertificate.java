@@ -16,7 +16,7 @@ public class EDHSQuorumCertificate implements Serializable {
         this.signature = signature;
     }
 
-    public boolean isValid(String nodeHash, int minValidSignatures) {
+    public boolean isValid(int minValidSignatures) {
         return nodeHash.equals("GENESIS") || signature.isValid(nodeHash, minValidSignatures);
     }
 }
