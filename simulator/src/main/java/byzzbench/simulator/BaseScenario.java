@@ -297,4 +297,13 @@ public abstract class BaseScenario implements Scenario {
     public void markReplicaFaulty(String replicaId) {
         this.faultyReplicaIds.add(replicaId);
     }
+
+    @Override
+    public int maxFaultyReplicas() {
+        int f = this.maxFaultyReplicas(this.getReplicas().size());
+        if (f < 1) {
+            log.severe("Scenario does not have enough replicas to tolerate any faults!");
+        }
+        return f;
+    }
 }

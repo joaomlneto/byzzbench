@@ -53,4 +53,9 @@ public class PbftJavaScenario extends BaseScenario {
         MessageLog messageLog = new MessageLog(100, 100, 200);
         return new PbftJavaReplica<String, String>(replica.getId(), this, 1, 1000, messageLog);
     }
+
+    @Override
+    public int maxFaultyReplicas(int n) {
+        return (n - 1) / 3;
+    }
 }

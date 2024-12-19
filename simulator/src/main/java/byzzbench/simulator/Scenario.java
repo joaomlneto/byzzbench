@@ -171,4 +171,21 @@ public interface Scenario extends Serializable {
     default Replica cloneReplica(Replica replica) {
         throw new UnsupportedOperationException("Not implemented!");
     }
+
+    /**
+     * Get the maximum number of faulty replicas that can be tolerated by the scenario
+     * with the current configuration.
+     *
+     * @return The maximum number of faulty replicas that can be tolerated.
+     */
+    int maxFaultyReplicas();
+
+    /**
+     * Get the maximum number of faulty replicas that can be tolerated by the protocol
+     * given the number of replicas in the system.
+     *
+     * @param n The number of replicas in the system.
+     * @return The maximum number of faulty replicas that can be tolerated.
+     */
+    int maxFaultyReplicas(int n);
 }

@@ -51,4 +51,9 @@ public class PbftScenario extends BaseScenario {
     public synchronized void run() {
         //getClients().values().forEach(Client::initializeClient);
     }
+
+    @Override
+    public int maxFaultyReplicas(int n) {
+        return (n - 1) / 3;
+    }
 }
