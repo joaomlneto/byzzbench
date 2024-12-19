@@ -57,7 +57,7 @@ public class TendermintReplica extends LeaderBasedProtocolReplica {
 
     public static final Block NULL_BLOCK = new Block(Long.MIN_VALUE, Long.MIN_VALUE, Long.MIN_VALUE, "NULL VALUE", null);
 
-    public final int TIMEOUT = 5;
+    public final int TIMEOUT = 10;
 
 
     public TendermintReplica(String nodeId, SortedSet<String> nodeIds, Scenario scenario) {
@@ -186,7 +186,6 @@ public class TendermintReplica extends LeaderBasedProtocolReplica {
         this.enoughPrecommitsCheck = true;
         this.preVoteFirstTime = true;
         this.prevoteOrMoreFirstTime = true;
-        this.clearAllTimeouts();
     }
 
     /**
@@ -279,7 +278,9 @@ public class TendermintReplica extends LeaderBasedProtocolReplica {
     private void executePrevoteRule1() {
         preVoteFirstTime = false;
         Duration duration = Duration.ofSeconds(this.TIMEOUT);
-        this.setTimeout("Timeout Prevote", () -> this.onTimeoutPrevote(height, round), duration);
+        this.setTimeout("Timeout Prevote", () -> {
+            this.onTimeoutPrevote(height, round);
+        }, duration);
     }
 
     private void executePrevoteRule2(Set<ProposalMessage> matchingProposals) {
@@ -440,6 +441,8 @@ public class TendermintReplica extends LeaderBasedProtocolReplica {
     }
 
     private void onTimeoutPrevote(long height, long round) {
+        log.info("on timeout prevote exec");
+        log.info(this.height + " " + height + " " + this.round + " " + round + " " + this.step);
         if (this.height == height && this.round == round && this.step == Step.PREVOTE) {
             broadcastPrecommit(height, round, NULL_BLOCK);
             this.step = Step.PRECOMMIT;
@@ -534,7 +537,7 @@ public class TendermintReplica extends LeaderBasedProtocolReplica {
     }
 
     private void onTimeoutPrecommit(long height, long round) {
-        if (this.height == height && this.round == round && this.step == Step.PRECOMMIT) {
+        if (this.height == height && this.round == round) {
             startRound(this.round + 1);
         }
     }
@@ -668,7 +671,9 @@ public class TendermintReplica extends LeaderBasedProtocolReplica {
                 broadcastProposal(height, round, proposal, validRound);
         } else {
             Duration duration = Duration.ofSeconds(this.TIMEOUT);
-            this.setTimeout("Timeout Propose", () -> this.onTimeoutPropose(height, round), duration);
+            this.setTimeout("Timeout Propose", () -> {
+                onTimeoutPropose(height, round);
+            }, duration);
         }
 
     }
