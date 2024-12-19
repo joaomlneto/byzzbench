@@ -75,6 +75,9 @@ public class TwinsReplica extends Replica {
 
         // print getRoundPartitions, one per line
         this.twinsTransport.getRoundPartitions().forEach((k, v) -> log.info("Round " + k + ": " + v));
+
+        // Mark ourselves as faulty
+        this.markFaulty();
     }
 
     /**
