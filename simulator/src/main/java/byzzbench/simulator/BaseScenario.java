@@ -68,6 +68,10 @@ public abstract class BaseScenario implements Scenario {
     @JsonIgnore
     private final transient List<ScenarioObserver> observers = new java.util.ArrayList<>();
     /**
+     * The set of faulty replica IDs.
+     */
+    private final SortedSet<String> faultyReplicaIds = new TreeSet<>();
+    /**
      * The termination condition for the scenario.
      */
     protected ScenarioPredicate terminationCondition;
@@ -282,5 +286,15 @@ public abstract class BaseScenario implements Scenario {
                 .map(Replica.class::cast)
                 .forEach(replica -> replicas.put(replica.getId(), replica));
         return replicas;
+    }
+
+    @Override
+    public boolean isFaultyReplica(String replicaId) {
+        return this.faultyReplicaIds.contains(replicaId);
+    }
+
+    @Override
+    public void markReplicaFaulty(String replicaId) {
+        this.faultyReplicaIds.add(replicaId);
     }
 }

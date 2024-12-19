@@ -27,6 +27,21 @@ public interface Scenario extends Serializable {
     void runScenario();
 
     /**
+     * Determine whether a replica is faulty.
+     *
+     * @param replicaId The ID of the replica to check.
+     * @return True if the replica is faulty, false otherwise.
+     */
+    boolean isFaultyReplica(String replicaId);
+
+    /**
+     * Mark a replica as faulty.
+     *
+     * @param replicaId The ID of the replica to mark as faulty.
+     */
+    void markReplicaFaulty(String replicaId);
+
+    /**
      * Get the scheduler for the scenario.
      *
      * @return The scheduler for the scenario.
