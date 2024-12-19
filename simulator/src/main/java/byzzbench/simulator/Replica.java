@@ -177,7 +177,7 @@ public abstract class Replica implements Serializable, Node {
      * @param reply    the reply payload
      */
     public void sendReplyToClient(String clientId, Serializable reply) {
-        this.transport.sendClientResponse(this.id, new DefaultClientReplyPayload(reply), clientId);
+        this.transport.sendClientResponse(this, new DefaultClientReplyPayload(reply), clientId);
     }
 
     /**
