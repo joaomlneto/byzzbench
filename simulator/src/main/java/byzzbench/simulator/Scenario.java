@@ -8,6 +8,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import java.io.Serializable;
 import java.util.List;
 import java.util.NavigableMap;
+import java.util.Random;
 import java.util.SortedSet;
 
 /**
@@ -146,4 +147,11 @@ public interface Scenario extends Serializable {
      * @return True if the invariants hold, false otherwise.
      */
     boolean invariantsHold();
+
+    /**
+     * Get the random number generator for the scenario.
+     *
+     * @return The random number generator for the scenario.
+     */
+    Random getRandom();
 }
