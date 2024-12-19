@@ -168,6 +168,12 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
             return;
         }
 
+        for (RequestMessage message : this.speculativeHistory.getHistory().values()) {
+            if (message.equals(request)) {
+                return;
+            }
+        }
+
         // TODO: Maybe timestamp needs to be double checked
         // FIXME: This is not good requests can be discarded
         if (this.receivedRequests.get(request.getTimestamp()) != null) {
@@ -482,6 +488,7 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
             // message log is structured this way)
             ticket = messageLog.newTicket(currentViewNumber, seqNumber);
         }
+        logger.writeLog(String.format("PREPARE accepted at %s", this.getId())); 
 
         // hBFT 4.1 - Add PREPARE along with its REQUEST to the log
         ticket.append(prepare);
@@ -546,6 +553,7 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
         if (ticket != null) {
             // PBFT 4.2 - Attempt to advance the state upon reception of COMMIT
             // to perform the computation
+            logger.writeLog(String.format("COMMIT accepted at %s", this.getId())); 
             this.tryAdvanceState(ticket, commit);
         }
     }
@@ -785,7 +793,8 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
                 boolean isCER1 = messageLog.isCER1(checkpoint, tolerance);
                 if (isCER1) {
                     this.adjustHistory(checkpoint.getHistory().getRequests());
-                    this.seqCounter.set(checkpoint.getLastSeqNumber());
+                    long largestSeq = Math.max(this.seqCounter.get(), checkpoint.getLastSeqNumber());
+                    this.seqCounter.set(largestSeq);
                     CheckpointMessage checkpointIII = new CheckpointIIIMessage(
                         checkpoint.getLastSeqNumber(),
                         this.digest(this.speculativeHistory),
@@ -803,8 +812,18 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
                 boolean isCER2 = messageLog.isCER2(checkpoint, tolerance);
                 if (isCER2) {
                     this.adjustHistory(checkpoint.getHistory().getRequests());
-                    this.seqCounter.set(checkpoint.getLastSeqNumber());
-                    this.speculativeRequests.clear();
+                    long largestSeq = Math.max(this.seqCounter.get(), checkpoint.getLastSeqNumber());
+                    this.seqCounter.set(largestSeq);
+
+                    // The speculatively executed requests will be cleared
+                    // until the checkpoint
+                    Iterator<Long> iterator = this.speculativeRequests.keySet().iterator();
+                    while (iterator.hasNext()) {
+                        Long seqNumber = iterator.next();
+                        if (seqNumber <= checkpoint.getLastSeqNumber()) {
+                            iterator.remove();
+                        }
+                    }
                 }
             }
 
@@ -907,10 +926,10 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
         history.addAll(newView.getSpeculativeHistory().getHistory());
         history.removeNullEntries();
         
-        this.seqCounter.set(history.getGreatestSeqNumber());
+        //this.seqCounter.set(history.getGreatestSeqNumber());
 
         CheckpointMessage checkpoint = new CheckpointIMessage(
-            history.getGreatestSeqNumber(),
+            this.seqCounter.get(),
             this.digest(history),
             this.getLeaderId(),
             history);
@@ -1148,6 +1167,7 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
     }
 
     public Serializable compute(long sequenceNumber, LogEntry operation) {
+        logger.writeLog(String.format("COMMITED %s at %d at replica %s", operation.toString(), sequenceNumber, this.getId())); 
         this.commitOperation(sequenceNumber, operation);
         return operation;
     }
