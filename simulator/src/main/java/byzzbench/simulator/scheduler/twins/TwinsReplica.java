@@ -40,8 +40,14 @@ public class TwinsReplica extends Replica {
     public TwinsReplica(Replica replica, int numTwins) {
         super(replica.getId(), replica.getScenario(), new TotalOrderCommitLog());
 
+        // Sanity check: must have at least 2 twins
         if (numTwins < 2) {
             throw new IllegalArgumentException("numTwins must be at least 2");
+        }
+
+        // Sanity check: cannot create Twins replica from another Twins replica
+        if (replica instanceof TwinsReplica) {
+            throw new IllegalArgumentException("Cannot create Twins replica from another Twins replica");
         }
 
         // create the twin copies

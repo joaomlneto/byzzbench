@@ -9,6 +9,9 @@ import lombok.Getter;
 import lombok.extern.java.Log;
 import org.springframework.stereotype.Component;
 
+import java.util.List;
+import java.util.Map;
+
 /**
  * The Twins scheduler from "Twins: BFT Systems Made Robust" by Shehar Bano,
  * Alberto Sonnino, Andrey Chursin, Dmitri Perelman, Zekun Li, Avery Ching and
@@ -19,8 +22,21 @@ import org.springframework.stereotype.Component;
 @Log
 @Getter
 public class TwinsScheduler extends RandomScheduler {
+    /**
+     * The number of replicas to create twins for.
+     */
+    private final int numReplicas;
+
+    /**
+     * The number of twins to create for each replica.
+     */
+    private final int numTwinsPerReplica;
+
     public TwinsScheduler(ByzzBenchConfig config, MessageMutatorService messageMutatorService) {
         super(config, messageMutatorService);
+        Map<String, String> schedulerParams = config.getScheduler().getParams();
+        this.numReplicas = Integer.parseInt(schedulerParams.getOrDefault("numReplicas", "1"));
+        this.numTwinsPerReplica = Integer.parseInt(schedulerParams.getOrDefault("numTwinsPerReplica", "2"));
     }
 
     @Override
@@ -30,10 +46,20 @@ public class TwinsScheduler extends RandomScheduler {
 
     @Override
     public void initializeScenario(Scenario scenario) {
-        int numReplicas = 2;
-        Replica replica = scenario.getReplicas().firstEntry().getValue();
-        log.info("Creating " + numReplicas + " twins for replica " + replica.getId());
-        scenario.getNodes().put(replica.getId(), new TwinsReplica(replica, numReplicas));
+        // Get the IDs of the replicas
+        List<String> replicaIds = scenario.getReplicas().keySet().stream().sorted().toList();
+
+        if (replicaIds.size() < numReplicas) {
+            throw new IllegalArgumentException("Not enough replicas to create " + numReplicas + " twins");
+        }
+
+        replicaIds = replicaIds.subList(0, numReplicas);
+        // Create the twins for each replica
+        for (int i = 0; i < numReplicas; i++) {
+            Replica replica = scenario.getReplicas().get(replicaIds.get(i));
+            log.info("Creating " + numTwinsPerReplica + " twins for replica " + replica.getId());
+            scenario.getNodes().put(replica.getId(), new TwinsReplica(replica, numTwinsPerReplica));
+        }
     }
 
     @Override
