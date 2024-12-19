@@ -196,4 +196,11 @@ public interface Scenario extends Serializable {
      * @return The maximum number of faulty replicas that can be tolerated.
      */
     int maxFaultyReplicas(int n);
+
+    /**
+     * Get the set of IDs of replicas that have deviated from specification.
+     *
+     * @return The set of IDs of faulty replicas.
+     */
+    SortedSet<String> getFaultyReplicaIds();
 }

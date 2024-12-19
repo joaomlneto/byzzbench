@@ -70,6 +70,7 @@ public abstract class BaseScenario implements Scenario {
     /**
      * The set of faulty replica IDs.
      */
+    @Getter(onMethod_ = {@Synchronized})
     private final SortedSet<String> faultyReplicaIds = new TreeSet<>();
     /**
      * The termination condition for the scenario.
