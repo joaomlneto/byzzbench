@@ -77,8 +77,10 @@ public abstract class BaseScenario implements Scenario {
     protected ScenarioPredicate terminationCondition;
     /**
      * Pseudo-random number generator for the scenario.
+     * TODO: parameterize the seed
      */
-    Random rand;
+    @Getter
+    Random random = new Random(1L);
 
     /**
      * Creates a new scenario with the given unique identifier and scheduler.
