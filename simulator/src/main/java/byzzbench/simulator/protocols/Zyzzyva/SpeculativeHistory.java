@@ -33,6 +33,19 @@ public class SpeculativeHistory {
     }
 
     /**
+     * Remove everything before a specific index in the speculative history
+     * @param index
+     */
+    public void truncate(long index) {
+        if (this.speculativeHistory.isEmpty()) {
+            return;
+        }
+        for (long i = this.speculativeHistory.sequencedKeySet().getFirst(); i < index; i++) {
+            this.speculativeHistory.remove(i);
+        }
+    }
+
+    /**
      * Get the operation at a specific index
      * @param index - the index to get the operation from
      * @throws IndexOutOfBoundsException - if the index is out of bounds
@@ -55,6 +68,15 @@ public class SpeculativeHistory {
         return this.speculativeHistory.get((long) this.speculativeHistory.size() - 1);
     }
 
+    public void clear() {
+        this.speculativeHistory.clear();
+    }
+
+    /**
+     * Check if the speculative history has a hash at a specific index
+     * @param index - the index to check
+     * @return true if the index is in the speculative history, false otherwise
+     */
     public boolean has(long index) {
         return this.speculativeHistory.containsKey(index);
     }

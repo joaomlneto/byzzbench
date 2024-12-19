@@ -17,11 +17,12 @@ public class MessageLog implements Serializable {
     private final SortedMap<Long, OrderedRequestMessageWrapper> orderedMessages = new TreeMap<>();
 
     @Getter
+    // SequenceNumber, SpeculativeResponse
     private final SortedMap<Long, SpeculativeResponse> speculativeResponses = new TreeMap<>();
 
     @Getter
-    // ReplicaId, IHateThePrimaryMessage
-    private final SortedMap<String, IHateThePrimaryMessage> iHateThePrimaries = new TreeMap<>();
+    // ViewNumber, Map(ReplicaId -> ViewChangeCommitCertificate)
+    private final SortedMap<Long, SortedMap<String, IHateThePrimaryMessage>> iHateThePrimaries = new TreeMap<>();
 
     @Getter
     // SequenceNumber, Map(ReplicaId -> FillHoleMessage) received
@@ -32,11 +33,11 @@ public class MessageLog implements Serializable {
     private final SortedMap<Long, List<ViewConfirmMessage>> viewConfirmMessages = new TreeMap<>();
 
     @Getter
-    // viewNumber, ViewChangeMessage
+    // ViewNumber, ViewChangeMessage
     private final SortedMap<Long, SortedMap<String, ViewChangeMessage>> viewChangeMessages = new TreeMap<>();
 
     @Getter
-    // viewNumber, NewViewMessage
+    // ViewNumber, NewViewMessage
     private final SortedMap<Long, NewViewMessage> newViewMessages = new TreeMap<>();
 
     @Getter

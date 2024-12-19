@@ -5,10 +5,11 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.With;
 
+import java.util.Arrays;
+
 @Data
-@EqualsAndHashCode(callSuper = true)
 @With
-//<<SpecResponse, v, n, hn, H(r), c, t>i, r, OR>
+//<SpecResponse, v, n, hn, H(r), c, t>
 public class SpeculativeResponse extends MessagePayload {
 
     private final long viewNumber;
@@ -17,6 +18,29 @@ public class SpeculativeResponse extends MessagePayload {
     private final byte[] replyDigest;
     private final String clientId;
     private final long timestamp;
+
+    @Override
+    public boolean equals(Object obj) {
+        if (obj instanceof SpeculativeResponse other) {
+            return this.viewNumber == other.viewNumber &&
+                    this.sequenceNumber == other.sequenceNumber &&
+                    this.history == other.history &&
+                    Arrays.equals(this.replyDigest, other.replyDigest) &&
+                    this.clientId.equals(other.clientId) &&
+                    this.timestamp == other.timestamp;
+        }
+        return false;
+    }
+
+    @Override
+    public int hashCode() {
+        return Long.hashCode(viewNumber) ^
+                Long.hashCode(sequenceNumber) ^
+                Long.hashCode(history) ^
+                Arrays.hashCode(replyDigest) ^
+                clientId.hashCode() ^
+                Long.hashCode(timestamp);
+    }
 
     @Override
     public String getType() {
