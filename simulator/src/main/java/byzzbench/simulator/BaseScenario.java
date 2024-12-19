@@ -73,8 +73,10 @@ public abstract class BaseScenario implements Scenario {
     protected ScenarioPredicate terminationCondition;
     /**
      * Pseudo-random number generator for the scenario.
+     * TODO: parameterize the seed
      */
-    Random rand;
+    @Getter
+    Random random = new Random(1L);
 
     /**
      * Creates a new scenario with the given unique identifier and scheduler.
@@ -253,6 +255,11 @@ public abstract class BaseScenario implements Scenario {
     @Override
     public SortedSet<String> getNodeIds(Node node) {
         return new TreeSet<>(this.getNodes().keySet());
+    }
+
+    @Override
+    public SortedSet<String> getReplicaIds(Node node) {
+        return new TreeSet<>(this.getReplicas().keySet());
     }
 
     @Override

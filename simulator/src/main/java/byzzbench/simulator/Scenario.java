@@ -8,6 +8,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import java.io.Serializable;
 import java.util.List;
 import java.util.NavigableMap;
+import java.util.Random;
 import java.util.SortedSet;
 
 /**
@@ -99,6 +100,15 @@ public interface Scenario extends Serializable {
     SortedSet<String> getNodeIds(Node node);
 
     /**
+     * Return the set of replica IDs in the system visible to the given node.
+     * This excludes e.g. client nodes.
+     *
+     * @param node The node to get the replica IDs for.
+     * @return The set of replica IDs in the system visible to the given node.
+     */
+    SortedSet<String> getReplicaIds(Node node);
+
+    /**
      * Get the observers in the scenario.
      *
      * @return A list of observer objects.
@@ -137,4 +147,11 @@ public interface Scenario extends Serializable {
      * @return True if the invariants hold, false otherwise.
      */
     boolean invariantsHold();
+
+    /**
+     * Get the random number generator for the scenario.
+     *
+     * @return The random number generator for the scenario.
+     */
+    Random getRandom();
 }

@@ -394,6 +394,7 @@ public class Transport {
                 .description("TIMEOUT")
                 .nodeId(node.getId())
                 .timeout(timeout)
+                .expiresAt(node.getCurrentTime().plus(timeout))
                 .task(runnable)
                 .build();
         this.appendEvent(timeoutEvent);
