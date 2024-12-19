@@ -66,7 +66,9 @@ public class TwinsReplica extends Replica {
         // Create some round partitions. TODO: parameterize!
         List<String> nodeIds = new ArrayList<>(replica.getNodeIds().stream().filter(id -> !id.equals(this.getId())).toList());
         nodeIds.addAll(getInternalIds());
-        List<List<List<String>>> options = StirlingNumberSecondKind.getPartitions(nodeIds, 2);
+        List<List<List<String>>> options = StirlingNumberSecondKind.getPartitions(nodeIds, 1);
+        options.addAll(StirlingNumberSecondKind.getPartitions(nodeIds, 2));
+        options.addAll(StirlingNumberSecondKind.getPartitions(nodeIds, 3));
         // select a random option
         Random rand = new Random();
         for (long i = 0; i < 5; i++) {
