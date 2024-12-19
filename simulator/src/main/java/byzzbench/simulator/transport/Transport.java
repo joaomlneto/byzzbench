@@ -337,6 +337,7 @@ public class Transport {
 
         // apply the mutation
         fault.accept(input);
+        scenario.markReplicaFaulty(m.getSenderId());
 
         // create a new event for the mutation
         MutateMessageEvent mutateMessageEvent = MutateMessageEvent.builder()
