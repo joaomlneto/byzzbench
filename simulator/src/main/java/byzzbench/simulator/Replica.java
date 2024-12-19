@@ -282,4 +282,20 @@ public abstract class Replica implements Serializable, Node {
         return this.diffTime(this.getCurrentTime(), start);
     }
 
+    /**
+     * Determine whether this replica is faulty.
+     *
+     * @return true if the replica is faulty, false otherwise
+     */
+    public boolean isFaulty() {
+        return this.scenario.isFaultyReplica(this.id);
+    }
+
+    /**
+     * Mark this replica as faulty.
+     */
+    public void markFaulty() {
+        this.scenario.markReplicaFaulty(this.id);
+    }
+
 }
