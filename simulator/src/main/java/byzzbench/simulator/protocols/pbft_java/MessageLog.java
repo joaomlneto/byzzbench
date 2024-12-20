@@ -1,10 +1,6 @@
 package byzzbench.simulator.protocols.pbft_java;
 
 import byzzbench.simulator.protocols.pbft_java.message.*;
-import byzzbench.simulator.protocols.pbft_java.pojo.ReplicaRequestKey;
-import byzzbench.simulator.protocols.pbft_java.pojo.ReplicaTicketPhase;
-import byzzbench.simulator.protocols.pbft_java.pojo.TicketKey;
-import byzzbench.simulator.protocols.pbft_java.pojo.ViewChangeResult;
 import lombok.Getter;
 import lombok.NonNull;
 
@@ -23,12 +19,17 @@ public class MessageLog implements Serializable {
     @Getter
     private final int watermarkInterval;
 
+    @Getter
     private final Deque<RequestMessage> buffer = new ConcurrentLinkedDeque<>();
 
+    @Getter
     private final SortedMap<ReplicaRequestKey, Ticket<?, ?>> ticketCache = new TreeMap<>();
+    @Getter
     private final SortedMap<TicketKey, Ticket<?, ?>> tickets = new TreeMap<>();
 
+    @Getter
     private final SortedMap<Long, Collection<CheckpointMessage>> checkpoints = new TreeMap<>();
+    @Getter
     private final SortedMap<Long, SortedMap<String, ViewChangeMessage>> viewChanges = new TreeMap<>();
 
     private volatile long lowWaterMark;

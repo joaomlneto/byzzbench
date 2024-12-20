@@ -23,6 +23,7 @@ public class SchedulerFactoryService {
 
     /**
      * Get a scheduler by id
+     *
      * @param id the id of the scheduler
      * @return the scheduler
      */
@@ -37,6 +38,7 @@ public class SchedulerFactoryService {
 
     /**
      * Get the ids of all registered schedulers
+     *
      * @return the ids of all registered schedulers
      */
     public List<String> getSchedulerIds() {
