@@ -4,6 +4,6 @@ public enum MessageType {
     NEW_VIEW,
     GENERIC,
     GENERIC_VOTE,
-    CATCH_UP,
+    TELL,
     ASK
 }

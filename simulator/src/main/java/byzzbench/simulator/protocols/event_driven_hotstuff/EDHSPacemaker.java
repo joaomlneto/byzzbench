@@ -13,9 +13,9 @@ public class EDHSPacemaker {
     EDHSNode leafNode;
 
     // For debugging only
-    public Integer getHighQCHeight() {
+    public Long getHighQCHeight() {
         EDHSNode node = replica.getNode(highQC.getNodeHash());
-        if (node == null) return Integer.MIN_VALUE;
+        if (node == null) return Long.MIN_VALUE;
         return node.getHeight();
     }
 
@@ -70,9 +70,10 @@ public class EDHSPacemaker {
             }
 
             if(!viewState.isDone() && (viewState.hasMadeQC() || viewState.hasNewViewQuorum())) {
-                ClientRequest clientRequest = replica.nextClientRequest();
+                ClientRequest clientRequest = replica.nextClientRequest(leafNode);
                 if (clientRequest != null) {
-                    leafNode = replica.onPropose(leafNode, clientRequest, highQC);
+                    //leafNode =
+                    replica.onPropose(leafNode, clientRequest, highQC);
                     viewState.setViewActionDone();
                     replica.log("Created proposal with height " + leafNode.getHeight() + " for request " + clientRequest.getRequestId());
                 } else replica.log("Cannot create proposal. No known client requests.");

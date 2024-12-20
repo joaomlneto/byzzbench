@@ -30,7 +30,7 @@ public class EDHSNode {
     }
 
     public boolean isChildOf(EDHSNode parent) {
-        return this.parentHash.equals(parent.hash);
+        return this.parentHash.equals(parent.hash) && (parent.height == height - 1);
     }
 
     public boolean isExtensionOf(EDHSNode ancestor, HashMap<String, EDHSNode> nodes) {
