@@ -26,6 +26,11 @@ public class ByzzBenchConfig {
     private boolean autostart = false;
 
     /**
+     * The number of scenarios to run at a time. Defaults to Integer.MAX_VALUE.
+     */
+    private int numScenarios = Integer.MAX_VALUE;
+
+    /**
      * The path to the output directory. Defaults to "./output".
      */
     private Path outputPath = Path.of("output");
@@ -74,15 +79,40 @@ public class ByzzBenchConfig {
      */
     @Data
     public final class SchedulerConfig {
+        /**
+         * The ID of the scheduler to use.
+         */
         private String id;
         /**
-         * Maximum number of messages to drop during scenario execution
+         * Maximum number of messages to drop for a given scenario.
          */
         private int maxDropMessages = 0;
         /**
-         * Maximum number of faults to inect during scenario execution
+         * Maximum number of messages to mutate-and-deliver for a given scenario.
          */
-        private int maxFaults;
+        private int maxMutateMessages = 0;
+        /**
+         * Weighted probability of triggering a timeout
+         */
+        private int deliverTimeoutWeight = 1;
+        /**
+         * Weighted probability of delivering a message
+         */
+        private int deliverMessageWeight = 99;
+        /**
+         * Weighted probability of delivering a request from a client
+         */
+        private int deliverClientRequestWeight = 99;
+        /**
+         * Weighted probability of dropping a message.
+         * The default is 0 (no messages dropped as a scheduler decision).
+         */
+        private int dropMessageWeight = 0;
+        /**
+         * Weighted probability of mutating and delivering a message.
+         * The default is 0 (no messages are mutated as a scheduler decision).
+         */
+        private int mutateMessageWeight = 0;
 
         private Map<String, String> params;
 

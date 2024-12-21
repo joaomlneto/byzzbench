@@ -16,7 +16,7 @@ public class Timekeeper implements Serializable {
     private final transient Scenario scenario;
     private final AtomicLong counter = new AtomicLong(0);
 
-    public Instant getTime(Replica replica) {
+    public Instant getTime(Node node) {
         return Instant.ofEpochMilli(counter.incrementAndGet());
     }
 }

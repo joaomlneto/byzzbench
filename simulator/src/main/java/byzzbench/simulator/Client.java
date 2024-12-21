@@ -9,6 +9,7 @@ import lombok.RequiredArgsConstructor;
 
 import java.io.Serializable;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
@@ -77,6 +78,11 @@ public class Client implements Serializable, Node {
         if (this.requestSequenceNumber.get() < this.maxRequests) {
             this.sendRequest();
         }
+    }
+
+    @Override
+    public Instant getCurrentTime() {
+        return this.scenario.getTimekeeper().getTime(this);
     }
 
     /**

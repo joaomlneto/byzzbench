@@ -68,20 +68,17 @@ public class Schedule implements Serializable {
      *
      * @return true if the schedule is buggy, false otherwise.
      */
+    @JsonIgnore
     public boolean isBuggy() {
         return !brokenInvariants.isEmpty();
     }
 
+    /**
+     * Returns the id of the scenario that generated this schedule.
+     *
+     * @return the id of the scenario that generated this schedule.
+     */
     public @NonNull String getScenarioId() {
         return scenario.getId();
-    }
-
-    /**
-     * Returns the number of events in the schedule.
-     *
-     * @return the number of events in the schedule.
-     */
-    public @NonNull int getEventCount() {
-        return events.size();
     }
 }
