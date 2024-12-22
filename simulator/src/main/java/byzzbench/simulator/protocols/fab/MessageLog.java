@@ -3,6 +3,7 @@ package byzzbench.simulator.protocols.fab;
 import byzzbench.simulator.protocols.fab.messages.*;
 import byzzbench.simulator.transport.DefaultClientRequestPayload;
 import byzzbench.simulator.transport.MessagePayload;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Getter;
 import lombok.extern.java.Log;
 
@@ -13,6 +14,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 @Log
 public class MessageLog {
+    @JsonIgnore
     private final FastByzantineReplica replica;
     private SortedMap<String, Pair> acceptorsWithAcceptedProposal;
     @Getter
@@ -24,7 +26,7 @@ public class MessageLog {
     private Pair learnedValue;
     private Pair acceptedProposal;
     @Getter
-    private List<SignedResponse> responses;
+    private SortedMap<String, SignedResponse> responses;
 
     private final SortedMap<Long, List<ProposeMessage>> proposeMessages = new TreeMap<>();
     private final SortedMap<Long, List<AcceptMessage>> acceptMessages = new TreeMap<>();
@@ -45,7 +47,7 @@ public class MessageLog {
         this.satisfiedProposerNodes = new TreeMap<>();
         this.learnersWithLearnedValue = new TreeMap<>();
         this.nodesSuspectingLeader = new ArrayList<>();
-        this.responses = new ArrayList<>();
+        this.responses = new TreeMap<>();
     }
 
     public void addMessage(String sender, MessagePayload message) {
@@ -173,7 +175,7 @@ public class MessageLog {
     public boolean learnerHasLearnedValue(Pair learnValue, int quorum) {
         AtomicInteger currentLearnedWithSamePair = new AtomicInteger();
         learnersWithLearnedValue.values().forEach(pair -> {
-            if (pair.getNumber() == learnValue.getNumber() && Arrays.equals(pair.getValue(), learnValue.getValue())) {
+            if (Objects.equals(pair.getNumber(), learnValue.getNumber()) && Arrays.equals(pair.getValue(), learnValue.getValue())) {
                 currentLearnedWithSamePair.getAndIncrement();
             }
         });
@@ -252,7 +254,12 @@ public class MessageLog {
         long viewNumber = replyMessage.getValueAndProposalNumber().getNumber();
         boolean isSigned = replyMessage.isSigned();
         String replySender = replyMessage.getSender();
-        responses.add(new SignedResponse(value, viewNumber, isSigned, replySender));
+        responses.put(sender, new SignedResponse(value, viewNumber, isSigned, replySender));
+        // Log all responses
+        log.info("REPLY is : " + replyMessage.getValueAndProposalNumber().getNumber() + " " + Arrays.toString(replyMessage.getValueAndProposalNumber().getValue()));
+        for (Map.Entry<String, SignedResponse> response : responses.entrySet()) {
+            log.info("Responses map has the following elements: " + response.getKey() + " " + Arrays.toString(response.getValue().getValue()));
+        }
     }
 
     public void acceptViewChange(ViewChangeMessage viewChangeMessage) {
@@ -277,16 +284,5 @@ public class MessageLog {
 
     public int satisfiedProposersCount() {
         return satisfiedProposerNodes.size();
-    }
-
-    public void deletePreviousRoundMessages(long proposalNumber) {
-        acceptMessages.remove(proposalNumber);
-        learnMessages.remove(proposalNumber);
-        satisfiedMessages.remove(proposalNumber);
-        replyMessages.remove(proposalNumber);
-    }
-
-    public int proposersWithLearnedValueCount() {
-        return proposersWithLearnedValue.size();
     }
 }

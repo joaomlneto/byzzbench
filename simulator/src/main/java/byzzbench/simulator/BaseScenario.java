@@ -37,6 +37,7 @@ public abstract class BaseScenario implements Scenario {
     /**
      * The timekeeper for the scenario.
      */
+    @JsonIgnore
     protected final transient Timekeeper timekeeper;
     /**
      * The scheduler for the scenario.

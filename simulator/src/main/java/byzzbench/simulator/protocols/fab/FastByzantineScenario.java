@@ -42,14 +42,14 @@ public class FastByzantineScenario extends BaseScenario {
                     nodesIds, transport, this, proposerAndAcceptor, true, timeout, p, a, l, f,
                     new TreeSet<>(List.of("A", "B", "C", "D", "E", "F")),
                     new TreeSet<>(List.of("C", "D", "E", "F")),
-                    new TreeSet<>(List.of("B", "C", "D")),
+                    new TreeSet<>(List.of("A", "B", "C", "D")),
                     "A");
             this.addNode(replica1);
 
             FastByzantineReplica replica2 = new FastByzantineReplica("B", nodesIds, transport, this, proposerAndAcceptor, false, 2 * timeout, p, a, l, f,
                     new TreeSet<>(List.of("A", "B" ,"C", "D", "E", "F")),
                     new TreeSet<>(List.of("C", "D", "E", "F")),
-                    new TreeSet<>(List.of("A", "C", "D")),
+                    new TreeSet<>(List.of("A", "B", "C", "D")),
                     "A");
             this.addNode(replica2);
 
@@ -58,14 +58,14 @@ public class FastByzantineScenario extends BaseScenario {
             FastByzantineReplica replica3 = new FastByzantineReplica("C", nodesIds, transport, this, proposerAndAcceptorAndLearner, false, 2 * timeout, p, a, l, f,
                     new TreeSet<>(List.of("A", "B", "C", "D", "E", "F")),
                     new TreeSet<>(List.of("D", "E", "F")),
-                    new TreeSet<>(List.of("A", "B", "D")),
+                    new TreeSet<>(List.of("A", "B", "C", "D")),
                     "A");
             this.addNode(replica3);
 
             FastByzantineReplica replica4 = new FastByzantineReplica("D", nodesIds, transport, this, proposerAndAcceptorAndLearner, false, 2* timeout, p, a, l, f,
                     new TreeSet<>(List.of("A", "B", "C", "D", "E", "F")),
                     new TreeSet<>(List.of("C", "E", "F")),
-                    new TreeSet<>(List.of("A", "B", "C")),
+                    new TreeSet<>(List.of("A", "B", "C", "D")),
                     "A");
             this.addNode(replica4);
 
@@ -99,4 +99,73 @@ public class FastByzantineScenario extends BaseScenario {
             throw new RuntimeException(e);
         }
     }
+
+//    @Override
+//    protected void loadScenarioParameters(JsonNode parameters) {
+//        // no parameters to load
+//    }
+//
+//    @Override
+//    protected void setup() {
+//        // Scenario with f = 1 (Byzantine nodes), p = 4, a = 6, l = 4.
+//        int p = 4;
+//        int a = 4;
+//        int l = 4;
+//        int f = 1;
+//        long timeout = 90000L;
+//        try {
+//            SortedSet<String> nodesIds = new TreeSet<>();
+//            int NUM_NODES = 4;
+//            for (int i = 0; i < NUM_NODES; i++) {
+//                nodesIds.add(Character.toString((char) ('A' + i)));
+//            }
+//
+//            List<Role> proposerAndAcceptorAndLearner = List.of(Role.PROPOSER, Role.ACCEPTOR, Role.LEARNER);
+//            // This is the Byzantine node in this scenario.
+//            FastByzantineReplica replica1 = new FastByzantineReplica(
+//                    "A",
+//                    nodesIds, transport, this, proposerAndAcceptorAndLearner, true, timeout, p, a, l, f,
+//                    new TreeSet<>(List.of("A", "B", "C", "D")),
+//                    new TreeSet<>(List.of("A", "B", "C", "D")),
+//                    new TreeSet<>(List.of("A", "B", "C", "D")),
+//                    "A");
+//            this.addNode(replica1);
+//
+//            FastByzantineReplica replica2 = new FastByzantineReplica("B", nodesIds, transport, this, proposerAndAcceptorAndLearner, false, 2 * timeout, p, a, l, f,
+//                    new TreeSet<>(List.of("A", "B", "C", "D")),
+//                    new TreeSet<>(List.of("A", "B", "C", "D")),
+//                    new TreeSet<>(List.of("A", "B", "C", "D")),
+//                    "A");
+//            this.addNode(replica2);
+//
+//            FastByzantineReplica replica3 = new FastByzantineReplica("C", nodesIds, transport, this, proposerAndAcceptorAndLearner, false, 2 * timeout, p, a, l, f,
+//                    new TreeSet<>(List.of("A", "B", "C", "D")),
+//                    new TreeSet<>(List.of("A", "B", "C", "D")),
+//                    new TreeSet<>(List.of("A", "B", "C", "D")),
+//                    "A");
+//            this.addNode(replica3);
+//
+//            FastByzantineReplica replica4 = new FastByzantineReplica("D", nodesIds, transport, this, proposerAndAcceptorAndLearner, false, 2* timeout, p, a, l, f,
+//                    new TreeSet<>(List.of("A", "B", "C", "D")),
+//                    new TreeSet<>(List.of("A", "B", "C", "D")),
+//                    new TreeSet<>(List.of("A", "B", "C", "D")),
+//                    "A");
+//            this.addNode(replica4);
+//
+//        } catch (Exception e) {
+//            throw new RuntimeException(e);
+//        }
+//    }
+//
+//    @Override
+//    protected void run() {
+//        // send a request message to node A
+//        try {
+//            this.setNumClients(1);
+//            this.transport.sendClientRequest("C0", "123", "A");
+//
+//        } catch (Exception e) {
+//            throw new RuntimeException(e);
+//        }
+//    }
 }

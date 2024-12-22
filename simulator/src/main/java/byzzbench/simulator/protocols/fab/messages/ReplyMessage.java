@@ -16,6 +16,7 @@ public class ReplyMessage extends MessagePayload {
     private final Pair valueAndProposalNumber;
     private final boolean isSigned;
     private final String sender;
+    private final String clientID;
 
     public String getType() {
         return "RESPONSE";
