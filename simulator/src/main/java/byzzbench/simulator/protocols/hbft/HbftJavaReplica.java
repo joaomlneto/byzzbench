@@ -103,7 +103,7 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
         this.messageLog = messageLog;
         this.speculativeHistory = new SpeculativeHistory();
         this.speculativeRequests = new TreeMap<>();
-        this.logger.initialize(true);
+        this.logger.initialize(false);
     }
 
     @Override
@@ -1033,7 +1033,7 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
          * 
          * For now I will choose option 1 and rely on the client.
          */
-        if (this.getViewNumber() > newView.getNewViewNumber() || !messageLog.acceptNewView(newView, this.tolerance)) {
+        if (this.getViewNumber() >= newView.getNewViewNumber() || !messageLog.acceptNewView(newView, this.tolerance)) {
             return;
         }
 
