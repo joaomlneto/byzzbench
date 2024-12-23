@@ -57,4 +57,9 @@ public class HbftJavaScenario extends BaseScenario {
         //     throw new RuntimeException(e);
         // }
     }
+
+    @Override
+    public int maxFaultyReplicas(int n) {
+        return (n - 1) / 3;
+    }
 }

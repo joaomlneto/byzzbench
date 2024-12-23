@@ -159,4 +159,12 @@ public class XRPLScenario extends BaseScenario {
         }
     }
 
+    @Override
+    public int maxFaultyReplicas(int n) {
+        int maxFaultyReplicas = (this.getReplicas().size() - 1) / 5;
+        if (maxFaultyReplicas == 0) {
+            throw new IllegalArgumentException("XRP requires at least 6 replicas");
+        }
+        return maxFaultyReplicas;
+    }
 }

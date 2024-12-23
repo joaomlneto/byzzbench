@@ -53,4 +53,10 @@ public class DummyScenario extends BaseScenario {
     public synchronized void run() {
         // nothing to do
     }
+
+    @Override
+    public int maxFaultyReplicas(int n) {
+        // this is a dummy protocol, so anything goes
+        return n;
+    }
 }

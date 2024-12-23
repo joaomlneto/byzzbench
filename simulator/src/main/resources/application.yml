@@ -35,6 +35,9 @@ byzzbench:
       numRoundsWithProcessFaults: 1
       numRoundsWithNetworkFaults: 4
       numRoundsWithFaults: 5
+      # Twins
+      numReplicas: 1
+      numTwinsPerReplica: 2
 
   scenario:
     id: hbft
