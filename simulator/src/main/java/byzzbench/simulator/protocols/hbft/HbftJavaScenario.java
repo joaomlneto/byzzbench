@@ -16,6 +16,7 @@ import lombok.extern.java.Log;
 public class HbftJavaScenario extends BaseScenario {
     private final int NUM_NODES = 4;
     private final HbftTerminationCondition terminationCondition;
+    private SortedSet<String> nodeIds;
 
     public HbftJavaScenario(Scheduler scheduler) {
         super("hbft", scheduler);
@@ -30,12 +31,12 @@ public class HbftJavaScenario extends BaseScenario {
     @Override
     protected void setup() {
         try {
-            SortedSet<String> nodeIds = new TreeSet<>();
+            this.nodeIds = new TreeSet<>();
             for (int i = 0; i < 4; i++) {
-                nodeIds.add(Character.toString((char) ('A' + i)));
+                this.nodeIds.add(Character.toString((char) ('A' + i)));
             }
 
-            nodeIds.forEach(nodeId -> {
+            this.nodeIds.forEach(nodeId -> {
                 MessageLog messageLog = new MessageLog(100, 100, 200);
                 Replica replica = new HbftJavaReplica<String, String>(nodeId, nodeIds, 1, 2, messageLog, this);
                 this.addNode(replica);
@@ -56,6 +57,12 @@ public class HbftJavaScenario extends BaseScenario {
         //     e.printStackTrace();
         //     throw new RuntimeException(e);
         // }
+    }
+
+    @Override
+    public Replica cloneReplica(Replica replica) {
+        MessageLog messageLog = new MessageLog(100, 100, 200);
+        return new HbftJavaReplica<String, String>(replica.getId(), this.nodeIds, 1, 2, messageLog, this);
     }
 
     @Override

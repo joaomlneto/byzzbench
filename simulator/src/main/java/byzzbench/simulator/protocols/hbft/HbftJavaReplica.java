@@ -103,7 +103,7 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
         this.messageLog = messageLog;
         this.speculativeHistory = new SpeculativeHistory();
         this.speculativeRequests = new TreeMap<>();
-        this.logger.initialize(false);
+        this.logger.initialize(true);
     }
 
     @Override
@@ -922,6 +922,7 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
          * from the received history.
          */
         this.receivedRequests.clear();
+        this.speculativeRequests.clear(); 
     }
 
     public void recvNewViewAsCheckpoint(NewViewMessage newView) {

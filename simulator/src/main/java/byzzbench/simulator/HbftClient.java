@@ -104,7 +104,7 @@ public class HbftClient extends Client {
         } else if (this.shouldPanic(tolerance)) {
             RequestMessage message = this.sentRequests.get(super.requestSequenceNumber.get());
             PanicMessage panic = new PanicMessage(this.digest(message), System.currentTimeMillis(), super.id);
-            super.scenario.getTransport().multicast(super.id, super.scenario.getTransport().getNodeIds(), panic);
+            super.scenario.getTransport().multicast(this, super.scenario.getTransport().getNodeIds(), panic);
         }
         this.clearTimeout(timeouts.get(super.requestSequenceNumber.get()));
         Long timeoutId = this.setTimeout("REQUEST", this::retransmitOrPanic, this.timeout);

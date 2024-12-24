@@ -1,19 +1,18 @@
 package byzzbench.simulator.protocols.hbft;
 
 import java.util.ArrayList;
-
-import static org.mockito.Mockito.verify;
-
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.SortedMap;
 import java.util.SortedSet;
+import java.util.TreeMap;
 import java.util.TreeSet;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
-
 import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.util.Assert;
 
@@ -656,6 +655,32 @@ public class HbftJavaReplicaTests {
         verify(spyReplica, times(0)).sendViewChange(Mockito.any(ViewChangeMessage.class));
         spyReplica.recvViewChange(viewChange2);
         //verify(spyReplica, times(1)).sendViewChange(Mockito.any(ViewChangeMessage.class));
+    }
+
+    @Test
+	void testRecvWithDifferentReqInViewChange() {
+        HbftJavaReplica spyReplica = Mockito.spy(replicaC);
+        RequestMessage request = new RequestMessage("123", 0, "C1");
+        RequestMessage request2 = new RequestMessage("321", 0, "C0");
+        SortedMap<Long, RequestMessage> rRequests1 = new TreeMap<>();
+        SortedMap<Long, RequestMessage> rRequests2 = new TreeMap<>();
+        rRequests1.put(1L, request);
+        rRequests2.put(1L, request2);
+        ViewChangeMessage viewChange  = new ViewChangeMessage(2, null, null, rRequests1, replicaA.getId());
+        ViewChangeMessage viewChange2  = new ViewChangeMessage(2, null, null, rRequests2, replicaD.getId());
+        SpeculativeHistory history = new SpeculativeHistory();
+        history.addEntry(1, null);
+        NewViewMessage newView = new NewViewMessage(2, null, null, history);
+
+        spyReplica.recvViewChange(viewChange);
+        spyReplica.recvViewChange(viewChange2);
+
+        verify(spyReplica, times(1)).sendViewChange(Mockito.any(ViewChangeMessage.class));
+        // Should not include any request in R        
+        verify(spyReplica, times(1))
+        .recvNewView(Mockito.argThat(arg -> arg.getNewViewNumber() == newView.getNewViewNumber()
+            && arg.getSpeculativeHistory().getRequests().size() == 1
+            && arg.getSpeculativeHistory().getRequests().get(1L) == null));
     }
 
     @Test
