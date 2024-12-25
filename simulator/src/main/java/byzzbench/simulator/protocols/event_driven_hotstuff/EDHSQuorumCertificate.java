@@ -2,11 +2,13 @@ package byzzbench.simulator.protocols.event_driven_hotstuff;
 
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
+import lombok.ToString;
 
 import java.io.Serializable;
 
 @Getter
 @EqualsAndHashCode
+@ToString
 public class EDHSQuorumCertificate implements Serializable {
     private String nodeHash;
     private QuorumSignature signature;

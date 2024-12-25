@@ -94,14 +94,16 @@ export default function Home() {
                             />
                         )}
                     </ScrollArea>
+                    <ScrollArea type="auto" mah={500} >
                     <Title order={5}>Trigger Faulty Behaviors</Title>
                     <ScenarioEnabledFaultsList/>
                     <Title order={5}>Scheduled Faults</Title>
                     <ScenarioScheduledFaultsList/>
                     <Title order={5}>Discarded Events</Title>
                     <DroppedMessagesList/>
+                    </ScrollArea>
                 </Stack>
-            </AppShell.Aside>
+             </AppShell.Aside>
         </Container>
     );
 }

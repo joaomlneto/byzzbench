@@ -2,6 +2,7 @@ package byzzbench.simulator.protocols.event_driven_hotstuff;
 
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
+import lombok.ToString;
 
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -9,6 +10,7 @@ import java.util.HashSet;
 
 @Getter
 @EqualsAndHashCode
+@ToString
 public class QuorumSignature implements Serializable {
     private HashSet<PartialSignature> partialSignatures;
 
@@ -17,6 +19,6 @@ public class QuorumSignature implements Serializable {
     }
 
     public boolean isValid(String nodeHash, int minValidSignatures) {
-        return partialSignatures.stream().filter(ps -> ps.getProposedNodeHash().equals(nodeHash)).count() == minValidSignatures;
+        return partialSignatures.stream().filter(ps -> ps.getProposedNodeHash().equals(nodeHash)).count() >= minValidSignatures;
     }
 }

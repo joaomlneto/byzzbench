@@ -17,7 +17,7 @@ public class LeaderViewState {
     private final transient EDHSPacemaker pacemaker;
     private final long viewNumber;
 
-    private final HashSet<Long> newViewMessages;
+    private final HashSet<String> newViewMessages;
     private final HashMap<String, HashSet<GenericVote>> votes;
     private boolean done;
     private boolean madeQC;
@@ -37,8 +37,8 @@ public class LeaderViewState {
         makeQCIfReady();
     }
 
-    public void addNewViewMessage(NewViewMessage message) {
-        if(message.getViewNumber() == viewNumber) newViewMessages.add(message.getViewNumber());
+    public void addNewViewMessage(NewViewMessage message, String senderId) {
+        if(message.getViewNumber() == viewNumber) newViewMessages.add(senderId);
         checkForNewViewQuorum();
     }
 

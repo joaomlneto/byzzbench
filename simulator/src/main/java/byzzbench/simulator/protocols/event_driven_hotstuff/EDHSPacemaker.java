@@ -73,22 +73,19 @@ public class EDHSPacemaker {
                 ClientRequest clientRequest = replica.nextClientRequest(leafNode);
                 if (clientRequest != null) {
                     //leafNode =
-                    replica.onPropose(leafNode, clientRequest, highQC);
+                    var proposedNode = replica.onPropose(leafNode, clientRequest, highQC);
                     viewState.setViewActionDone();
-                    replica.log("Created proposal with height " + leafNode.getHeight() + " for request " + clientRequest.getRequestId());
+                    replica.log("Created proposal " + proposedNode.getHeight() + " with height " + proposedNode.getHeight() + " for request " + clientRequest.getRequestId());
                 } else replica.log("Cannot create proposal. No known client requests.");
             }
         } catch (Exception ignored) {}
     }
 
     public void onNextSyncView() {
-        //clearAllTimeouts();
-
         replica.nextView();
         replica.sendMessage(new NewViewMessage(replica.getViewNumber(), highQC), getLeaderId());
 
         replica.log("Next view sync timeout");
-        //setTimeout(this::onNextSyncView, 30000);
     }
 
     // NEW-VIEW
