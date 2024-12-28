@@ -3,6 +3,7 @@ package byzzbench.simulator.protocols.fab;
 import byzzbench.simulator.LeaderBasedProtocolReplica;
 import byzzbench.simulator.Scenario;
 import byzzbench.simulator.protocols.fab.messages.*;
+import byzzbench.simulator.state.SerializableLogEntry;
 import byzzbench.simulator.state.TotalOrderCommitLog;
 import byzzbench.simulator.transport.DefaultClientRequestPayload;
 import byzzbench.simulator.transport.MessagePayload;
@@ -15,7 +16,6 @@ import lombok.extern.java.Log;
 import java.io.Serializable;
 import java.time.Duration;
 import java.util.*;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * A replica in the FAB protocol.
@@ -27,7 +27,7 @@ public class FastByzantineReplica extends LeaderBasedProtocolReplica {
     // The possible roles are : PROPOSER, ACCEPTOR, LEARNER.
     // The required number of replicas with each role is:
     // p ( proposers ) = 3 * f + 1, a ( acceptors ) = 5 * f + 1, l ( learners ) = 3 * f + 1.
-    private final List<Role> roles;
+    private List<Role> roles = new ArrayList<>();
 
     // The number of replicas in the system with each role.
     private final int p, a, l, f;
@@ -43,13 +43,13 @@ public class FastByzantineReplica extends LeaderBasedProtocolReplica {
     @Setter
     private String leaderId;
     @Setter
-    private AtomicBoolean isCurrentlyLeader = new AtomicBoolean(false);
+    private boolean isCurrentlyLeader;
 
     // The set of node IDs in the system for each role.
-    private final SortedSet<String> acceptorNodeIds;
-    private final SortedSet<String> learnerNodeIds;
-    private final SortedSet<String> proposerNodeIds;
-    private final SortedSet<String> nodeIds;
+    private SortedSet<String> acceptorNodeIds = new TreeSet<>();
+    private SortedSet<String> learnerNodeIds = new TreeSet<>();;
+    private SortedSet<String> proposerNodeIds = new TreeSet<>();;
+    private SortedSet<String> nodeIds = new TreeSet<>();;
 
     @JsonIgnore
     private final Transport transport;
@@ -57,19 +57,21 @@ public class FastByzantineReplica extends LeaderBasedProtocolReplica {
     // Current client ID that the system is communicating with.
     private String clientId;
 
-    private boolean isSatisfied = false;
+    private boolean isSatisfied;
     // Keep track of the timeouts set by the replica.
     private long learnerTimeoutId = -1;
     private long proposerTimeoutId = -1;
     private long leaderTimeoutId = -1;
     // To be set during the recovery protocol.
     @Setter
-    private boolean isRecovered = true;
+    private boolean isRecovered;
     /**
      * The log of received messages for the replica.
      */
     @JsonIgnore
     private MessageLog messageLog;
+    private boolean commited;
+    private byte[] operation;
 
     public FastByzantineReplica(
             String nodeId,
@@ -89,7 +91,7 @@ public class FastByzantineReplica extends LeaderBasedProtocolReplica {
         this.nodeIds = nodeIds;
         this.transport = transport;
         this.messageTimeoutDuration = messageTimeoutDuration;
-        this.isCurrentlyLeader.set(isCurrentlyLeader);
+        this.isCurrentlyLeader = isCurrentlyLeader;
         this.p = p;
         this.a = a;
         this.l = l;
@@ -105,12 +107,19 @@ public class FastByzantineReplica extends LeaderBasedProtocolReplica {
     public void initialize() {
         // Starting the protocol - a new leader has been elected only once
         this.viewNumber = 1;
-        messageLog = new MessageLog(this);
         onStart();
     }
 
     public void onStart() {
-        isRecovered = false;
+        this.isSatisfied = false;
+        this.isRecovered = true;
+        messageLog.resolve();
+        this.clearAllTimeouts();
+        this.leaderTimeoutId = -1;
+        this.proposerTimeoutId = -1;
+        this.learnerTimeoutId = -1;
+        this.commited = false;
+
         log.info("Replica " + getId() + " is starting");
         if (isProposer()) proposerOnStart();
         if (isLearner()) learnerOnStart();
@@ -121,20 +130,20 @@ public class FastByzantineReplica extends LeaderBasedProtocolReplica {
      * The LEADER starts by sending a PROPOSE message to all ACCEPTOR nodes. It keeps sending the message until
      * the threshold - ceil((p + f + 1) / 2) - is reached.
      */
-    private void leaderOnStart() {
+    private void leaderOnStart(ProposeMessage proposeMessage) {
         log.info("Replica " + getId() + " is the leader and preparing to send a PROPOSE message to all ACCEPTOR nodes");
 
         this.leaderTimeoutId = this.setTimeout("leader-timeout", () -> {
             log.info("Timer was set");
             this.multicastMessage(
-                    new ProposeMessage(this.getId(), new Pair(this.viewNumber, this.proposedValue), this.pc),
+                    proposeMessage,
                     this.acceptorNodeIds
             );
 
             /* Used for faulty scenario. */
 //            this.multicastMessage(new ProposeMessage(this.getId(), new Pair(this.viewNumber, "A".getBytes()), this.pc), new TreeSet<>(List.of("A", "B", "C")));
 //            this.multicastMessage(new ProposeMessage(this.getId(), new Pair(this.getViewNumber(), "B".getBytes()), this.pc), new TreeSet<>(List.of("D")));
-        }, Duration.ofMillis(10000));
+        }, Duration.ofMillis(1000));
     }
 
     /**
@@ -165,7 +174,7 @@ public class FastByzantineReplica extends LeaderBasedProtocolReplica {
             log.info("Learner " + getId() + " has not learned a value. Sending PULL message...");
             this.learnerTimeoutId = this.setTimeout("learner-timeout",
                     () -> multicastMessage(new PullMessage(this.viewNumber), learners),
-                    Duration.ofMillis(90000));
+                    Duration.ofMillis(900));
         }
     }
 
@@ -177,28 +186,35 @@ public class FastByzantineReplica extends LeaderBasedProtocolReplica {
     @Override
     public void handleClientRequest(String clientId, Serializable request) throws UnsupportedOperationException {
         // If the client request is not send to the leader, forward it to the leader.
+        log.info("Replica " + getId() + " received a client request from " + clientId);
         if (!isLeader()) {
+            operation = request.toString().getBytes();
+            log.info("Forwarding client request to leader " + this.leaderId);
             this.sendMessage(new ForwardClientRequest(request, clientId), this.leaderId);
             return;
         }
 
         // Sending PROPOSE message to all ACCEPTOR nodes.
+        log.info("Leader " + getId() + " received a client request from " + clientId);
         this.clientId = clientId;
         if (this.pc == null) { this.proposedValue = request.toString().getBytes(); }
-        this.multicastMessage(new ProposeMessage(this.getId(), new Pair(this.viewNumber, this.proposedValue), this.pc), this.acceptorNodeIds);
+        ProposeMessage proposeMessage = new ProposeMessage(getId(), new Pair(this.viewNumber, this.proposedValue), this.pc);
+        this.multicastMessage(proposeMessage, this.acceptorNodeIds);
 
         /* Used in faulty scenario. */
 //        proposedValue = "A".getBytes();
 //        this.multicastMessage(new ProposeMessage(this.getId(), new Pair(this.viewNumber, "A".getBytes()), this.pc), new TreeSet<>(List.of("A", "B", "C")));
 //        proposedValue ="B".getBytes();
 //        this.multicastMessage(new ProposeMessage(this.getId(), new Pair(this.getViewNumber(), "B".getBytes()), this.pc), new TreeSet<>(List.of("D")));
-        leaderOnStart();
+        leaderOnStart(proposeMessage);
         // I don't think this should be here
+        operation = request.toString().getBytes();
         messageLog.resolveClientRequest(clientId, request);
     }
 
     @Override
     public void handleMessage(String sender, MessagePayload message) throws UnsupportedOperationException {
+        log.info("Replica " + getId() + " received a message from " + sender);
         messageLog.addMessage(sender, message);
         switch (message) {
             case ProposeMessage proposeMessage when isAcceptor() -> handleProposeMessage(sender, proposeMessage);
@@ -235,6 +251,9 @@ public class FastByzantineReplica extends LeaderBasedProtocolReplica {
      * @param proposeMessage : the PROPOSE message with the proposed value and round number
      */
     private void handleProposeMessage(String sender, ProposeMessage proposeMessage) {
+        // Ignore PROPOSE messages from non-leader replicas
+        if (!sender.equals(leaderId)) return;
+
         long proposalNumber = proposeMessage.getValueAndProposalNumber().getNumber();
         // The protocol is in a new view, ignore past proposals
         if (this.viewNumber > proposalNumber) {
@@ -249,11 +268,16 @@ public class FastByzantineReplica extends LeaderBasedProtocolReplica {
         }
 
         int vouchingThreshold = (int) Math.ceil((a - f + 1) / 2.0);
-
+        operation = proposeMessage.getValueAndProposalNumber().getValue();
         if (messageLog.onPropose(sender, proposeMessage, vouchingThreshold)) {
             log.info("Acceptor " + getId() + " accepted proposal with value " +
                     new String(proposeMessage.getValueAndProposalNumber().getValue()));
+            // Commit the operation
+            log.info("Acceptor " + getId() + " has commited the operation " + new String(proposeMessage.getValueAndProposalNumber().getValue()));
+            if (!commited) this.commitOperation(new SerializableLogEntry(proposeMessage.getValueAndProposalNumber().getValue()));
+            commited = true;
             multicastMessage(new AcceptMessage(getId(), proposeMessage.getValueAndProposalNumber()), this.learnerNodeIds);
+            if (this.proposerTimeoutId != -1) this.clearTimeout(this.proposerTimeoutId);
         }
     }
 
@@ -276,11 +300,16 @@ public class FastByzantineReplica extends LeaderBasedProtocolReplica {
         log.info("Learner " + getId() + " received ACCEPT from " + sender + " and proposal number " + proposalNumber);
         int acceptedThreshold = (int) Math.ceil((a + (3 * f) + 1) / 2.0);
         messageLog.onAccept(sender, acceptMessage);
-
+        operation = acceptMessage.getValueAndProposalNumber().getValue();
         if (messageLog.isAccepted(acceptedThreshold)) {
             log.info("Acceptor " + getId() + " sending LEARN to all proposer...");
             Pair acceptValue = acceptMessage.getValueAndProposalNumber();
+            // Commit the operation
+            log.info("Learner " + getId() + " has commited the operation " + new String(acceptValue.getValue()));
+            if (!commited) this.commitOperation(new SerializableLogEntry(acceptValue.getValue()));
+            commited = true;
             multicastMessage(new LearnMessage(acceptValue), this.proposerNodeIds);
+            if (this.learnerTimeoutId != -1) this.clearTimeout(this.learnerTimeoutId);
         }
     }
 
@@ -303,9 +332,13 @@ public class FastByzantineReplica extends LeaderBasedProtocolReplica {
         log.info("Proposer " + getId() + " received LEARN from " + sender + " and proposal number " + learnMessage.getValueAndProposalNumber().getNumber());
         Pair learnValue = learnMessage.getValueAndProposalNumber();
         int learnedThreshold = (int) Math.ceil((l + f + 1) / 2.0);
-
+        operation = learnValue.getValue();
         // If the proposer has learned the value, it sends a SATISFIED message to all proposers
         if (messageLog.isLearned(sender, learnMessage, learnedThreshold) && !isSatisfied) {
+            // Commit the operation
+            log.info("Proposer " + getId() + " has commited the operation " + new String(learnValue.getValue()));
+            if (!commited) this.commitOperation(new SerializableLogEntry(learnValue.getValue()));
+            commited = true;
             log.info("Proposer " + getId() + " sending SATISFIED to all proposer...");
             multicastMessage(new SatisfiedMessage(getId(), learnValue), this.proposerNodeIds);
             isSatisfied = true;
@@ -332,8 +365,11 @@ public class FastByzantineReplica extends LeaderBasedProtocolReplica {
                 learnMessage.getValueAndProposalNumber().getNumber());
         messageLog.learnerOnLearned(sender, learnMessage);
         int learningThreshold = f + 1;
+        operation = learnMessage.getValueAndProposalNumber().getValue();
         if (messageLog.learnerHasLearnedValue(learnMessage.getValueAndProposalNumber(), learningThreshold)) {
-             if (this.learnerTimeoutId != -1) this.clearTimeout(this.learnerTimeoutId);
+            log.info("Learner " + getId() + " has commited the operation " + new String(learnMessage.getValueAndProposalNumber().getValue()));
+            if (!commited) this.commitOperation(new SerializableLogEntry(learnMessage.getValueAndProposalNumber().getValue()));
+            if (this.learnerTimeoutId != -1) this.clearTimeout(this.learnerTimeoutId);
         }
     }
 
@@ -359,18 +395,25 @@ public class FastByzantineReplica extends LeaderBasedProtocolReplica {
         log.info("The number of satisfied proposers is " + messageLog.satisfiedProposersCount());
 
         int threshold = (int) Math.ceil((p + f + 1) / 2.0);
-        if (messageLog.isSatisfied(threshold)) {
-            if (isLeader()) {
+        operation = satisfiedMessage.getValueAndProposalNumber().getValue();
+        if (isLeader()) {
+            if (messageLog.isSatisfied(threshold)) {
+                if (this.leaderTimeoutId != -1) this.clearTimeout(this.leaderTimeoutId);
+                // Commit the operation
+                log.info("Leader " + getId() + " has commited the operation " + new String(satisfiedMessage.getValueAndProposalNumber().getValue()));
+                if (!commited) this.commitOperation(new SerializableLogEntry(satisfiedMessage.getValueAndProposalNumber().getValue()));
+                commited = true;
                 this.viewNumber++;
-                sendReplyToClient(clientId, proposedValue);
-                this.clearAllTimeouts();
+                this.sendReplyToClient(clientId, proposedValue);
                 log.info("Finished handling client request");
+                messageLog.resolve();
+                onStart();
+            } else {
+                // Set a new timeout for the leader to send a PROPOSE message
+                this.setTimeout("leader-timeout",
+                        () -> this.multicastMessage(new ProposeMessage(getId(), new Pair(this.viewNumber, this.proposedValue), this.pc), this.acceptorNodeIds),
+                        Duration.ofMillis(900));
             }
-        } else if (isLeader()) {
-            // Set a new timeout for the leader to send a PROPOSE message
-            this.setTimeout("leader-timeout",
-                    () -> this.multicastMessage(new ProposeMessage(getId(), new Pair(this.viewNumber, this.proposedValue), this.pc), this.acceptorNodeIds),
-                    Duration.ofMillis(9000));
         }
     }
 
@@ -387,9 +430,12 @@ public class FastByzantineReplica extends LeaderBasedProtocolReplica {
         }
 
         if (this.viewNumber < queryMessage.getViewNumber()) {
+            log.info("Acceptor " + getId() + " received QUERY message with a future view number");
+            log.info("Resetting the view number from " + this.viewNumber + " to " + queryMessage.getViewNumber());
             reset(queryMessage.getViewNumber(), sender, queryMessage);
         }
 
+        log.info("Acceptor " + getId() + " received QUERY from " + sender + " and view number " + this.viewNumber);
         int quorum = a - f;
         Pair queriedValue = messageLog.onQuery(sender, queryMessage, quorum);
 
@@ -491,7 +537,7 @@ public class FastByzantineReplica extends LeaderBasedProtocolReplica {
 
                 ProposeMessage proposeMessage = new ProposeMessage(getId(), new Pair(this.viewNumber, this.proposedValue), this.pc);
                 multicastMessage(proposeMessage, this.acceptorNodeIds);
-                leaderOnStart();
+                leaderOnStart(proposeMessage);
                 onStart();
             }
         }
@@ -515,16 +561,19 @@ public class FastByzantineReplica extends LeaderBasedProtocolReplica {
         this.clearAllTimeouts();
         log.info("After clearing timeouts");
         messageLog.acceptViewChange(viewChangeMessage);
-        log.info("After accepting");
+        this.leaderId = viewChangeMessage.getNewLeaderId();
+        this.isCurrentlyLeader = this.leaderId.equals(getId());
 
+        log.info("After accepting");
         // Start recovery protocol
         if (isLeader()) {
             log.info("Leader " + getId() + " received VIEW_CHANGE message and is starting recovery protocol");
+            this.isRecovered = false;
             // Send query message to all acceptors until you get a - f replies
             multicastMessage(new QueryMessage(viewNumber), this.acceptorNodeIds);
-        } else {
-            onStart();
         }
+
+        onStart();
     }
 
     /**
@@ -533,14 +582,14 @@ public class FastByzantineReplica extends LeaderBasedProtocolReplica {
      * Once a new leader is elected, notify all other replicas of the new leader through a view change message.
      */
     public void electNewLeader() {
-        log.info("Electing a new leader...");
-        messageLog.reset();
+        log.info("Replica " + getId() + " is electing a new leader");
 
         // Select the new leader based on the view number and node IDs
         String newLeader = getNewLeader();
         log.info("New leader candidate: " + newLeader);
-
-        isCurrentlyLeader.set(newLeader.equals(getId()));  // This replica is the new leader
+        log.info("Current leader: " + this.leaderId);
+        log.info("Is new leader: " + newLeader.equals(getId()));
+        isCurrentlyLeader = newLeader.equals(getId());  // This replica is the new leader
         if (isLeader()) isRecovered = false;
 
         // Notify the other replicas of the new leader
@@ -560,6 +609,9 @@ public class FastByzantineReplica extends LeaderBasedProtocolReplica {
      */
     public void reset(long newViewNumber, String sender, MessagePayload message) {
         // Since we are resetting the replica, previous timeouts should be cleared
+        log.info("Replica " + getId() + " has commited the value " + operation);
+        if (!commited && operation != null) this.commitOperation(new SerializableLogEntry(operation));
+        commited = false;
         this.clearAllTimeouts();
         // Update the view number
         this.viewNumber = newViewNumber;
@@ -584,6 +636,6 @@ public class FastByzantineReplica extends LeaderBasedProtocolReplica {
     }
 
     private boolean isLeader() {
-        return this.isCurrentlyLeader.get();
+        return this.isCurrentlyLeader;
     }
 }

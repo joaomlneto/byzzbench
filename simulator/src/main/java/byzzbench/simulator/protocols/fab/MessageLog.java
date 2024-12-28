@@ -4,6 +4,7 @@ import byzzbench.simulator.protocols.fab.messages.*;
 import byzzbench.simulator.transport.DefaultClientRequestPayload;
 import byzzbench.simulator.transport.MessagePayload;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import lombok.Data;
 import lombok.Getter;
 import lombok.extern.java.Log;
 
@@ -13,32 +14,31 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 @Log
+@Data
 public class MessageLog {
     @JsonIgnore
     private final FastByzantineReplica replica;
-    private SortedMap<String, Pair> acceptorsWithAcceptedProposal;
+    private SortedMap<String, Pair> acceptorsWithAcceptedProposal = new TreeMap<>();
     @Getter
-    private SortedMap<String, Pair> proposersWithLearnedValue;
-    private SortedMap<String, Pair> satisfiedProposerNodes;
-    private SortedMap<String, Pair> learnersWithLearnedValue;
-    private List<String> nodesSuspectingLeader;
+    private SortedMap<String, Pair> proposersWithLearnedValue = new TreeMap<>();
+    private SortedMap<String, Pair> satisfiedProposerNodes = new TreeMap<>();
+    private SortedMap<String, Pair> learnersWithLearnedValue = new TreeMap<>();
+    private List<String> nodesSuspectingLeader = new ArrayList<>();
     @Getter
     private Pair learnedValue;
     private Pair acceptedProposal;
     @Getter
-    private SortedMap<String, SignedResponse> responses;
-
-    private final SortedMap<Long, List<ProposeMessage>> proposeMessages = new TreeMap<>();
-    private final SortedMap<Long, List<AcceptMessage>> acceptMessages = new TreeMap<>();
-    private final SortedMap<Long, List<LearnMessage>> learnMessages = new TreeMap<>();
-    private final SortedMap<Long, List<SatisfiedMessage>> satisfiedMessages = new TreeMap<>();
-    private final SortedMap<Long, List<ReplyMessage>> replyMessages = new TreeMap<>();
-    private final SortedMap<Long, List<PullMessage>> pullMessages = new TreeMap<>();
-    private final SortedMap<Long, List<SuspectMessage>> suspectMessages = new TreeMap<>();
-    private final SortedMap<Long, List<QueryMessage>> queryMessages = new TreeMap<>();
-    private final SortedMap<Long, List<ViewChangeMessage>> viewChangeMessages = new TreeMap<>();
-    private final SortedMap<Long, List<NewViewMessage>> newViewMessages = new TreeMap<>();
-    private final SortedMap<String, List<DefaultClientRequestPayload>> clientRequestMessages = new TreeMap<>();
+    private SortedMap<String, SignedResponse> responses = new TreeMap<>();
+    private SortedMap<Long, List<ProposeMessage>> proposeMessages = new TreeMap<>();
+    private SortedMap<Long, List<AcceptMessage>> acceptMessages = new TreeMap<>();
+    private SortedMap<Long, List<LearnMessage>> learnMessages = new TreeMap<>();
+    private SortedMap<Long, List<SatisfiedMessage>> satisfiedMessages = new TreeMap<>();
+    private SortedMap<Long, List<ReplyMessage>> replyMessages = new TreeMap<>();
+    private SortedMap<Long, List<PullMessage>> pullMessages = new TreeMap<>();
+    private SortedMap<Long, List<SuspectMessage>> suspectMessages = new TreeMap<>();
+    private SortedMap<Long, List<QueryMessage>> queryMessages = new TreeMap<>();
+    private SortedMap<Long, List<ViewChangeMessage>> viewChangeMessages = new TreeMap<>();
+    private SortedMap<String, List<DefaultClientRequestPayload>> clientRequestMessages = new TreeMap<>();
 
     public MessageLog(FastByzantineReplica replica) {
         this.replica = replica;
@@ -48,6 +48,16 @@ public class MessageLog {
         this.learnersWithLearnedValue = new TreeMap<>();
         this.nodesSuspectingLeader = new ArrayList<>();
         this.responses = new TreeMap<>();
+        proposeMessages = new TreeMap<>();
+        acceptMessages = new TreeMap<>();
+        learnMessages = new TreeMap<>();
+        satisfiedMessages = new TreeMap<>();
+        replyMessages = new TreeMap<>();
+        pullMessages = new TreeMap<>();
+        suspectMessages = new TreeMap<>();
+        queryMessages = new TreeMap<>();
+        viewChangeMessages = new TreeMap<>();
+        clientRequestMessages = new TreeMap<>();
     }
 
     public void addMessage(String sender, MessagePayload message) {
@@ -69,8 +79,6 @@ public class MessageLog {
             queryMessages.computeIfAbsent(queryMessage.getViewNumber(), k -> new ArrayList<>()).add(queryMessage);
         } else if (message instanceof ViewChangeMessage viewChangeMessage) {
             viewChangeMessages.computeIfAbsent(viewChangeMessage.getProposalNumber(), k -> new ArrayList<>()).add(viewChangeMessage);
-        } else if (message instanceof NewViewMessage newViewMessage) {
-            newViewMessages.computeIfAbsent(newViewMessage.getViewNumber(), k -> new ArrayList<>()).add(newViewMessage);
         } else if (message instanceof DefaultClientRequestPayload clientRequestMessage) {
             clientRequestMessages.computeIfAbsent(sender, k -> new ArrayList<>()).add(clientRequestMessage);
         }
@@ -78,7 +86,7 @@ public class MessageLog {
 
     public void resolveClientRequest(String clientId, Serializable request) {
         DefaultClientRequestPayload clientRequest = new DefaultClientRequestPayload(request);
-        clientRequestMessages.get(clientId).remove(clientRequest);
+        if (clientRequestMessages.containsKey(clientId)) clientRequestMessages.get(clientId).remove(clientRequest);
         reset();
         learnedValue = null;
         acceptedProposal = null;
@@ -113,7 +121,9 @@ public class MessageLog {
         // If the PROPOSE message has a higher round number than the current round number, update the round number
         // Remove message from the proposeMessages queue
         long proposalNumber = proposeMessage.getValueAndProposalNumber().getNumber();
-        proposeMessages.get(proposeMessage.getValueAndProposalNumber().getNumber()).remove(proposeMessage);
+        if (proposeMessages.containsKey(proposalNumber)) {
+            proposeMessages.get(proposalNumber).remove(proposeMessage);
+        }
 
         Pair proposed = proposeMessage.getValueAndProposalNumber();
         byte[] messageProposedValue = proposeMessage.getValueAndProposalNumber().getValue();
@@ -157,7 +167,7 @@ public class MessageLog {
         log.info("The number of accepted values for the same proposal value is " + currentAccepted.get());
         this.learnedValue = new Pair(this.replica.getViewNumber(), acceptedValue);
         // Remove message from the acceptMessages map
-        acceptMessages.get(viewNumber).remove(acceptMessage);
+        if (acceptMessages.containsKey(viewNumber)) acceptMessages.get(viewNumber).remove(acceptMessage);
     }
 
     public boolean isAccepted(int quorum) {
@@ -169,7 +179,7 @@ public class MessageLog {
         learnersWithLearnedValue.put(senderId, learnValue);
 
         // Delete the message from the learnMessages map
-        learnMessages.get(learnValue.getNumber()).remove(learnMessage);
+        if (learnMessages.containsKey(learnValue.getNumber())) learnMessages.get(learnValue.getNumber()).remove(learnMessage);
     }
 
     public boolean learnerHasLearnedValue(Pair learnValue, int quorum) {
@@ -208,24 +218,28 @@ public class MessageLog {
         Pair satisfiedValue = satisfiedMessage.getValueAndProposalNumber();
         satisfiedProposerNodes.computeIfAbsent(senderId, k -> satisfiedValue);
         // Remove the message from the satisfiedMessages map
-        satisfiedMessages.get(satisfiedValue.getNumber()).remove(satisfiedMessage);
+        if (satisfiedMessages.containsKey(satisfiedValue.getNumber())) satisfiedMessages.get(satisfiedValue.getNumber()).remove(satisfiedMessage);
     }
 
     public Pair onPull(String senderId, PullMessage pullMessage) {
-        long pullValue = pullMessage.getViewNumber();
-        pullMessages.get(pullValue).remove(pullMessage);
+        long viewNumber = pullMessage.getViewNumber();
+        if (pullMessages.containsKey(viewNumber)) pullMessages.get(viewNumber).remove(pullMessage);
         return learnedValue != null ? learnedValue : null;
     }
 
     public boolean onSuspect(String sender, SuspectMessage suspectMessage, int quorum) {
         nodesSuspectingLeader.add(sender);
-        suspectMessages.get(suspectMessage.getViewNumber()).remove(suspectMessage);
+        if (suspectMessages.containsKey(suspectMessage.getViewNumber())) {
+            suspectMessages.get(suspectMessage.getViewNumber()).remove(suspectMessage);
+        }
 
         return nodesSuspectingLeader.size() >= quorum;
     }
 
     public Pair onQuery(String sender, QueryMessage queryMessage, int quorum) {
-        queryMessages.get(queryMessage.getViewNumber()).remove(queryMessage);
+        if (queryMessages.containsKey(queryMessage.getViewNumber())) {
+            queryMessages.get(queryMessage.getViewNumber()).remove(queryMessage);
+        }
 
         long messageViewNumber = queryMessage.getViewNumber();
 
@@ -270,16 +284,17 @@ public class MessageLog {
             return;
         }
 
-        this.replica.setLeaderId(viewChangeMessage.getNewLeaderId());
+//        this.replica.setLeaderId(viewChangeMessage.getNewLeaderId());
         if (this.replica.getId().equals(viewChangeMessage.getNewLeaderId())) {
-            this.replica.setIsCurrentlyLeader(new AtomicBoolean(true));
+//            this.replica.setCurrentlyLeader(true);
             this.replica.setRecovered(false);
         }
         reset();
     }
 
     public boolean isSatisfied(int quorum) {
-        return proposersWithLearnedValue.size() >= quorum;
+        if (proposersWithLearnedValue != null) return proposersWithLearnedValue.size() >= quorum;
+        return false;
     }
 
     public int satisfiedProposersCount() {
