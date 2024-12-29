@@ -28,7 +28,7 @@ public class FastByzantineScenario extends BaseScenario {
         int a = 6;
         int l = 4;
         int f = 1;
-        long timeout = 900000L;
+        long timeout = 90000L;
         try {
             SortedSet<String> nodesIds = new TreeSet<>();
             int NUM_NODES = 6;

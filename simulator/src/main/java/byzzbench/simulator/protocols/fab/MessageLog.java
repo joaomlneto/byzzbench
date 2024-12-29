@@ -23,7 +23,7 @@ public class MessageLog {
     private SortedMap<String, Pair> proposersWithLearnedValue = new TreeMap<>();
     private SortedMap<String, Pair> satisfiedProposerNodes = new TreeMap<>();
     private SortedMap<String, Pair> learnersWithLearnedValue = new TreeMap<>();
-    private List<String> nodesSuspectingLeader = new ArrayList<>();
+    private SortedSet<String> nodesSuspectingLeader = new TreeSet<>();
     @Getter
     private Pair learnedValue;
     private Pair acceptedProposal;
@@ -46,7 +46,7 @@ public class MessageLog {
         this.proposersWithLearnedValue = new TreeMap<>();
         this.satisfiedProposerNodes = new TreeMap<>();
         this.learnersWithLearnedValue = new TreeMap<>();
-        this.nodesSuspectingLeader = new ArrayList<>();
+        this.nodesSuspectingLeader = new TreeSet<>();
         this.responses = new TreeMap<>();
         proposeMessages = new TreeMap<>();
         acceptMessages = new TreeMap<>();
@@ -284,11 +284,6 @@ public class MessageLog {
             return;
         }
 
-//        this.replica.setLeaderId(viewChangeMessage.getNewLeaderId());
-        if (this.replica.getId().equals(viewChangeMessage.getNewLeaderId())) {
-//            this.replica.setCurrentlyLeader(true);
-            this.replica.setRecovered(false);
-        }
         reset();
     }
 
