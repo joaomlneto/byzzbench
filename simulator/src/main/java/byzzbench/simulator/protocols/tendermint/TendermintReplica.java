@@ -59,6 +59,8 @@ public class TendermintReplica extends LeaderBasedProtocolReplica {
 
     public final int TIMEOUT = 10;
 
+    public Random rand = new Random(2137L);
+
 
     public TendermintReplica(String nodeId, SortedSet<String> nodeIds, Scenario scenario) {
         // Initialize replica with node ID, a list of other nodes, transport, and a commit log
@@ -328,7 +330,7 @@ public class TendermintReplica extends LeaderBasedProtocolReplica {
         }
 
         // Shuffle the indices to randomize the execution order
-        Collections.shuffle(trueIndices);
+        Collections.shuffle(trueIndices, rand);
 
         log.info("Shuffled indices for execution: " + trueIndices.toString());
 
