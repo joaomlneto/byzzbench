@@ -13,6 +13,7 @@ import byzzbench.simulator.transport.MessagePayload;
 import java.io.Serializable;
 import java.time.Duration;
 import java.util.*;
+import java.util.stream.Collectors;
 
 import lombok.Getter;
 import lombok.extern.java.Log;
@@ -234,7 +235,7 @@ public class TendermintReplica extends LeaderBasedProtocolReplica {
         } else {
             broadcastPrevote(height, round, NULL_BLOCK);
         }
-        step = Step.PREVOTE;
+        this.step = Step.PREVOTE;
     }
 
     private void executeProposalPrevoteRule1(Block block, long validRound) {
@@ -254,7 +255,7 @@ public class TendermintReplica extends LeaderBasedProtocolReplica {
             lockedValue = block;
             lockedRound = this.round;
             broadcastPrecommit(height, round, block);
-            step = Step.PRECOMMIT;
+            this.step = Step.PRECOMMIT;
         }
         validValue = block;
         validRound = this.round;
@@ -315,6 +316,8 @@ public class TendermintReplica extends LeaderBasedProtocolReplica {
         }
 
         boolean[] uponRules = new boolean[4];
+
+        log.info(prevoteMessage.toString());
 
         if (fulfillPrevoteRule0(prevoteMessage)) {
             uponRules[0] = true;
@@ -441,6 +444,7 @@ public class TendermintReplica extends LeaderBasedProtocolReplica {
         this.preVoteFirstTime = false;
         Duration duration = Duration.ofSeconds(this.TIMEOUT);
         this.setTimeout("Timeout Prevote", () -> {
+            log.info("Timeout Prevote called");
             onTimeoutPrevote(height, round);
         }, duration);
     }
@@ -519,7 +523,9 @@ public class TendermintReplica extends LeaderBasedProtocolReplica {
     }
 
     private boolean fulfillPrecommitRule() {
-        boolean enoughPrecommits = messageLog.getPrecommits().values().stream().flatMap(List::stream)
+        boolean enoughPrecommits = messageLog.getPrecommits().values().stream()
+                .flatMap(List::stream)  // Flatten the lists into a single stream
+                .toList().stream()
                 .filter(precommitMessage -> precommitMessage.getHeight() == height)
                 .filter(precommitMessage -> precommitMessage.getRound() == round)
                 .count() >= 2 * tolerance + 1;
@@ -584,6 +590,7 @@ public class TendermintReplica extends LeaderBasedProtocolReplica {
     }
 
     private void onTimeoutPrecommit(long height, long round) {
+        log.info("Timeout Precommit called");
         if (this.height == height
                 && this.round == round) {
             startRound(this.round + 1);
@@ -722,6 +729,7 @@ public class TendermintReplica extends LeaderBasedProtocolReplica {
         } else {
             Duration duration = Duration.ofSeconds(this.TIMEOUT);
             this.setTimeout("Timeout Propose", () -> {
+                log.info("Timeout Propose called");
                 onTimeoutPropose(height, round);
             }, duration);
         }
