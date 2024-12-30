@@ -46,7 +46,6 @@ public class TendermintReplicaTest {
         replicaC = new TendermintReplica(replicaCId, nodeIds, tendermintScenarioExecutor);
         replicaD = new TendermintReplica(replicaDId, nodeIds, tendermintScenarioExecutor);
 
-        // Sets the viewNumber to 1 for the replicaA
         replicaA.initialize();
         replicaB.initialize();
         replicaC.initialize();
