@@ -105,9 +105,10 @@ public class MessageLog {
     /**
      * Checks if there are f+1 messages in a specific round after a given round.
      */
-    public boolean fPlus1MessagesInRound(GenericMessage message, long round) {
+    public boolean fPlus1MessagesInRound(long height, long round) {
         return messages.stream()
-                .filter(m -> m.getRound() > round && m.getRound() == message.getRound())
+                .filter(m -> m.getHeight() == height)
+                .filter(m -> m.getRound() > round)
                 .count() >= node.getTolerance() + 1;
     }
 
@@ -121,5 +122,12 @@ public class MessageLog {
             log.info("removing: " + d.toString());
             requests.remove(d);
         }
+    }
+
+    public void clear() {
+        messages.clear();
+        prevotes.clear();
+        precommits.clear();
+        proposals.clear();
     }
 }
