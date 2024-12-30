@@ -3,6 +3,7 @@ package byzzbench.simulator;
 import byzzbench.simulator.transport.MessagePayload;
 import byzzbench.simulator.utils.NonNull;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import jakarta.validation.constraints.Null;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -12,6 +13,7 @@ import java.io.Serializable;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -20,8 +22,6 @@ import java.util.concurrent.atomic.AtomicLong;
  * The client is responsible for sending requests to the replicas in the system.
  */
 @Getter
-@Builder
-@RequiredArgsConstructor
 @Log
 public class Client implements Serializable, Node {
     /**
@@ -52,19 +52,34 @@ public class Client implements Serializable, Node {
      */
     private final List<Serializable> replies = new ArrayList<>();
 
+    /**
+     * The iterator for cycling through replicas.
+     */
+    @JsonIgnore
+    private Iterator<String> requestIterator;
+
+    @Builder
+    public Client(Scenario scenario, String id) {
+        this.scenario = scenario;
+        this.id = id;
+        this.requestIterator = this.scenario.getReplicas().keySet().iterator();
+    }
+
     @Override
     public void initialize() {
         // Send the first request
         this.sendRequest();
-        //System.out.println("CLIENT TIMEOUT SETUP");
-        //this.setTimeout("sendRequest", this::sendRequest, Duration.ofSeconds(1));
     }
 
     /**
      * Sends a request to a replica in the system.
      */
     public void sendRequest() {
-        String recipientId = this.getScenario().getNodes().keySet().iterator().next();
+        if (!this.requestIterator.hasNext()) {
+            this.requestIterator = this.scenario.getReplicas().keySet().iterator();
+        }
+        String recipientId = requestIterator.next();
+        log.info("Client " + this.id + " sending request to replica " + recipientId);
         String requestId = String.format("%s/%d", this.id, this.requestSequenceNumber.getAndIncrement());
         this.getScenario().getTransport().sendClientRequest(this.id, requestId, recipientId);
     }
@@ -109,7 +124,7 @@ public class Client implements Serializable, Node {
     /**
      * Clear a timeout for this replica.
      *
-     * @param eventId the event ID of the timeout to clear
+     * @param eventId The event ID of the timeout to clear
      */
     public void clearTimeout(long eventId) {
         this.scenario.getTransport().clearTimeout(this, eventId);

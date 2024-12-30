@@ -4,5 +4,4 @@ public enum Step implements Comparable<Step> {
     PROPOSE,
     PREVOTE,
     PRECOMMIT,
-    NONE
 }

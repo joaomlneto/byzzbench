@@ -13,7 +13,6 @@ import byzzbench.simulator.transport.MessagePayload;
 import java.io.Serializable;
 import java.time.Duration;
 import java.util.*;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import lombok.Getter;
@@ -67,7 +66,7 @@ public class TendermintReplica extends LeaderBasedProtocolReplica {
         super(nodeId, scenario, new TotalOrderCommitLog());
         this.height = 0;
         this.round = 0;
-        this.step = Step.NONE;
+        this.step = Step.PROPOSE;
         this.lockedValue = null;
         this.lockedRound = -1;
         this.validValue = null;
@@ -101,79 +100,171 @@ public class TendermintReplica extends LeaderBasedProtocolReplica {
             broadcastGossipProposal(proposalMessage);
         }
 
-        // Find the proposal for the current height and round
-        ProposalMessage proposal = messageLog.getProposals().values().stream().flatMap(List::stream) // Flatten lists of ProposalMessages
-                .filter(p -> p.getHeight() == height).filter(p -> p.getRound() == round).filter(p -> p.getValidRound() == -1).filter(p -> p.getReplicaId().equals(proposer(this.height, this.round))).findFirst().orElse(null);
+        boolean[] uponRules = new boolean[4];
 
-        if (proposal != null) {
-            if (valid(proposal.getBlock()) && (lockedRound <= proposal.getValidRound() || lockedValue.equals(proposal.getBlock()))) {
-                broadcastPrevote(height, round, proposal.getBlock());
+        // Check if the proposal fulfills rule number 1
+        if (proposalMessage.getHeight() == height
+                && proposalMessage.getRound() == round
+                && proposalMessage.getValidRound() == -1
+                && proposalMessage.getReplicaId().equals(getLeaderId())
+                && step == Step.PROPOSE) {
+            log.info("Rule 0 is true");
+            uponRules[0] = true;
+        }
+
+        // Check if the proposal fulfills rule number 2
+        if (proposalMessage.getHeight() == height
+                && proposalMessage.getRound() == round) {
+
+            boolean enoughPrevotes = messageLog.getPrevotes().values().stream().flatMap(List::stream)
+                    .filter(prevote -> prevote.getHeight() == height)
+                    .filter(prevote -> prevote.getRound() == proposalMessage.getValidRound())
+                    .filter(prevote -> prevote.getBlock().equals(proposalMessage.getBlock()))
+                    .count() >= 2 * tolerance + 1;
+
+            if (enoughPrevotes) {
+                log.info("Rule 1 is true");
+                uponRules[1] = true;
+            }
+        }
+
+        // Check if the proposal fulfills rule number 3
+        if (proposalMessage.getHeight() == height
+            && proposalMessage.getRound() == round
+            && proposalMessage.getReplicaId().equals(getLeaderId())) {
+            boolean enoughPrevotes = messageLog.getPrevotes().values().stream().flatMap(List::stream)
+                    .filter(prevote -> prevote.getHeight() == height)
+                    .filter(prevote -> prevote.getRound() == this.round)
+                    .filter(prevote -> prevote.getBlock().equals(proposalMessage.getBlock()))
+                    .count() >= 2 * tolerance + 1;
+
+            if (enoughPrevotes) {
+                log.info("Rule 2 is true");
+                uponRules[2] = true;
+            }
+        }
+
+        // Check if the proposal fulfills rule number 4
+
+        if (proposalMessage.getHeight() == height
+            && proposalMessage.getReplicaId().equals(proposer(height, proposalMessage.getRound()))) {
+            boolean enoughPrecommits = messageLog.getPrevotes().values().stream().flatMap(List::stream)
+                    .filter(prevote -> prevote.getHeight() == height)
+                    .filter(prevote -> prevote.getRound() == proposalMessage.getRound())
+                    .filter(prevote -> prevote.getBlock().equals(proposalMessage.getBlock()))
+                    .count() >= 2 * tolerance + 1;
+            boolean decisionMade = getCommitLog().get((int) height) != null;
+            if (enoughPrecommits && !decisionMade) {
+                log.info("Rule 3 is true");
+                uponRules[3] = true;
+            }
+        }
+
+        // Execute the rules in a random order
+        proposalRandomOrderExecute(uponRules, proposalMessage);
+
+    }
+
+    private void proposalRandomOrderExecute(boolean[] uponRules, ProposalMessage proposalMessage) {
+        List<Integer> trueIndices = new ArrayList<>();
+
+        // Collect indices of true values
+        for (int i = 0; i < uponRules.length; i++) {
+            if (uponRules[i]) {
+                trueIndices.add(i);
+            }
+        }
+
+        // If there are no true values, return
+        if (trueIndices.isEmpty()) {
+            log.info("No Proposal rule to execute");
+            return;
+        }
+
+        // Shuffle the indices to randomize the execution order
+        Collections.shuffle(trueIndices, rand);
+
+        log.info("Shuffled indices for execution: " + trueIndices.toString());
+
+        // Execute each rule in the randomized order
+        for (int index : trueIndices) {
+            switch (index) {
+                case 0:
+                    log.info("Executing Proposal Rule 0");
+                    executeProposalRule(proposalMessage);
+                    break;
+                case 1:
+                    log.info("Executing Proposal Rule 1");
+                    executeProposalPrevoteRule1(proposalMessage);
+                    break;
+                case 2:
+                    log.info("Executing Proposal Rule 2");
+                    executeProposalPrevoteRule2(proposalMessage);
+                    break;
+                case 3:
+                    log.info("Executing Proposal Rule 3");
+                    executeProposalPrecommitRule(proposalMessage);
+                    break;
+                default:
+                    log.warning("Unexpected index: " + index);
+                    break;
+            }
+        }
+    }
+
+    private void executeProposalPrecommitRule(ProposalMessage proposalMessage) {
+        if (valid(proposalMessage.getBlock())){
+            commitOperation(proposalMessage.getBlock());
+            messageLog.removeRequest(proposalMessage.getBlock());
+            ReplyMessage replyMessage = new ReplyMessage(
+                    this.height,
+                    proposalMessage.getBlock().getRequestMessage().getTimestamp(),
+                    proposalMessage.getBlock().getRequestMessage().getClientId(),
+                    this.getId(),
+                    proposalMessage.getBlock().getRequestMessage().getOperation());
+            sendReply(proposalMessage.getBlock().getRequestMessage().getClientId(), replyMessage);
+            height++;
+            reset();
+            startRound(0);
+        }
+    }
+
+    private void executeProposalPrevoteRule2(ProposalMessage proposalMessage) {
+        // Execution logic
+        if (valid(proposalMessage.getBlock())
+            && preVoteFirstTime) {
+            if ( this.step == Step.PREVOTE) {
+                lockedValue = proposalMessage.getBlock();
+                lockedRound = this.round;
+                broadcastPrecommit(height, round, proposalMessage.getBlock());
+                step = Step.PRECOMMIT;
+            }
+            validValue = proposalMessage.getBlock();
+            validRound = this.round;
+        }
+    }
+
+    private void executeProposalPrevoteRule1(ProposalMessage proposalMessage) {
+        if (this.step == Step.PROPOSE
+                && (proposalMessage.getValidRound() >= 0
+                    && proposalMessage.getValidRound() < this.round)) {
+            if (valid(proposalMessage.getBlock())
+                    && (lockedRound <= proposalMessage.getValidRound()
+                        || lockedValue.equals(proposalMessage.getBlock()))) {
+                broadcastPrevote(height, round, proposalMessage.getBlock());
             } else {
                 broadcastPrevote(height, round, NULL_BLOCK);
             }
-            step = Step.PREVOTE;
         }
+    }
 
-        // Process proposals with sufficient prevotes
-        proposal = messageLog.getProposals().values().stream().flatMap(List::stream).filter(p -> p.getHeight() == height && p.getRound() == round && p.getReplicaId().equals(proposer(this.height, this.round))).findFirst().orElse(null);
-
-        if (proposal != null) {
-            ProposalMessage finalProposal = proposal;
-            if (messageLog.getPrevotes().values().stream().flatMap(List::stream).filter(prevote -> prevote.getHeight() == height && prevote.getRound() == finalProposal.getValidRound() && prevote.getBlock().equals(finalProposal.getBlock())).count() >= 2 * tolerance + 1) {
-                if (this.step == Step.PREVOTE && (proposal.getValidRound() >= 0 && proposal.getValidRound() < this.round)) {
-                    if (valid(proposal.getBlock()) && (lockedRound <= proposal.getValidRound() || lockedValue.equals(proposal.getBlock()))) {
-                        broadcastPrevote(height, round, proposal.getBlock());
-                    } else {
-                        broadcastPrevote(height, round, NULL_BLOCK);
-                    }
-                }
-            }
+    private void executeProposalRule(ProposalMessage proposalMessage) {
+        if (valid(proposalMessage.getBlock()) && (lockedRound <= proposalMessage.getValidRound() || lockedValue.equals(proposalMessage.getBlock()))) {
+            broadcastPrevote(height, round, proposalMessage.getBlock());
+        } else {
+            broadcastPrevote(height, round, NULL_BLOCK);
         }
-
-        // Process proposals for precommits
-        proposal = messageLog.getProposals().values().stream().flatMap(List::stream).filter(p -> p.getHeight() == height && p.getRound() == round && p.getReplicaId().equals(proposer(this.height, this.round))).findFirst().orElse(null);
-
-        if (proposal != null) {
-            ProposalMessage finalProposal1 = proposal;
-            if (messageLog.getPrevotes().values().stream().flatMap(List::stream).filter(prevote -> prevote.getHeight() == height && prevote.getRound() == this.round && prevote.getBlock().equals(finalProposal1.getBlock())).count() >= 2 * tolerance + 1) {
-                if (valid(proposal.getBlock()) && preVoteFirstTime) {
-                    preVoteFirstTime = false;
-                    if (this.step == Step.PREVOTE) {
-                        lockedValue = proposal.getBlock();
-                        lockedRound = this.round;
-                        broadcastPrecommit(height, round, proposal.getBlock());
-                        step = Step.PRECOMMIT;
-                    }
-                    validValue = proposal.getBlock();
-                    validRound = this.round;
-                }
-            }
-        }
-
-        // Process proposals with sufficient precommits
-        proposal = messageLog.getProposals().values().stream().flatMap(List::stream).filter(p -> p.getHeight() == height && p.getReplicaId().equals(proposer(this.height, this.round))).findFirst().orElse(null);
-
-        if (proposal != null) {
-            ProposalMessage finalProposal = proposal;
-            if (messageLog.getPrecommits().values().stream().flatMap(List::stream).filter(precommit -> precommit.getHeight() == height && precommit.getRound() == finalProposal.getRound() && precommit.getBlock().equals(finalProposal.getBlock())).count() >= 2 * tolerance + 1) {
-                if (getCommitLog().get((int) height) == null && valid(proposal.getBlock())) {
-                    log.info("Committing block: " + proposal.getBlock());
-                    commitOperation(proposal.getBlock());
-                    messageLog.removeRequest(proposal.getBlock());
-                    ReplyMessage replyMessage = new ReplyMessage(
-                            this.height,
-                            proposal.getBlock().getRequestMessage().getTimestamp(),
-                            proposal.getBlock().getRequestMessage().getClientId(),
-                            this.getId(),
-                            proposal.getBlock().getRequestMessage().getOperation());
-                    log.info("Sending reply: " + replyMessage);
-                    sendReply(proposal.getBlock().getRequestMessage().getClientId(), replyMessage);
-                    height++;
-                    reset();
-                    startRound(0);
-                }
-            }
-        }
+        step = Step.PREVOTE;
     }
 
     private void broadcastGossipProposal(ProposalMessage proposalMessage) {
@@ -240,6 +331,9 @@ public class TendermintReplica extends LeaderBasedProtocolReplica {
             broadcastGossipPrevote(prevoteMessage);
         }
         boolean[] uponRules = new boolean[4];
+
+        // Prevote Rule 0
+
 
         Set<Block> blocks_height_2fPlus1 = getBlocks_height_2fPlus1();
         Set<ProposalMessage> proposals_height_round_validRound = getProposals_height_round_validRound(blocks_height_2fPlus1);
@@ -687,7 +781,7 @@ public class TendermintReplica extends LeaderBasedProtocolReplica {
         // Retrieve the first request message from the message log
         Optional<RequestMessage> requestPayload = messageLog.getRequests().stream().findFirst();
         Set<RequestMessage> rs = messageLog.getRequests();
-        for (RequestMessage r : rs){
+        for (RequestMessage r : rs) {
             log.info(r.toString());
         }
         // If the requestPayload is empty, return a Block with default "NULL VALUE"
@@ -766,7 +860,7 @@ public class TendermintReplica extends LeaderBasedProtocolReplica {
     private void receiveRequest(String sender, RequestMessage m) {
         messageLog.bufferRequest(m);
         broadcastMessage(new GossipRequest(this.getId(), m));
-        if(proposer(this.height, this.round).equals(this.getId()) && this.step == Step.NONE) {
+        if (proposer(this.height, this.round).equals(this.getId())) {
             startRound(this.round);
         }
     }
