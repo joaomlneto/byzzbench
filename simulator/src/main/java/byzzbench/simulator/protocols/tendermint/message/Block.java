@@ -17,6 +17,7 @@ public class Block implements LogEntry, Comparable<Block> {
     private final long round;
     private final long id;
     private final String value;
+    private final int hashOfLastBlock;
 
     private final RequestMessage requestMessage;
 
@@ -46,6 +47,8 @@ public class Block implements LogEntry, Comparable<Block> {
 
     @Override
     public int hashCode() {
+        if(this == null)
+            return 0;
         return Objects.hash(height, round, id, value);
     }
 

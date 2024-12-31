@@ -29,7 +29,7 @@ public class MessageLog {
     @Getter
     private final Set<RequestMessage> requests = new HashSet<>();
 
-    public static final Block NULL_BLOCK = new Block(Long.MIN_VALUE, Long.MIN_VALUE, Long.MIN_VALUE, "NULL VALUE", null);
+    public static final Block NULL_BLOCK = new Block(Long.MIN_VALUE, Long.MIN_VALUE, Long.MIN_VALUE, "NULL VALUE", 0, null);
 
     @Getter
     private long proposalCount = 0;

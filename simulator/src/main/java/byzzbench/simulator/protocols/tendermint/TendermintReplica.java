@@ -54,7 +54,14 @@ public class TendermintReplica extends LeaderBasedProtocolReplica {
     private boolean preVoteFirstTime;
     private boolean prevoteOrMoreFirstTime;
 
-    public static final Block NULL_BLOCK = new Block(Long.MIN_VALUE, Long.MIN_VALUE, Long.MIN_VALUE, "NULL VALUE", null);
+    public static final Block NULL_BLOCK = new Block(
+            Long.MIN_VALUE,
+            Long.MIN_VALUE,
+            Long.MIN_VALUE,
+            "NULL VALUE",
+            0,
+            null);
+
 
     public final int TIMEOUT = 10;
 
@@ -613,8 +620,21 @@ public class TendermintReplica extends LeaderBasedProtocolReplica {
     }
 
     private boolean valid(Block block) {
-        return true;
+        // Case 1: Handle NULL_BLOCK explicitly
+        if (block == TendermintReplica.NULL_BLOCK) {
+            return true; // NULL_BLOCK is always valid
+        }
+
+        // Case 2: Handle initial commit (genesis block)
+        if (getCommitLog().get((int) this.height) == null) {
+            return block.getHashOfLastBlock() == 0; // Empty hashOfLastBlock for genesis is valid
+        }
+
+        // Case 3: Validate hashOfLastBlock against the last committed block's hash
+        Block lastCommittedBlock = (Block) getCommitLog().get((int) this.height);
+        return block.getHashOfLastBlock() == lastCommittedBlock.hashCode();
     }
+
 
     protected boolean validateMessage(MessagePayload message) {
         // Check if the message type matches a known type
@@ -753,12 +773,17 @@ public class TendermintReplica extends LeaderBasedProtocolReplica {
                 ? operationString.split("/")[0]
                 : "UNKNOWN_CLIENT";
 
+        int hashOfLastBlock = getCommitLog().get((int) height) == null
+                ? 0
+                : getCommitLog().get((int) height).hashCode();
+
         // Return a Block with the extracted values
         return new Block(
                 height,
                 round,
                 messageLog.getMessageCount() + 1,
                 operationString,
+                hashOfLastBlock,
                 new RequestMessage(payload.getOperation(), requestPayload.get().getTimestamp(), clientId)
         );
     }
