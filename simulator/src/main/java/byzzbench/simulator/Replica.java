@@ -179,6 +179,17 @@ public abstract class Replica implements Serializable, Node {
     }
 
     /**
+     * Commit an operation to the commit log at the next available sequence number
+     * and notify observers.
+     *
+     * @param operation the operation to commit
+     */
+    public void commitOperation(LogEntry operation) {
+        this.commitLog.add(operation);
+        this.notifyObserversLocalCommit(operation);
+    }
+
+    /**
      * Set a timeout for this replica.
      *
      * @param name    a name for the timeout
