@@ -53,4 +53,9 @@ public class HbftScenario extends BaseScenario {
     public synchronized void run() {
         // nothing to do
     }
+
+    @Override
+    public int maxFaultyReplicas(int n) {
+        return (n - 1) / 3;
+    }
 }

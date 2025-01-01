@@ -1,15 +1,12 @@
 package byzzbench.simulator.scheduler;
 
 import byzzbench.simulator.Scenario;
+import byzzbench.simulator.config.ByzzBenchConfig;
 import byzzbench.simulator.faults.Fault;
 import byzzbench.simulator.faults.FaultContext;
 import byzzbench.simulator.faults.FaultFactory;
 import byzzbench.simulator.faults.factories.ByzzFuzzScenarioFaultFactory;
 import byzzbench.simulator.service.MessageMutatorService;
-import byzzbench.simulator.transport.ClientRequestEvent;
-import byzzbench.simulator.transport.Event;
-import byzzbench.simulator.transport.MessageEvent;
-import byzzbench.simulator.transport.TimeoutEvent;
 import com.fasterxml.jackson.databind.JsonNode;
 import lombok.Getter;
 import lombok.extern.java.Log;
@@ -17,7 +14,6 @@ import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 import java.util.Random;
 
 /**
@@ -28,7 +24,7 @@ import java.util.Random;
 @Component
 @Log
 @Getter
-public class ByzzFuzzScheduler extends BaseScheduler {
+public class ByzzFuzzScheduler extends RandomScheduler {
     /**
      * Small-scope mutations to be applied to protocol messages
      */
@@ -40,22 +36,30 @@ public class ByzzFuzzScheduler extends BaseScheduler {
     /**
      * Number of protocol rounds with process faults
      */
+    @Getter
     private int numRoundsWithProcessFaults = 1;
     /**
      * Number of protocol rounds with network faults
      */
+    @Getter
     private int numRoundsWithNetworkFaults = 1;
     /**
      * Number of protocol rounds among which the faults will be injected
      */
+    @Getter
     private int numRoundsWithFaults = 3;
 
-    public ByzzFuzzScheduler(MessageMutatorService messageMutatorService) {
-        super("ByzzFuzz", messageMutatorService);
+    public ByzzFuzzScheduler(ByzzBenchConfig config, MessageMutatorService messageMutatorService) {
+        super(config, messageMutatorService);
     }
 
     @Override
-    protected void loadSchedulerParameters(JsonNode parameters) {
+    public String getId() {
+        return "ByzzFuzz";
+    }
+
+    @Override
+    public void loadSchedulerParameters(JsonNode parameters) {
         System.out.println("Loading ByzzFuzz parameters:");
 
         if (parameters != null)
@@ -76,6 +80,9 @@ public class ByzzFuzzScheduler extends BaseScheduler {
 
     @Override
     public void initializeScenario(Scenario scenario) {
+        super.initializeScenario(scenario);
+
+        // Generate round-aware small-scope mutations for the scenario
         FaultFactory faultFactory = new ByzzFuzzScenarioFaultFactory();
         FaultContext context = new FaultContext(scenario);
         List<Fault> faults = faultFactory.generateFaults(context);
@@ -83,93 +90,15 @@ public class ByzzFuzzScheduler extends BaseScheduler {
     }
 
     @Override
-    public synchronized Optional<EventDecision> scheduleNext(Scenario scenario) throws Exception {
-        // Get a random event
-        List<Event> queuedEvents = scenario.getTransport().getEventsInState(Event.Status.QUEUED);
-
-        // if there are no events, return empty
-        if (queuedEvents.isEmpty()) {
-            System.out.println("No events!");
-            return Optional.empty();
-        }
-
-        int eventCount = queuedEvents.size();
-        int timeoutEventCount = (int) queuedEvents.stream().filter(TimeoutEvent.class::isInstance).count();
-        int clientRequestEventCount = (int) queuedEvents.stream().filter(ClientRequestEvent.class::isInstance).count();
-        int messageEventCount = eventCount - (timeoutEventCount + clientRequestEventCount);
-
-        double timeoutEventProb = (double) timeoutEventCount / eventCount;
-        double clientRequestEventProb = (double) clientRequestEventCount / eventCount;
-        double messageEventProb = (double) messageEventCount / eventCount;
-
-        assert timeoutEventProb + clientRequestEventProb + messageEventProb == 1.0;
-
-        double dieRoll = random.nextDouble();
-
-        // check if we should schedule a timeout
-        if (dieRoll < timeoutEventProb) {
-            // select a random event of type timeout
-            List<Event> queuedTimeouts = queuedEvents.stream()
-                    .filter(TimeoutEvent.class::isInstance)
-                    .toList();
-
-            if (queuedTimeouts.isEmpty()) {
-                return Optional.empty();
-            }
-
-            Event timeout = queuedTimeouts.get(random.nextInt(queuedTimeouts.size()));
-            scenario.getTransport().deliverEvent(timeout.getEventId());
-
-            EventDecision decision = new EventDecision(EventDecision.DecisionType.DELIVERED, timeout.getEventId());
-            return Optional.of(decision);
-        }
-
-        // check if we should target a message
-        if (dieRoll < timeoutEventProb + messageEventProb) {
-            // select a random event of type message
-            List<Event> queuedMessages = queuedEvents.stream()
-                    .filter(MessageEvent.class::isInstance)
-                    .toList();
-
-            // if there are no messages, return an empty action
-            if (queuedMessages.isEmpty()) {
-                return Optional.empty();
-            }
-
-            Event message = queuedMessages.get(random.nextInt(queuedMessages.size()));
-
-            // deliver the message, without changes
-            scenario.getTransport().deliverEvent(message.getEventId());
-
-            EventDecision decision = new EventDecision(EventDecision.DecisionType.DELIVERED, message.getEventId());
-            return Optional.of(decision);
-        }
-
-        if (dieRoll < timeoutEventProb + messageEventProb + clientRequestEventProb) {
-            List<Event> queuedClientRequests = queuedEvents.stream().filter(ClientRequestEvent.class::isInstance).toList();
-
-            if (queuedClientRequests.isEmpty()) {
-                return Optional.empty();
-            }
-
-            Event request = queuedClientRequests.get(random.nextInt(clientRequestEventCount));
-
-            scenario.getTransport().deliverEvent(request.getEventId());
-
-            EventDecision decision = new EventDecision(EventDecision.DecisionType.DELIVERED, request.getEventId());
-            return Optional.of(decision);
-        }
-
-        return Optional.empty();
+    public int dropMessageWeight(Scenario scenario) {
+        // ByzzFuzz does not drop messages as a scheduler decision
+        return 0;
     }
 
     @Override
-    public void reset() {
-        // nothing to do
+    public int mutateMessageWeight(Scenario scenario) {
+        // ByzzFuzz does not mutate messages as a scheduler decision
+        return 0;
     }
 
-    @Override
-    public void stopDropMessages() {
-        // FIXME: refactor
-    }
 }
