@@ -104,10 +104,7 @@ public abstract class BaseScenario implements Scenario {
      * Removes all registered clients
      */
     private void removeAllClients() {
-        this.nodes.entrySet().stream()
-                .filter(entry -> entry.getValue() instanceof Client)
-                .map(Map.Entry::getKey)
-                .forEach(this.nodes::remove);
+        this.nodes.clear();
     }
 
     /**
