@@ -2,32 +2,59 @@ package byzzbench.simulator.state;
 
 import lombok.Getter;
 
-import java.util.TreeMap;
 import java.util.SortedMap;
+import java.util.TreeMap;
 
 /**
  * Commit log for total order replication, backed by a list.
  */
 @Getter
 public class TotalOrderCommitLog extends CommitLog {
-    private final SortedMap<Long, LogEntry> log = new TreeMap<>();
+    /**
+     * The initial sequence number if the log is empty and a new entry is added
+     * without specifying a sequence number.
+     */
+    public static final long INITIAL_SEQUENCE_NUMBER = 0;
 
-    public void add(long sequenceNumber, LogEntry operation) {
-        /* 
-         * Might need to change for exception throwing,
-         * as a same sequenceNumber cannot be in the log as
-         * it would break safety!
-         */
-        log.putIfAbsent(sequenceNumber, operation);
+    /**
+     * The log of entries, indexed by their sequence number.
+     */
+    private final SortedMap<Long, LogEntry> entries = new TreeMap<>();
+
+    /**
+     * The highest sequence number that has been committed.
+     */
+    private long highestCommittedSequenceNumber = INITIAL_SEQUENCE_NUMBER - 1;
+
+    @Override
+    public synchronized void add(long sequenceNumber, LogEntry operation) {
+        // Check if the sequence number already exists in the log.
+        if (entries.containsKey(sequenceNumber)) {
+            throw new IllegalArgumentException(String.format("Sequence number %d already exists in the log", sequenceNumber));
+        }
+
+        entries.putIfAbsent(sequenceNumber, operation);
+        highestCommittedSequenceNumber = Math.max(highestCommittedSequenceNumber, sequenceNumber);
     }
 
     @Override
-    public int getLength() {
-        return log.size();
+    public synchronized void add(LogEntry operation) {
+        long sequenceNumber = ++highestCommittedSequenceNumber;
+        add(sequenceNumber, operation);
     }
 
     @Override
-    public LogEntry get(long index) {
-        return log.get(index);
+    public synchronized int getLength() {
+        return entries.size();
+    }
+
+    @Override
+    public synchronized LogEntry get(long sequenceNumber) {
+        return entries.get(sequenceNumber);
+    }
+
+    @Override
+    public synchronized boolean isEmpty() {
+        return entries.isEmpty();
     }
 }
