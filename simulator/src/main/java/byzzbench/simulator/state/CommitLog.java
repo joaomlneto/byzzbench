@@ -1,8 +1,8 @@
 package byzzbench.simulator.state;
 
-import byzzbench.simulator.Replica;
-
 import java.io.Serializable;
+
+import byzzbench.simulator.Replica;
 
 /**
  * Abstract class for the commit log of a {@link Replica}
@@ -23,7 +23,7 @@ public abstract class CommitLog implements Serializable {
      *
      * @param entry The entry to add.
      */
-    public abstract void add(LogEntry entry);
+    public abstract void add(long sequencNumber, LogEntry entry);
 
     /**
      * Get the number of entries in the commit log.
