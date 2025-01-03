@@ -37,6 +37,12 @@ public class TimeoutEvent extends BaseEvent implements MailboxEvent {
     private final Duration timeout; // in milliseconds
 
     /**
+     * The instant at which the timeout is set to expire in the scenario.
+     * This is using scenario time, not physical time.
+     */
+    private final Instant expiresAt;
+
+    /**
      * The physical time at which the Timeout was created.
      */
     private final Instant createdAt = Instant.now();

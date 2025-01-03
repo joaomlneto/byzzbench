@@ -30,12 +30,14 @@ public class Transport {
     /**
      * The scenario executor for the transport layer.
      */
+    @JsonIgnore
     @Getter(onMethod_ = {@Synchronized})
     private final Scenario scenario;
 
     /**
      * The sequence number for events.
      */
+    @JsonIgnore
     private final AtomicLong eventSeqNum = new AtomicLong(1);
 
     /**
@@ -49,6 +51,7 @@ public class Transport {
      * Map of automatic fault id to the {@link Fault} object. This is used to
      * apply faulty behaviors automatically  to the system whenever their predicate is satisfied.
      */
+    @JsonIgnore
     @Getter(onMethod_ = {@Synchronized})
     private final SortedMap<String, Fault> automaticFaults = new TreeMap<>();
 
@@ -56,18 +59,21 @@ public class Transport {
      * Map of network fault id to the {@link Fault} object. This is used to
      * apply network faults to the system. These faults are NOT applied automatically.
      */
+    @JsonIgnore
     @Getter(onMethod_ = {@Synchronized})
     private final SortedMap<String, Fault> networkFaults = new TreeMap<>();
 
     /**
      * The router for managing partitions.
      */
+    @JsonIgnore
     @Getter(onMethod_ = {@Synchronized})
     private final Router router = new Router();
 
     /**
      * List of observers for the transport layer.
      */
+    @JsonIgnore
     private final List<TransportObserver> observers = new ArrayList<>();
 
     /**
@@ -135,7 +141,7 @@ public class Transport {
      * @param response  The response to send
      * @param recipient The ID of the client receiving the response
      */
-    public synchronized void sendClientResponse(String sender, MessagePayload response, String recipient) {
+    public synchronized void sendClientResponse(Node sender, MessagePayload response, String recipient) {
         // assert that the sender exists
         if (!this.scenario.getNodes().containsKey(sender)) {
             throw new IllegalArgumentException("Replica not found: " + sender);
@@ -147,7 +153,7 @@ public class Transport {
 
         // deliver the reply directly to the client to handle
         Client c = this.scenario.getClients().get(recipient);
-        c.handleMessage(sender, response);
+        c.handleMessage(sender.getId(), response);
     }
 
     /**
@@ -157,7 +163,7 @@ public class Transport {
      * @param message   The payload of the message to send
      * @param recipient The ID of the replica receiving the message
      */
-    public synchronized void sendMessage(String sender, MessagePayload message,
+    public synchronized void sendMessage(Node sender, MessagePayload message,
                                          String recipient) {
         this.multicast(sender, new TreeSet<>(Set.of(recipient)), message);
     }
@@ -195,24 +201,24 @@ public class Transport {
     /**
      * Multicasts a message to a set of recipients.
      *
-     * @param sender     The ID of the sender
+     * @param sender     The sender node
      * @param recipients The set of recipient IDs
      * @param payload    The payload of the message
      */
-    public synchronized void multicast(String sender, SortedSet<String> recipients,
+    public synchronized void multicast(Node sender, SortedSet<String> recipients,
                                        MessagePayload payload) {
         for (String recipient : recipients) {
             long messageId = this.eventSeqNum.getAndIncrement();
             MessageEvent messageEvent = MessageEvent.builder()
                     .eventId(messageId)
-                    .senderId(sender)
+                    .senderId(sender.getId())
                     .recipientId(recipient)
                     .payload(payload)
                     .build();
             this.appendEvent(messageEvent);
 
             // if they don't have connectivity, drop it directly
-            if (!router.haveConnectivity(sender, recipient)) {
+            if (!router.haveConnectivity(sender.getId(), recipient)) {
                 this.dropEvent(messageId);
             }
         }
@@ -331,6 +337,7 @@ public class Transport {
 
         // apply the mutation
         fault.accept(input);
+        scenario.markReplicaFaulty(m.getSenderId());
 
         // create a new event for the mutation
         MutateMessageEvent mutateMessageEvent = MutateMessageEvent.builder()
@@ -394,6 +401,7 @@ public class Transport {
                 .description("TIMEOUT")
                 .nodeId(node.getId())
                 .timeout(timeout)
+                .expiresAt(node.getCurrentTime().plus(timeout))
                 .task(runnable)
                 .build();
         this.appendEvent(timeoutEvent);
