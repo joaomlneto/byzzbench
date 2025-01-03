@@ -29,7 +29,7 @@ import java.util.TreeSet;
 @Log
 @Getter
 @ToString
-public abstract class Replica implements Serializable, Node {
+public abstract class Replica implements Node {
     /**
      * The message digest algorithm to use for hashing messages.
      */
