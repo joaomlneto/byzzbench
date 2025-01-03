@@ -44,6 +44,16 @@ public class TotalOrderCommitLog extends CommitLog {
     }
 
     @Override
+    public long getLowestSequenceNumber() {
+        return entries.isEmpty() ? INITIAL_SEQUENCE_NUMBER : entries.firstKey();
+    }
+
+    @Override
+    public long getHighestSequenceNumber() {
+        return entries.isEmpty() ? INITIAL_SEQUENCE_NUMBER : entries.lastKey();
+    }
+
+    @Override
     public synchronized int getLength() {
         return entries.size();
     }

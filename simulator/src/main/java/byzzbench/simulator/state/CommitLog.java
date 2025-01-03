@@ -26,6 +26,20 @@ public abstract class CommitLog implements Serializable {
     public abstract void add(LogEntry entry);
 
     /**
+     * Get the lowest sequence number in the commit log.
+     *
+     * @return the lowest sequence number in the commit log.
+     */
+    public abstract long getLowestSequenceNumber();
+
+    /**
+     * Get the highest sequence number in the commit log.
+     *
+     * @return the highest sequence number in the commit log.
+     */
+    public abstract long getHighestSequenceNumber();
+
+    /**
      * Get the number of entries in the commit log.
      *
      * @return the number of entries in the commit log.
