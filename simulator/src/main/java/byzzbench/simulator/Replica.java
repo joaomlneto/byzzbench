@@ -29,7 +29,7 @@ import java.util.TreeSet;
 @Log
 @Getter
 @ToString
-public abstract class Replica implements Serializable, Node {
+public abstract class Replica implements Node {
     /**
      * The message digest algorithm to use for hashing messages.
      */
@@ -182,6 +182,17 @@ public abstract class Replica implements Serializable, Node {
 
     /**
      * Commit an operation to the commit log and notify observers.
+     *
+     * @param operation the operation to commit
+     */
+    public void commitOperation(long sequenceNumber, LogEntry operation) {
+        this.commitLog.add(sequenceNumber, operation);
+        this.notifyObserversLocalCommit(operation);
+    }
+
+    /**
+     * Commit an operation to the commit log at the next available sequence number
+     * and notify observers.
      *
      * @param operation the operation to commit
      */
