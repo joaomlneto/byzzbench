@@ -103,7 +103,7 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
         this.messageLog = messageLog;
         this.speculativeHistory = new SpeculativeHistory();
         this.speculativeRequests = new TreeMap<>();
-        this.logger.initialize(true);
+        this.logger.initialize(false);
     }
 
     @Override
@@ -948,6 +948,11 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
             viewChange.getNewViewNumber()));
         long curViewNumber = this.getViewNumber();
         long newViewNumber = viewChange.getNewViewNumber();
+
+        if (curViewNumber >= newViewNumber) {
+            return;
+        }
+
         String newPrimaryId = this.getRoundRobinPrimaryId(newViewNumber);
     
         // Checkpoint Synchronization: Make sure speculative history matches
@@ -997,6 +1002,7 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
     }
 
     public void sendViewChange(ViewChangeMessage viewChange) {
+        logger.writeLog(String.format("Replica " + this.getId() + " sends VIEW-CHANGE with viewNumber: " + viewChange.getNewViewNumber() + ", requestsR: " + viewChange.getRequestsR()));
         this.disgruntled = true;
         this.largestViewNumber = viewChange.getNewViewNumber();
         // Restart the timeout

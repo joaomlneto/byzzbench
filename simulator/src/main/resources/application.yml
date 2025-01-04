@@ -32,9 +32,9 @@ byzzbench:
     mutateMessageWeight: 0 # The weight for scheduler to mutate a message
     params: # additional parameters for the scheduler
       # ByzzFuzz
-      numRoundsWithProcessFaults: 1
-      numRoundsWithNetworkFaults: 4
-      numRoundsWithFaults: 5
+      numRoundsWithProcessFaults: 2
+      numRoundsWithNetworkFaults: 1
+      numRoundsWithFaults: 3
       # Twins
       numReplicas: 1
       numTwinsPerReplica: 2
