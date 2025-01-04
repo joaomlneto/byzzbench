@@ -3,28 +3,22 @@ package byzzbench.simulator;
 import byzzbench.simulator.protocols.hbft.message.PanicMessage;
 import byzzbench.simulator.protocols.hbft.message.RequestMessage;
 import byzzbench.simulator.transport.MessagePayload;
-import byzzbench.simulator.utils.NonNull;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
-import lombok.Builder;
 import lombok.Getter;
-import lombok.RequiredArgsConstructor;
 import lombok.experimental.SuperBuilder;
 
 import java.io.Serializable;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.Duration;
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 import java.util.SortedMap;
 import java.util.TreeMap;
-import java.util.concurrent.atomic.AtomicLong;
 
 import byzzbench.simulator.protocols.hbft.message.ReplyMessage;
 import byzzbench.simulator.protocols.hbft.pojo.ClientReplyKey;
@@ -110,7 +104,7 @@ public class HbftClient extends Client {
         } else if (this.shouldPanic(tolerance)) {
             RequestMessage message = this.sentRequests.get(super.requestSequenceNumber.get());
             PanicMessage panic = new PanicMessage(this.digest(message), System.currentTimeMillis(), super.id);
-            super.scenario.getTransport().multicast(super.id, super.scenario.getTransport().getNodeIds(), panic);
+            super.scenario.getTransport().multicast(this, super.scenario.getTransport().getNodeIds(), panic);
         }
         this.clearTimeout(timeouts.get(super.requestSequenceNumber.get()));
         Long timeoutId = this.setTimeout("REQUEST", this::retransmitOrPanic, this.timeout);

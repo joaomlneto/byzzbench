@@ -7,6 +7,7 @@ import byzzbench.simulator.transport.MessagePayload;
 import byzzbench.simulator.transport.Transport;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Getter;
+import lombok.Setter;
 import lombok.ToString;
 import lombok.extern.java.Log;
 
@@ -59,12 +60,17 @@ public abstract class Replica implements Serializable, Node {
      */
     @JsonIgnore
     private final transient Scenario scenario;
-
     /**
      * The observers of this replica.
      */
     @JsonIgnore
     private final transient List<ReplicaObserver> observers = new java.util.ArrayList<>();
+    /**
+     * The Transport object this Replica should use to send and receive messages.
+     */
+    @JsonIgnore
+    @Setter // for Twins
+    private transient Transport transport;
 
     /**
      * Create a new replica.
@@ -77,6 +83,7 @@ public abstract class Replica implements Serializable, Node {
         this.id = id;
         this.scenario = scenario;
         this.commitLog = commitLog;
+        this.transport = scenario.getTransport();
     }
 
     /**
@@ -87,8 +94,7 @@ public abstract class Replica implements Serializable, Node {
      */
     public void sendMessage(MessagePayload message, String recipient) {
         message.sign(this.id);
-        this.scenario.getTransport().sendMessage(this.id, message, recipient);
-
+        this.transport.sendMessage(this, message, recipient);
     }
 
     /**
@@ -99,7 +105,7 @@ public abstract class Replica implements Serializable, Node {
      */
     public void multicastMessage(MessagePayload message, SortedSet<String> recipients) {
         message.sign(this.id);
-        this.scenario.getTransport().multicast(this.id, recipients, message);
+        this.transport.multicast(this, recipients, message);
     }
 
     /**
@@ -113,7 +119,7 @@ public abstract class Replica implements Serializable, Node {
                 .collect(java.util.stream.Collectors.toCollection(TreeSet::new));
 
         message.sign(this.id);
-        this.scenario.getTransport().multicast(this.id, otherNodes, message);
+        this.transport.multicast(this, otherNodes, message);
     }
 
     /**
@@ -123,7 +129,7 @@ public abstract class Replica implements Serializable, Node {
      */
     public void broadcastMessageIncludingSelf(MessagePayload message) {
         message.sign(this.id);
-        this.scenario.getTransport().multicast(this.id, this.getNodeIds(), message);
+        this.transport.multicast(this, this.getNodeIds(), message);
     }
 
     /**
@@ -131,6 +137,7 @@ public abstract class Replica implements Serializable, Node {
      *
      * @return the set of replica IDs in the system visible to this node
      */
+    @JsonIgnore
     public SortedSet<String> getNodeIds() {
         return this.scenario.getReplicaIds(this);
     }
@@ -171,7 +178,7 @@ public abstract class Replica implements Serializable, Node {
      * @param reply    the reply payload
      */
     public void sendReplyToClient(String clientId, Serializable reply) {
-        this.scenario.getTransport().sendClientResponse(this.id, new DefaultClientReplyPayload(reply), clientId);
+        this.transport.sendClientResponse(this, new DefaultClientReplyPayload(reply), clientId);
     }
 
     /**
@@ -217,7 +224,7 @@ public abstract class Replica implements Serializable, Node {
             this.notifyObserversTimeout();
             r.run();
         };
-        return this.scenario.getTransport().setTimeout(this, wrapper, timeout);
+        return this.transport.setTimeout(this, wrapper, timeout);
     }
 
     /**
@@ -226,7 +233,7 @@ public abstract class Replica implements Serializable, Node {
      * @param eventId the event ID of the timeout to clear
      */
     public void clearTimeout(long eventId) {
-        this.scenario.getTransport().clearTimeout(this, eventId);
+        this.transport.clearTimeout(this, eventId);
     }
 
     /**
@@ -257,7 +264,7 @@ public abstract class Replica implements Serializable, Node {
      * Clear all timeouts for this replica.
      */
     public void clearAllTimeouts() {
-        this.scenario.getTransport().clearReplicaTimeouts(this);
+        this.transport.clearReplicaTimeouts(this);
     }
 
     /**
@@ -275,8 +282,6 @@ public abstract class Replica implements Serializable, Node {
      * @param newLeaderId the new leader ID
      */
     public void notifyObserversLeaderChange(String newLeaderId) {
-        System.out.println("Notifying observers of leader change: " + newLeaderId);
-        System.out.println("Observers: " + this.observers);
         this.observers.forEach(observer -> observer.onLeaderChange(this, newLeaderId));
     }
 
@@ -296,6 +301,7 @@ public abstract class Replica implements Serializable, Node {
         this.observers.forEach(observer -> observer.onTimeout(this));
     }
 
+    @JsonIgnore
     public Instant getCurrentTime() {
         return this.scenario.getTimekeeper().getTime(this);
     }
@@ -319,6 +325,22 @@ public abstract class Replica implements Serializable, Node {
      */
     public Duration diffNow(Instant start) {
         return this.diffTime(this.getCurrentTime(), start);
+    }
+
+    /**
+     * Determine whether this replica is faulty.
+     *
+     * @return true if the replica is faulty, false otherwise
+     */
+    public boolean isFaulty() {
+        return this.scenario.isFaultyReplica(this.id);
+    }
+
+    /**
+     * Mark this replica as faulty.
+     */
+    public void markFaulty() {
+        this.scenario.markReplicaFaulty(this.id);
     }
 
 }

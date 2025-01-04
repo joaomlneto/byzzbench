@@ -21,6 +21,7 @@ import byzzbench.simulator.protocols.hbft.message.NewViewMessage;
 import byzzbench.simulator.protocols.hbft.message.PanicMessage;
 import byzzbench.simulator.protocols.hbft.message.RequestMessage;
 import byzzbench.simulator.protocols.hbft.message.ViewChangeMessage;
+import byzzbench.simulator.protocols.hbft.pojo.ClientRequestKey;
 import byzzbench.simulator.protocols.hbft.pojo.ReplicaRequestKey;
 import byzzbench.simulator.protocols.hbft.pojo.TicketKey;
 import byzzbench.simulator.protocols.hbft.pojo.ViewChangeResult;
@@ -422,7 +423,7 @@ public class MessageLog implements Serializable {
         Map<Long, Integer> checkpointMap = new HashMap<>();
 
         // Replica needs all the possibly executed requests for later
-        Map<Long, Integer> requestMap = new HashMap<>();
+        Map<ClientRequestKey, Integer> requestMap = new HashMap<>();
         Collection<SortedMap<Long, RequestMessage>> allRequests = new ArrayList<>();
 
         // Rule A1: Check if speculative history M has CER1(M, v) from at least 2f + 1 replicas
@@ -434,7 +435,8 @@ public class MessageLog implements Serializable {
             allRequests.add(requests);
 
             for (long seqNum : requests.keySet()) {
-                requestMap.put(seqNum, requestMap.getOrDefault(seqNum, 0) + 1);
+                ClientRequestKey key = new ClientRequestKey(seqNum, requests.get(seqNum).getClientId());
+                requestMap.put(key, requestMap.getOrDefault(key, 0) + 1);
             }
             
             // We tackle the empty history later in rule B
@@ -497,11 +499,14 @@ public class MessageLog implements Serializable {
          */
         for (SortedMap<Long, RequestMessage> requests : allRequests) {
             for (Map.Entry<Long, RequestMessage> request : requests.entrySet()) {
-                System.out.println(selectedHistoryM + " " + request + " " + (requestMap.get(request.getKey()) >= tolerance + 1));
-                if ((selectedHistoryM == null || request.getKey() > selectedHistoryM.getGreatestSeqNumber()) && requestMap.get(request.getKey()) >= tolerance + 1) {
+                ClientRequestKey key = new ClientRequestKey(request.getKey(), request.getValue().getClientId());
+                System.out.println(selectedHistoryM + " " + request + " " + (requestMap.get(key) >= tolerance + 1));
+                if ((selectedHistoryM == null || request.getKey() > selectedHistoryM.getGreatestSeqNumber()) && requestMap.get(key) >= tolerance + 1) {
                     sortedRequests.addEntry(request.getKey(), request.getValue());
                 } else if (selectedHistoryM == null || request.getKey() > selectedHistoryM.getGreatestSeqNumber()) {
-                    sortedRequests.addEntry(request.getKey(), null);
+                    if (!sortedRequests.getRequests().containsKey(request.getKey())) {                    
+                        sortedRequests.addEntry(request.getKey(), null);
+                    }
                 }
             }
         }
@@ -611,7 +616,7 @@ public class MessageLog implements Serializable {
         }
 
         // Replica needs all the possibly executed requests for later
-        Map<Long, Integer> requestMap = new HashMap<>();
+        Map<ClientRequestKey, Integer> requestMap = new HashMap<>();
         Collection<SortedMap<Long, RequestMessage>> allRequests = new ArrayList<>();
 
         for (ViewChangeMessage viewChangePerReplica : viewChanges) {
@@ -619,7 +624,8 @@ public class MessageLog implements Serializable {
             allRequests.add(requestsPerReplica);
 
             for (long seqNum : requestsPerReplica.keySet()) {
-                requestMap.put(seqNum, requestMap.getOrDefault(seqNum, 0) + 1);
+                ClientRequestKey key = new ClientRequestKey(seqNum, requestsPerReplica.get(seqNum).getClientId());
+                requestMap.put(key, requestMap.getOrDefault(key, 0) + 1);
             }
         }
 
@@ -631,10 +637,13 @@ public class MessageLog implements Serializable {
          */
         for (SortedMap<Long, RequestMessage> requests : allRequests) {
             for (Map.Entry<Long, RequestMessage> request : requests.entrySet()) {
-                if ((checkpoint == null || request.getKey() > checkpoint.getSequenceNumber()) && requestMap.get(request.getKey()) >= tolerance + 1) {
+                ClientRequestKey key = new ClientRequestKey(request.getKey(), request.getValue().getClientId());
+                if ((checkpoint == null || request.getKey() > checkpoint.getSequenceNumber()) && requestMap.get(key) >= tolerance + 1) {
                     sortedRequests.addEntry(request.getKey(), request.getValue());
                 } else if (checkpoint == null || request.getKey() > checkpoint.getSequenceNumber()) {
-                    sortedRequests.addEntry(request.getKey(), null);
+                    if (!sortedRequests.getRequests().containsKey(request.getKey())) {                    
+                        sortedRequests.addEntry(request.getKey(), null);
+                    }
                 }
             }
         }

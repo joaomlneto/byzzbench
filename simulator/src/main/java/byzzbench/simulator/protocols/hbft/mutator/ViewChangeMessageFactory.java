@@ -10,6 +10,7 @@ import lombok.ToString;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
+import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.SortedMap;
 import java.util.TreeMap;
@@ -219,6 +220,70 @@ public class ViewChangeMessageFactory extends MessageMutatorFactory {
                         }
                         SortedMap<Long, RequestMessage> requests = message.getRequestsR();
                         requests.remove(requests.lastEntry().getKey());
+                        ViewChangeMessage mutatedMessage = message.withRequestsR(requests);
+                        mutatedMessage.sign(message.getSignedBy());
+                        messageEvent.setPayload(mutatedMessage);
+                    }
+                },
+                new MessageMutationFault("hbft-view-change-remove-first-request", "Remove first request", List.of(ViewChangeMessage.class)) {
+                    @Override
+                    public void accept(FaultContext serializable) {
+                        Optional<Event> event = serializable.getEvent();
+                        if (event.isEmpty()) {
+                            throw invalidMessageTypeException;
+                        }
+                        if (!(event.get() instanceof MessageEvent messageEvent)) {
+                            throw invalidMessageTypeException;
+                        }
+                        if (!(messageEvent.getPayload() instanceof ViewChangeMessage message)) {
+                            throw invalidMessageTypeException;
+                        }
+                        SortedMap<Long, RequestMessage> requests = message.getRequestsR();
+                        requests.remove(requests.firstEntry().getKey());
+                        ViewChangeMessage mutatedMessage = message.withRequestsR(requests);
+                        mutatedMessage.sign(message.getSignedBy());
+                        messageEvent.setPayload(mutatedMessage);
+                    }
+                },
+                new MessageMutationFault("hbft-view-change-decrement-last-request-seqNum", "Decrement last request seqNum", List.of(ViewChangeMessage.class)) {
+                    @Override
+                    public void accept(FaultContext serializable) {
+                        Optional<Event> event = serializable.getEvent();
+                        if (event.isEmpty()) {
+                            throw invalidMessageTypeException;
+                        }
+                        if (!(event.get() instanceof MessageEvent messageEvent)) {
+                            throw invalidMessageTypeException;
+                        }
+                        if (!(messageEvent.getPayload() instanceof ViewChangeMessage message)) {
+                            throw invalidMessageTypeException;
+                        }
+                        SortedMap<Long, RequestMessage> requests = message.getRequestsR();
+                        Entry<Long, RequestMessage> lastReq = requests.lastEntry();
+                        requests.remove(lastReq.getKey());
+                        requests.put(lastReq.getKey() - 1, lastReq.getValue());
+                        ViewChangeMessage mutatedMessage = message.withRequestsR(requests);
+                        mutatedMessage.sign(message.getSignedBy());
+                        messageEvent.setPayload(mutatedMessage);
+                    }
+                },
+                new MessageMutationFault("hbft-view-change-increment-last-request-seqNum", "Increment last request seqNum", List.of(ViewChangeMessage.class)) {
+                    @Override
+                    public void accept(FaultContext serializable) {
+                        Optional<Event> event = serializable.getEvent();
+                        if (event.isEmpty()) {
+                            throw invalidMessageTypeException;
+                        }
+                        if (!(event.get() instanceof MessageEvent messageEvent)) {
+                            throw invalidMessageTypeException;
+                        }
+                        if (!(messageEvent.getPayload() instanceof ViewChangeMessage message)) {
+                            throw invalidMessageTypeException;
+                        }
+                        SortedMap<Long, RequestMessage> requests = message.getRequestsR();
+                        Entry<Long, RequestMessage> lastReq = requests.lastEntry();
+                        requests.remove(lastReq.getKey());
+                        requests.put(lastReq.getKey() + 1, lastReq.getValue());
                         ViewChangeMessage mutatedMessage = message.withRequestsR(requests);
                         mutatedMessage.sign(message.getSignedBy());
                         messageEvent.setPayload(mutatedMessage);

@@ -17,6 +17,7 @@ public class AgreementPredicate implements ScenarioPredicate {
     @Override
     public boolean test(Scenario scenarioExecutor) {
         Collection<Replica> replicas = scenarioExecutor.getNodes().values().stream()
+                .filter(node -> !scenarioExecutor.isFaultyReplica(node.getId()))
                 .filter(Replica.class::isInstance)
                 .map(Replica.class::cast)
                 .toList();

@@ -91,6 +91,16 @@ public class SimulatorController {
     }
 
     /**
+     * Get the list of available node IDs in the current scenario.
+     *
+     * @return The list of node IDs.
+     */
+    @GetMapping("/faulty-replicas")
+    public SortedSet<String> getFaultyReplicas() {
+        return simulatorService.getScenario().getFaultyReplicaIds();
+    }
+
+    /**
      * Get the internal state of the node with the given ID.
      *
      * @param nodeId The ID of the node to get.

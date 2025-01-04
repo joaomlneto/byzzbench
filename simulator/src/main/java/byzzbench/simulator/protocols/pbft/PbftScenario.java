@@ -14,7 +14,6 @@ import java.util.TreeSet;
 @Log
 public class PbftScenario extends BaseScenario {
     private final int NUM_NODES = 4;
-    private final PbftTerminationPredicate terminationCondition;
 
     public PbftScenario(Scheduler scheduler) {
         super("pbft", scheduler);
@@ -51,5 +50,10 @@ public class PbftScenario extends BaseScenario {
     @Override
     public synchronized void run() {
         //getClients().values().forEach(Client::initializeClient);
+    }
+
+    @Override
+    public int maxFaultyReplicas(int n) {
+        return (n - 1) / 3;
     }
 }

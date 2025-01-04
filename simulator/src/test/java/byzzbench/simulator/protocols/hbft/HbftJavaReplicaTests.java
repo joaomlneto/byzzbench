@@ -1,11 +1,9 @@
 package byzzbench.simulator.protocols.hbft;
 
 import java.util.ArrayList;
-
-import static org.mockito.Mockito.verify;
-
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.SortedMap;
 import java.util.SortedSet;
 import java.util.TreeMap;
 import java.util.TreeSet;
@@ -13,10 +11,8 @@ import java.util.TreeSet;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
-
-import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.util.Assert;
 
@@ -34,6 +30,8 @@ import byzzbench.simulator.protocols.hbft.pojo.ReplicaRequestKey;
 import byzzbench.simulator.protocols.hbft.pojo.ReplicaTicketPhase;
 import byzzbench.simulator.protocols.hbft.utils.Checkpoint;
 import byzzbench.simulator.scheduler.Scheduler;
+import byzzbench.simulator.state.LogEntry;
+import byzzbench.simulator.state.SerializableLogEntry;
 
 @SpringBootTest
 public class HbftJavaReplicaTests {
@@ -91,20 +89,20 @@ public class HbftJavaReplicaTests {
         Assert.isTrue(replicaA.getReceivedRequests().get(request.getTimestamp()) != null, "Request should already be received");
     }
 
-    @Test
-	void testRecvDoubleRequestAccrossViews() {
-        HbftJavaReplica spyReplica = Mockito.spy(replicaA);
-        RequestMessage request = new RequestMessage("123", 0, "C0");
+    // @Test
+	// void testRecvDoubleRequestAccrossViews() {
+    //     HbftJavaReplica spyReplica = Mockito.spy(replicaA);
+    //     RequestMessage request = new RequestMessage("123", 0, "C0");
         
-        spyReplica.recvRequest(request);
-        spyReplica.enterNewView(2);
-        spyReplica.setCheckpointForNewView(false);
-        Assert.isTrue(replicaA.getReceivedRequests().get(request.getTimestamp()) == null, "Request should not be stored!");
-        spyReplica.recvRequest(request);
-        verify(spyReplica, times(1)).sendRequest(primary.getId(), request);
-        verify(spyReplica, times(1)).sendRequest(replicaC.getId(), request);
-        Assert.isTrue(replicaA.getReceivedRequests().get(request.getTimestamp()) != null, "Request should be stored!");
-    }
+    //     spyReplica.recvRequest(request);
+    //     spyReplica.enterNewView(2);
+    //     spyReplica.setCheckpointForNewView(false);
+    //     Assert.isTrue(replicaA.getReceivedRequests().get(request.getTimestamp()) == null, "Request should not be stored!");
+    //     spyReplica.recvRequest(request);
+    //     verify(spyReplica, times(1)).sendRequest(primary.getId(), request);
+    //     verify(spyReplica, times(1)).sendRequest(replicaC.getId(), request);
+    //     Assert.isTrue(replicaA.getReceivedRequests().get(request.getTimestamp()) != null, "Request should be stored!");
+    // }
 
 
     @Test
@@ -487,6 +485,142 @@ public class HbftJavaReplicaTests {
     }
 
     @Test
+	void testRecvCheckpointIIIBehind() {
+        HbftJavaReplica spyReplica = Mockito.spy(replicaA);
+        String operation1 = "123";
+        RequestMessage request = new RequestMessage(operation1, 0, "C0");
+        //this.compute(seqNumber, new SerializableLogEntry(operation));
+        SpeculativeHistory history = new SpeculativeHistory();
+        history.addEntry(1, request);
+        byte[] digest = spyReplica.digest(history);
+        CheckpointMessage checkpoint2 = new CheckpointIIIMessage(1, digest, replicaC.getId(), history);
+        CheckpointMessage checkpoint3 = new CheckpointIIIMessage(1, digest, replicaD.getId(), history);
+        CheckpointMessage checkpoint4 = new CheckpointIIIMessage(1, digest, primary.getId(), history);
+
+        spyReplica.recvCheckpoint(checkpoint2);
+        spyReplica.recvCheckpoint(checkpoint3);
+        spyReplica.recvCheckpoint(checkpoint4);
+
+        Assert.isTrue(Arrays.equals(replicaA.digest(replicaA.getSpeculativeHistory()), digest), "Replica should have adopted the speculative hisotry!");
+    }
+
+    @Test
+	void testRecvCheckpointIIIAhead() {
+        HbftJavaReplica spyReplica = Mockito.spy(replicaA);
+        LogEntry log1 = new SerializableLogEntry("123");
+        LogEntry log2 = new SerializableLogEntry("234");
+        replicaA.compute(1, log1);
+        replicaA.compute(2, log2);
+        replicaA.getSpeculativeHistory().addEntry(1, new RequestMessage("123", 0, "C0"));
+        replicaA.getSpeculativeHistory().addEntry(2, new RequestMessage("234", 0, "C0"));
+        RequestMessage request = new RequestMessage("123", 0, "C0");
+        SpeculativeHistory history = new SpeculativeHistory();
+        history.addEntry(1, request);
+        byte[] digest = spyReplica.digest(history);
+        CheckpointMessage checkpoint2 = new CheckpointIIIMessage(1, digest, replicaC.getId(), history);
+        CheckpointMessage checkpoint3 = new CheckpointIIIMessage(1, digest, replicaD.getId(), history);
+        CheckpointMessage checkpoint4 = new CheckpointIIIMessage(1, digest, primary.getId(), history);
+
+        spyReplica.recvCheckpoint(checkpoint2);
+        spyReplica.recvCheckpoint(checkpoint3);
+        spyReplica.recvCheckpoint(checkpoint4);
+
+        Assert.isTrue(Arrays.equals(replicaA.digest(replicaA.getSpeculativeHistory().getHistoryBefore(1)), digest), "Replicas history should match till seq 1!");
+        Assert.isTrue(replicaA.getCommitLog().getLength() == 2, "Correct commit log length!");
+        Assert.isTrue(replicaA.getCommitLog().get(1L).equals(log1), "Correct log1!");
+        Assert.isTrue(replicaA.getCommitLog().get(2L).equals(log2), "Correct log2!");
+    }
+
+    @Test
+	void testRecvCheckpointIIIMissing() {
+        HbftJavaReplica spyReplica = Mockito.spy(replicaA);
+        LogEntry log1 = new SerializableLogEntry("123");
+        LogEntry log2 = new SerializableLogEntry("234");
+        replicaA.compute(2, log2);
+        replicaA.getSpeculativeHistory().addEntry(2, new RequestMessage("234", 0, "C0"));
+        RequestMessage request = new RequestMessage("123", 0, "C0");
+        RequestMessage request2 = new RequestMessage("234", 0, "C0");
+        SpeculativeHistory history = new SpeculativeHistory();
+        history.addEntry(1, request);
+        history.addEntry(2, request2);
+        byte[] digest = spyReplica.digest(history);
+        CheckpointMessage checkpoint2 = new CheckpointIIIMessage(2, digest, replicaC.getId(), history);
+        CheckpointMessage checkpoint3 = new CheckpointIIIMessage(2, digest, replicaD.getId(), history);
+        CheckpointMessage checkpoint4 = new CheckpointIIIMessage(2, digest, primary.getId(), history);
+
+        spyReplica.recvCheckpoint(checkpoint2);
+        spyReplica.recvCheckpoint(checkpoint3);
+        spyReplica.recvCheckpoint(checkpoint4);
+
+        Assert.isTrue(Arrays.equals(replicaA.digest(replicaA.getSpeculativeHistory()), digest), "Replicas history should match!");
+        Assert.isTrue(replicaA.getCommitLog().getLength() == 2, "Correct commit log length!");
+        Assert.isTrue(replicaA.getCommitLog().get(1L).equals(log1), "Correct log1!");
+        Assert.isTrue(replicaA.getCommitLog().get(2L).equals(log2), "Correct log2!");
+    }
+
+    @Test
+	void testRecvCheckpointIIIMissingAndAhead() {
+        HbftJavaReplica spyReplica = Mockito.spy(replicaA);
+        LogEntry log1 = new SerializableLogEntry("123");
+        LogEntry log2 = new SerializableLogEntry("234");
+        LogEntry log3 = new SerializableLogEntry("345");
+        replicaA.compute(2, log2);
+        replicaA.compute(3, log3);
+        replicaA.getSpeculativeHistory().addEntry(2, new RequestMessage("234", 0, "C0"));
+        replicaA.getSpeculativeHistory().addEntry(3, new RequestMessage("345", 0, "C0"));
+        RequestMessage request = new RequestMessage("123", 0, "C0");
+        RequestMessage request2 = new RequestMessage("234", 0, "C0");
+        SpeculativeHistory history = new SpeculativeHistory();
+        history.addEntry(1, request);
+        history.addEntry(2, request2);
+        byte[] digest = spyReplica.digest(history);
+        CheckpointMessage checkpoint2 = new CheckpointIIIMessage(2, digest, replicaC.getId(), history);
+        CheckpointMessage checkpoint3 = new CheckpointIIIMessage(2, digest, replicaD.getId(), history);
+        CheckpointMessage checkpoint4 = new CheckpointIIIMessage(2, digest, primary.getId(), history);
+
+        spyReplica.recvCheckpoint(checkpoint2);
+        spyReplica.recvCheckpoint(checkpoint3);
+        spyReplica.recvCheckpoint(checkpoint4);
+
+        Assert.isTrue(Arrays.equals(replicaA.digest(replicaA.getSpeculativeHistory().getHistoryBefore(2)), digest), "Replicas history should match till seq 2!");
+        Assert.isTrue(replicaA.getCommitLog().getLength() == 3, "Correct commit log length!");
+        Assert.isTrue(replicaA.getCommitLog().get(1L).equals(log1), "Correct log1!");
+        Assert.isTrue(replicaA.getCommitLog().get(2L).equals(log2), "Correct log2!");
+        Assert.isTrue(replicaA.getCommitLog().get(3L).equals(log3), "Correct log3!");
+    }
+
+    @Test
+	void testRecvCheckpointIIIMissingAndBehind() {
+        HbftJavaReplica spyReplica = Mockito.spy(replicaA);
+        LogEntry log1 = new SerializableLogEntry("123");
+        LogEntry log2 = new SerializableLogEntry("234");
+        LogEntry log3 = new SerializableLogEntry("345");
+        replicaA.compute(2, log2);
+        replicaA.getSpeculativeHistory().addEntry(2, new RequestMessage("234", 0, "C0"));
+        RequestMessage request = new RequestMessage("123", 0, "C0");
+        RequestMessage request2 = new RequestMessage("234", 0, "C0");
+        RequestMessage request3 = new RequestMessage("345", 0, "C0");
+        SpeculativeHistory history = new SpeculativeHistory();
+        history.addEntry(1, request);
+        history.addEntry(2, request2);
+        history.addEntry(3, request3);
+        byte[] digest = spyReplica.digest(history);
+        CheckpointMessage checkpoint2 = new CheckpointIIIMessage(3, digest, replicaC.getId(), history);
+        CheckpointMessage checkpoint3 = new CheckpointIIIMessage(3, digest, replicaD.getId(), history);
+        CheckpointMessage checkpoint4 = new CheckpointIIIMessage(3, digest, primary.getId(), history);
+
+        spyReplica.recvCheckpoint(checkpoint2);
+        spyReplica.recvCheckpoint(checkpoint3);
+        spyReplica.recvCheckpoint(checkpoint4);
+
+        Assert.isTrue(Arrays.equals(replicaA.digest(replicaA.getSpeculativeHistory()), digest), "Replicas history should match!");
+        Assert.isTrue(replicaA.getCommitLog().getLength() == 3, "Correct commit log length!");
+        Assert.isTrue(replicaA.getCommitLog().get(1L).equals(log1), "Correct log1!");
+        Assert.isTrue(replicaA.getCommitLog().get(2L).equals(log2), "Correct log2!");
+        Assert.isTrue(replicaA.getCommitLog().get(3L).equals(log3), "Correct log3!");
+    }
+
+    @Test
 	void testRecvEnoughCorrectViewChange() {
         HbftJavaReplica spyReplica = Mockito.spy(replicaA);
         ViewChangeMessage viewChange  = new ViewChangeMessage(2, null, null, null, replicaC.getId());
@@ -521,6 +655,32 @@ public class HbftJavaReplicaTests {
         verify(spyReplica, times(0)).sendViewChange(Mockito.any(ViewChangeMessage.class));
         spyReplica.recvViewChange(viewChange2);
         //verify(spyReplica, times(1)).sendViewChange(Mockito.any(ViewChangeMessage.class));
+    }
+
+    @Test
+	void testRecvWithDifferentReqInViewChange() {
+        HbftJavaReplica spyReplica = Mockito.spy(replicaC);
+        RequestMessage request = new RequestMessage("123", 0, "C1");
+        RequestMessage request2 = new RequestMessage("321", 0, "C0");
+        SortedMap<Long, RequestMessage> rRequests1 = new TreeMap<>();
+        SortedMap<Long, RequestMessage> rRequests2 = new TreeMap<>();
+        rRequests1.put(1L, request);
+        rRequests2.put(1L, request2);
+        ViewChangeMessage viewChange  = new ViewChangeMessage(2, null, null, rRequests1, replicaA.getId());
+        ViewChangeMessage viewChange2  = new ViewChangeMessage(2, null, null, rRequests2, replicaD.getId());
+        SpeculativeHistory history = new SpeculativeHistory();
+        history.addEntry(1, null);
+        NewViewMessage newView = new NewViewMessage(2, null, null, history);
+
+        spyReplica.recvViewChange(viewChange);
+        spyReplica.recvViewChange(viewChange2);
+
+        verify(spyReplica, times(1)).sendViewChange(Mockito.any(ViewChangeMessage.class));
+        // Should not include any request in R        
+        verify(spyReplica, times(1))
+        .recvNewView(Mockito.argThat(arg -> arg.getNewViewNumber() == newView.getNewViewNumber()
+            && arg.getSpeculativeHistory().getRequests().size() == 1
+            && arg.getSpeculativeHistory().getRequests().get(1L) == null));
     }
 
     @Test

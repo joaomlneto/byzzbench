@@ -2,7 +2,11 @@
 
 import { NodeMailbox } from "@/components/Events/NodeMailbox";
 import { NodeStateNavLink } from "@/components/NodeStateNavLink";
-import { useGetNode, useGetPartitions } from "@/lib/byzzbench-client";
+import {
+  useGetFaultyReplicas,
+  useGetNode,
+  useGetPartitions,
+} from "@/lib/byzzbench-client";
 import {
   Card,
   Group,
@@ -12,6 +16,7 @@ import {
   Title,
   Tooltip,
 } from "@mantine/core";
+import { IconBug } from "@tabler/icons-react";
 import React from "react";
 
 export type NodeCardProps = {
@@ -20,7 +25,10 @@ export type NodeCardProps = {
 
 export const NodeCard = ({ nodeId }: NodeCardProps) => {
   const { data, isLoading } = useGetNode(nodeId);
+  const faultyReplicasQuery = useGetFaultyReplicas();
   const partitionsQuery = useGetPartitions();
+
+  const isFaulty = faultyReplicasQuery.data?.data.includes(nodeId);
 
   if (isLoading || partitionsQuery.isLoading) {
     return <Loader />;
@@ -39,9 +47,16 @@ export const NodeCard = ({ nodeId }: NodeCardProps) => {
           data={data.data}
           label={
             <Group justify="space-between">
-              <Tooltip label="Node ID">
-                <Title order={4}>{nodeId}</Title>
-              </Tooltip>
+              <Group>
+                <Tooltip label="Node ID">
+                  <Title order={4}>{nodeId}</Title>
+                </Tooltip>
+                {isFaulty && (
+                  <Tooltip label="Replica is marked faulty">
+                    <IconBug size={18} color="red" />
+                  </Tooltip>
+                )}
+              </Group>
               {partitionsQuery.data?.data[nodeId] && (
                 <Tooltip label="Network partition ID">
                   <Text>P{partitionsQuery.data.data[nodeId] ?? 0}</Text>
