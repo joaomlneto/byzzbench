@@ -574,7 +574,7 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
              * then if it has f + 1 COMMIT messages in the log it can also COMMIT and REPLY
              */
             if (!ticket.isPreparedConflicting(prepareMessage) && ticket.casPhase(phase, ReplicaTicketPhase.COMMIT)) {
-                System.out.println("Replica " + this.getId() + " received a PREPARE thorugh a COMMIT message!");
+                System.out.println("Replica " + this.getId() + " received a PREPARE through a COMMIT message!");
                 RequestMessage request = ticket.getRequest();
 
                 // Checks whether the replica has executed the request
