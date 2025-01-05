@@ -4,6 +4,8 @@ import byzzbench.simulator.faults.FaultContext;
 import byzzbench.simulator.faults.faults.MessageMutationFault;
 import byzzbench.simulator.faults.factories.MessageMutatorFactory;
 import byzzbench.simulator.protocols.hbft.message.CheckpointIMessage;
+import byzzbench.simulator.protocols.hbft.message.RequestMessage;
+import byzzbench.simulator.protocols.hbft.message.ViewChangeMessage;
 import byzzbench.simulator.transport.Event;
 import byzzbench.simulator.transport.MessageEvent;
 import lombok.ToString;
@@ -11,7 +13,11 @@ import lombok.ToString;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
+import java.util.Map.Entry;
 import java.util.Optional;
+import java.util.SortedMap;
+
+import byzzbench.simulator.protocols.hbft.SpeculativeHistory;
 
 @Component
 @ToString
@@ -74,6 +80,134 @@ public class CheckpointIMessageMutatorFactory extends MessageMutatorFactory {
                             throw invalidMessageTypeException;
                         }
                         CheckpointIMessage mutatedMessage = message.withLastSeqNumber(message.getLastSeqNumber() - 1);
+                        mutatedMessage.sign(message.getSignedBy());
+                        messageEvent.setPayload(mutatedMessage);
+                    }
+                },
+                new MessageMutationFault("hbft-checkpointI-remove-last-request", "Remove last request from history", List.of(CheckpointIMessage.class)) {
+                    @Override
+                    public void accept(FaultContext serializable) {
+                        Optional<Event> event = serializable.getEvent();
+                        if (event.isEmpty()) {
+                            throw invalidMessageTypeException;
+                        }
+                        if (!(event.get() instanceof MessageEvent messageEvent)) {
+                            throw invalidMessageTypeException;
+                        }
+                        if (!(messageEvent.getPayload() instanceof CheckpointIMessage message)) {
+                            throw invalidMessageTypeException;
+                        }
+                        SpeculativeHistory history = message.getHistory();
+                        history.getRequests().remove(history.getRequests().lastEntry().getKey());
+                        CheckpointIMessage mutatedMessage = message.withHistory(history); //TODO: withDigest(digest(history))
+                        mutatedMessage.sign(message.getSignedBy());
+                        messageEvent.setPayload(mutatedMessage);
+                    }
+                },
+                new MessageMutationFault("hbft-checkpointI-remove-first-request", "Remove first request from history", List.of(CheckpointIMessage.class)) {
+                    @Override
+                    public void accept(FaultContext serializable) {
+                        Optional<Event> event = serializable.getEvent();
+                        if (event.isEmpty()) {
+                            throw invalidMessageTypeException;
+                        }
+                        if (!(event.get() instanceof MessageEvent messageEvent)) {
+                            throw invalidMessageTypeException;
+                        }
+                        if (!(messageEvent.getPayload() instanceof CheckpointIMessage message)) {
+                            throw invalidMessageTypeException;
+                        }
+                        SpeculativeHistory history = message.getHistory();
+                        history.getRequests().remove(history.getRequests().firstEntry().getKey());
+                        CheckpointIMessage mutatedMessage = message.withHistory(history); //TODO: withDigest(digest(history))
+                        mutatedMessage.sign(message.getSignedBy());
+                        messageEvent.setPayload(mutatedMessage);
+                    }
+                },
+                new MessageMutationFault("hbft-checkpointI-decrement-last-request-seq", "Decrement last request's seq num from history", List.of(CheckpointIMessage.class)) {
+                    @Override
+                    public void accept(FaultContext serializable) {
+                        Optional<Event> event = serializable.getEvent();
+                        if (event.isEmpty()) {
+                            throw invalidMessageTypeException;
+                        }
+                        if (!(event.get() instanceof MessageEvent messageEvent)) {
+                            throw invalidMessageTypeException;
+                        }
+                        if (!(messageEvent.getPayload() instanceof CheckpointIMessage message)) {
+                            throw invalidMessageTypeException;
+                        }
+                        SpeculativeHistory history = message.getHistory();
+                        Entry<Long, RequestMessage> lastReq = history.getRequests().lastEntry();
+                        history.getRequests().remove(lastReq.getKey());
+                        history.getRequests().put(lastReq.getKey() - 1, lastReq.getValue());
+                        CheckpointIMessage mutatedMessage = message.withHistory(history); //TODO: withDigest(digest(history))
+                        mutatedMessage.sign(message.getSignedBy());
+                        messageEvent.setPayload(mutatedMessage);
+                    }
+                },
+                new MessageMutationFault("hbft-checkpointI-increment-last-request-seq", "Increment last request's seq num from history", List.of(CheckpointIMessage.class)) {
+                    @Override
+                    public void accept(FaultContext serializable) {
+                        Optional<Event> event = serializable.getEvent();
+                        if (event.isEmpty()) {
+                            throw invalidMessageTypeException;
+                        }
+                        if (!(event.get() instanceof MessageEvent messageEvent)) {
+                            throw invalidMessageTypeException;
+                        }
+                        if (!(messageEvent.getPayload() instanceof CheckpointIMessage message)) {
+                            throw invalidMessageTypeException;
+                        }
+                        SpeculativeHistory history = message.getHistory();
+                        Entry<Long, RequestMessage> lastReq = history.getRequests().lastEntry();
+                        history.getRequests().remove(lastReq.getKey());
+                        history.getRequests().put(lastReq.getKey() + 1, lastReq.getValue());
+                        CheckpointIMessage mutatedMessage = message.withHistory(history); //TODO: withDigest(digest(history))
+                        mutatedMessage.sign(message.getSignedBy());
+                        messageEvent.setPayload(mutatedMessage);
+                    }
+                },
+                new MessageMutationFault("hbft-checkpointI-decrement-first-request-seq", "Decrement first request's seq num from history", List.of(CheckpointIMessage.class)) {
+                    @Override
+                    public void accept(FaultContext serializable) {
+                        Optional<Event> event = serializable.getEvent();
+                        if (event.isEmpty()) {
+                            throw invalidMessageTypeException;
+                        }
+                        if (!(event.get() instanceof MessageEvent messageEvent)) {
+                            throw invalidMessageTypeException;
+                        }
+                        if (!(messageEvent.getPayload() instanceof CheckpointIMessage message)) {
+                            throw invalidMessageTypeException;
+                        }
+                        SpeculativeHistory history = message.getHistory();
+                        Entry<Long, RequestMessage> firstReq = history.getRequests().firstEntry();
+                        history.getRequests().remove(firstReq.getKey());
+                        history.getRequests().put(firstReq.getKey() - 1, firstReq.getValue());
+                        CheckpointIMessage mutatedMessage = message.withHistory(history); //TODO: withDigest(digest(history))
+                        mutatedMessage.sign(message.getSignedBy());
+                        messageEvent.setPayload(mutatedMessage);
+                    }
+                },
+                new MessageMutationFault("hbft-checkpointI-increment-first-request-seq", "Increment first request's seq num from history", List.of(CheckpointIMessage.class)) {
+                    @Override
+                    public void accept(FaultContext serializable) {
+                        Optional<Event> event = serializable.getEvent();
+                        if (event.isEmpty()) {
+                            throw invalidMessageTypeException;
+                        }
+                        if (!(event.get() instanceof MessageEvent messageEvent)) {
+                            throw invalidMessageTypeException;
+                        }
+                        if (!(messageEvent.getPayload() instanceof CheckpointIMessage message)) {
+                            throw invalidMessageTypeException;
+                        }
+                        SpeculativeHistory history = message.getHistory();
+                        Entry<Long, RequestMessage> firstReq = history.getRequests().firstEntry();
+                        history.getRequests().remove(firstReq.getKey());
+                        history.getRequests().put(firstReq.getKey() + 1, firstReq.getValue());
+                        CheckpointIMessage mutatedMessage = message.withHistory(history); //TODO: withDigest(digest(history))
                         mutatedMessage.sign(message.getSignedBy());
                         messageEvent.setPayload(mutatedMessage);
                     }
