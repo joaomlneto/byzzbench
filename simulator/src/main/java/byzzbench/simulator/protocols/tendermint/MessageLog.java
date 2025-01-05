@@ -125,9 +125,11 @@ public class MessageLog {
     }
 
     public void clear() {
-        messages.clear();
         prevotes.clear();
         precommits.clear();
         proposals.clear();
+        precommitCount = 0;
+        prevotesCount = 0;
+        proposalCount = 0;
     }
 }
