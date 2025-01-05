@@ -133,7 +133,6 @@ public abstract class BaseScenario implements Scenario {
      * @param numClients The number of clients to set.
      */
     protected void setNumHbftClients(int numClients) {
-        this.removeAllClients();
         for (int i = 0; i < numClients; i++) {
             String clientId = String.format("C%d", i);
             Client client = HbftClient.builder().id(clientId).scenario(this).build();
