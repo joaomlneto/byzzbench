@@ -24,7 +24,6 @@ public class DummyScenario extends BaseScenario {
 
     public DummyScenario(Scheduler scheduler) {
         super("dummy", scheduler);
-        setNumClients(2);
     }
 
     @Override

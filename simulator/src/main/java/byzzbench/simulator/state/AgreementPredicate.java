@@ -16,17 +16,19 @@ public class AgreementPredicate implements ScenarioPredicate {
 
     @Override
     public boolean test(Scenario scenarioExecutor) {
-        Collection<Replica> replicas = scenarioExecutor.getNodes().values().stream()
+        Collection<Replica> replicas = scenarioExecutor.getReplicas().values().stream()
                 .filter(node -> !scenarioExecutor.isFaultyReplica(node.getId()))
-                .filter(Replica.class::isInstance)
-                .map(Replica.class::cast)
                 .toList();
 
         // get the max length of the commit logs of all replicas
-        int commonPrefixLength = replicas.stream()
-                .map(replica -> replica.getCommitLog().getLength())
-                .max(Integer::compareTo)
-                .orElse(0);
+        long lowestSequenceNumber = replicas.stream()
+                .map(replica -> replica.getCommitLog().getLowestSequenceNumber())
+                .min(Long::compareTo)
+                .orElse(0L);
+        long highestSequenceNumber = replicas.stream()
+                .map(replica -> replica.getCommitLog().getHighestSequenceNumber())
+                .max(Long::compareTo)
+                .orElse(0L);
 
         // check for duplicate entries in each replica's commit log
         for (Replica replica : replicas) {
@@ -45,8 +47,8 @@ public class AgreementPredicate implements ScenarioPredicate {
         }
 
         // check if the Nth entry in the commit log of each replica is the same
-        for (int i = 0; i < commonPrefixLength; i++) {
-            final int index = i;
+        for (long i = lowestSequenceNumber; i < highestSequenceNumber; i++) {
+            final long index = i;
             List<LogEntry> distinctIthEntries = replicas.stream()
                     .map(Replica::getCommitLog)
                     .map(log -> log.getLength() > index ? log.get(index) : null)

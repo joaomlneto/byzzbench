@@ -63,7 +63,7 @@ public class Client implements Serializable, Node {
      * Sends a request to a replica in the system.
      */
     public void sendRequest() {
-        String recipientId = this.getScenario().getNodes().keySet().iterator().next();
+        String recipientId = this.getScenario().getReplicas().keySet().iterator().next();
         String requestId = String.format("%s/%d", this.id, this.requestSequenceNumber.getAndIncrement());
         this.getScenario().getTransport().sendClientRequest(this.id, requestId, recipientId);
     }

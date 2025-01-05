@@ -2,7 +2,6 @@ package byzzbench.simulator.service;
 
 import byzzbench.simulator.Scenario;
 import byzzbench.simulator.config.ByzzBenchConfig;
-import byzzbench.simulator.scheduler.EventDecision;
 import byzzbench.simulator.state.ErroredPredicate;
 import byzzbench.simulator.transport.Event;
 import byzzbench.simulator.transport.messages.MessageWithRound;
@@ -20,7 +19,6 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
-import java.util.Optional;
 import java.util.OptionalLong;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
@@ -130,7 +128,8 @@ public class SimulatorService {
 
                     try {
                         while (true) {
-                            this.invokeScheduleNext();
+                            this.scenario.getScheduler().scheduleNext(this.scenario);
+
                             long numEvents = this.scenario.getSchedule().getEvents().size();
                             long terminationSamplingFreq = this.byzzBenchConfig.getScenario().getTermination().getSamplingFrequency();
                             boolean shouldCheckTermination = (numEvents % terminationSamplingFreq) == 0;
@@ -191,15 +190,6 @@ public class SimulatorService {
                 System.out.println("number of runs halted by error: " + numErr);
             }
         });
-    }
-
-    public void invokeScheduleNext() throws Exception {
-        Optional<EventDecision> decisionOptional = this.scenario.getScheduler().scheduleNext(this.scenario);
-        if (decisionOptional.isPresent()) {
-            //EventDecision decision = decisionOptional.get();
-        } else {
-            log.info("Couldn't schedule action");
-        }
     }
 
     public enum SimulatorServiceMode {
