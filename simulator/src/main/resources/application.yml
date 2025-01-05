@@ -22,7 +22,7 @@ byzzbench:
   outputSchedules: buggy # which schedules to write to file? one of 'all', 'buggy' or 'none'
 
   scheduler:
-    id: "byzzfuzz" # The ID of the scheduler to use
+    id: "random" # The ID of the scheduler to use
     maxDropMessages: 0 # Maximum number of messages to drop per scenario
     maxMutateMessages: 0 # Maximum number of messages to mutate per scenario
     deliverTimeoutWeight: 1 # The weight for scheduler to trigger a timeout

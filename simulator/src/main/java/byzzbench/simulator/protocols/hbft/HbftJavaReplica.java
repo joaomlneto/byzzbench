@@ -1078,29 +1078,34 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
             == this.digest(newView.getSpeculativeHistory().getHistoryBefore(maxL))) {
                 nextSeq = maxL;
         }
-
         this.seqCounter.set(nextSeq);
 
         // Replicas need to execute speculated requests
         for (Long seqNumOfHistory : newView.getSpeculativeHistory().getRequests().keySet()) {
             System.out.println("Replica " + this.getId() + " checking request with seqNum: " + seqNumOfHistory);
-            if (seqNumOfHistory <= nextSeq) {
-                continue;
-            }
-            
-            if (seqNumOfHistory > this.seqCounter.get() + 1) {
-                this.seqCounter.set(seqNumOfHistory - 1);
-            }
 
-            if (this.seqCounter.get() + 1 == seqNumOfHistory && newView.getSpeculativeHistory().getRequests().get(seqNumOfHistory) == null) {
-                this.seqCounter.incrementAndGet();
-                continue;
-            }
-
-            if (this.seqCounter.incrementAndGet() == seqNumOfHistory) {
+            if (!this.speculativeHistory.getRequests().keySet().contains(seqNumOfHistory)) {
                 System.out.println("Replica " + this.getId() + " will execute with seqNum: " + seqNumOfHistory);
                 this.executeRequestFromViewChange(newView.getSpeculativeHistory().getRequests().get(seqNumOfHistory), this.getViewNumber(), seqNumOfHistory);
             }
+
+            // if (seqNumOfHistory <= nextSeq) {
+            //     continue;
+            // }
+            
+            // if (seqNumOfHistory > this.seqCounter.get() + 1) {
+            //     this.seqCounter.set(seqNumOfHistory - 1);
+            // }
+
+            // if (this.seqCounter.get() + 1 == seqNumOfHistory && newView.getSpeculativeHistory().getRequests().get(seqNumOfHistory) == null) {
+            //     this.seqCounter.incrementAndGet();
+            //     continue;
+            // }
+
+            // if (this.seqCounter.incrementAndGet() == seqNumOfHistory) {
+            //     System.out.println("Replica " + this.getId() + " will execute with seqNum: " + seqNumOfHistory);
+            //     this.executeRequestFromViewChange(newView.getSpeculativeHistory().getRequests().get(seqNumOfHistory), this.getViewNumber(), seqNumOfHistory);
+            // }
         }
 
 
@@ -1177,8 +1182,10 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
     }
 
     public Serializable compute(long sequenceNumber, LogEntry operation) {
-        logger.writeLog(String.format("COMMITED %s at %d at replica %s", operation.toString(), sequenceNumber, this.getId())); 
-        this.commitOperation(sequenceNumber, operation);
+        if (!this.speculativeHistory.getRequests().keySet().contains(sequenceNumber)) {
+            logger.writeLog(String.format("COMMITED %s at %d at replica %s", operation.toString(), sequenceNumber, this.getId())); 
+            this.commitOperation(sequenceNumber, operation);
+        }
         return operation;
     }
 
