@@ -1,11 +1,13 @@
 package byzzbench.simulator.protocols.tendermint;
 
+import java.util.List;
 import java.util.SortedSet;
 import java.util.TreeSet;
 
 import byzzbench.simulator.protocols.tendermint.message.Block;
 import byzzbench.simulator.protocols.tendermint.message.ProposalMessage;
 import byzzbench.simulator.protocols.tendermint.message.RequestMessage;
+import io.swagger.v3.oas.models.security.SecurityScheme;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -40,11 +42,16 @@ public class TendermintReplicaTest {
         nodeIds.add("C");
         nodeIds.add("D");
 
+        long tolerance = 1;
+        long totalVotingPower = 3 * tolerance + 1;
+
+        List<Long> votingPower = TendermintScenarioExecutor.distributeVotingPower(4, totalVotingPower);
+
         TendermintScenarioExecutor tendermintScenarioExecutor = new TendermintScenarioExecutor(scheduler);
-        replicaA = new TendermintReplica(replicaAId, nodeIds, tendermintScenarioExecutor);
-        replicaB = new TendermintReplica(replicaBId, nodeIds, tendermintScenarioExecutor);
-        replicaC = new TendermintReplica(replicaCId, nodeIds, tendermintScenarioExecutor);
-        replicaD = new TendermintReplica(replicaDId, nodeIds, tendermintScenarioExecutor);
+        replicaA = new TendermintReplica(replicaAId, nodeIds, tendermintScenarioExecutor, tolerance, votingPower);
+        replicaB = new TendermintReplica(replicaBId, nodeIds, tendermintScenarioExecutor, tolerance, votingPower);
+        replicaC = new TendermintReplica(replicaCId, nodeIds, tendermintScenarioExecutor, tolerance, votingPower);
+        replicaD = new TendermintReplica(replicaDId, nodeIds, tendermintScenarioExecutor, tolerance, votingPower);
 
         replicaA.initialize();
         replicaB.initialize();

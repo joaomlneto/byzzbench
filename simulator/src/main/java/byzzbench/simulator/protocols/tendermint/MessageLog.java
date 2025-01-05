@@ -13,7 +13,9 @@ import java.util.stream.Collectors;
 @Log
 @RequiredArgsConstructor
 public class MessageLog {
-    private final TendermintReplica node;
+    private final long tolerance;
+
+    private final SortedMap<String, Integer> votingPower;
 
     // Stores all generic messages
     @Getter
@@ -78,14 +80,14 @@ public class MessageLog {
      * Checks if a block has enough prevotes.
      */
     public boolean hasEnoughPreVotes(Block block) {
-        return prevotes.getOrDefault(block, Collections.emptyList()).size() >= 2 * node.getTolerance() + 1;
+        return prevotes.getOrDefault(block, Collections.emptyList()).size() >= 2 * this.tolerance + 1;
     }
 
     /**
      * Checks if a block has enough precommits.
      */
     public boolean hasEnoughPreCommits(Block block) {
-        return precommits.getOrDefault(block, Collections.emptyList()).size() >= 2 * node.getTolerance() + 1;
+        return precommits.getOrDefault(block, Collections.emptyList()).size() >= 2 * this.tolerance + 1;
     }
 
     /**
@@ -109,7 +111,7 @@ public class MessageLog {
         return messages.stream()
                 .filter(m -> m.getHeight() == height)
                 .filter(m -> m.getRound() > round)
-                .count() >= node.getTolerance() + 1;
+                .count() >= this.tolerance + 1;
     }
 
     public void bufferRequest(RequestMessage request) {

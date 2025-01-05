@@ -17,6 +17,7 @@ import java.util.stream.Collectors;
 
 import lombok.Getter;
 import lombok.extern.java.Log;
+import org.apache.commons.lang3.tuple.Pair;
 
 @Log
 @Getter
@@ -43,12 +44,12 @@ public class TendermintReplica extends LeaderBasedProtocolReplica {
     // Round number of the block this replica has validated
     private long validRound;
 
-    private MessageLog messageLog;
+    private final MessageLog messageLog;
 
-    private final long tolerance = 1;
+    private final long tolerance;
 
     // Assigned powers of each replica in the network
-    private final Map<String, Integer> votingPower = new HashMap<>();
+    private final SortedMap<String, Integer> votingPower;
 
     private boolean enoughPrecommitsCheck;
     private boolean preVoteFirstTime;
@@ -67,8 +68,10 @@ public class TendermintReplica extends LeaderBasedProtocolReplica {
 
     public Random rand = new Random(2137L);
 
+    private SortedSet<Pair<Long, Long>> hasBroadcasted = new TreeSet<>();
 
-    public TendermintReplica(String nodeId, SortedSet<String> nodeIds, Scenario scenario) {
+
+    public TendermintReplica(String nodeId, SortedSet<String> nodeIds, Scenario scenario, long tolerance, List<Long> votingPowers) {
         // Initialize replica with node ID, a list of other nodes, transport, and a commit log
         super(nodeId, scenario, new TotalOrderCommitLog());
         this.height = 0;
@@ -78,15 +81,35 @@ public class TendermintReplica extends LeaderBasedProtocolReplica {
         this.lockedRound = -1;
         this.validValue = null;
         this.validRound = -1;
-        this.messageLog = new MessageLog(this);
         this.enoughPrecommitsCheck = true;
         this.preVoteFirstTime = true;
         this.prevoteOrMoreFirstTime = true;
-        this.votingPower.put("A", 3);
-        this.votingPower.put("B", 2);
-        this.votingPower.put("C", 1);
-        this.votingPower.put("D", 1);
+        this.votingPower = new TreeMap<>();
+
+        Iterator<String> nodeIdsIterator = nodeIds.iterator();
+        int index = 0;
+
+        while (nodeIdsIterator.hasNext() && index < votingPowers.size()) {
+            String currentNodeId = nodeIdsIterator.next();
+            int votingPower = votingPowers.get(index).intValue();
+            log.info("Node ID: " + currentNodeId + " Voting Power: " + votingPower);
+            this.votingPower.put(currentNodeId, votingPower);
+            index++;
+        }
+
+        if (index < votingPowers.size()) {
+            log.warning("Not all voting powers were assigned; too many powers provided.");
+        }
+        if (nodeIdsIterator.hasNext()) {
+            log.warning("Not all nodes received voting powers; too few powers provided.");
+        }
+
+        log.info("Voting Power: " + this.votingPower.toString());
+        this.tolerance = tolerance;
+
+        this.messageLog = new MessageLog(tolerance, this.votingPower);
     }
+
 
     /**
      * PROPOSE STEP
@@ -130,40 +153,51 @@ public class TendermintReplica extends LeaderBasedProtocolReplica {
                 .filter(proposal -> proposal.getRound() == round)
                 .filter(proposal -> proposal.getReplicaId().equals(proposer(height, round)))
                 .filter(proposal -> proposal.getValidRound() == -1)
-                .count() >= 1;
+                .count() == 1;
 
         boolean b = this.step == Step.PROPOSE;
         return proposalExists && b;
     }
 
     private boolean fulfillProposalRule1(ProposalMessage proposalMessage) {
+        // Check if the proposal exists
         boolean proposalExists = messageLog.getProposals().getOrDefault(proposalMessage.getBlock(), new ArrayList<>()).stream()
                 .filter(proposal -> proposal.getHeight() == height)
                 .filter(proposal -> proposal.getRound() == round)
                 .filter(proposal -> proposal.getReplicaId().equals(proposer(height, round)))
-                .count() >= 1;
+                .count() == 1;
 
-        boolean enoughPrevotes = messageLog.getPrevotes().getOrDefault(proposalMessage.getBlock(), new ArrayList<>()).stream()
+        // Calculate the total voting power of matching prevotes
+        int totalVotingPower = messageLog.getPrevotes().getOrDefault(proposalMessage.getBlock(), new ArrayList<>()).stream()
                 .filter(prevote -> prevote.getHeight() == height)
                 .filter(prevote -> prevote.getRound() == proposalMessage.getValidRound())
-                .count() >= 2 * tolerance + 1;
+                .mapToInt(prevote -> votingPower.getOrDefault(prevote.getReplicaId(), 0))
+                .sum();
+
+        boolean enoughPrevotes = totalVotingPower >= 2 * tolerance + 1;
 
         boolean b = this.step == Step.PROPOSE && proposalMessage.getRound() > 0 && proposalMessage.getRound() <= this.round;
 
         return proposalExists && enoughPrevotes && b;
     }
 
+
     private boolean fulfillProposalRule2(ProposalMessage proposalMessage) {
+        // Check if the proposal exists
         boolean proposalExists = messageLog.getProposals().getOrDefault(proposalMessage.getBlock(), new ArrayList<>()).stream()
                 .filter(proposal -> proposal.getHeight() == height)
                 .filter(proposal -> proposal.getRound() == round)
-                .filter(proposal -> proposal.getReplicaId().equals(this.getLeaderId()))
-                .count() >= 1;
+                .filter(proposal -> proposal.getReplicaId().equals(proposer(height, round)))
+                .count() == 1;
 
-        boolean enoughPrevotes = messageLog.getPrevotes().getOrDefault(proposalMessage.getBlock(), new ArrayList<>()).stream()
+        // Calculate the total voting power of matching prevotes
+        int totalVotingPower = messageLog.getPrevotes().getOrDefault(proposalMessage.getBlock(), new ArrayList<>()).stream()
                 .filter(prevote -> prevote.getHeight() == height)
                 .filter(prevote -> prevote.getRound() == proposalMessage.getRound())
-                .count() >= 2 * tolerance + 1;
+                .mapToInt(prevote -> votingPower.getOrDefault(prevote.getReplicaId(), 0))
+                .sum();
+
+        boolean enoughPrevotes = totalVotingPower >= 2 * tolerance + 1;
 
         boolean b = valid(proposalMessage.getBlock())
                 && (this.step == Step.PREVOTE || this.step == Step.PRECOMMIT)
@@ -172,21 +206,28 @@ public class TendermintReplica extends LeaderBasedProtocolReplica {
         return proposalExists && enoughPrevotes && b;
     }
 
+
     private boolean fulfillProposalRule3(ProposalMessage proposalMessage) {
+        // Check if the proposal exists
         boolean proposalExists = messageLog.getProposals().getOrDefault(proposalMessage.getBlock(), new ArrayList<>()).stream()
                 .filter(proposal -> proposal.getHeight() == height)
                 .filter(proposal -> proposal.getReplicaId().equals(proposer(height, proposalMessage.getRound())))
-                .count() >= 1;
+                .count() == 1;
 
-        boolean enoughPrecommits = messageLog.getPrecommits().getOrDefault(proposalMessage.getBlock(), new ArrayList<>()).stream()
+        // Calculate the total voting power of matching precommits
+        int totalVotingPower = messageLog.getPrecommits().getOrDefault(proposalMessage.getBlock(), new ArrayList<>()).stream()
                 .filter(precommit -> precommit.getHeight() == height)
                 .filter(precommit -> precommit.getRound() == proposalMessage.getRound())
-                .count() >= 2 * tolerance + 1;
+                .mapToInt(precommit -> votingPower.getOrDefault(precommit.getReplicaId(), 0))
+                .sum();
+
+        boolean enoughPrecommits = totalVotingPower >= 2 * tolerance + 1;
 
         boolean decisionMade = getCommitLog().get((int) height) != null;
 
         return proposalExists && enoughPrecommits && !decisionMade;
     }
+
 
     private void proposalRandomOrderExecute(boolean[] uponRules, ProposalMessage proposalMessage) {
         List<Integer> trueIndices = new ArrayList<>();
@@ -290,10 +331,14 @@ public class TendermintReplica extends LeaderBasedProtocolReplica {
     }
 
     protected void broadcastProposal(long height, long round, Block proposal, long validRound) {
+        if(hasBroadcasted.contains(Pair.of(height, round))) {
+            return;
+        }
         log.info("Broadcasting proposal as leader: " + getId());
 //        messageLog.sentProposal();
         ProposalMessage proposalMessage = new ProposalMessage(getId(), height, round, validRound, proposal);
         broadcastMessage(proposalMessage);
+        hasBroadcasted.add(Pair.of(height, round));
     }
 
     private void onTimeoutPropose(long height, long round) {
@@ -324,8 +369,6 @@ public class TendermintReplica extends LeaderBasedProtocolReplica {
 
         boolean[] uponRules = new boolean[4];
 
-        log.info(prevoteMessage.toString());
-
         if (fulfillPrevoteRule0(prevoteMessage)) {
             uponRules[0] = true;
         }
@@ -346,27 +389,44 @@ public class TendermintReplica extends LeaderBasedProtocolReplica {
     }
 
     private boolean fulfillPrevoteRule0(PrevoteMessage prevoteMessage) {
-        boolean enoughPrevotes = messageLog.getPrevotes().getOrDefault(prevoteMessage.getBlock(), new ArrayList<>()).stream()
+        // Filter matching prevotes
+        List<PrevoteMessage> matchingPrevotes = messageLog.getPrevotes().getOrDefault(prevoteMessage.getBlock(), new ArrayList<>()).stream()
                 .filter(prevote -> prevote.getHeight() == height)
-                .count() >= 2 * tolerance + 1;
+                .collect(Collectors.toList());
 
+        // Calculate the total voting power of the matching prevotes
+        int totalVotingPower = matchingPrevotes.stream()
+                .mapToInt(prevote -> votingPower.getOrDefault(prevote.getReplicaId(), 0)) // Get voting power for each replica
+                .sum();
+        log.info(prevoteMessage.toString() + " received " + totalVotingPower + " votes. It needs " + (2 * tolerance + 1) + " votes.");
+        // Check if the total voting power meets the threshold
+        boolean enoughPrevotes = totalVotingPower >= 2 * tolerance + 1;
+
+        // Filter matching proposals
         boolean hasMatchingProposal = messageLog.getProposals().getOrDefault(prevoteMessage.getBlock(), new ArrayList<>()).stream()
                 .filter(proposal -> proposal.getHeight() == this.height)
                 .filter(proposal -> proposal.getRound() == this.round)
                 .filter(proposal -> proposal.getReplicaId().equals(proposer(this.height, this.round)))
                 .filter(proposal -> proposal.getValidRound() == prevoteMessage.getRound())
-                .count() >= 1;
+                .count() == 1;
 
+        // Check additional conditions
         boolean b = this.step == Step.PROPOSE && prevoteMessage.getRound() > 0 && prevoteMessage.getRound() <= this.round;
 
         return enoughPrevotes && hasMatchingProposal && b;
     }
 
     private boolean fulfillPrevoteRule1(PrevoteMessage prevoteMessage) {
-        boolean enoughPrevotes = messageLog.getPrevotes().getOrDefault(prevoteMessage.getBlock(), new ArrayList<>()).stream()
+        // Filter matching prevotes and sum their voting power
+        int totalVotingPower = messageLog.getPrevotes().getOrDefault(prevoteMessage.getBlock(), new ArrayList<>()).stream()
                 .filter(prevote -> prevote.getHeight() == this.height)
                 .filter(prevote -> prevote.getRound() == this.round)
-                .count() >= 2 * tolerance + 1;
+                .mapToInt(prevote -> votingPower.getOrDefault(prevote.getReplicaId(), 0))
+                .sum();
+
+        log.info(prevoteMessage.toString() + " received " + totalVotingPower + " votes. It needs " + (2 * tolerance + 1) + " votes.");
+        // Check if the total voting power meets the threshold
+        boolean enoughPrevotes = totalVotingPower >= 2 * tolerance + 1;
 
         boolean rest = this.step == Step.PREVOTE && this.preVoteFirstTime;
 
@@ -374,31 +434,51 @@ public class TendermintReplica extends LeaderBasedProtocolReplica {
     }
 
     private boolean fulfillPrevoteRule2(PrevoteMessage prevoteMessage) {
-        boolean enoughPrevotes = messageLog.getPrevotes().getOrDefault(prevoteMessage.getBlock(), new ArrayList<>()).stream()
+        log.info("Checking Prevote Rule 2 as replica" + this.getId() );
+        // Filter matching prevotes and sum their voting power
+        int totalVotingPower = messageLog.getPrevotes().getOrDefault(prevoteMessage.getBlock(), new ArrayList<>()).stream()
                 .filter(prevote -> prevote.getHeight() == height)
                 .filter(prevote -> prevote.getRound() == round)
-                .count() >= 2 * tolerance + 1;
+                .mapToInt(prevote -> votingPower.getOrDefault(prevote.getReplicaId(), 0))
+                .sum();
+
+        log.info(prevoteMessage.toString() + " received " + totalVotingPower + " votes. It needs " + (2 * tolerance + 1) + " votes.");
+
+        // Check if the total voting power meets the threshold
+        boolean enoughPrevotes = totalVotingPower >= 2 * tolerance + 1;
+        log.info("enoughPrevotes: " + enoughPrevotes);
 
         boolean proposalExists = messageLog.getProposals().getOrDefault(prevoteMessage.getBlock(), new ArrayList<>()).stream()
                 .filter(proposal -> proposal.getHeight() == height)
                 .filter(proposal -> proposal.getRound() == round)
                 .filter(proposal -> proposal.getReplicaId().equals(proposer(height, round)))
-                .count() >= 1;
+                .count() == 1;
+
+        log.info("Checking if proposal exists: " + proposalExists);
+
 
         boolean b = valid(prevoteMessage.getBlock())
                 && (this.step == Step.PREVOTE || this.step == Step.PRECOMMIT)
                 && this.prevoteOrMoreFirstTime;
+        log.info(valid(prevoteMessage.getBlock()) + " " + (this.step == Step.PREVOTE || this.step == Step.PRECOMMIT) + " " + this.prevoteOrMoreFirstTime);
+        log.info("Checking the rest" + b);
 
         return enoughPrevotes && proposalExists && b;
     }
 
     private boolean fulfillPrevoteRule3() {
-        boolean enoughPrevotes = messageLog.getPrevotes().getOrDefault(NULL_BLOCK, new ArrayList<>()).stream()
+        // Filter matching prevotes and sum their voting power
+        int totalVotingPower = messageLog.getPrevotes().getOrDefault(NULL_BLOCK, new ArrayList<>()).stream()
                 .filter(prevote -> prevote.getHeight() == height)
                 .filter(prevote -> prevote.getRound() == round)
-                .count() >= 2 * tolerance + 1;
+                .mapToInt(prevote -> votingPower.getOrDefault(prevote.getReplicaId(), 0))
+                .sum();
+        log.info( " In total there were " + totalVotingPower + " votes for the null block");
+        // Check if the total voting power meets the threshold
+        boolean enoughPrevotes = totalVotingPower >= 2 * tolerance + 1;
         return enoughPrevotes;
     }
+
 
     private void prevoteRandomOrderExecute(boolean[] uponRules, PrevoteMessage prevoteMessage) {
         List<Integer> trueIndices = new ArrayList<>();
@@ -514,31 +594,41 @@ public class TendermintReplica extends LeaderBasedProtocolReplica {
     }
 
     private boolean fulfillProposalPrecommitRule(PrecommitMessage precommitMessage) {
-        boolean enoughPrecommits = messageLog.getPrecommits().getOrDefault(precommitMessage.getBlock(), new ArrayList<>()).stream()
+        // Calculate the total voting power of matching precommits
+        int totalVotingPower = messageLog.getPrecommits().getOrDefault(precommitMessage.getBlock(), new ArrayList<>()).stream()
                 .filter(precommit -> precommit.getHeight() == this.height)
-                .count() >= 2 * tolerance + 1;
+                .mapToInt(precommit -> votingPower.getOrDefault(precommit.getReplicaId(), 0))
+                .sum();
+
+        log.info(precommitMessage.toString() + " received " + totalVotingPower + " votes. It needs " + (2 * tolerance + 1) + " votes.");
+        boolean enoughPrecommits = totalVotingPower >= 2 * tolerance + 1;
 
         boolean proposalExists = messageLog.getProposals().getOrDefault(precommitMessage.getBlock(), new ArrayList<>()).stream()
                 .filter(proposal -> proposal.getHeight() == this.getHeight())
                 .filter(proposal -> proposal.getRound() == precommitMessage.getRound())
                 .filter(proposal -> proposal.getReplicaId().equals(proposer(precommitMessage.getHeight(), precommitMessage.getRound())))
-                .count() >= 1;
+                .count() == 1;
 
         boolean decisionIsNull = getCommitLog().get((int) precommitMessage.getHeight()) == null;
 
         return enoughPrecommits && proposalExists && decisionIsNull;
     }
 
+
     private boolean fulfillPrecommitRule() {
-        boolean enoughPrecommits = messageLog.getPrecommits().values().stream()
-                .flatMap(List::stream)  // Flatten the lists into a single stream
-                .toList().stream()
+        // Calculate the total voting power of matching precommits
+        int totalVotingPower = messageLog.getPrecommits().values().stream()
+                .flatMap(List::stream) // Flatten the lists into a single stream
                 .filter(precommitMessage -> precommitMessage.getHeight() == height)
                 .filter(precommitMessage -> precommitMessage.getRound() == round)
-                .count() >= 2 * tolerance + 1;
+                .mapToInt(precommitMessage -> votingPower.getOrDefault(precommitMessage.getReplicaId(), 0))
+                .sum();
+        log.info("Received " + totalVotingPower + " votes in total");
+        boolean enoughPrecommits = totalVotingPower >= 2 * tolerance + 1;
 
         return enoughPrecommits && this.enoughPrecommitsCheck;
     }
+
 
     private void precommitRandomOrderExecute(boolean[] uponRules, Block block) {
         List<Integer> trueIndices = new ArrayList<>();
@@ -685,7 +775,6 @@ public class TendermintReplica extends LeaderBasedProtocolReplica {
                 } else if (message instanceof PrevoteMessage) {
                     handlePrevote((PrevoteMessage) message);
                 } else if (message instanceof PrecommitMessage) {
-                    log.info("Gonna deal with a precommit message");
                     handlePrecommit((PrecommitMessage) message);
                 } else {
                     log.warning("Unhandled message type: " + message.getType());
@@ -696,6 +785,9 @@ public class TendermintReplica extends LeaderBasedProtocolReplica {
 
     private void handleGossipRequest(GossipRequest message) {
         messageLog.bufferRequest(message.getRequest());
+        if (proposer(this.height, this.round).equals(this.getId())) {
+            startRound(this.round);
+        }
     }
 
     private void handleGossipMessage(GossipMessage message) {
@@ -738,7 +830,7 @@ public class TendermintReplica extends LeaderBasedProtocolReplica {
         this.round = roundNumber;
         this.step = Step.PROPOSE;
         Block proposal;
-        if (this.getLeaderId().equals(getId())) {
+        if (proposer(height, round).equals(getId())) {
             if (validValue != null) {
                 proposal = validValue;
             } else {
@@ -792,22 +884,37 @@ public class TendermintReplica extends LeaderBasedProtocolReplica {
         // Generate the proposer list based on voting power
         List<String> proposerList = new ArrayList<>();
         long maxVotingPower = 0;
+
+        // Find the maximum voting power
         for (Map.Entry<String, Integer> entry : votingPower.entrySet()) {
             maxVotingPower = Math.max(maxVotingPower, entry.getValue());
         }
+
+        // Group nodes by their voting power
+        Map<Integer, List<String>> powerGroups = new TreeMap<>(Comparator.reverseOrder());
+        for (Map.Entry<String, Integer> entry : votingPower.entrySet()) {
+            powerGroups.computeIfAbsent(entry.getValue(), k -> new ArrayList<>()).add(entry.getKey());
+        }
+
+        // Shuffle groups with the same voting power to randomize tie-breaking
+        for (List<String> group : powerGroups.values()) {
+            Collections.shuffle(group, rand);
+        }
+
+        // Build the proposer list
         for (int i = 0; i < maxVotingPower; i++) {
-            for (Map.Entry<String, Integer> entry : votingPower.entrySet()) {
-                String node = entry.getKey();
-                int power = entry.getValue();
-                if (power > i) {
-                    proposerList.add(node);
+            for (Map.Entry<Integer, List<String>> group : powerGroups.entrySet()) {
+                for (String node : group.getValue()) {
+                    if (group.getKey() > i) {
+                        proposerList.add(node);
+                    }
                 }
             }
         }
+
         // Calculate the index based on the height and round
         // Using both height and round ensures determinism across rounds and heights
         int index = (int) ((height + round) % proposerList.size());
-
         return proposerList.get(index);
     }
 
@@ -819,7 +926,6 @@ public class TendermintReplica extends LeaderBasedProtocolReplica {
 
     public void setView(long height, long round) {
         log.info("Setting view: " + height);
-        log.info("Proposer: " + this.getLeaderId());
         this.setView(height, proposer(height, round));
     }
 
