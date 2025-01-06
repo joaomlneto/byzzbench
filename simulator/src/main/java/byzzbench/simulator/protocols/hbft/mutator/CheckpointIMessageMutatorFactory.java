@@ -1,23 +1,22 @@
 package byzzbench.simulator.protocols.hbft.mutator;
 
-import byzzbench.simulator.faults.FaultContext;
-import byzzbench.simulator.faults.faults.MessageMutationFault;
-import byzzbench.simulator.faults.factories.MessageMutatorFactory;
-import byzzbench.simulator.protocols.hbft.message.CheckpointIMessage;
-import byzzbench.simulator.protocols.hbft.message.RequestMessage;
-import byzzbench.simulator.protocols.hbft.message.ViewChangeMessage;
-import byzzbench.simulator.transport.Event;
-import byzzbench.simulator.transport.MessageEvent;
-import lombok.ToString;
-
-import org.springframework.stereotype.Component;
-
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.Optional;
-import java.util.SortedMap;
 
+import org.springframework.stereotype.Component;
+
+import byzzbench.simulator.Node;
+import byzzbench.simulator.faults.FaultContext;
+import byzzbench.simulator.faults.factories.MessageMutatorFactory;
+import byzzbench.simulator.faults.faults.MessageMutationFault;
+import byzzbench.simulator.protocols.hbft.HbftJavaReplica;
 import byzzbench.simulator.protocols.hbft.SpeculativeHistory;
+import byzzbench.simulator.protocols.hbft.message.CheckpointIMessage;
+import byzzbench.simulator.protocols.hbft.message.RequestMessage;
+import byzzbench.simulator.transport.Event;
+import byzzbench.simulator.transport.MessageEvent;
+import lombok.ToString;
 
 @Component
 @ToString
@@ -97,9 +96,14 @@ public class CheckpointIMessageMutatorFactory extends MessageMutatorFactory {
                         if (!(messageEvent.getPayload() instanceof CheckpointIMessage message)) {
                             throw invalidMessageTypeException;
                         }
+                        Node sender = serializable.getScenario().getNode(messageEvent.getSenderId());
+                        if (!(sender instanceof HbftJavaReplica hbftReplica)) {
+                            throw invalidMessageTypeException;
+                        }
                         SpeculativeHistory history = message.getHistory();
                         history.getRequests().remove(history.getRequests().lastEntry().getKey());
-                        CheckpointIMessage mutatedMessage = message.withHistory(history); //TODO: withDigest(digest(history))
+                        byte[] digest = hbftReplica.digest(history);
+                        CheckpointIMessage mutatedMessage = message.withHistory(history).withDigest(digest);
                         mutatedMessage.sign(message.getSignedBy());
                         messageEvent.setPayload(mutatedMessage);
                     }
@@ -117,9 +121,14 @@ public class CheckpointIMessageMutatorFactory extends MessageMutatorFactory {
                         if (!(messageEvent.getPayload() instanceof CheckpointIMessage message)) {
                             throw invalidMessageTypeException;
                         }
+                        Node sender = serializable.getScenario().getNode(messageEvent.getSenderId());
+                        if (!(sender instanceof HbftJavaReplica hbftReplica)) {
+                            throw invalidMessageTypeException;
+                        }
                         SpeculativeHistory history = message.getHistory();
                         history.getRequests().remove(history.getRequests().firstEntry().getKey());
-                        CheckpointIMessage mutatedMessage = message.withHistory(history); //TODO: withDigest(digest(history))
+                        byte[] digest = hbftReplica.digest(history);
+                        CheckpointIMessage mutatedMessage = message.withHistory(history).withDigest(digest);
                         mutatedMessage.sign(message.getSignedBy());
                         messageEvent.setPayload(mutatedMessage);
                     }
@@ -137,11 +146,16 @@ public class CheckpointIMessageMutatorFactory extends MessageMutatorFactory {
                         if (!(messageEvent.getPayload() instanceof CheckpointIMessage message)) {
                             throw invalidMessageTypeException;
                         }
+                        Node sender = serializable.getScenario().getNode(messageEvent.getSenderId());
+                        if (!(sender instanceof HbftJavaReplica hbftReplica)) {
+                            throw invalidMessageTypeException;
+                        }
                         SpeculativeHistory history = message.getHistory();
                         Entry<Long, RequestMessage> lastReq = history.getRequests().lastEntry();
                         history.getRequests().remove(lastReq.getKey());
                         history.getRequests().put(lastReq.getKey() - 1, lastReq.getValue());
-                        CheckpointIMessage mutatedMessage = message.withHistory(history); //TODO: withDigest(digest(history))
+                        byte[] digest = hbftReplica.digest(history);
+                        CheckpointIMessage mutatedMessage = message.withHistory(history).withDigest(digest);
                         mutatedMessage.sign(message.getSignedBy());
                         messageEvent.setPayload(mutatedMessage);
                     }
@@ -159,11 +173,16 @@ public class CheckpointIMessageMutatorFactory extends MessageMutatorFactory {
                         if (!(messageEvent.getPayload() instanceof CheckpointIMessage message)) {
                             throw invalidMessageTypeException;
                         }
+                        Node sender = serializable.getScenario().getNode(messageEvent.getSenderId());
+                        if (!(sender instanceof HbftJavaReplica hbftReplica)) {
+                            throw invalidMessageTypeException;
+                        }
                         SpeculativeHistory history = message.getHistory();
                         Entry<Long, RequestMessage> lastReq = history.getRequests().lastEntry();
                         history.getRequests().remove(lastReq.getKey());
                         history.getRequests().put(lastReq.getKey() + 1, lastReq.getValue());
-                        CheckpointIMessage mutatedMessage = message.withHistory(history); //TODO: withDigest(digest(history))
+                        byte[] digest = hbftReplica.digest(history);
+                        CheckpointIMessage mutatedMessage = message.withHistory(history).withDigest(digest);
                         mutatedMessage.sign(message.getSignedBy());
                         messageEvent.setPayload(mutatedMessage);
                     }
@@ -181,11 +200,16 @@ public class CheckpointIMessageMutatorFactory extends MessageMutatorFactory {
                         if (!(messageEvent.getPayload() instanceof CheckpointIMessage message)) {
                             throw invalidMessageTypeException;
                         }
+                        Node sender = serializable.getScenario().getNode(messageEvent.getSenderId());
+                        if (!(sender instanceof HbftJavaReplica hbftReplica)) {
+                            throw invalidMessageTypeException;
+                        }
                         SpeculativeHistory history = message.getHistory();
                         Entry<Long, RequestMessage> firstReq = history.getRequests().firstEntry();
                         history.getRequests().remove(firstReq.getKey());
                         history.getRequests().put(firstReq.getKey() - 1, firstReq.getValue());
-                        CheckpointIMessage mutatedMessage = message.withHistory(history); //TODO: withDigest(digest(history))
+                        byte[] digest = hbftReplica.digest(history);
+                        CheckpointIMessage mutatedMessage = message.withHistory(history).withDigest(digest);
                         mutatedMessage.sign(message.getSignedBy());
                         messageEvent.setPayload(mutatedMessage);
                     }
@@ -203,11 +227,16 @@ public class CheckpointIMessageMutatorFactory extends MessageMutatorFactory {
                         if (!(messageEvent.getPayload() instanceof CheckpointIMessage message)) {
                             throw invalidMessageTypeException;
                         }
+                        Node sender = serializable.getScenario().getNode(messageEvent.getSenderId());
+                        if (!(sender instanceof HbftJavaReplica hbftReplica)) {
+                            throw invalidMessageTypeException;
+                        }
                         SpeculativeHistory history = message.getHistory();
                         Entry<Long, RequestMessage> firstReq = history.getRequests().firstEntry();
                         history.getRequests().remove(firstReq.getKey());
                         history.getRequests().put(firstReq.getKey() + 1, firstReq.getValue());
-                        CheckpointIMessage mutatedMessage = message.withHistory(history); //TODO: withDigest(digest(history))
+                        byte[] digest = hbftReplica.digest(history);
+                        CheckpointIMessage mutatedMessage = message.withHistory(history).withDigest(digest);
                         mutatedMessage.sign(message.getSignedBy());
                         messageEvent.setPayload(mutatedMessage);
                     }
