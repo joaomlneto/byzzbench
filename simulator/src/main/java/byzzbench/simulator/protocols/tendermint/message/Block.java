@@ -28,8 +28,8 @@ public class Block implements LogEntry, Comparable<Block> {
     public int compareTo(Block other) {
         return Comparator.comparing(Block::getId)
                 .thenComparing(Block::getValue)
-//                .thenComparingLong(Block::getHeight)
-//                .thenComparingLong(Block::getRound)
+                .thenComparingLong(Block::getHeight)
+                .thenComparingLong(Block::getRound)
                 .compare(this, other);
     }
 

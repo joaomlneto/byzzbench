@@ -654,7 +654,7 @@ public class TendermintReplica extends LeaderBasedProtocolReplica {
         this.enoughPrecommitsCheck = true;
         this.preVoteFirstTime = true;
         this.prevoteOrMoreFirstTime = true;
-//        this.messageLog.clear();
+        this.messageLog.clear();
     }
 
     private boolean valid(Block block) {
@@ -686,7 +686,7 @@ public class TendermintReplica extends LeaderBasedProtocolReplica {
     @Override
     public void handleMessage(String sender, MessagePayload message) throws Exception {
 //        this.print();
-        log.info("Received message: " + message);
+        log.info(getId() + " Received message: " + message);
         if (message instanceof DefaultClientRequestPayload) {
             String clientId = ((DefaultClientRequestPayload) message).getOperation().toString().split("/")[0];
             receiveRequest(sender, new RequestMessage(((DefaultClientRequestPayload) message).getOperation(), System.currentTimeMillis(), clientId));
