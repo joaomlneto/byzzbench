@@ -28,8 +28,8 @@ public class Block implements LogEntry, Comparable<Block> {
     public int compareTo(Block other) {
         return Comparator.comparing(Block::getId)
                 .thenComparing(Block::getValue)
-                .thenComparingLong(Block::getHeight)
-                .thenComparingLong(Block::getRound)
+//                .thenComparingLong(Block::getHeight)
+//                .thenComparingLong(Block::getRound)
                 .compare(this, other);
     }
 
@@ -38,9 +38,7 @@ public class Block implements LogEntry, Comparable<Block> {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         Block block = (Block) o;
-        return height == block.height &&
-                round == block.round &&
-                id == block.id &&
+        return id == block.id &&
                 Objects.equals(value, block.value);
     }
 

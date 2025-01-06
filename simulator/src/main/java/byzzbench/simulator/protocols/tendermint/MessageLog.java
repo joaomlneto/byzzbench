@@ -125,6 +125,7 @@ public class MessageLog {
     }
 
     public void clear() {
+        messages.clear();
         prevotes.clear();
         precommits.clear();
         proposals.clear();

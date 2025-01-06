@@ -13,7 +13,6 @@ import byzzbench.simulator.transport.MessagePayload;
 import java.io.Serializable;
 import java.time.Duration;
 import java.util.*;
-import java.util.stream.Collectors;
 
 import lombok.Getter;
 import lombok.extern.java.Log;
@@ -51,13 +50,13 @@ public class TendermintReplica extends LeaderBasedProtocolReplica {
     // Assigned powers of each replica in the network
     private final Map<String, Integer> votingPower = new HashMap<>();
 
-    private boolean enoughPrecommitsCheck;
-    private boolean preVoteFirstTime;
-    private boolean prevoteOrMoreFirstTime;
+    private boolean precommitRule0Check;
+    private boolean prevoteRule1Check;
+    private boolean prevoteRule2Check;
 
     public static final Block NULL_BLOCK = new Block(Long.MIN_VALUE, Long.MIN_VALUE, Long.MIN_VALUE, "NULL VALUE", null);
 
-    public final int TIMEOUT = 10;
+    public final int TIMEOUT = 50;
 
     public Random rand = new Random(2137L);
 
@@ -75,9 +74,9 @@ public class TendermintReplica extends LeaderBasedProtocolReplica {
         this.validValue = null;
         this.validRound = -1;
         this.messageLog = new MessageLog(this);
-        this.enoughPrecommitsCheck = true;
-        this.preVoteFirstTime = true;
-        this.prevoteOrMoreFirstTime = true;
+        this.precommitRule0Check = true;
+        this.prevoteRule1Check = true;
+        this.prevoteRule2Check = true;
         this.votingPower.put("A", 3);
         this.votingPower.put("B", 2);
         this.votingPower.put("C", 1);
@@ -171,10 +170,9 @@ public class TendermintReplica extends LeaderBasedProtocolReplica {
 
         // valid(v) ∧ stepp ≥ prevote for the first time do
         boolean b = valid(proposalMessage.getBlock())
-                && (this.step == Step.PREVOTE || this.step == Step.PRECOMMIT)
-                && this.prevoteOrMoreFirstTime;
+                && (this.step == Step.PREVOTE || this.step == Step.PRECOMMIT);
 
-        return proposalExists && enoughPrevotes && b;
+        return proposalExists && enoughPrevotes && b && this.prevoteRule2Check;
     }
 
     private boolean fulfillProposalRule3(ProposalMessage proposalMessage) {
@@ -274,7 +272,7 @@ public class TendermintReplica extends LeaderBasedProtocolReplica {
 
     private void executeProposalPrevoteRule2(Block block) {
         // Execution logic
-        prevoteOrMoreFirstTime = false;
+        prevoteRule2Check = false;
         // if stepp = prevote then
         if (this.step == Step.PREVOTE) {
             // lockedValuep ← v
@@ -406,9 +404,9 @@ public class TendermintReplica extends LeaderBasedProtocolReplica {
                 .filter(prevote -> prevote.getRound() == this.round)
                 .count() >= 2 * tolerance + 1;
 
-        boolean rest = this.step == Step.PREVOTE && this.preVoteFirstTime;
+        boolean rest = this.step == Step.PREVOTE;
 
-        return enoughPrevotes && rest;
+        return enoughPrevotes && rest && this.prevoteRule1Check;
     }
 
     private boolean fulfillPrevoteRule2(PrevoteMessage prevoteMessage) {
@@ -424,10 +422,9 @@ public class TendermintReplica extends LeaderBasedProtocolReplica {
                 .count() >= 1;
 
         boolean b = valid(prevoteMessage.getBlock())
-                && (this.step == Step.PREVOTE || this.step == Step.PRECOMMIT)
-                && this.prevoteOrMoreFirstTime;
+                && (this.step == Step.PREVOTE || this.step == Step.PRECOMMIT);
 
-        return enoughPrevotes && proposalExists && b;
+        return enoughPrevotes && proposalExists && b && this.prevoteRule2Check;
     }
 
     private boolean fulfillPrevoteRule3() {
@@ -486,7 +483,7 @@ public class TendermintReplica extends LeaderBasedProtocolReplica {
     }
 
     private void executePrevoteRule1() {
-        this.preVoteFirstTime = false;
+        this.prevoteRule1Check = false;
         Duration duration = Duration.ofSeconds(this.TIMEOUT);
         this.setTimeout("Timeout Prevote", () -> {
             log.info("Timeout Prevote called");
@@ -575,7 +572,7 @@ public class TendermintReplica extends LeaderBasedProtocolReplica {
                 .filter(precommitMessage -> precommitMessage.getRound() == round)
                 .count() >= 2 * tolerance + 1;
 
-        return enoughPrecommits && this.enoughPrecommitsCheck;
+        return enoughPrecommits && this.precommitRule0Check;
     }
 
     private void precommitRandomOrderExecute(boolean[] uponRules, Block block) {
@@ -618,7 +615,7 @@ public class TendermintReplica extends LeaderBasedProtocolReplica {
     }
 
     private void executePrecommitRule0() {
-        this.enoughPrecommitsCheck = false;
+        this.precommitRule0Check = false;
         Duration duration = Duration.ofSeconds(this.TIMEOUT);
         this.setTimeout("Timeout Precommit", () -> {
             onTimeoutPrecommit(height, round);
@@ -640,6 +637,8 @@ public class TendermintReplica extends LeaderBasedProtocolReplica {
                 && this.round == round) {
             startRound(this.round + 1);
         }
+        else
+            log.info("Timeout Precommit called but height and round do not match");
     }
 
     /**
@@ -651,9 +650,9 @@ public class TendermintReplica extends LeaderBasedProtocolReplica {
         this.lockedRound = -1;
         this.validValue = null;
         this.validRound = -1;
-        this.enoughPrecommitsCheck = true;
-        this.preVoteFirstTime = true;
-        this.prevoteOrMoreFirstTime = true;
+        this.precommitRule0Check = true;
+        this.prevoteRule1Check = true;
+        this.prevoteRule2Check = true;
         this.messageLog.clear();
     }
 
@@ -763,6 +762,9 @@ public class TendermintReplica extends LeaderBasedProtocolReplica {
         this.setView(height, roundNumber);
         this.round = roundNumber;
         this.step = Step.PROPOSE;
+        this.precommitRule0Check = true;
+        this.prevoteRule1Check = true;
+        this.prevoteRule2Check = true;
         Block proposal;
         if (Objects.equals(proposer(height, round), this.getId())) {
             if (validValue != null) {
