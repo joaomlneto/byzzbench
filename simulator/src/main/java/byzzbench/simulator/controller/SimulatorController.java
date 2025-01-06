@@ -91,6 +91,16 @@ public class SimulatorController {
     }
 
     /**
+     * Get the list of available node IDs in the current scenario.
+     *
+     * @return The list of node IDs.
+     */
+    @GetMapping("/faulty-replicas")
+    public SortedSet<String> getFaultyReplicas() {
+        return simulatorService.getScenario().getFaultyReplicaIds();
+    }
+
+    /**
      * Get the internal state of the node with the given ID.
      *
      * @param nodeId The ID of the node to get.
@@ -351,8 +361,9 @@ public class SimulatorController {
      */
     @PostMapping("/scheduler/next")
     public void scheduleNext(@RequestParam(required = false, defaultValue = "1") Integer numActions) throws Exception {
+        Scenario scenario = simulatorService.getScenario();
         for (int i = 0; i < numActions; i++) {
-            simulatorService.invokeScheduleNext();
+            scenario.getScheduler().scheduleNext(scenario);
         }
     }
 

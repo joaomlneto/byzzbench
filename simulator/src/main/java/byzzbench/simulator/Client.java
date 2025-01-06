@@ -45,7 +45,7 @@ public class Client implements Serializable, Node {
     /**
      * The maximum number of requests that can be sent by the client.
      */
-    private final long maxRequests = 100;
+    private final long maxRequests = 3;
 
     /**
      * The replies received by the client.
