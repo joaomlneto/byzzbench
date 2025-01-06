@@ -106,10 +106,12 @@ public class MessageLog {
      * Checks if there are f+1 messages in a specific round after a given round.
      */
     public boolean fPlus1MessagesInRound(long height, long round) {
-        return messages.stream()
-                .filter(m -> m.getHeight() == height)
-                .filter(m -> m.getRound() > round)
-                .count() >= node.getTolerance() + 1;
+        // Group messages by their round numbers after filtering by height and round > roundp
+        Map<Long, Long> roundMessageCounts = messages.stream()
+                .filter(m -> m.getHeight() == height && m.getRound() > round)
+                .collect(Collectors.groupingBy(GenericMessage::getRound, Collectors.counting()));
+        // Check if any round group has at least f + 1 messages
+        return roundMessageCounts.values().stream().anyMatch(count -> count >= node.getTolerance() + 1);
     }
 
     public void bufferRequest(RequestMessage request) {
@@ -119,7 +121,6 @@ public class MessageLog {
     public void removeRequest(Block block) {
         Set<RequestMessage> toDelete = requests.stream().filter(r -> r.getOperation() == block.getRequestMessage().getOperation()).collect(Collectors.toSet());
         for (RequestMessage d : toDelete){
-            log.info("removing: " + d.toString());
             requests.remove(d);
         }
     }
@@ -127,7 +128,9 @@ public class MessageLog {
     public void clear(Block block) {
 //        messages.clear();
         prevotes.remove(block);
+        prevotes.remove(NULL_BLOCK);
         precommits.remove(block);
+        precommits.remove(NULL_BLOCK);
         proposals.remove(block);
         precommitCount = 0;
         prevotesCount = 0;
