@@ -2,9 +2,6 @@ package byzzbench.simulator.protocols.tendermint;
 
 import byzzbench.simulator.BaseScenario;
 import byzzbench.simulator.Replica;
-//import byzzbench.simulator.TerminationCondition;
-import byzzbench.simulator.protocols.pbft_java.PbftTerminationPredicate;
-import byzzbench.simulator.protocols.tendermint.MessageLog;
 import byzzbench.simulator.scheduler.Scheduler;
 import com.fasterxml.jackson.databind.JsonNode;
 import lombok.extern.java.Log;
@@ -39,10 +36,7 @@ public class TendermintScenarioExecutor extends BaseScenario {
                 this.addNode(replica);
             });
 
-            log.info(this.getNodes().toString());
-
             this.setNumClients(1);
-            log.info(this.getNodes().toString());
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -58,5 +52,15 @@ public class TendermintScenarioExecutor extends BaseScenario {
 //            e.printStackTrace();
 //            throw new RuntimeException(e);
 //        }
+    }
+
+    @Override
+    public Replica cloneReplica(Replica replica) {
+        return new TendermintReplica(replica.getId(), replica.getNodeIds(), this);
+    }
+
+    @Override
+    public int maxFaultyReplicas(int n) {
+        return (n - 1) / 3;
     }
 }
