@@ -29,7 +29,7 @@ public class MessageLog {
     @Getter
     private final Set<RequestMessage> requests = new HashSet<>();
 
-    public static final Block NULL_BLOCK = new Block(Long.MIN_VALUE, Long.MIN_VALUE, Long.MIN_VALUE, "NULL VALUE", null);
+    public static final Block NULL_BLOCK = new Block(Long.MIN_VALUE, "NULL VALUE", null);
 
     @Getter
     private long proposalCount = 0;
@@ -124,11 +124,11 @@ public class MessageLog {
         }
     }
 
-    public void clear() {
-        messages.clear();
-        prevotes.clear();
-        precommits.clear();
-        proposals.clear();
+    public void clear(Block block) {
+//        messages.clear();
+        prevotes.remove(block);
+        precommits.remove(block);
+        proposals.remove(block);
         precommitCount = 0;
         prevotesCount = 0;
         proposalCount = 0;

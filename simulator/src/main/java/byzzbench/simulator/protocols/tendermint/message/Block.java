@@ -13,8 +13,8 @@ import lombok.Setter;
 
 @Data
 public class Block implements LogEntry, Comparable<Block> {
-    private final long height;
-    private final long round;
+//    private final long height;
+//    private final long round;
     private final long id;
     private final String value;
 
@@ -44,7 +44,7 @@ public class Block implements LogEntry, Comparable<Block> {
 
     @Override
     public int hashCode() {
-        return Objects.hash(height, round, id, value);
+        return Objects.hash(id, value);
     }
 
 

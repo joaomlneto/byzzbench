@@ -54,7 +54,7 @@ public class TendermintReplica extends LeaderBasedProtocolReplica {
     private boolean prevoteRule1Check;
     private boolean prevoteRule2Check;
 
-    public static final Block NULL_BLOCK = new Block(Long.MIN_VALUE, Long.MIN_VALUE, Long.MIN_VALUE, "NULL VALUE", null);
+    public static final Block NULL_BLOCK = new Block(Long.MIN_VALUE, "NULL VALUE", null);
 
     public final int TIMEOUT = 50;
 
@@ -308,7 +308,7 @@ public class TendermintReplica extends LeaderBasedProtocolReplica {
             sendReply(block.getRequestMessage().getClientId(), replyMessage);
             height++;
             messageLog.removeRequest(block);
-            reset();
+            reset(block);
             startRound(0);
         }
     }
@@ -645,7 +645,7 @@ public class TendermintReplica extends LeaderBasedProtocolReplica {
      * MISCELLANEOUS
      */
 
-    private void reset() {
+    private void reset(Block block) {
         this.lockedValue = null;
         this.lockedRound = -1;
         this.validValue = null;
@@ -653,7 +653,7 @@ public class TendermintReplica extends LeaderBasedProtocolReplica {
         this.precommitRule0Check = true;
         this.prevoteRule1Check = true;
         this.prevoteRule2Check = true;
-        this.messageLog.clear();
+//        this.messageLog.clear(block);
     }
 
     private boolean valid(Block block) {
@@ -703,6 +703,7 @@ public class TendermintReplica extends LeaderBasedProtocolReplica {
         } else {
             assert message instanceof GenericMessage;
             if (messageLog.fPlus1MessagesInRound(height, ((GenericMessage) message).getRound())) {
+                log.info("Starting round as messages from next round already: " + ((GenericMessage) message).getRound());
                 GenericMessage m = (GenericMessage) message;
                 startRound(m.getRound());
             } else {
@@ -806,8 +807,6 @@ public class TendermintReplica extends LeaderBasedProtocolReplica {
 
         // Return a Block with the extracted values
         return new Block(
-                height,
-                round,
                 messageLog.getMessageCount() + 1,
                 operationString,
                 new RequestMessage(payload.getOperation(), requestPayload.get().getTimestamp(), clientId)
