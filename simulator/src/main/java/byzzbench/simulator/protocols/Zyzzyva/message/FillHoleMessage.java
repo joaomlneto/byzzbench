@@ -10,9 +10,8 @@ import lombok.With;
 @With
 public class FillHoleMessage extends MessagePayload {
     private final long viewNumber;
-    private final long lastKnownSequenceNumber;
+    private final long expectedSequenceNumber;
     private final long receivedSequenceNumber;
-    private final boolean meantForPrimary;
     private final String replicaId;
 
     @Override
