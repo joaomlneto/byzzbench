@@ -118,12 +118,13 @@ public class Transport {
         if (!this.scenario.getNodes().containsKey(recipient)) {
             throw new IllegalArgumentException("Replica not found: " + recipient);
         }
-
+        DefaultClientRequestPayload payload = new DefaultClientRequestPayload(System.currentTimeMillis(), operation);
+        payload.sign(sender);
         Event event = ClientRequestEvent.builder()
                 .eventId(this.eventSeqNum.getAndIncrement())
                 .senderId(sender)
                 .recipientId(recipient)
-                .payload(new DefaultClientRequestPayload(operation))
+                .payload(payload)
                 .build();
         this.appendEvent(event);
     }
