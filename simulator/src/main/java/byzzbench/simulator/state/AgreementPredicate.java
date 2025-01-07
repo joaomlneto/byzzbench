@@ -4,6 +4,7 @@ import byzzbench.simulator.Replica;
 import byzzbench.simulator.Scenario;
 import byzzbench.simulator.ScenarioPredicate;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
@@ -31,11 +32,11 @@ public class AgreementPredicate implements ScenarioPredicate {
                 .orElse(0L);
 
         // check if the Nth entry in the commit log of each replica is the same
-        for (long i = lowestSequenceNumber; i < highestSequenceNumber; i++) {
+        for (long i = lowestSequenceNumber; i <= highestSequenceNumber; i++) {
             final long index = i;
             List<LogEntry> distinctIthEntries = replicas.stream()
                     .map(Replica::getCommitLog)
-                    .map(log -> log.getLength() > index ? log.get(index) : null)
+                    .map(log -> log.get(index))
                     .filter(Objects::nonNull)
                     .distinct()
                     .toList();
