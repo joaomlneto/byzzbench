@@ -30,6 +30,9 @@ public class TwinsTransport extends Transport implements Serializable {
     @Getter
     private final Map<Long, List<List<String>>> roundPartitions = new TreeMap<>();
 
+    @Getter
+    private final Map<String, List<Long>> queuedTimeouts = new TreeMap<>();
+
     /**
      * The Twins Replica using this transport.
      */
@@ -169,19 +172,35 @@ public class TwinsTransport extends Transport implements Serializable {
 
     @Override
     public synchronized long setTimeout(Node node, Runnable runnable, Duration timeout) {
-        //return super.setTimeout(node, runnable, timeout);
-        throw new UnsupportedOperationException("Not implemented");
+        Long eventId = this.getScenario().getTransport().setTimeout(node, runnable, timeout);
+
+        this.queuedTimeouts
+                .computeIfAbsent(node.getId(), k -> new ArrayList<>())
+                .add(eventId);
+
+        return eventId;
     }
 
     @Override
     public synchronized void clearTimeout(Node node, long eventId) {
-        //super.clearTimeout(node, eventId);
-        throw new UnsupportedOperationException("Not implemented");
+        this.getScenario().getTransport().clearTimeout(node, eventId);
+
+        this.queuedTimeouts
+                .computeIfAbsent(node.getId(), k -> new ArrayList<>())
+                .remove(eventId);
     }
 
     @Override
     public synchronized void clearReplicaTimeouts(Node node) {
-        //super.clearReplicaTimeouts(node);
-        throw new UnsupportedOperationException("Not implemented");
+        if (!(node instanceof Replica replica)) {
+            throw new IllegalArgumentException("Node must be a Replica");
+        }
+
+        String internalId = this.twinsReplica.getInternalId(replica);
+
+        List<Long> replicaTimeouts = this.queuedTimeouts.getOrDefault(internalId, Collections.emptyList());
+
+        replicaTimeouts.forEach(eventId -> this.getScenario().getTransport().clearTimeout(node, eventId));
+        replicaTimeouts.clear();
     }
 }
