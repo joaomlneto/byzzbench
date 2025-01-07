@@ -85,7 +85,7 @@ public class Client implements Serializable, Node {
      * @param name    a name for the timeout
      * @param r       the runnable to execute when the timeout occurs
      * @param timeout the timeout duration
-     * @return the timer object
+     * @return the timer event ID
      */
     public long setTimeout(String name, Runnable r, Duration timeout) {
         return this.scenario.getTransport().setTimeout(this, r, timeout);
