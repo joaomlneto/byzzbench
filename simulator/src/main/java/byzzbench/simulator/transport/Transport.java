@@ -143,7 +143,7 @@ public class Transport {
      */
     public synchronized void sendClientResponse(Node sender, MessagePayload response, String recipient) {
         // assert that the sender exists
-        if (!this.scenario.getNodes().containsKey(sender)) {
+        if (!this.scenario.getNodes().containsKey(sender.getId())) {
             throw new IllegalArgumentException("Replica not found: " + sender);
         }
 
