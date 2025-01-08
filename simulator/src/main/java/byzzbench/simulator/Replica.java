@@ -149,8 +149,7 @@ public abstract class Replica implements Node {
      * @return the digest of the message
      */
     public byte[] digest(Serializable message) {
-        // NoopDigester implementation from PBFT-Java
-        return new byte[]{0};
+        return md.digest(message.toString().getBytes());
     }
 
     /**

@@ -743,4 +743,9 @@ public class PbftJavaReplica<O extends Serializable, R extends Serializable> ext
         return messageViewNumber == this.getViewNumber();
     }
 
+    @Override
+    public byte[] digest(Serializable message) {
+        // NoopDigester implementation from PBFT-Java
+        return new byte[]{0};
+    }
 }
