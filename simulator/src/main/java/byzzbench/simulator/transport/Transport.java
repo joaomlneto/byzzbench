@@ -248,6 +248,9 @@ public class Transport {
         this.scenario.getSchedule().appendEvent(e);
         e.setStatus(Event.Status.DELIVERED);
 
+        // For timeouts, this should be called before, so the Replica time is updated
+        this.observers.forEach(o -> o.onEventDelivered(e));
+
         switch (e) {
             case ClientRequestEvent c -> {
                 this.scenario.getNodes().get(c.getRecipientId()).handleMessage(c.getSenderId(), c.getPayload());
@@ -262,8 +265,6 @@ public class Transport {
                 throw new IllegalArgumentException("Unknown event type");
             }
         }
-
-        this.observers.forEach(o -> o.onEventDelivered(e));
 
         log.info("Delivered " + e);
     }
