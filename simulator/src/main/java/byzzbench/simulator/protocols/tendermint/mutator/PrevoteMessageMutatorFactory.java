@@ -21,7 +21,7 @@ public class PrevoteMessageMutatorFactory extends MessageMutatorFactory {
     public List<MessageMutationFault> mutators() {
         return List.of(
                 new MessageMutationFault(
-                        "tendermint-proposal-height-inc",
+                        "tendermint-prevote-height-inc",
                         "Increment Height Number",
                         List.of(PrevoteMessage.class)) {
                     @Override
@@ -41,7 +41,7 @@ public class PrevoteMessageMutatorFactory extends MessageMutatorFactory {
                         messageEvent.setPayload(mutatedMessage);
                     }
                 },
-                new MessageMutationFault("tendermint-proposal-height-dec", "Decrement Height Number", List.of(PrevoteMessage.class)) {
+                new MessageMutationFault("tendermint-prevote-height-dec", "Decrement Height Number", List.of(PrevoteMessage.class)) {
                     @Override
                     public void accept(FaultContext serializable) {
                         Optional<Event> event = serializable.getEvent();
@@ -59,7 +59,7 @@ public class PrevoteMessageMutatorFactory extends MessageMutatorFactory {
                         messageEvent.setPayload(mutatedMessage);
                     }
                 },
-                new MessageMutationFault("tendermint-proposal-round-inc", "Increment Round Number", List.of(PrevoteMessage.class)) {
+                new MessageMutationFault("tendermint-prevote-round-inc", "Increment Round Number", List.of(PrevoteMessage.class)) {
                     @Override
                     public void accept(FaultContext serializable) {
                         Optional<Event> event = serializable.getEvent();
@@ -77,7 +77,7 @@ public class PrevoteMessageMutatorFactory extends MessageMutatorFactory {
                         messageEvent.setPayload(mutatedMessage);
                     }
                 },
-                new MessageMutationFault("tendermint-proposal-round-dec", "Decrement Round Number", List.of(PrevoteMessage.class)) {
+                new MessageMutationFault("tendermint-prevote-round-dec", "Decrement Round Number", List.of(PrevoteMessage.class)) {
                     @Override
                     public void accept(FaultContext serializable) {
                         Optional<Event> event = serializable.getEvent();
