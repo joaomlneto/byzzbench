@@ -848,11 +848,6 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
          * 
          * speculativeHistory should be equal to commitlog
          */
-
-        /* 
-         * TODO: Probably some more logic is needed here, create ticket,
-         * execute ticket, send reply etc.
-         */
         for (Long seqNumber : requests.keySet()) {
             long currentViewNumber = this.getViewNumber();
 
@@ -912,7 +907,7 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
         this.clearAllTimeouts();
         this.messageLog.clearPanics();
         this.largestViewNumber = newViewNumber;
-        // TODO: Not sure is this is the way
+
         /* 
          * Idea is that if we enter a new view,
          * we need to treat the request as not seen before
@@ -980,14 +975,12 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
                 /* 
                  * First the primary needs to execute the new-view
                  * only then can it send the correct checkpoint message
-                 * 
-                 * TODO: alternative solution is to send the checkpoint message based on the new-view itself
                  */
                 this.broadcastMessage(newView);
                 this.recvNewView(newView);
                 this.checkpointForNewView = false;
                 
-                // TODO: For now we treat the new-view as a checkpoint might not be correct
+                // We treat the new-view as a checkpoint might not be correct
                 // as of hBFT 4.3 checkpoint protocol is called after a new-view message
                 // CheckpointMessage checkpoint = new CheckpointIMessage(seqCounter.get(), this.digest(this.speculativeHistory), this.getId(), this.speculativeHistory);
                 // this.messageLog.appendCheckpoint(checkpoint, tolerance, this.speculativeHistory, newView.getNewViewNumber());
@@ -1228,10 +1221,4 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
         }
         throw new RuntimeException("Unknown message type");
     }
-
-    private boolean verifyPhase(long messageViewNumber, long messageSequenceNumber) {
-        // TODO: WaterMarks: check if sequence number is within the window
-        return messageViewNumber == this.getViewNumber();
-    }
-
 }
