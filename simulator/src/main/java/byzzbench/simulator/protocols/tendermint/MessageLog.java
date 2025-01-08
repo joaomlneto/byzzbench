@@ -15,9 +15,11 @@ import java.util.stream.Collectors;
 public class MessageLog {
     private final TendermintReplica node;
 
-    // Stores all generic messages
     @Getter
-    private final SortedSet<GenericMessage> messages = new TreeSet<>();
+    private final SortedMap<String, SortedSet<GenericMessage>> receivedMessages = new TreeMap<>();
+
+    @Getter
+    private final SortedSet<GenericMessage> sentMessages = new TreeSet<>();
 
     @Getter
     private final SortedMap<Block, List<PrevoteMessage>> prevotes = new TreeMap<>();
@@ -42,36 +44,38 @@ public class MessageLog {
      * Adds a message to the message log, maintaining the appropriate mappings.
      */
     public boolean addMessage(GenericMessage voteMessage) {
-        boolean added = messages.add(voteMessage); // Add to the global set of messages
-        if (added) {
-            Block block = voteMessage.getBlock() == null ? NULL_BLOCK : voteMessage.getBlock();
+        // Add the message to the author's set
+        receivedMessages.computeIfAbsent(voteMessage.getAuthor(), k -> new TreeSet<>()).add(voteMessage);
 
-            // Handle different types of messages
-            switch (voteMessage) {
-                case PrevoteMessage prevoteMessage -> {
-                    prevotes.computeIfAbsent(block, k -> new ArrayList<>()).add(prevoteMessage);
-                    prevotesCount++; // Increment prevote count
-                }
-                case PrecommitMessage precommitMessage -> {
-                    precommits.computeIfAbsent(block, k -> new ArrayList<>()).add(precommitMessage);
-                    precommitCount++; // Increment precommit count
-                }
-                case ProposalMessage proposalMessage -> {
-                    proposals.computeIfAbsent(block, k -> new ArrayList<>()).add(proposalMessage);
-                    proposalCount++; // Increment proposal count
-                }
-                default -> {
-                }
+        // Process the message based on its type
+        Block block = voteMessage.getBlock() == null ? NULL_BLOCK : voteMessage.getBlock();
+
+        switch (voteMessage) {
+            case PrevoteMessage prevoteMessage -> {
+                prevotes.computeIfAbsent(block, k -> new ArrayList<>()).add(prevoteMessage);
+                prevotesCount++; // Increment prevote count
+            }
+            case PrecommitMessage precommitMessage -> {
+                precommits.computeIfAbsent(block, k -> new ArrayList<>()).add(precommitMessage);
+                precommitCount++; // Increment precommit count
+            }
+            case ProposalMessage proposalMessage -> {
+                proposals.computeIfAbsent(block, k -> new ArrayList<>()).add(proposalMessage);
+                proposalCount++; // Increment proposal count
+            }
+            default -> {
+                // No action needed for other message types
             }
         }
-        return added;
+
+        return true;
     }
 
     /**
      * Returns the total number of messages stored.
      */
     public long getMessageCount() {
-        return messages.size();
+        return receivedMessages.values().stream().mapToLong(Set::size).sum();
     }
 
     /**
@@ -89,13 +93,6 @@ public class MessageLog {
     }
 
     /**
-     * Checks if a specific prevote message exists.
-     */
-    public boolean contains(PrevoteMessage prevoteMessage) {
-        return messages.contains(prevoteMessage);
-    }
-
-    /**
      * Gets the count of prevote messages for a specific block.
      */
     public int getPrevoteCount(Block block) {
@@ -106,12 +103,15 @@ public class MessageLog {
      * Checks if there are f+1 messages in a specific round after a given round.
      */
     public boolean fPlus1MessagesInRound(long height, long round) {
-        // Group messages by their round numbers after filtering by height and round > roundp
-        Map<Long, Long> roundMessageCounts = messages.stream()
-                .filter(m -> m.getHeight() == height && m.getRound() > round)
-                .collect(Collectors.groupingBy(GenericMessage::getRound, Collectors.counting()));
+        // Flatten the received messages map and filter by height and round > round
+        Map<Long, Long> roundMessageCounts = receivedMessages.values().stream()
+                .flatMap(Set::stream) // Flatten all sets of messages into a single stream
+                .filter(m -> m.getHeight() == height && m.getRound() > round) // Apply filters
+                .collect(Collectors.groupingBy(GenericMessage::getRound, Collectors.counting())); // Group by round and count
+
         // Check if any round group has at least f + 1 messages
-        return roundMessageCounts.values().stream().anyMatch(count -> count >= node.getTolerance() + 1);
+        return roundMessageCounts.values().stream()
+                .anyMatch(count -> count >= node.getTolerance() + 1);
     }
 
     public void bufferRequest(RequestMessage request) {
