@@ -34,7 +34,7 @@ public class PbftJavaReplica<O extends Serializable, R extends Serializable> ext
     /**
      * The current sequence number for the replica.
      */
-    private final AtomicLong seqCounter = new AtomicLong(1);
+    private final AtomicLong seqCounter = new AtomicLong(0);
 
     /**
      * The set of timeouts for the replica?
@@ -743,4 +743,9 @@ public class PbftJavaReplica<O extends Serializable, R extends Serializable> ext
         return messageViewNumber == this.getViewNumber();
     }
 
+    @Override
+    public byte[] digest(Serializable message) {
+        // NoopDigester implementation from PBFT-Java
+        return new byte[]{0};
+    }
 }

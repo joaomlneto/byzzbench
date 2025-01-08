@@ -50,7 +50,7 @@ public abstract class CommitLog implements Serializable {
      * Get the entry with a given sequence number.
      *
      * @param sequenceNumber The sequence number of the entry.
-     * @return The entry with the given sequence number.
+     * @return The entry with the given sequence number, or null if no such entry exists.
      */
     public abstract LogEntry get(long sequenceNumber);
 

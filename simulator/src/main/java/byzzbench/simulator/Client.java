@@ -106,7 +106,7 @@ public class Client implements Serializable, Node {
 
     @Override
     public Instant getCurrentTime() {
-        return this.scenario.getTimekeeper().getTime(this);
+        return this.scenario.getTimekeeper().incrementAndGetTime(this);
     }
 
     /**
