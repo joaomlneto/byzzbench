@@ -14,6 +14,7 @@ import lombok.With;
 @With
 public class AcceptMessage extends MessagePayload {
     private final String replicaId;
+    private final String clientId;
     private final Pair valueAndProposalNumber;
 
     public String getType() {

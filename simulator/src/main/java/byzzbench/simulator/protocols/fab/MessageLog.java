@@ -135,7 +135,7 @@ public class MessageLog {
         }
 
         if (acceptedProposal != null && acceptedProposal.getNumber() == proposalNumber) {
-            log.info("duplicate proposal");
+            log.info("Duplicate proposal: message view number" + proposeMessage.getValueAndProposalNumber().getNumber() + " this view number" + this.replica.getViewNumber());
             return false; // Ignore duplicate proposals
         }
 
