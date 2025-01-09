@@ -149,7 +149,7 @@ public class MessageLog {
         return true;
     }
 
-    public void onAccept(String senderId, AcceptMessage acceptMessage) {
+    public boolean onAccept(String senderId, AcceptMessage acceptMessage, int threshold) {
         Pair acceptValue = acceptMessage.getValueAndProposalNumber();
         acceptorsWithAcceptedProposal.put(senderId, acceptValue);
 
@@ -165,9 +165,15 @@ public class MessageLog {
         });
 
         log.info("The number of accepted values for the same proposal value is " + currentAccepted.get());
-        this.learnedValue = new Pair(this.replica.getViewNumber(), acceptedValue);
+        if (currentAccepted.get() >= threshold) {
+            this.learnedValue = new Pair(this.replica.getViewNumber(), acceptedValue);
+            return true;
+        }
+
         // Remove message from the acceptMessages map
         if (acceptMessages.containsKey(viewNumber)) acceptMessages.get(viewNumber).remove(acceptMessage);
+
+        return false;
     }
 
     public boolean isAccepted(int quorum) {

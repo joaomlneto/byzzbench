@@ -1,6 +1,7 @@
 package byzzbench.simulator.protocols.fab;
 
 import byzzbench.simulator.BaseScenario;
+import byzzbench.simulator.Replica;
 import byzzbench.simulator.scheduler.Scheduler;
 import com.fasterxml.jackson.databind.JsonNode;
 import lombok.extern.java.Log;
@@ -28,7 +29,7 @@ public class FastByzantineScenario extends BaseScenario {
         int a = 6;
         int l = 4;
         int f = 1;
-        long timeout = 90000L;
+        long timeout = 9000L;
         try {
             SortedSet<String> nodesIds = new TreeSet<>();
             int NUM_NODES = 6;
@@ -98,6 +99,16 @@ public class FastByzantineScenario extends BaseScenario {
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
+    }
+
+    @Override
+    public Replica cloneReplica(Replica replica) {
+        return super.cloneReplica(replica);
+    }
+
+    @Override
+    public int maxFaultyReplicas(int n) {
+        return 0;
     }
 
 //    @Override

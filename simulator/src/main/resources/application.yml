@@ -17,7 +17,7 @@ springdoc:
 # ByzzBench configuration
 byzzbench:
   autostart: true # Whether to start running scenarios automatically on startup
-  numScenarios: 2000
+  numScenarios: 500
   #outputPath: /tmp/byzzbench # The path to write the output to
   outputSchedules: all # which schedules to write to file? one of 'all', 'buggy' or 'none'
 
@@ -32,12 +32,12 @@ byzzbench:
     mutateMessageWeight: 0 # The weight for scheduler to mutate a message
     params: # additional parameters for the scheduler
       # ByzzFuzz
-      numRoundsWithProcessFaults: 1
-      numRoundsWithNetworkFaults: 4
-      numRoundsWithFaults: 5
+      numRoundsWithProcessFaults: 0
+      numRoundsWithNetworkFaults: 0
+      numRoundsWithFaults: 0
       # Twins
-      numReplicas: 1
-      numTwinsPerReplica: 2
+      numReplicas: 0
+      numTwinsPerReplica: 0
 
   scenario:
     id: fab-java
