@@ -24,7 +24,6 @@ public class DummyScenario extends BaseScenario {
 
     public DummyScenario(Scheduler scheduler) {
         super("dummy", scheduler);
-        setNumClients(2);
     }
 
     @Override
@@ -52,5 +51,11 @@ public class DummyScenario extends BaseScenario {
     @Override
     public synchronized void run() {
         // nothing to do
+    }
+
+    @Override
+    public int maxFaultyReplicas(int n) {
+        // this is a dummy protocol, so anything goes
+        return n;
     }
 }

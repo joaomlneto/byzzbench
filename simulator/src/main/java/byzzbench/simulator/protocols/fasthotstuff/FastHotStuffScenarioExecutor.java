@@ -44,4 +44,9 @@ public class FastHotStuffScenarioExecutor extends BaseScenario {
         // nothing to do at the moment
         // TODO: genesis block creation logic should be moved here
     }
+
+    @Override
+    public int maxFaultyReplicas(int n) {
+        return (n - 1) / 3;
+    }
 }

@@ -33,8 +33,11 @@ byzzbench:
     params: # additional parameters for the scheduler
       # ByzzFuzz
       numRoundsWithProcessFaults: 1
-      numRoundsWithNetworkFaults: 1
-      numRoundsWithFaults: 2
+      numRoundsWithNetworkFaults: 4
+      numRoundsWithFaults: 5
+      # Twins
+      numReplicas: 1
+      numTwinsPerReplica: 2
 
   scenario:
     id: fab-java

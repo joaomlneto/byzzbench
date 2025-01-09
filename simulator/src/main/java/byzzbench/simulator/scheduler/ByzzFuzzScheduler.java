@@ -101,8 +101,4 @@ public class ByzzFuzzScheduler extends RandomScheduler {
         return 0;
     }
 
-    @Override
-    public void reset() {
-        // nothing to do
-    }
 }
