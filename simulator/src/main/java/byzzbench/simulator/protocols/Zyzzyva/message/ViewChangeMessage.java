@@ -12,7 +12,7 @@ import java.util.List;
 @EqualsAndHashCode(callSuper = true)
 @With
 public class ViewChangeMessage extends MessagePayload {
-    private final long viewNumber;
+    private final long futureViewNumber;
     // CC is either the most recent commit certificate for a request since the last view change,
     // f + 1 view-confirm messages if no commit certificate is available,
     // or a new-view message if neither of the previous options are available.

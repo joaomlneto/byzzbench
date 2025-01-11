@@ -69,4 +69,19 @@ public class MessageLog implements Serializable {
         }
         return speculativeResponseHistory;
     }
+
+    public void putIHateThePrimaryMessage(IHateThePrimaryMessage ihtpm) {
+        this.getIHateThePrimaries().putIfAbsent(ihtpm.getViewNumber(), new TreeMap<>());
+        this.getIHateThePrimaries().get(ihtpm.getViewNumber()).put(ihtpm.getSignedBy(), ihtpm);
+    }
+
+    public void putViewChangeMessage(ViewChangeMessage vcm) {
+        this.getViewChangeMessages().putIfAbsent(vcm.getFutureViewNumber(), new TreeMap<>());
+        this.getViewChangeMessages().get(vcm.getFutureViewNumber()).put(vcm.getSignedBy(), vcm);
+    }
+
+    public void putViewConfirmMessage(ViewConfirmMessage vcm) {
+        this.getViewConfirmMessages().putIfAbsent(vcm.getFutureViewNumber(), new ArrayList<>());
+        this.getViewConfirmMessages().get(vcm.getFutureViewNumber()).add(vcm);
+    }
 }
