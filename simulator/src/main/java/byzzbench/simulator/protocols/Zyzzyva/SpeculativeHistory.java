@@ -7,6 +7,7 @@ public class SpeculativeHistory {
 
     public SpeculativeHistory() {
         this.speculativeHistory = new LinkedHashMap<>();
+        this.speculativeHistory.put(-1L, 0L);
     }
 
     /**
@@ -34,14 +35,16 @@ public class SpeculativeHistory {
 
     /**
      * Remove everything before a specific index in the speculative history
-     * @param index
+     * @param index - the index to truncate the speculative history to
      */
     public void truncate(long index) {
         if (this.speculativeHistory.isEmpty()) {
             return;
         }
-        for (long i = this.speculativeHistory.sequencedKeySet().getFirst(); i < index; i++) {
+        long i = this.speculativeHistory.sequencedKeySet().getFirst();
+        while (i < index) {
             this.speculativeHistory.remove(i);
+            i = this.speculativeHistory.sequencedKeySet().getFirst();
         }
     }
 
@@ -62,10 +65,10 @@ public class SpeculativeHistory {
      * @throws IndexOutOfBoundsException - if the speculative history is empty
      */
     public long getLast() throws IndexOutOfBoundsException {
-        if (!this.has((long) this.speculativeHistory.size() - 1)) {
-            throw new IndexOutOfBoundsException("Index " + this.speculativeHistory.size() + " not found");
+        if (this.speculativeHistory.isEmpty()) {
+            throw new IndexOutOfBoundsException("Speculative history is empty");
         }
-        return this.speculativeHistory.get((long) this.speculativeHistory.size() - 1);
+        return this.speculativeHistory.lastEntry().getValue();
     }
 
     public void clear() {

@@ -8,12 +8,17 @@ import lombok.With;
 @Data
 @EqualsAndHashCode(callSuper = true)
 @With
-public class LocalCommitMessage extends MessagePayload {
+public class LocalCommitMessage extends MessagePayload implements Comparable<LocalCommitMessage> {
     public final long viewNumber;
     public final byte[] digest;
     public final long history;
     public final String replicaId;
     public final String clientId;
+
+    @Override
+    public int compareTo(LocalCommitMessage o) {
+        return CharSequence.compare(this.replicaId, o.replicaId);
+    }
 
     @Override
     public String getType() {

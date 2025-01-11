@@ -21,7 +21,7 @@ public class MessageLog implements Serializable {
     private final SortedMap<Long, SpeculativeResponse> speculativeResponses = new TreeMap<>();
 
     @Getter
-    // ViewNumber, Map(ReplicaId -> ViewChangeCommitCertificate)
+    // ViewNumber, Map(ReplicaId -> IHateThePrimaryMessage)
     private final SortedMap<Long, SortedMap<String, IHateThePrimaryMessage>> iHateThePrimaries = new TreeMap<>();
 
     @Getter
@@ -54,7 +54,7 @@ public class MessageLog implements Serializable {
     public List<OrderedRequestMessageWrapper> getOrderedRequestHistory() {
         long maxCCSeqNum = this.maxCC.getSequenceNumber();
         List<OrderedRequestMessageWrapper> orderedRequestHistory = new ArrayList<>();
-        long maxSeqNum = this.orderedMessages.pollLastEntry().getValue().getOrderedRequest().getSequenceNumber();
+        long maxSeqNum = this.getOrderedMessages().isEmpty() ? 0 : this.getOrderedMessages().lastKey();
         for (long i = maxCCSeqNum + 1; i <= maxSeqNum; i++) {
             orderedRequestHistory.add(this.orderedMessages.get(i));
         }

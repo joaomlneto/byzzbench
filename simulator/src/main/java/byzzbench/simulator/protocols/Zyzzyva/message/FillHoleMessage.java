@@ -14,6 +14,7 @@ public class FillHoleMessage extends MessagePayload {
     private final long receivedSequenceNumber;
     private final String replicaId;
 
+
     @Override
     public String getType() {
         return "FILL_HOLE";

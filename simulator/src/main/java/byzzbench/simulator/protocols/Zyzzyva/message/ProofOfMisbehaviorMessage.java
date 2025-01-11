@@ -11,7 +11,6 @@ import org.apache.commons.lang3.tuple.Pair;
 @With
 public class ProofOfMisbehaviorMessage extends MessagePayload {
     private final long viewNumber;
-    private final String clientId;
     private final Pair<OrderedRequestMessage, OrderedRequestMessage> pom;
 
     @Override

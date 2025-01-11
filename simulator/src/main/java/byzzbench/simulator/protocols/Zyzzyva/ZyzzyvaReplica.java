@@ -1,19 +1,21 @@
 package byzzbench.simulator.protocols.Zyzzyva;
 
 import byzzbench.simulator.LeaderBasedProtocolReplica;
+import byzzbench.simulator.Scenario;
 import byzzbench.simulator.protocols.Zyzzyva.message.*;
 import byzzbench.simulator.state.SerializableLogEntry;
 import byzzbench.simulator.state.TotalOrderCommitLog;
+import byzzbench.simulator.transport.DefaultClientRequestPayload;
 import byzzbench.simulator.transport.MessagePayload;
-import byzzbench.simulator.transport.Transport;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
 import lombok.extern.java.Log;
+import org.apache.commons.lang3.tuple.ImmutablePair;
 
-import javax.swing.text.View;
 import java.io.Serializable;
+import java.time.Duration;
 import java.util.*;
 
 /// TODO: check if everything is signed correctly
@@ -23,11 +25,6 @@ import java.util.*;
 @Log
 @ToString(callSuper = true)
 public class ZyzzyvaReplica extends LeaderBasedProtocolReplica {
-
-    @Getter
-    @Setter
-    private long viewNumber = -1;
-
     @Getter
     private final int CP_INTERVAL;
 
@@ -36,15 +33,18 @@ public class ZyzzyvaReplica extends LeaderBasedProtocolReplica {
 
     @Getter
     @Setter
-    private long highestTimestamp;
+    private long highestTimestamp = -1;
 
     @Getter
     @Setter
-    private long highestSequenceNumber;
+    private long highestSequenceNumber = -1;
 
     @Getter
     @Setter
     private boolean disgruntled = false;
+
+    @Getter
+    private final SortedSet<String> nodeIds;
 
     // used for the speculative history
     // we use the commit log for the committed history
@@ -57,14 +57,26 @@ public class ZyzzyvaReplica extends LeaderBasedProtocolReplica {
 
     public ZyzzyvaReplica(String replicaId,
                           SortedSet<String> nodeIds,
-                          Transport transport,
+                          Scenario scenario,
                           int CP_INTERVAL) {
-        super(replicaId, nodeIds, transport, new TotalOrderCommitLog());
+        super(replicaId, scenario, new TotalOrderCommitLog());
+        this.nodeIds = nodeIds;
 
         this.history = new SpeculativeHistory();
         this.messageLog = new MessageLog(15);
         this.CP_INTERVAL = CP_INTERVAL;
         this.faultsTolerated = (nodeIds.size() - 1) / 3;
+
+        CommitCertificate cc = new CommitCertificate(
+                -1,
+                0,
+                -1L,
+                new byte[0],
+                new TreeMap<>(),
+                "Self"
+        );
+        // used for view changes
+        this.getMessageLog().setMaxCC(cc);
     }
 
     @Override
@@ -75,63 +87,69 @@ public class ZyzzyvaReplica extends LeaderBasedProtocolReplica {
     @Override
     public void handleMessage(String sender, MessagePayload m) throws Exception {
         switch (m) {
-            // done
+            case DefaultClientRequestPayload defaultClientRequestPayload -> {
+                if (this.disgruntled) {
+                    return;
+                }
+                RequestMessage requestMessage = new RequestMessage(
+                        defaultClientRequestPayload.getOperation(),
+                        defaultClientRequestPayload.getTimestamp(),
+                        sender);
+                this.handleMessage(sender, requestMessage);
+            }
             case RequestMessage requestMessage -> {
                 if (this.disgruntled) {
                     return;
                 }
                 handleClientRequest(sender, requestMessage);
             }
-            // done
             case OrderedRequestMessageWrapper orderedRequestMessage -> {
                 if (this.disgruntled) {
                     return;
                 }
                 handleOrderedRequestMessageWrapper(sender, orderedRequestMessage);
             }
-            // done
             case FillHoleMessage fillHoleMessage -> {
                 if (this.disgruntled) {
                     return;
                 }
                 handleFillHoleMessageRequest(sender, fillHoleMessage);
             }
-            // in progress
-            case FillHoleReply fillHoleReply -> {
-                handleFillHoleMessageReply(sender, fillHoleReply);
-            }
-            // done
+
+            case FillHoleReply fillHoleReply -> handleFillHoleMessageReply(sender, fillHoleReply);
+
             case CommitMessage commitmessage -> {
                 if (this.disgruntled) {
                     return;
                 }
                 handleCommitMessage(sender, commitmessage);
             }
-            // done
-            case IHateThePrimaryMessage iHateThePrimaryMessage -> {
-                handleIHateThePrimaryMessage(sender, iHateThePrimaryMessage);
+            case IHateThePrimaryMessage iHateThePrimaryMessage -> handleIHateThePrimaryMessage(sender, iHateThePrimaryMessage);
+
+            case ViewChangeMessageWrapper viewChangeMessageWrapper -> handleViewChangeMessageWrapper(sender, viewChangeMessageWrapper);
+
+            case ProofOfMisbehaviorMessage proofOfMisbehaviorMessage -> handleProofOfMisbehaviourMessage(sender, proofOfMisbehaviorMessage);
+
+            case ConfirmRequestMessage confirmRequestMessage -> {
+                if (this.disgruntled) {
+                    return;
+                }
+                handleConfirmRequestMessage(sender, confirmRequestMessage);
             }
-            // not done
-            case ViewChangeMessageWrapper viewChangeMessageWrapper -> {
-                handleViewChangeMessageWrapper(sender, viewChangeMessageWrapper);
-            }
-            // done
-            case ProofOfMisbehaviorMessage proofOfMisbehaviorMessage -> {
-                handleProofOfMisbehaviourMessage(sender, proofOfMisbehaviorMessage);
-            }
-            default -> {
-                throw new RuntimeException("Unknown message type: " + m.getType());
-            }
+
+            case ViewConfirmMessage viewConfirmMessage -> handleViewConfirmMessage(sender, viewConfirmMessage);
+
+            default -> throw new RuntimeException("Unknown message type: " + m.getType());
         }
     }
 
     /**
-     * Calculate the history hash
-     * @param digest - the digest of the message to add to the history
-     * @return the new history hash
+     * Calculate the history hash for a given digest
+     * @param digest - the digest of the message
+     * @return - the history hash
      */
-    public long calculateHistory(long sequenceNumber, byte[] digest) {
-        return (this.getHistory().get(sequenceNumber - 1) + Arrays.hashCode(digest));
+    public long calculateHistory(byte[] digest) {
+        return (this.getHistory().getLast() + Arrays.hashCode(digest));
     }
 
     /**
@@ -139,24 +157,15 @@ public class ZyzzyvaReplica extends LeaderBasedProtocolReplica {
      * @param digest - the digest of the message to add to the history
      */
     public void updateHistory(long sequenceNumber, byte[] digest) {
-        this.getHistory().add(sequenceNumber, calculateHistory(sequenceNumber, digest));
-
+        this.getHistory().add(sequenceNumber, calculateHistory(digest));
     }
 
     /**
      * Set the view number and the primary ID
      * @param viewNumber - the view number to set
      */
-    private void setView(long viewNumber) {
+    public void setView(long viewNumber) {
         this.setView(viewNumber, this.computePrimaryId(viewNumber));
-    }
-
-    /**
-     * Gets the primary ID for the current view number
-     * @return the primary ID
-     */
-    private String computePrimaryId() {
-        return this.computePrimaryId(this.viewNumber);
     }
 
     /**
@@ -169,67 +178,43 @@ public class ZyzzyvaReplica extends LeaderBasedProtocolReplica {
         return (String) this.getNodeIds().toArray()[(int) (viewNumber % this.getNodeIds().size())];
     }
 
+    /**
+     * Handle a request received from a client.
+     * Corresponds to A2 in the paper
+     * @param clientId the ID of the client
+     * @param request  the request payload
+     * @throws Exception -
+     */
     @Override
     public void handleClientRequest(String clientId, Serializable request) throws Exception {
-        /// TODO: finish the additional pedantic details of 4c.
+        RequestMessage requestMessage = (RequestMessage) request;
         // if this replica is the primary, then it can order the request
-        if (this.computePrimaryId().equals(this.getNodeId()) && ((RequestMessage) request).getTimestamp() > this.highestTimestamp) {
+        if (this.getId().equals(this.getLeaderId()) && requestMessage.getTimestamp() > this.highestTimestamp) {
             byte[] digest = this.digest(request);
             OrderedRequestMessage orm = new OrderedRequestMessage(
                     // view number
-                    this.viewNumber,
+                    this.getViewNumber(),
                     // assign a sequence number to the request
-                    this.getMessageLog().getOrderedMessages().size(),
+                    this.getHighestSequenceNumber() + 1,
                     // history
                     // hn = H(hn−1, d) is a digest summarizing the history
-                    this.calculateHistory(this.getHighestSequenceNumber(), digest),
+                    this.calculateHistory(digest),
                     // digest
                     digest);
-            orm.sign(this.getNodeId());
-            OrderedRequestMessageWrapper ormw = new OrderedRequestMessageWrapper(orm, (RequestMessage) request);
-            // send an ordered request message to all replicas including self
+            orm.sign(this.getId());
+            OrderedRequestMessageWrapper ormw = new OrderedRequestMessageWrapper(orm, requestMessage);
             this.broadcastMessageIncludingSelf(ormw);
         } else {
-            forwardToPrimary(clientId, (RequestMessage) request);
-        }
-    }
-
-    public void forwardToPrimary(String clientId, RequestMessage rm) {
-        // if the request timestamp is lower or equal to the one that we have, we send the last ordered request
-        if (rm.getTimestamp() <= this.highestTimestamp) {
-            OrderedRequestMessageWrapper ormw = this.getMessageLog().getOrderedMessages().get(this.getHighestSequenceNumber());
-            this.sendMessage(ormw, this.computePrimaryId());
-        } else {
-            long currSeqNum = this.getHighestSequenceNumber();
-            ConfirmRequestMessage crm = new ConfirmRequestMessage(
-                    this.getViewNumber(),
-                    rm,
-                    this.getNodeId()
-            );
-            crm.sign(this.getNodeId());
-
-            this.sendMessage(crm, this.computePrimaryId());
-
-            this.setTimeout(
-                    () -> {
-                        if (this.getMessageLog().getOrderedMessages().containsKey(currSeqNum + 1)) {
-                            return;
-                        }
-                        IHateThePrimaryMessage ihtpm = new IHateThePrimaryMessage(this.viewNumber);
-                        ihtpm.sign(this.getNodeId());
-                        this.broadcastMessageIncludingSelf(ihtpm);
-                    },
-                    5000
-            );
+            forwardToPrimary(clientId, requestMessage);
         }
     }
 
     public void handleConfirmRequestMessage(String sender, ConfirmRequestMessage crm) throws Exception {
-        if (!this.getNodeId().equals(this.computePrimaryId())) {
+        if (!this.getId().equals(this.getLeaderId())) {
             log.warning("Received confirm request message as non-primary");
             return;
         }
-        if (crm.getViewNumber() != this.viewNumber) {
+        if (crm.getViewNumber() != this.getViewNumber()) {
             log.warning("Received a confirm request message with an incorrect view number");
             return;
         }
@@ -247,12 +232,13 @@ public class ZyzzyvaReplica extends LeaderBasedProtocolReplica {
 
     /**
      * Handle an ordered request message wrapper received by this replica and sends response to the client
-     *
+     *  Corresponds to A3 in the paper
      * @param sender - The sender of the message
      * @param ormw   - The ordered request message wrapper that was received
      */
     public void handleOrderedRequestMessageWrapper(String sender, OrderedRequestMessageWrapper ormw) {
-        if (!this.computePrimaryId().equals(sender)) {
+        System.out.println("Received ordered request message");
+        if (!this.getLeaderId().equals(sender)) {
             log.warning("Received an ordered request message from a non-primary replica");
             return;
         }
@@ -262,7 +248,7 @@ public class ZyzzyvaReplica extends LeaderBasedProtocolReplica {
             String clientId = ormw.getRequestMessage().getClientId();
             SpeculativeResponseWrapper srw = this.handleOrderedRequestMessage(ormw.getOrderedRequest(), ormw.getRequestMessage());
             // send a speculative response to the client
-            sendMessage(srw, clientId);
+            this.sendReplyToClient(clientId, srw);
             // saves to message log
             this.getMessageLog().getSpeculativeResponses().put(ormw.getOrderedRequest().getSequenceNumber(), srw.getSpecResponse());
             this.getMessageLog().getOrderedMessages().put(ormw.getOrderedRequest().getSequenceNumber(), ormw);
@@ -271,112 +257,117 @@ public class ZyzzyvaReplica extends LeaderBasedProtocolReplica {
         }
     }
 
+    /**
+     * Handles an ordered request message by creating a speculative response
+     * Corresponds to A3 in the paper
+     * @param orm - the ordered request message
+     * @param m - the request message
+     * @return - the speculative response wrapper
+     */
     public SpeculativeResponseWrapper handleOrderedRequestMessage(OrderedRequestMessage orm, RequestMessage m) {
-        byte[] digest = orm.getDigest();
-
+        // sets values and updates the history
         this.setHighestSequenceNumber(orm.getSequenceNumber());
-
         this.setHighestTimestamp(m.getTimestamp());
+        this.updateHistory(orm.getSequenceNumber(), orm.getDigest());
 
-        this.updateHistory((int) orm.getSequenceNumber(), orm.getDigest());
-
-        SpeculativeResponse sr = new SpeculativeResponse(this.viewNumber,
+        SpeculativeResponse sr = new SpeculativeResponse(this.getViewNumber(),
                 orm.getSequenceNumber(),
-                this.calculateHistory(orm.getSequenceNumber(), digest),
-                digest,
+                orm.getHistory(),
+                orm.getDigest(),
                 m.getClientId(),
                 m.getTimestamp()
         );
 
-        sr.sign(this.getNodeId());
-        return new SpeculativeResponseWrapper(sr, this.getNodeId(), m, orm);
+        sr.sign(this.getId());
+        return new SpeculativeResponseWrapper(sr, this.getId(), m, orm);
     }
 
+    /**
+     * Checks if the ordered request message is valid
+     * Corresponds to the first half of A3 in the paper
+     * @param orm - the ordered request message
+     * @param m - the request message
+     * @return - true if the ordered request message is valid, false otherwise
+     */
     public boolean isValidOrderedRequestMessage(OrderedRequestMessage orm, RequestMessage m) {
         // check if the view number is correct
-        if (orm.getViewNumber() != this.viewNumber) {
+        if (orm.getViewNumber() != this.getViewNumber()) {
             log.warning("Received an ordered request message with an incorrect view number");
             return false;
         }
 
         // check if the primary is correct
-        if (!orm.isSignedBy(this.computePrimaryId())) {
+        if (!orm.isSignedBy(this.getLeaderId())) {
             log.warning("Received an ordered request message with an incorrect primary");
-            // we immediately return false because we've already checked the view number so it's guaranteed to be incorrect
             return false;
         }
 
         // check (n == max_n + 1)
         if (orm.getSequenceNumber() != this.getHighestSequenceNumber() + 1) {
-            log.warning("Received an ordered request message with an incorrect sequence number");
             // send fillHoles
             if (orm.getSequenceNumber() > this.getHighestSequenceNumber() + 1) {
+                log.warning("Received an ordered request message with an larger than expected sequence number");
                 this.fillHole(orm.getSequenceNumber());
+            } else {
+                log.warning("Received an ordered request message with a smaller than expected sequence number");
             }
-            System.out.println("Lower request number than highest sequence number");
             return false;
         }
 
         byte[] messageDigest = this.digest(m);
 
         // check if the digest is correct
-        if (orm.getDigest() != messageDigest) {
+        if (!Arrays.equals(orm.getDigest(), messageDigest)) {
             log.warning("Received an ordered request message with an incorrect digest");
             return false;
         }
         
         // check if the history hash is correct
-        if (orm.getHistoryHash() != this.getHistory().getLast()) {
+        if (orm.getHistory() != this.calculateHistory(messageDigest)) {
             log.warning("Received an ordered request message with an incorrect history hash");
             return false;
         }
         return true;
     }
 
+    /**
+     * Initiates the Fill Hole procedure by sending a fill hole message to the primary
+     * @param receivedSequenceNumber - the sequence number of the message that was received
+     */
     public void fillHole(long receivedSequenceNumber) {
         FillHoleMessage fhm = new FillHoleMessage(
-                this.viewNumber,
+                this.getViewNumber(),
                 this.getHighestSequenceNumber() + 1,
                 receivedSequenceNumber,
-                true,
-                this.getNodeId()
+                this.getId()
         );
-
-        fhm.sign(this.getNodeId());
-        this.sendMessage(fhm, this.computePrimaryId());
+        fhm.sign(this.getId());
+        this.sendMessage(fhm, this.getLeaderId());
 
         this.setTimeout(
+                "fillHolePrimary",
                 () -> {
                     // check that we have all the responses, if we do, and they're valid, return
                     if (this.receivedFillHole(receivedSequenceNumber)) {
                         long oldSeqNum = this.getHighestSequenceNumber();
-                        // add to message log
-                        this.fillOrderedRequestMessages(this.computePrimaryId(), oldSeqNum + 1, receivedSequenceNumber);
-                        // repair history
-                        this.fillHistory(oldSeqNum + 1, receivedSequenceNumber);
+                        this.fillOrderedRequestMessages(this.getLeaderId(), oldSeqNum + 1, receivedSequenceNumber);
                         return;
-                    };
-                    // send a fill hole message to all replicas
-                    FillHoleMessage fhma = new FillHoleMessage(
-                            this.viewNumber,
-                            this.getHighestSequenceNumber() + 1,
-                            receivedSequenceNumber,
-                            false,
-                            this.getNodeId());
-                    fhma.sign(this.getNodeId());
-                    this.broadcastMessage(fhma);
+                    }
+                    this.broadcastMessage(fhm);
                     this.setTimeout(
+                            "fillHoleAll",
                             () -> {
-                                // check that we have all the responses
-                                // if not, we send a proof of misbehaviour
-                                // if yes, then we add to message log and repair history
-                                // we don't care about it being "correct" since we're going to sync up eventually
-
+                                if (this.receivedFillHole(receivedSequenceNumber)) {
+                                    long oldSeqNum = this.getHighestSequenceNumber();
+                                    this.fillOrderedRequestMessages(this.getLeaderId(), oldSeqNum + 1, receivedSequenceNumber);
+                                } else {
+                                    log.warning("Failed to fill hole");
+                                }
                             },
-                            5000
+                            Duration.ofMillis(5000)
                     );
                 },
-                10000);
+                Duration.ofMillis(5000));
     }
 
     /**
@@ -388,24 +379,19 @@ public class ZyzzyvaReplica extends LeaderBasedProtocolReplica {
     private void fillOrderedRequestMessages(String senderId, long lowSeqNum, long highSeqNum) {
         // add to message logs
         for (long i = lowSeqNum; i <= highSeqNum; i++) {
-            FillHoleReply fhr = this.getMessageLog().getFillHoleMessages().get(i).values().iterator().next();
+            FillHoleReply fhr = this.getMessageLog().getFillHoleMessages().get(i).get(senderId);
             OrderedRequestMessageWrapper ormw = new OrderedRequestMessageWrapper(
                     fhr.getOrderedRequestMessage(),
                     fhr.getRequestMessage()
             );
-            this.getMessageLog().getOrderedMessages().put(i, ormw);
-        }
-    }
-
-    /**
-     * Fills the history from the fill hole messages once found valid
-     * @param seqLow - the first sequence number to fill (inclusive)
-     * @param seqHigh - the last sequence number to fill (inclusive)
-     */
-    public void fillHistory(long seqLow, long seqHigh) {
-        for (long i = seqLow; i < seqHigh; i++) {
-            byte[] digest = this.digest(this.getMessageLog().getOrderedMessages().get(i).getRequestMessage());
-            this.updateHistory(i, digest);
+            if (!this.isValidOrderedRequestMessage(ormw.getOrderedRequest(), ormw.getRequestMessage())) {
+                log.warning("Received an invalid ordered request message");
+            }
+            // handles the ordered request message
+            SpeculativeResponseWrapper srw = this.handleOrderedRequestMessage(ormw.getOrderedRequest(), ormw.getRequestMessage());
+            // add to the message log
+            this.getMessageLog().getSpeculativeResponses().put(ormw.getOrderedRequest().getSequenceNumber(), srw.getSpecResponse());
+            this.getMessageLog().getOrderedMessages().put(ormw.getOrderedRequest().getSequenceNumber(), ormw);
         }
     }
 
@@ -416,18 +402,12 @@ public class ZyzzyvaReplica extends LeaderBasedProtocolReplica {
      * @param fillHoleMessage - The fill hole message that was received
      */
     private void handleFillHoleMessageRequest(String sender, FillHoleMessage fillHoleMessage) {
-        // for the primary
-        if (fillHoleMessage.isMeantForPrimary() && this.getNodeId().equals(this.computePrimaryId())) {
-            if (this.getViewNumber() != fillHoleMessage.getViewNumber()) {
-                log.warning("Received a fill hole message with a different view number");
-            } else {
-                sendFillHoleReplies(fillHoleMessage.getReplicaId(), fillHoleMessage.getLastKnownSequenceNumber(), fillHoleMessage.getReceivedSequenceNumber());
-            }
-        
-        } else if (fillHoleMessage.isMeantForPrimary()) {
-            log.warning("Received a fill hole message that was meant for the primary");
+        if (this.getViewNumber() != fillHoleMessage.getViewNumber()) {
+            log.warning("Received a fill hole message with a different view number");
+        } else if (fillHoleMessage.getReceivedSequenceNumber() > this.getHighestSequenceNumber()) {
+            log.warning("Received a fill hole message with a larger than expected sequence number");
         } else {
-            sendFillHoleReplies(fillHoleMessage.getReplicaId(), fillHoleMessage.getLastKnownSequenceNumber(), fillHoleMessage.getReceivedSequenceNumber());
+            sendFillHoleReplies(fillHoleMessage.getReplicaId(), fillHoleMessage.getExpectedSequenceNumber(), fillHoleMessage.getReceivedSequenceNumber());
         }
     }
 
@@ -444,7 +424,7 @@ public class ZyzzyvaReplica extends LeaderBasedProtocolReplica {
                 OrderedRequestMessageWrapper ormw = this.getMessageLog().getOrderedMessages().get(n);
                 this.sendMessage(ormw, sender);
             } catch (NullPointerException e) {
-                log.warning("Replica " + this.getNodeId() + " does not have the message with sequence number " + n);
+                log.warning("Replica " + this.getId() + " does not have the message with sequence number " + n);
             }
         }
     }
@@ -456,7 +436,7 @@ public class ZyzzyvaReplica extends LeaderBasedProtocolReplica {
      */
     private void handleFillHoleMessageReply(String sender, FillHoleReply fillHoleReply) {
         /// TODO: Check if we need to add the spec response to the speculative response history
-        if (fillHoleReply.getOrderedRequestMessage().getViewNumber() != this.viewNumber) {
+        if (fillHoleReply.getOrderedRequestMessage().getViewNumber() != this.getViewNumber()) {
             log.warning("Received a fill hole reply with a different view number");
         } else {
             // add to the fillHoleReply map in the message log
@@ -465,35 +445,25 @@ public class ZyzzyvaReplica extends LeaderBasedProtocolReplica {
     }
 
     private boolean receivedFillHole(long receivedSequenceNumber) {
-        // the last history that we have
-        long prevHistory = this.getHistory().get(this.getHighestSequenceNumber());
         // check that all fill holes have been received
-        for (long i = this.getHighestSequenceNumber() + 1; i < receivedSequenceNumber; i++) {
+        for (long i = this.getHighestSequenceNumber() + 1; i <= receivedSequenceNumber; i++) {
             // if we miss messages, return false
             if (!this.getMessageLog().getFillHoleMessages().containsKey(i)) {
                 return false;
-            }
-            /// TODO: ask if we need this block? How would the primary lie since the next request sent to everyone has to be correct
-            else {
-                // check if the message is valid
-                FillHoleReply current = this.getMessageLog().getFillHoleMessages().get(i).get(this.computePrimaryId());
-                byte[] calcDigest = this.digest(current.getRequestMessage());
-                // check digests
-                if (current.getOrderedRequestMessage().getDigest() != calcDigest) {
-                    return false;
-                }
-                // calculate new history
-                long newHistory = prevHistory + Arrays.hashCode(calcDigest);
-                // check history hashes
-                if (current.getOrderedRequestMessage().getHistoryHash() != newHistory) {
-                    log.warning(
-                            "Received a fill hole reply with an incorrect history hash:" +
-                            current.getOrderedRequestMessage().getHistoryHash() +
-                            " " + newHistory
+            } else {
+                SortedSet<FillHoleReply> fillHoleReplies = new TreeSet<>(this.getMessageLog().getFillHoleMessages().get(i).values());
+                if (fillHoleReplies.size() > 1) {
+                    // create a proof of misbehaviour
+                    OrderedRequestMessage orm1 = fillHoleReplies.first().getOrderedRequestMessage();
+                    OrderedRequestMessage orm2 = fillHoleReplies.last().getOrderedRequestMessage();
+                    ProofOfMisbehaviorMessage pom = new ProofOfMisbehaviorMessage(
+                            this.getViewNumber(),
+                            new ImmutablePair<>(orm1, orm2)
                     );
+                    pom.sign(this.getId());
+                    this.broadcastMessageIncludingSelf(pom);
                     return false;
                 }
-                prevHistory = newHistory;
             }
         }
         return true;
@@ -507,45 +477,53 @@ public class ZyzzyvaReplica extends LeaderBasedProtocolReplica {
             return;
         }
 
-        // We don't trust the client, so we check if everything matches
-        SpeculativeResponse firstResponse = cc.getSpeculativeResponses().getFirst();
-        // checks if the speculative responses are equal
-        for (SpeculativeResponse sr : cc.getSpeculativeResponses()) {
-            if (!firstResponse.equals(sr)) {
-                log.warning("Received a commit certificate with unequal speculative responses");
-                return;
+        SpeculativeResponse firstResponse = cc.getSpeculativeResponses().firstEntry().getValue();
+
+        try {
+            // if the history is consistent, then we can commit the operations
+            if (firstResponse.getHistory() == this.getHistory().get(firstResponse.getSequenceNumber())) {
+                this.handleCommitCertificate(cc);
+                LocalCommitMessage lcm = new LocalCommitMessage(
+                        cc.getViewNumber(),
+                        cc.getDigest(),
+                        this.getHistory().get(cc.getSequenceNumber()),
+                        this.getId(),
+                        cc.getClientId());
+
+                lcm.sign(this.getId());
+                this.sendMessage(lcm, cc.getClientId());
+
+                this.getHistory().truncate(firstResponse.getSequenceNumber());
+            } else {
+                // if the histories are diverging we initiate a view change
+                // initiate a view change
+                IHateThePrimaryMessage ihtpm = new IHateThePrimaryMessage(this.getViewNumber());
+                ihtpm.sign(this.getId());
+                this.broadcastMessageIncludingSelf(ihtpm);
+
             }
-        }
-        // check if the history is consistent with the one certified by CC
-        if (firstResponse.getHistory() != this.getHistory().get(firstResponse.getSequenceNumber())) {
-            log.warning("Received a commit certificate with an inconsistent history");
-            if (cc.getSequenceNumber() > this.getHighestSequenceNumber() + 1) {
+        } catch (IndexOutOfBoundsException e) {
+            log.warning("Received a commit certificate with a history that doesn't exist");
+            // This probably occurs because of a fillhole so we do exactly that
+            if (firstResponse.getSequenceNumber() > this.getHighestSequenceNumber()) {
                 this.fillHole(firstResponse.getSequenceNumber());
             } else {
-                // initiate a view change
-                IHateThePrimaryMessage ihtpm = new IHateThePrimaryMessage(this.viewNumber);
-                ihtpm.sign(this.getNodeId());
-                this.broadcastMessageIncludingSelf(ihtpm);
+                log.warning("Unknown error with the commit certificate");
             }
-        } else {
-            // if the history is consistent, then we commit the operation
-            this.handleCommitCertificate(cc);
-            /// TODO: check if it's actually client request digest and not reply digest
-            LocalCommitMessage lcm = new LocalCommitMessage(this.getViewNumber(),
-                    firstResponse.getReplyDigest(),
-                    this.getHistory().getLast(),
-                    this.getNodeId(),
-                    cc.getClientId());
-            lcm.sign(this.getNodeId());
-            this.sendMessage(lcm, cc.getClientId());
         }
     }
 
+
+    /**
+     * Updates to the most recent commit certificate and commits the operations
+     * @param cc - the client-sent commit certificate
+     */
     private void handleCommitCertificate(CommitCertificate cc) {
         CommitCertificate currentCC = this.getMessageLog().getMaxCC();
+        // if the client cc is more recent than our own, we commit the operations
         if (currentCC == null || cc.getSequenceNumber() > currentCC.getSequenceNumber()) {
             long oldSeqNum = (currentCC != null) ? currentCC.getSequenceNumber() + 1 : 0;
-            for (long i = oldSeqNum; i < cc.getSequenceNumber(); i++) {
+            for (long i = oldSeqNum; i <= cc.getSequenceNumber(); i++) {
                 this.commitOperation(new SerializableLogEntry(this.getMessageLog().getOrderedMessages().get(i).getRequestMessage().getOperation()));
             }
             this.getMessageLog().setMaxCC(cc);
@@ -553,7 +531,7 @@ public class ZyzzyvaReplica extends LeaderBasedProtocolReplica {
     }
 
     /**
-     * Checks if the commit certificate has the right size and the speculative responses match
+     * Checks if the commit certificate has the right number of replicas and the speculative responses match
      * @param cc - the commit certificate to check
      * @return - true if the commit certificate is valid, false otherwise
      */
@@ -563,31 +541,76 @@ public class ZyzzyvaReplica extends LeaderBasedProtocolReplica {
             return false;
         }
 
-        if (cc.getReplicaIds().size() < 2 * this.faultsTolerated + 1) {
+        // check if the speculative responses are indeed signed by the replicas
+        for (Map.Entry<String, SpeculativeResponse> entry : cc.getSpeculativeResponses().entrySet()) {
+            if (!entry.getValue().isSignedBy(entry.getKey())) {
+                log.warning("Received a commit certificate with an invalid signature");
+                return false;
+            }
+        }
+
+        if (cc.getSpeculativeResponses().size() < 2 * this.faultsTolerated + 1) {
             log.warning("Received a commit certificate with an incorrect number of replicas, " +
-                    "got " + cc.getReplicaIds().size() +
+                    "got " + cc.getSpeculativeResponses().size() +
                     " expected " + (2 * this.faultsTolerated + 1));
             return false;
         }
 
-        SpeculativeResponse firstResponse = cc.getSpeculativeResponses().getFirst();
-        // check if the speculative responses are equal
-        for (int i = 0; i < cc.getReplicaIds().size(); i++) {
-            String curr_replica_id = cc.getReplicaIds().get(i);
-            SpeculativeResponse sr = cc.getSpeculativeResponses().get(i);
-            if (!sr.isSignedBy(curr_replica_id)) {
-                log.warning("Received a commit certificate with an invalid signature");
-                return false;
-            } else if (!firstResponse.equals(sr)) {
-                log.warning("Received a commit certificate with unequal speculative responses");
-                return false;
-            }
+        Set<SpeculativeResponse> speculativeResponses = new HashSet<>(cc.getSpeculativeResponses().values());
+        // checks that the spec responses are all equal
+        return speculativeResponses.size() <= 1;
+    }
+
+    /**
+     * Forwards the receipt of a request to the primary replica
+     * Corresponds to A4c in the paper
+     * @param clientId - the client ID
+     * @param rm - the request message
+     */
+    public void forwardToPrimary(String clientId, RequestMessage rm) {
+        // if the request timestamp is lower or equal to the one that we have, we send the last ordered request
+        if (this.getMessageLog().getMaxCC() != null && this.getMessageLog().getMaxCC().getSequenceNumber() >= rm.getTimestamp()) {
+            LocalCommitMessage lcm = new LocalCommitMessage(
+                    this.getViewNumber(),
+                    this.getMessageLog().getMaxCC().getSpeculativeResponses().lastEntry().getValue().getReplyDigest(),
+                    this.getMessageLog().getMaxCC().getSequenceNumber(),
+                    this.getId(),
+                    clientId
+            );
+            lcm.sign(this.getId());
+            this.sendMessage(lcm, clientId);
+        } else if (rm.getTimestamp() <= this.highestTimestamp) {
+            OrderedRequestMessageWrapper ormw = this.getMessageLog().getOrderedMessages().get(this.getHighestSequenceNumber());
+            this.sendMessage(ormw, this.getLeaderId());
+        } else {
+            long currSeqNum = this.getHighestSequenceNumber();
+            ConfirmRequestMessage crm = new ConfirmRequestMessage(
+                    this.getViewNumber(),
+                    rm,
+                    this.getId()
+            );
+            crm.sign(this.getId());
+
+            this.sendMessage(crm, this.getLeaderId());
+            /// TODO: additional pedantic details
+            this.setTimeout(
+                    "forwardToPrimary",
+                    () -> {
+                        if (this.getMessageLog().getOrderedMessages().containsKey(currSeqNum + 1)) {
+                            return;
+                        }
+                        IHateThePrimaryMessage ihtpm = new IHateThePrimaryMessage(this.getViewNumber());
+                        ihtpm.sign(this.getId());
+                        this.broadcastMessageIncludingSelf(ihtpm);
+                    },
+                    // give it time in case we need to fill holes
+                    Duration.ofMillis(15000)
+            );
         }
-        return true;
     }
 
     private void handleProofOfMisbehaviourMessage(String sender, ProofOfMisbehaviorMessage pom) {
-        if (pom.getViewNumber() != this.viewNumber) {
+        if (pom.getViewNumber() != this.getViewNumber()) {
             log.warning("Received a proof of misbehaviour message with a different view number");
         } else {
             OrderedRequestMessage orm1 = pom.getPom().getLeft();
@@ -595,8 +618,8 @@ public class ZyzzyvaReplica extends LeaderBasedProtocolReplica {
             // check for the right sequence number and that the messages are not equal
             if (orm1.getSequenceNumber() == orm2.getSequenceNumber() && !orm1.equals(orm2)) {
                 // send an I hate the primary message
-                IHateThePrimaryMessage ihtpm = new IHateThePrimaryMessage(this.viewNumber);
-                ihtpm.sign(this.getNodeId());
+                IHateThePrimaryMessage ihtpm = new IHateThePrimaryMessage(this.getViewNumber());
+                ihtpm.sign(this.getId());
                 this.broadcastMessageIncludingSelf(ihtpm);
                 this.broadcastMessage(pom);
             }
@@ -611,14 +634,15 @@ public class ZyzzyvaReplica extends LeaderBasedProtocolReplica {
      * @param ihtpm - The I hate the primary message that was received
      */
     private void handleIHateThePrimaryMessage(String sender, IHateThePrimaryMessage ihtpm) {
-        if (ihtpm.getViewNumber() < this.viewNumber) {
+        if (ihtpm.getViewNumber() < this.getViewNumber()) {
             log.warning("Received an I hate the primary message with a different view number");
         } else if (!ihtpm.getSignedBy().equals(sender)) {
             log.warning("Received an I hate the primary message with an invalid signature");
         } else {
+            this.getMessageLog().getIHateThePrimaries().putIfAbsent(ihtpm.getViewNumber(), new TreeMap<>());
             this.getMessageLog().getIHateThePrimaries().get(ihtpm.getViewNumber()).put(ihtpm.getSignedBy(), ihtpm);
             // if f + 1 ihatetheprimaries
-            if (this.getMessageLog().getIHateThePrimaries().size() > this.faultsTolerated) {
+            if (this.getMessageLog().getIHateThePrimaries().get(this.getViewNumber()).size() > this.faultsTolerated) {
                 // we move on to vc2
                 this.commitToViewChange();
             }
@@ -633,25 +657,25 @@ public class ZyzzyvaReplica extends LeaderBasedProtocolReplica {
         List<IHateThePrimaryMessage> iHateThePrimaryMessages = List.copyOf(this.getMessageLog().getIHateThePrimaries().get(this.getViewNumber()).values());
         Serializable cc;
         // creates the CCs
-        if (this.getMessageLog().getMaxCC() == null) {
+        if (this.getMessageLog().getMaxCC() != null && this.getMessageLog().getMaxCC().getViewNumber() == this.getViewNumber()) {
             cc = this.getMessageLog().getMaxCC();
         }
         else if (this.getMessageLog()
                 .getViewConfirmMessages()
-                .getOrDefault(this.viewNumber, new ArrayList<>())
+                .getOrDefault(this.getViewNumber(), new ArrayList<>())
                 .size() > this.faultsTolerated) {
-            cc = new ArrayList<>(this.getMessageLog().getViewConfirmMessages().get(this.viewNumber));
+            cc = new ArrayList<>(this.getMessageLog().getViewConfirmMessages().get(this.getViewNumber()));
         } else {
-            cc = this.getMessageLog().getNewViewMessages().sequencedKeySet().getLast();
+            cc = this.getMessageLog().getNewViewMessages().sequencedValues().getLast();
         }
 
         ViewChangeMessage vcm = new ViewChangeMessage(
-                this.viewNumber + 1,
+                this.getViewNumber() + 1,
                 cc,
                 this.getMessageLog().getOrderedRequestHistory(),
-                this.getNodeId()
+                this.getId()
         );
-        vcm.sign(this.getNodeId());
+        vcm.sign(this.getId());
         ViewChangeMessageWrapper vcmw = new ViewChangeMessageWrapper(iHateThePrimaryMessages, vcm);
         this.broadcastMessageIncludingSelf(vcmw);
 
@@ -668,7 +692,7 @@ public class ZyzzyvaReplica extends LeaderBasedProtocolReplica {
         ViewChangeMessage vcm = viewChangeMessageWrapper.getViewChangeMessage();
         long viewNumber = vcm.getViewNumber();
         // discard previous views
-        if (viewNumber < this.viewNumber + 1) {
+        if (viewNumber < this.getViewNumber() + 1) {
             log.warning("Received a view change message with an incorrect view number");
             return;
         }
@@ -679,6 +703,7 @@ public class ZyzzyvaReplica extends LeaderBasedProtocolReplica {
         }
 
         // puts the view change message in the view change messages list
+        this.getMessageLog().getViewChangeMessages().putIfAbsent(viewNumber, new TreeMap<>());
         this.getMessageLog().getViewChangeMessages().get(viewNumber).put(vcm.getReplicaId(), vcm);
 
         // if we have enough view change messages, we go on to VC3
@@ -705,7 +730,7 @@ public class ZyzzyvaReplica extends LeaderBasedProtocolReplica {
      * Corresponds to VC3 in the paper
      */
     private void viewChange(long newViewNumber) {
-        if (this.computePrimaryId(newViewNumber).equals(this.getNodeId())) {
+        if (this.computePrimaryId(newViewNumber).equals(this.getId())) {
             this.viewChangePrimary(newViewNumber);
         } else {
             this.viewChangeReplica(newViewNumber);
@@ -718,7 +743,7 @@ public class ZyzzyvaReplica extends LeaderBasedProtocolReplica {
                 newViewNumber,
                 this.getMessageLog().getViewChangeMessages().get(newViewNumber).values()
         );
-        nvm.sign(this.getNodeId());
+        nvm.sign(this.getId());
         this.broadcastMessageIncludingSelf(nvm);
     }
 
@@ -733,6 +758,7 @@ public class ZyzzyvaReplica extends LeaderBasedProtocolReplica {
         long timeout = (long) Math.pow(2, (newViewNumber - lastViewNumber)) * 5000;
 
         this.setTimeout(
+                "viewChangeReplica",
                 () -> {
                     // if we have received a new-view message, then we return
                     if (this.getMessageLog().getNewViewMessages().containsKey(newViewNumber)) {
@@ -745,16 +771,16 @@ public class ZyzzyvaReplica extends LeaderBasedProtocolReplica {
                                 newViewNumber,
                                 this.getHighestSequenceNumber(),
                                 this.getHistory().getLast(),
-                                this.getNodeId()
+                                this.getId()
                         );
 
-                        vcm.sign(this.getNodeId());
+                        vcm.sign(this.getId());
                         this.broadcastMessageIncludingSelf(vcm);
                     }
                     // if we haven't received a new-view message, then we send a ihatetheprimary message
                     else {
                         IHateThePrimaryMessage ihtpm = new IHateThePrimaryMessage(newViewNumber + 1);
-                        ihtpm.sign(this.getNodeId());
+                        ihtpm.sign(this.getId());
                         this.broadcastMessageIncludingSelf(ihtpm);
                         // It's still disgruntled so we don't actually accept messages etc.
                         // But we need to update the view number for everything else
@@ -762,7 +788,7 @@ public class ZyzzyvaReplica extends LeaderBasedProtocolReplica {
                         this.setView(newViewNumber);
                     }
                 },
-                timeout
+                Duration.ofMillis(timeout)
         );
     }
 
@@ -794,6 +820,7 @@ public class ZyzzyvaReplica extends LeaderBasedProtocolReplica {
      * @param vcm - The view confirm message that was received
      */
     public void handleViewConfirmMessage(String sender, ViewConfirmMessage vcm) {
+        /// TODO: Hook this upto the handleMessage
         // check if the vcm is signed by the sender
         if (!vcm.isSignedBy(sender)) {
             log.warning("Received a view confirm message with an invalid signature");
@@ -824,7 +851,7 @@ public class ZyzzyvaReplica extends LeaderBasedProtocolReplica {
     }
 
     /**
-     * Changes the view number and creates a new commit certificate
+     * Changes the view number
      * Corresponds to VC5 in the paper
      * @param vcm - The view confirm message that was received
      */
@@ -833,9 +860,9 @@ public class ZyzzyvaReplica extends LeaderBasedProtocolReplica {
         this.getMessageLog().getIHateThePrimaries().get(this.getViewNumber()).clear();
         this.getMessageLog().getFillHoleMessages().clear();
         this.getMessageLog().getOrderedMessages().clear();
+        this.getMessageLog().getSpeculativeResponses().clear();
 
-
-
-        this.setViewNumber(vcm.getFutureViewNumber());
+        // sets the view number and primary
+        this.setView(vcm.getFutureViewNumber());
     }
 }
