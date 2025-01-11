@@ -906,7 +906,7 @@ public class HbftJavaReplicaTests {
         
         spyReplica.recvNewView(newView);
         
-        Assert.isTrue(replicaA.getMessageLog().acceptNewView(newView, 1), "Should accept the new view!");
+        Assert.isTrue(replicaA.getMessageLog().acceptNewView(newView, 1, Mockito.any()), "Should accept the new view!");
 
         verify(spyReplica, times(1)).enterNewView(newView.getNewViewNumber());
     }
@@ -942,7 +942,7 @@ public class HbftJavaReplicaTests {
         
         spyReplica.recvNewView(newView);
         
-        Assert.isTrue(replicaA.getMessageLog().acceptNewView(newView, 1), "Should accept the new view!");
+        Assert.isTrue(replicaA.getMessageLog().acceptNewView(newView, 1, Mockito.any()), "Should accept the new view!");
 
         verify(spyReplica, times(1)).enterNewView(newView.getNewViewNumber());
     }
@@ -975,7 +975,7 @@ public class HbftJavaReplicaTests {
         
         spyReplica.recvNewView(newView);
         
-        Assert.isTrue(replicaA.getMessageLog().acceptNewView(newView, 1), "Should accept the new view!");
+        Assert.isTrue(replicaA.getMessageLog().acceptNewView(newView, 1, Mockito.any()), "Should accept the new view!");
 
         verify(spyReplica, times(1)).enterNewView(newView.getNewViewNumber());
     }
@@ -1010,7 +1010,7 @@ public class HbftJavaReplicaTests {
         
         spyReplica.recvNewView(newView);
         
-        Assert.isTrue(!replicaA.getMessageLog().acceptNewView(newView, 1), "Should not accept the new view!");
+        Assert.isTrue(!replicaA.getMessageLog().acceptNewView(newView, 1, Mockito.any()), "Should not accept the new view!");
 
         verify(spyReplica, times(0)).enterNewView(newView.getNewViewNumber());
     }
@@ -1041,7 +1041,7 @@ public class HbftJavaReplicaTests {
         NewViewMessage newView = new NewViewMessage(2, viewChanges, checkpoint, history);
     
         spyReplica.recvNewView(newView);
-        Assert.isTrue(!replicaA.getMessageLog().acceptNewView(newView, 1), "Should not accept the new view!");
+        Assert.isTrue(!replicaA.getMessageLog().acceptNewView(newView, 1, Mockito.any()), "Should not accept the new view!");
         verify(spyReplica, times(0)).enterNewView(newView.getNewViewNumber());
     }
 
@@ -1068,7 +1068,7 @@ public class HbftJavaReplicaTests {
         NewViewMessage newView = new NewViewMessage(2, viewChanges, new Checkpoint(history.getGreatestSeqNumber(), history), history);
     
         spyReplica.recvNewView(newView);
-        Assert.isTrue(!replicaA.getMessageLog().acceptNewView(newView, 1), "Should not accept the new view!");
+        Assert.isTrue(!replicaA.getMessageLog().acceptNewView(newView, 1, Mockito.any()), "Should not accept the new view!");
         verify(spyReplica, times(0)).enterNewView(newView.getNewViewNumber());
     }
 
@@ -1095,7 +1095,7 @@ public class HbftJavaReplicaTests {
         NewViewMessage newView = new NewViewMessage(2, viewChanges, new Checkpoint(history.getGreatestSeqNumber(), history), history);
     
         spyReplica.recvNewView(newView);
-        Assert.isTrue(!replicaA.getMessageLog().acceptNewView(newView, 1), "Should not accept the new view!");
+        Assert.isTrue(!replicaA.getMessageLog().acceptNewView(newView, 1, Mockito.any()), "Should not accept the new view!");
         verify(spyReplica, times(0)).enterNewView(newView.getNewViewNumber());
     }
 
@@ -1131,7 +1131,7 @@ public class HbftJavaReplicaTests {
         historyExpected.addEntry(seqNumber + 3, request3);
     
         spyReplica.recvNewView(newView);
-        Assert.isTrue(replicaA.getMessageLog().acceptNewView(newView, 1), "Should accept the new view!");
+        Assert.isTrue(replicaA.getMessageLog().acceptNewView(newView, 1, Mockito.any()), "Should accept the new view!");
         verify(spyReplica, times(1)).enterNewView(newView.getNewViewNumber());
         System.out.println(replicaA.getSpeculativeHistory());
         Assert.isTrue(replicaA.getSpeculativeHistory().equals(historyExpected), "History should exclude noop");

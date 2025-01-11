@@ -571,7 +571,7 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
              * then if it has f + 1 COMMIT messages in the log it can also COMMIT and REPLY
              */
             if (ticket.isPrepared(this.tolerance) && ticket.casPhase(phase, ReplicaTicketPhase.COMMIT)) {
-                System.out.println("Replica " + this.getId() + " received f + 1 COMMIT in PREPARE phase so should also COMMIT and REPLY");
+                //System.out.println("Replica " + this.getId() + " received f + 1 COMMIT in PREPARE phase so should also COMMIT and REPLY");
                 RequestMessage request = ticket.getRequest();
 
                 // Checks whether the replica has executed the request
@@ -596,7 +596,7 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
                         result,
                         this.speculativeHistory);
 
-                    System.out.println("Replica " + this.getId() + " REPLIED");
+                    //System.out.println("Replica " + this.getId() + " REPLIED");
 
                     ticket.append(reply);
                     this.speculativeRequests.put(seqNumber, request);
@@ -754,7 +754,7 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
          && (!primaryId.equals(checkpoint.getReplicaId())
          || !Arrays.equals(checkpoint.getDigest(), this.digest(this.speculativeHistory))
          || checkpoint.getLastSeqNumber() != this.seqCounter.get())) {
-            System.out.println(checkpoint + " Replica: " + this.seqCounter.get() + " " + Arrays.equals(checkpoint.getDigest(), this.digest(this.speculativeHistory)));
+            //System.out.println(checkpoint + " Replica: " + this.seqCounter.get() + " " + Arrays.equals(checkpoint.getDigest(), this.digest(this.speculativeHistory)));
             /* 
              * If the it is a CHECKPOINT-I message and not correct
              * then the replica sends a view-change.
@@ -901,6 +901,7 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
     }
 
     public void enterNewView(long newViewNumber) {
+        logger.writeLog(String.format("REPLICA %s entering NEW-VIEW %d", this.getId(), newViewNumber)); 
         /*
          * Enter new view by resetting the disgruntled state, updating the
          * view number and clearing any prior timeouts that the replicas have
@@ -1018,7 +1019,7 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
             newView.getSignedBy(),
             this.getId(),
             newView.getNewViewNumber()));
-        System.out.println(newView);
+        //System.out.println(newView);
         /*
          * Probably non standard behaviour: hBFT does not state
          * what happens after a new view other than running a 
@@ -1040,7 +1041,10 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
          * 
          * For now I will choose option 1 and rely on the client.
          */
-        if (this.getViewNumber() >= newView.getNewViewNumber() || !messageLog.acceptNewView(newView, this.tolerance)) {
+        if (this.getViewNumber() >= newView.getNewViewNumber() || !messageLog.acceptNewView(newView, this.tolerance, logger)) {
+            if (this.getViewNumber() >= newView.getNewViewNumber()) {
+                logger.writeLog("Wrong view number");
+            }
             return;
         }
 
@@ -1082,10 +1086,10 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
 
         // Replicas need to execute speculated requests
         for (Long seqNumOfHistory : newView.getSpeculativeHistory().getRequests().keySet()) {
-            System.out.println("Replica " + this.getId() + " checking request with seqNum: " + seqNumOfHistory);
+            //System.out.println("Replica " + this.getId() + " checking request with seqNum: " + seqNumOfHistory);
 
             if (!this.speculativeHistory.getRequests().keySet().contains(seqNumOfHistory)) {
-                System.out.println("Replica " + this.getId() + " will execute with seqNum: " + seqNumOfHistory);
+                //System.out.println("Replica " + this.getId() + " will execute with seqNum: " + seqNumOfHistory);
                 this.executeRequestFromViewChange(newView.getSpeculativeHistory().getRequests().get(seqNumOfHistory), this.getViewNumber(), seqNumOfHistory);
             }
 
@@ -1151,7 +1155,7 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
         if (this.replied(request.getClientId(), request.getTimestamp(), currentViewNumber, seqNumber)) {
             ReplicaRequestKey key = new ReplicaRequestKey(clientId, timestamp);
             boolean completed = messageLog.completeTicket(key, currentViewNumber, seqNumber);
-            System.out.println("Completed ticket: " + completed + " in view: " + currentViewNumber + " seq: " + seqNumber);
+            //System.out.println("Completed ticket: " + completed + " in view: " + currentViewNumber + " seq: " + seqNumber);
             return;
         }
 
@@ -1169,7 +1173,7 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
         ticket.append(reply);
         ReplicaRequestKey key = new ReplicaRequestKey(clientId, timestamp);
         boolean completed = messageLog.completeTicket(key, currentViewNumber, seqNumber);
-        System.out.println("Completed ticket: " + completed + " in view: " + currentViewNumber + " seq: " + seqNumber);
+        //System.out.println("Completed ticket: " + completed + " in view: " + currentViewNumber + " seq: " + seqNumber);
     }
 
     private String computePrimaryId(long viewNumber, int numReplicas) {
@@ -1193,18 +1197,18 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
     public void handleClientRequest(String clientId, long timestamp, Serializable request) {
         // timestamp should be the time of the creation of the request
         RequestMessage m = new RequestMessage(request, timestamp, clientId);
-        System.out.println(m);
+        //System.out.println(m);
         this.recvRequest(m);
     }
 
     @Override
     public void handleMessage(String sender, MessagePayload m) {
         if (m instanceof RequestMessage request) {
-            System.out.println(request);
+            //System.out.println(request);
             recvRequest(request);
             return;
         } else if (m instanceof DefaultClientRequestPayload clientRequest) {
-            System.out.println(clientRequest);
+            //System.out.println(clientRequest);
             handleClientRequest(sender, clientRequest.getTimestamp(), clientRequest.getOperation());
             return;
         } else if (m instanceof PrepareMessage prepare) {
