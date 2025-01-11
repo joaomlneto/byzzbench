@@ -1,6 +1,7 @@
 package byzzbench.simulator.scheduler;
 
 import byzzbench.simulator.Scenario;
+import byzzbench.simulator.config.ByzzBenchConfig;
 import byzzbench.simulator.service.MessageMutatorService;
 import byzzbench.simulator.transport.Event;
 import byzzbench.simulator.transport.MessageEvent;
@@ -15,8 +16,12 @@ import java.util.Optional;
  */
 @Component
 public class FifoScheduler extends BaseScheduler {
-    public FifoScheduler(MessageMutatorService messageMutatorService) {
-        super("FIFO", messageMutatorService);
+    public FifoScheduler(ByzzBenchConfig config, MessageMutatorService messageMutatorService) {
+        super(config, messageMutatorService);
+    }
+
+    public String getId() {
+        return "FIFO";
     }
 
     @Override
@@ -44,13 +49,8 @@ public class FifoScheduler extends BaseScheduler {
     }
 
     @Override
-    public void stopDropMessages() {
-        this.dropMessages = false;
-    }
-
-    @Override
     public void reset() {
-        this.dropMessages = true;
+        // no state to reset
     }
 
     @Override

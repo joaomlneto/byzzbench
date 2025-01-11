@@ -39,16 +39,4 @@ public interface Scheduler extends Serializable {
      * Resets the scheduler to its initial state.
      */
     void reset();
-
-    /**
-     * Checks if the scheduler is currently dropping messages. FIXME: refactor
-     *
-     * @return true if the scheduler is currently dropping messages, false otherwise.
-     */
-    boolean isDropMessages();
-
-    /**
-     * Stops the scheduler from dropping messages. FIXME: refactor
-     */
-    void stopDropMessages();
 }

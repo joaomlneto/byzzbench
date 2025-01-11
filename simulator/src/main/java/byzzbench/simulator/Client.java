@@ -9,6 +9,7 @@ import lombok.RequiredArgsConstructor;
 
 import java.io.Serializable;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
@@ -61,7 +62,7 @@ public class Client implements Serializable, Node {
      * Sends a request to a replica in the system.
      */
     public void sendRequest() {
-        String recipientId = this.getScenario().getNodes().keySet().iterator().next();
+        String recipientId = this.getScenario().getReplicas().keySet().iterator().next();
         String requestId = String.format("%s/%d", this.id, this.requestSequenceNumber.getAndIncrement());
         this.getScenario().getTransport().sendClientRequest(this.id, requestId, recipientId);
     }
@@ -77,6 +78,11 @@ public class Client implements Serializable, Node {
         if (this.requestSequenceNumber.get() < this.maxRequests) {
             this.sendRequest();
         }
+    }
+
+    @Override
+    public Instant getCurrentTime() {
+        return this.scenario.getTimekeeper().incrementAndGetTime(this);
     }
 
     /**

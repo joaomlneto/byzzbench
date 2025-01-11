@@ -2,7 +2,7 @@ package byzzbench.simulator.service;
 
 import byzzbench.simulator.Scenario;
 import byzzbench.simulator.config.ByzzBenchConfig;
-import byzzbench.simulator.scheduler.EventDecision;
+import byzzbench.simulator.state.ErroredPredicate;
 import byzzbench.simulator.transport.Event;
 import byzzbench.simulator.transport.messages.MessageWithRound;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -19,8 +19,8 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
-import java.util.Optional;
 import java.util.OptionalLong;
+import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -122,16 +122,17 @@ public class SimulatorService {
             int numErr = 0;
             try {
                 // run the scenario until the stop flag is set
-                while (!this.shouldStop) {
+                for (int i = 0; !this.shouldStop && i < this.byzzBenchConfig.getNumScenarios(); i++) {
                     int scenarioId = this.scenarioService.getScenarios().size() + 1;
                     System.out.println("Running scenario #" + scenarioId);
 
                     try {
                         while (true) {
-                            this.invokeScheduleNext();
+                            this.scenario.getScheduler().scheduleNext(this.scenario);
+
                             long numEvents = this.scenario.getSchedule().getEvents().size();
                             long terminationSamplingFreq = this.byzzBenchConfig.getScenario().getTermination().getSamplingFrequency();
-                            boolean shouldCheckTermination = numEvents % terminationSamplingFreq == 0;
+                            boolean shouldCheckTermination = (numEvents % terminationSamplingFreq) == 0;
 
                             // if the invariants do not hold, terminate the run
                             if (!this.scenario.invariantsHold()) {
@@ -161,9 +162,10 @@ public class SimulatorService {
                                 long currentRound = minQueuedRound.orElse(maxDeliveredRound.orElse(0));
 
                                 if (numEvents >= byzzBenchConfig.getScenario().getTermination().getMinEvents()
-                                        && currentRound >= byzzBenchConfig.getScenario().getTermination().getMinRounds()) {
-                                    log.info("Reached min # of events and rounds for this run, terminating. . .");
+                                        || currentRound >= byzzBenchConfig.getScenario().getTermination().getMinRounds()) {
+                                    log.info("Reached min # of events or rounds for this run, terminating. . .");
                                     numMaxedOut++;
+                                    scenario.getSchedule().finalizeSchedule();
                                     break;
                                 }
                             }
@@ -173,6 +175,7 @@ public class SimulatorService {
                     } catch (Exception e) {
                         System.out.println("Error in schedule " + scenarioId + ": " + e);
                         e.printStackTrace();
+                        scenario.getSchedule().finalizeSchedule(Set.of(new ErroredPredicate()));
                         numErr += 1;
                     }
 
@@ -187,15 +190,6 @@ public class SimulatorService {
                 System.out.println("number of runs halted by error: " + numErr);
             }
         });
-    }
-
-    public void invokeScheduleNext() throws Exception {
-        Optional<EventDecision> decisionOptional = this.scenario.getScheduler().scheduleNext(this.scenario);
-        if (decisionOptional.isPresent()) {
-            //EventDecision decision = decisionOptional.get();
-        } else {
-            log.info("Couldn't schedule action");
-        }
     }
 
     public enum SimulatorServiceMode {

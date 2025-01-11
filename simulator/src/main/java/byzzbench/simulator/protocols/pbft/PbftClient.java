@@ -17,7 +17,7 @@ public class PbftClient extends Client {
      */
     @Override
     public void sendRequest() {
-        String recipientId = this.getScenario().getNodes().keySet().iterator().next();
+        String recipientId = this.getScenario().getReplicas().keySet().iterator().next();
         long sequenceNumber = this.getRequestSequenceNumber().getAndIncrement();
         String command = String.format("%s/%d", this.getId(), sequenceNumber);
         // TODO: compute the digest

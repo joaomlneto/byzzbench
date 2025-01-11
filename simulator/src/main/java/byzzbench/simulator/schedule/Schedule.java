@@ -48,6 +48,7 @@ public class Schedule implements Serializable {
 
     /**
      * Marks the schedule as read-only, with the given broken invariants.
+     *
      * @param brokenInvariants the set of broken invariants.
      */
     public void finalizeSchedule(Set<ScenarioPredicate> brokenInvariants) {
@@ -64,12 +65,19 @@ public class Schedule implements Serializable {
 
     /**
      * Returns true if the schedule is buggy, i.e., it violates some invariants.
+     *
      * @return true if the schedule is buggy, false otherwise.
      */
+    @JsonIgnore
     public boolean isBuggy() {
         return !brokenInvariants.isEmpty();
     }
 
+    /**
+     * Returns the id of the scenario that generated this schedule.
+     *
+     * @return the id of the scenario that generated this schedule.
+     */
     public @NonNull String getScenarioId() {
         return scenario.getId();
     }

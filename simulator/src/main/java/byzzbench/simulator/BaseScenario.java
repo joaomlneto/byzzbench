@@ -68,13 +68,20 @@ public abstract class BaseScenario implements Scenario {
     @JsonIgnore
     private final transient List<ScenarioObserver> observers = new java.util.ArrayList<>();
     /**
+     * The set of faulty replica IDs.
+     */
+    @Getter(onMethod_ = {@Synchronized})
+    private final SortedSet<String> faultyReplicaIds = new TreeSet<>();
+    /**
      * The termination condition for the scenario.
      */
     protected ScenarioPredicate terminationCondition;
     /**
      * Pseudo-random number generator for the scenario.
+     * TODO: parameterize the seed
      */
-    Random rand;
+    @Getter
+    Random random = new Random(1L);
 
     /**
      * Creates a new scenario with the given unique identifier and scheduler.
@@ -104,10 +111,7 @@ public abstract class BaseScenario implements Scenario {
      * Removes all registered clients
      */
     private void removeAllClients() {
-        this.nodes.entrySet().stream()
-                .filter(entry -> entry.getValue() instanceof Client)
-                .map(Map.Entry::getKey)
-                .forEach(this.nodes::remove);
+        this.nodes.clear();
     }
 
     /**
@@ -116,7 +120,6 @@ public abstract class BaseScenario implements Scenario {
      * @param numClients The number of clients to set.
      */
     protected void setNumClients(int numClients) {
-        this.removeAllClients();
         for (int i = 0; i < numClients; i++) {
             String clientId = String.format("C%d", i);
             Client client = Client.builder().id(clientId).scenario(this).build();
@@ -153,12 +156,8 @@ public abstract class BaseScenario implements Scenario {
     }
 
     @Override
-    public synchronized Replica getNode(String nodeId) {
-        Node node = this.getNodes().get(nodeId);
-        if (!(node instanceof Replica replica)) {
-            throw new IllegalArgumentException("Node with ID " + nodeId + " is not a replica.");
-        }
-        return replica;
+    public synchronized Node getNode(String nodeId) {
+        return this.getNodes().get(nodeId);
     }
 
     /**
@@ -260,6 +259,11 @@ public abstract class BaseScenario implements Scenario {
     }
 
     @Override
+    public SortedSet<String> getReplicaIds(Node node) {
+        return new TreeSet<>(this.getReplicas().keySet());
+    }
+
+    @Override
     public NavigableMap<String, Client> getClients() {
         NavigableMap<String, Client> clients = new TreeMap<>();
         this.getNodes()
@@ -281,5 +285,24 @@ public abstract class BaseScenario implements Scenario {
                 .map(Replica.class::cast)
                 .forEach(replica -> replicas.put(replica.getId(), replica));
         return replicas;
+    }
+
+    @Override
+    public boolean isFaultyReplica(String replicaId) {
+        return this.faultyReplicaIds.contains(replicaId);
+    }
+
+    @Override
+    public void markReplicaFaulty(String replicaId) {
+        this.faultyReplicaIds.add(replicaId);
+    }
+
+    @Override
+    public int maxFaultyReplicas() {
+        int f = this.maxFaultyReplicas(this.getReplicas().size());
+        if (f < 1) {
+            log.severe("Scenario does not have enough replicas to tolerate any faults!");
+        }
+        return f;
     }
 }
