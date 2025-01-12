@@ -103,7 +103,7 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
         this.messageLog = messageLog;
         this.speculativeHistory = new SpeculativeHistory();
         this.speculativeRequests = new TreeMap<>();
-        this.logger.initialize(false);
+        this.logger.initialize(true);
     }
 
     @Override
@@ -773,7 +773,7 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
 
             if (checkpoint instanceof CheckpointIMessage) {   
                 // Upon receiving a checkpoint the replica gets out of disgruntled state
-                this.disgruntled = false;         
+                //this.disgruntled = false;         
                 CheckpointMessage checkpointII = new CheckpointIIMessage(
                     checkpoint.getLastSeqNumber(),
                     this.digest(this.speculativeHistory),
@@ -792,7 +792,7 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
                 boolean isCER1 = messageLog.isCER1(checkpoint, tolerance);
                 if (isCER1) {
                     // Upon receiving a checkpoint the replica gets out of disgruntled state
-                    this.disgruntled = false;   
+                    //this.disgruntled = false;   
                     this.adjustHistory(checkpoint.getHistory().getRequests());
                     long largestSeq = Math.max(this.seqCounter.get(), checkpoint.getLastSeqNumber());
                     this.seqCounter.set(largestSeq);

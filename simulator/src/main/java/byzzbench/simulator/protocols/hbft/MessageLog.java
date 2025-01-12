@@ -589,6 +589,7 @@ public class MessageLog implements Serializable {
         // based on the view-change messages then dont accept
         long threshold = tolerance * 2 + 1;
         long count = 0;
+        ViewChangeMessage firstViewChange = viewChanges.iterator().next();
         for (ViewChangeMessage viewChangeMessage : viewChanges) {
             if (viewChangeMessage.getSpeculativeHistoryP() != null 
                 && (viewChangeMessage.getSpeculativeHistoryP().getGreatestSeqNumber() == checkpoint.getSequenceNumber()
@@ -597,12 +598,20 @@ public class MessageLog implements Serializable {
             }
         }
 
-        long thresholdForCheckpointI = tolerance + 1;
-        long countForCheckpiontI = 0;
-        for (ViewChangeMessage viewChangeMessage : viewChanges) {
-            if (viewChangeMessage.getSpeculativeHistoryQ() != null) {
-                countForCheckpiontI++;
+        if (count >= threshold
+            && (firstViewChange.getSpeculativeHistoryP().getGreatestSeqNumber() != checkpoint.getSequenceNumber()
+            || firstViewChange.getSpeculativeHistoryP().equals(checkpoint.getHistory()))) {
+                logger.writeLog("Checkpoint should be matching!");
+                return false;
             }
+
+        Map<Checkpoint, Integer> historyQmap = new TreeMap<>();
+        long thresholdForCheckpointI = tolerance + 1;
+
+        for (ViewChangeMessage viewChangeMessage : viewChanges) {
+            int prevVal = historyQmap.getOrDefault(viewChangeMessage.getSpeculativeHistoryQ(), 0);
+            historyQmap.put(checkpoint, prevVal + 1);
+            
         }
 
         /* 
