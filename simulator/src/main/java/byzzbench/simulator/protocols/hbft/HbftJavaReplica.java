@@ -103,7 +103,7 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
         this.messageLog = messageLog;
         this.speculativeHistory = new SpeculativeHistory();
         this.speculativeRequests = new TreeMap<>();
-        this.logger.initialize(true);
+        this.logger.initialize(false);
     }
 
     @Override
@@ -1119,6 +1119,8 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
      * The replicas that already sent a reply make the request commited.
      */
     public void executeRequestFromViewChange(RequestMessage request, long currentViewNumber, long seqNumber) {
+        // we have to set the seqNumber, even if the request is null
+        this.seqCounter.set(seqNumber);
         if (request == null /* || request.equals(this.speculativeHistory.getHistory().get(seqNumber)) */) {
             return;
         }
@@ -1130,7 +1132,7 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
         long timestamp = request.getTimestamp();
 
         // we have the set the local seqNumber to the prepare's sequence number
-        this.seqCounter.set(seqNumber);
+        // this.seqCounter.set(seqNumber);
 
         this.speculativeRequests.put(seqNumber, request);
         this.speculativeHistory.addEntry(seqNumber, request);

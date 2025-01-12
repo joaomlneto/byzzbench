@@ -599,9 +599,11 @@ public class MessageLog implements Serializable {
         }
 
         if (count >= threshold
+            && firstViewChange.getSpeculativeHistoryP() != null
             && (firstViewChange.getSpeculativeHistoryP().getGreatestSeqNumber() != checkpoint.getSequenceNumber()
-            || firstViewChange.getSpeculativeHistoryP().equals(checkpoint.getHistory()))) {
-                logger.writeLog("Checkpoint should be matching!");
+            || !firstViewChange.getSpeculativeHistoryP().equals(checkpoint.getHistory()))) {
+                System.out.println("Checkpoint should be matching! (SpeculativeHistoryP)");
+                logger.writeLog("Checkpoint should be matching! (SpeculativeHistoryP)");
                 return false;
             }
 
@@ -609,9 +611,22 @@ public class MessageLog implements Serializable {
         long thresholdForCheckpointI = tolerance + 1;
 
         for (ViewChangeMessage viewChangeMessage : viewChanges) {
+            if (viewChangeMessage.getSpeculativeHistoryQ() == null) {
+                continue;
+            }
             int prevVal = historyQmap.getOrDefault(viewChangeMessage.getSpeculativeHistoryQ(), 0);
-            historyQmap.put(checkpoint, prevVal + 1);
-            
+            historyQmap.put(viewChangeMessage.getSpeculativeHistoryQ(), prevVal + 1);
+        }
+
+        for (Checkpoint check : historyQmap.keySet()) {
+            if (historyQmap.get(check) >= thresholdForCheckpointI) {
+                if (check.getSequenceNumber() != checkpoint.getSequenceNumber()
+                    || !check.getHistory().equals(checkpoint.getHistory())) {
+                    System.out.println("Checkpoint-I should be matching! (SpeculativeHistoryQ)");
+                    logger.writeLog("Checkpoint-I should be matching! (SpeculativeHistoryQ)");
+                    return false;
+                }
+            }
         }
 
         /* 

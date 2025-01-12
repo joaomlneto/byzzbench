@@ -78,6 +78,7 @@ public class HbftJavaReplicaTests {
         replicaA.initialize();
         replicaC.initialize();
         primary.initialize();
+        logger.initialize(false);
     }
 
     @Test
@@ -982,70 +983,70 @@ public class HbftJavaReplicaTests {
         verify(spyReplica, times(1)).enterNewView(newView.getNewViewNumber());
     }
 
-    // /* 
-    //  * IncorrectTest1 - Incorrect with replica being empty,
-    //  * receiving requests which the view changes dont support
-    //  */
-    // @Test
-	// void testRecvIncorrectNewView() {
-    //     HbftJavaReplica spyReplica = Mockito.spy(replicaA);
-    //     RequestMessage request = new RequestMessage("123", 0, "C0");
-    //     RequestMessage request2 = new RequestMessage("321", 0, "C0");
-    //     Checkpoint checkpoint = new Checkpoint(0, null);
-    //     long seqNumber = 1;
-    //     SpeculativeHistory history = new SpeculativeHistory();
-    //     history.addEntry(seqNumber, request);
-    //     SpeculativeHistory history2 = new SpeculativeHistory();
-    //     history2.addEntry(seqNumber, request);
-    //     history2.addEntry(seqNumber + 1, request2);
-    //     ViewChangeMessage viewChange  = new ViewChangeMessage(2, null, null, history.getRequests(), replicaC.getId());
-    //     ViewChangeMessage viewChange2  = new ViewChangeMessage(2, null, null, history2.getRequests(), replicaD.getId());
-    //     ViewChangeMessage viewChange3  = new ViewChangeMessage(2, null, null, history.getRequests(), replicaD.getId());
-    //     Collection<ViewChangeMessage> viewChanges = new ArrayList<>();
-    //     viewChanges.add(viewChange);
-    //     viewChanges.add(viewChange2);
-    //     viewChanges.add(viewChange3);
-    //     SpeculativeHistory historyNewView = new SpeculativeHistory();
-    //     historyNewView.addEntry(seqNumber, request);
-    //     historyNewView.addEntry(seqNumber + 1, request2);
-    //     NewViewMessage newView = new NewViewMessage(2, viewChanges, checkpoint, historyNewView);
+    /* 
+     * IncorrectTest1 - Incorrect with replica being empty,
+     * receiving requests which the view changes dont support
+     */
+    @Test
+	void testRecvIncorrectNewView() {
+        HbftJavaReplica spyReplica = Mockito.spy(replicaA);
+        RequestMessage request = new RequestMessage("123", 0, "C0");
+        RequestMessage request2 = new RequestMessage("321", 0, "C0");
+        Checkpoint checkpoint = new Checkpoint(0, null);
+        long seqNumber = 1;
+        SpeculativeHistory history = new SpeculativeHistory();
+        history.addEntry(seqNumber, request);
+        SpeculativeHistory history2 = new SpeculativeHistory();
+        history2.addEntry(seqNumber, request);
+        history2.addEntry(seqNumber + 1, request2);
+        ViewChangeMessage viewChange  = new ViewChangeMessage(2, null, null, history.getRequests(), replicaC.getId());
+        ViewChangeMessage viewChange2  = new ViewChangeMessage(2, null, null, history2.getRequests(), replicaD.getId());
+        ViewChangeMessage viewChange3  = new ViewChangeMessage(2, null, null, history.getRequests(), replicaD.getId());
+        Collection<ViewChangeMessage> viewChanges = new ArrayList<>();
+        viewChanges.add(viewChange);
+        viewChanges.add(viewChange2);
+        viewChanges.add(viewChange3);
+        SpeculativeHistory historyNewView = new SpeculativeHistory();
+        historyNewView.addEntry(seqNumber, request);
+        historyNewView.addEntry(seqNumber + 1, request2);
+        NewViewMessage newView = new NewViewMessage(2, viewChanges, checkpoint, historyNewView);
         
-    //     spyReplica.recvNewView(newView);
+        spyReplica.recvNewView(newView);
         
-    //     Assert.isTrue(!replicaA.getMessageLog().acceptNewView(newView, 1, logger), "Should not accept the new view!");
+        Assert.isTrue(!replicaA.getMessageLog().acceptNewView(newView, 1, logger), "Should not accept the new view!");
 
-    //     verify(spyReplica, times(0)).enterNewView(newView.getNewViewNumber());
-    // }
+        verify(spyReplica, times(0)).enterNewView(newView.getNewViewNumber());
+    }
 
-    // /* 
-    //  * IncorrectTest2 - Incorrect niew-view number
-    //  */
-    // @Test
-	// void testRecvIncorrectNewView2() {
-    //     HbftJavaReplica spyReplica = Mockito.spy(replicaA);
-    //     RequestMessage request = new RequestMessage("123", 0, "C0");
-    //     RequestMessage request2 = new RequestMessage("321", 0, "C0");
-    //     Checkpoint checkpoint = new Checkpoint(0, null);
-    //     long seqNumber = 1;
-    //     SpeculativeHistory history = new SpeculativeHistory();
-    //     history.addEntry(seqNumber, request);
-    //     SpeculativeHistory history2 = new SpeculativeHistory();
-    //     history2.addEntry(seqNumber, request);
-    //     history2.addEntry(seqNumber + 1, request2);
-    //     ViewChangeMessage viewChange  = new ViewChangeMessage(2, null, null, history.getRequests(), replicaC.getId());
-    //     ViewChangeMessage viewChange2  = new ViewChangeMessage(3, null, null, history2.getRequests(), replicaD.getId());
-    //     ViewChangeMessage viewChange3  = new ViewChangeMessage(2, null, null, history.getRequests(), replicaD.getId());
-    //     Collection<ViewChangeMessage> viewChanges = new ArrayList<>();
-    //     viewChanges.add(viewChange);
-    //     viewChanges.add(viewChange2);
-    //     viewChanges.add(viewChange3);
+    /* 
+     * IncorrectTest2 - Incorrect niew-view number
+     */
+    @Test
+	void testRecvIncorrectNewView2() {
+        HbftJavaReplica spyReplica = Mockito.spy(replicaA);
+        RequestMessage request = new RequestMessage("123", 0, "C0");
+        RequestMessage request2 = new RequestMessage("321", 0, "C0");
+        Checkpoint checkpoint = new Checkpoint(0, null);
+        long seqNumber = 1;
+        SpeculativeHistory history = new SpeculativeHistory();
+        history.addEntry(seqNumber, request);
+        SpeculativeHistory history2 = new SpeculativeHistory();
+        history2.addEntry(seqNumber, request);
+        history2.addEntry(seqNumber + 1, request2);
+        ViewChangeMessage viewChange  = new ViewChangeMessage(2, null, null, history.getRequests(), replicaC.getId());
+        ViewChangeMessage viewChange2  = new ViewChangeMessage(3, null, null, history2.getRequests(), replicaD.getId());
+        ViewChangeMessage viewChange3  = new ViewChangeMessage(2, null, null, history.getRequests(), replicaD.getId());
+        Collection<ViewChangeMessage> viewChanges = new ArrayList<>();
+        viewChanges.add(viewChange);
+        viewChanges.add(viewChange2);
+        viewChanges.add(viewChange3);
         
-    //     NewViewMessage newView = new NewViewMessage(2, viewChanges, checkpoint, history);
+        NewViewMessage newView = new NewViewMessage(2, viewChanges, checkpoint, history);
     
-    //     spyReplica.recvNewView(newView);
-    //     Assert.isTrue(!replicaA.getMessageLog().acceptNewView(newView, 1, logger), "Should not accept the new view!");
-    //     verify(spyReplica, times(0)).enterNewView(newView.getNewViewNumber());
-    // }
+        spyReplica.recvNewView(newView);
+        Assert.isTrue(!replicaA.getMessageLog().acceptNewView(newView, 1, logger), "Should not accept the new view!");
+        verify(spyReplica, times(0)).enterNewView(newView.getNewViewNumber());
+    }
 
     // /* 
     //  * IncorrectTest3 - Incorrect, wrong checkpoint

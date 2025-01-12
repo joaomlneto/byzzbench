@@ -28,7 +28,7 @@ byzzbench:
     deliverTimeoutWeight: 1 # The weight for scheduler to trigger a timeout
     deliverMessageWeight: 99 # The weight for scheduler to deliver a message
     deliverClientRequestWeight: 99 # The weight for scheduler to deliver a client request to a replica
-    dropMessageWeight: 10 # The weight for scheduler to drop a message
+    dropMessageWeight: 0 # The weight for scheduler to drop a message
     mutateMessageWeight: 0 # The weight for scheduler to mutate a message
     params: # additional parameters for the scheduler
       # ByzzFuzz
