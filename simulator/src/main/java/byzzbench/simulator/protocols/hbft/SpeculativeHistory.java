@@ -13,7 +13,7 @@ import lombok.NoArgsConstructor;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class SpeculativeHistory implements Serializable {
+public class SpeculativeHistory implements Serializable, Comparable<SpeculativeHistory> {
     private SortedMap<Long, RequestMessage> history = new TreeMap<>();
 
     public void addAll(SortedMap<Long, RequestMessage> history) {
@@ -88,6 +88,12 @@ public class SpeculativeHistory implements Serializable {
 
     public boolean isEmpty() {
         return this.history.isEmpty();
+    }
+
+    @Override
+    public int compareTo(SpeculativeHistory other) {
+        // Compare based on the greatest sequence number in the history
+        return Long.compare(this.getGreatestSeqNumber(), other.getGreatestSeqNumber());
     }
 
 }

@@ -26,6 +26,7 @@ import byzzbench.simulator.protocols.hbft.pojo.ReplicaRequestKey;
 import byzzbench.simulator.protocols.hbft.pojo.TicketKey;
 import byzzbench.simulator.protocols.hbft.pojo.ViewChangeResult;
 import byzzbench.simulator.protocols.hbft.utils.Checkpoint;
+import byzzbench.simulator.protocols.hbft.utils.ScheduleLogger;
 import lombok.Getter;
 import lombok.NonNull;
 
@@ -560,7 +561,7 @@ public class MessageLog implements Serializable {
         }
     }
 
-    public boolean acceptNewView(NewViewMessage newView, long tolerance) {
+    public boolean acceptNewView(NewViewMessage newView, long tolerance, ScheduleLogger logger) {
         /*
          * When receiving a new view message the replicas will 
          * run a checkpoint sub-protocol (started by the primary)
@@ -573,11 +574,13 @@ public class MessageLog implements Serializable {
 
         // Should never be null
         if (checkpoint == null) {
+            logger.writeLog("Checkpoint is null!");
             return false;
         }
         // If any of the view-change messages are incorrect then dont accept
         for (ViewChangeMessage viewChangeMessage : viewChanges) {
             if (viewChangeMessage.getNewViewNumber() != newView.getNewViewNumber()) {
+                logger.writeLog("Includes incorrect view change!");
                 return false;
             }
         }
@@ -586,6 +589,7 @@ public class MessageLog implements Serializable {
         // based on the view-change messages then dont accept
         long threshold = tolerance * 2 + 1;
         long count = 0;
+        ViewChangeMessage firstViewChange = viewChanges.iterator().next();
         for (ViewChangeMessage viewChangeMessage : viewChanges) {
             if (viewChangeMessage.getSpeculativeHistoryP() != null 
                 && (viewChangeMessage.getSpeculativeHistoryP().getGreatestSeqNumber() == checkpoint.getSequenceNumber()
@@ -594,11 +598,34 @@ public class MessageLog implements Serializable {
             }
         }
 
+        if (count >= threshold
+            && firstViewChange.getSpeculativeHistoryP() != null
+            && (firstViewChange.getSpeculativeHistoryP().getGreatestSeqNumber() != checkpoint.getSequenceNumber()
+            || !firstViewChange.getSpeculativeHistoryP().equals(checkpoint.getHistory()))) {
+                System.out.println("Checkpoint should be matching! (SpeculativeHistoryP)");
+                logger.writeLog("Checkpoint should be matching! (SpeculativeHistoryP)");
+                return false;
+            }
+
+        Map<Checkpoint, Integer> historyQmap = new TreeMap<>();
         long thresholdForCheckpointI = tolerance + 1;
-        long countForCheckpiontI = 0;
+
         for (ViewChangeMessage viewChangeMessage : viewChanges) {
-            if (viewChangeMessage.getSpeculativeHistoryQ() != null) {
-                countForCheckpiontI++;
+            if (viewChangeMessage.getSpeculativeHistoryQ() == null) {
+                continue;
+            }
+            int prevVal = historyQmap.getOrDefault(viewChangeMessage.getSpeculativeHistoryQ(), 0);
+            historyQmap.put(viewChangeMessage.getSpeculativeHistoryQ(), prevVal + 1);
+        }
+
+        for (Checkpoint check : historyQmap.keySet()) {
+            if (historyQmap.get(check) >= thresholdForCheckpointI) {
+                if (check.getSequenceNumber() != checkpoint.getSequenceNumber()
+                    || !check.getHistory().equals(checkpoint.getHistory())) {
+                    System.out.println("Checkpoint-I should be matching! (SpeculativeHistoryQ)");
+                    logger.writeLog("Checkpoint-I should be matching! (SpeculativeHistoryQ)");
+                    return false;
+                }
             }
         }
 
@@ -611,9 +638,11 @@ public class MessageLog implements Serializable {
         * and continue operating. This replica can rejoin at a checkpoint 
         * sub-protocol.
         */
-        if ((countForCheckpiontI < thresholdForCheckpointI || count < threshold) && !checkpoint.equals(this.lastStableCheckpoint)) {
-            return false;
-        }
+        //FIXME: If replicas accept a checkpoint, their checkpoint changes, not working properly currently or might be a bug
+        // if ((countForCheckpiontI < thresholdForCheckpointI || count < threshold) && !checkpoint.equals(this.lastStableCheckpoint)) {
+        //     logger.writeLog("Choosing primary's checkpoint and its incorrect!");
+        //     return false;
+        // }
 
         // Replica needs all the possibly executed requests for later
         Map<ClientRequestKey, Integer> requestMap = new HashMap<>();
@@ -658,6 +687,7 @@ public class MessageLog implements Serializable {
         System.out.println("Locally sorted requests: " + sortedRequests + "\n Received: " + requestsFromNewView);
 
         if (!sortedRequests.getRequests().keySet().equals(requestsFromNewView.getRequests().keySet())) {
+            logger.writeLog("Requests received and sorted do not match!");
             return false;
         }
 
@@ -665,6 +695,7 @@ public class MessageLog implements Serializable {
             if (sortedRequests.getRequests().get(seqNumber) != requestsFromNewView.getRequests().get(seqNumber)
                 || (sortedRequests.getRequests().get(seqNumber) == null && requestsFromNewView.getRequests().get(seqNumber) != null)
                 || (sortedRequests.getRequests().get(seqNumber) != null && requestsFromNewView.getRequests().get(seqNumber) == null)) {
+                logger.writeLog("Requests received and sorted do not match!");
                 return false;
             }
         }

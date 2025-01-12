@@ -111,10 +111,7 @@ public abstract class BaseScenario implements Scenario {
      * Removes all registered clients
      */
     private void removeAllClients() {
-        this.nodes.entrySet().stream()
-                .filter(entry -> entry.getValue() instanceof Client)
-                .map(Map.Entry::getKey)
-                .forEach(this.nodes::remove);
+        this.nodes.clear();
     }
 
     /**
@@ -123,7 +120,6 @@ public abstract class BaseScenario implements Scenario {
      * @param numClients The number of clients to set.
      */
     protected void setNumClients(int numClients) {
-        this.removeAllClients();
         for (int i = 0; i < numClients; i++) {
             String clientId = String.format("C%d", i);
             Client client = Client.builder().id(clientId).scenario(this).build();
@@ -137,7 +133,6 @@ public abstract class BaseScenario implements Scenario {
      * @param numClients The number of clients to set.
      */
     protected void setNumHbftClients(int numClients) {
-        this.removeAllClients();
         for (int i = 0; i < numClients; i++) {
             String clientId = String.format("C%d", i);
             Client client = HbftClient.builder().id(clientId).scenario(this).build();
