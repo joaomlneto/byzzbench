@@ -9,8 +9,10 @@ import lombok.ToString;
 
 import org.springframework.stereotype.Component;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.Random;
 
 import byzzbench.simulator.protocols.hbft.SpeculativeHistory;
 import byzzbench.simulator.protocols.hbft.message.CommitMessage;
@@ -19,6 +21,8 @@ import byzzbench.simulator.protocols.hbft.message.CommitMessage;
 @ToString
 public class CommitMessageMutatorFactory extends MessageMutatorFactory {
     RuntimeException invalidMessageTypeException = new IllegalArgumentException("Invalid message type");
+    Random random = new Random();
+    int bound = 100;
 
     @Override
     public List<MessageMutationFault> mutators() {
@@ -135,8 +139,9 @@ public class CommitMessageMutatorFactory extends MessageMutatorFactory {
                         messageEvent.setPayload(mutatedMessage);
                     }
                 }
-                //,
-                // new MessageMutationFault("hbft-commit-add-last-request-from-history", "Add last request to history", List.of(CommitMessage.class)) {
+
+                // ANY-SCOPE mutations
+                // ,new MessageMutationFault("hbft-commit-view-inc", "Increment View Number",List.of(CommitMessage.class)) {
                 //     @Override
                 //     public void accept(FaultContext serializable) {
                 //         Optional<Event> event = serializable.getEvent();
@@ -149,14 +154,67 @@ public class CommitMessageMutatorFactory extends MessageMutatorFactory {
                 //         if (!(messageEvent.getPayload() instanceof CommitMessage message)) {
                 //             throw invalidMessageTypeException;
                 //         }
-                //         SpeculativeHistory history = message.getSpeculativeHistory();
-                //         history.addEntry(message.getSequenceNumber(), message.getRequest());
+                //         CommitMessage mutatedMessage = message.withViewNumber(message.getViewNumber() + random.nextLong(bound));
+                //         mutatedMessage.sign(message.getSignedBy());
+                //         messageEvent.setPayload(mutatedMessage);
+                //     }
+                // },
+                // new MessageMutationFault("hbft-commit-view-dec", "Decrement View Number", List.of(CommitMessage.class)) {
+                //     @Override
+                //     public void accept(FaultContext serializable) {
+                //         Optional<Event> event = serializable.getEvent();
+                //         if (event.isEmpty()) {
+                //             throw invalidMessageTypeException;
+                //         }
+                //         if (!(event.get() instanceof MessageEvent messageEvent)) {
+                //             throw invalidMessageTypeException;
+                //         }
+                //         if (!(messageEvent.getPayload() instanceof CommitMessage message)) {
+                //             throw invalidMessageTypeException;
+                //         }
+                //         CommitMessage mutatedMessage = message.withViewNumber(message.getViewNumber() - random.nextLong(bound));
+                //         mutatedMessage.sign(message.getSignedBy());
+                //         messageEvent.setPayload(mutatedMessage);
+                //     }
+                // },
+                // new MessageMutationFault("hbft-commit-seq-inc", "Increment Sequence Number", List.of(CommitMessage.class)) {
+                //     @Override
+                //     public void accept(FaultContext serializable) {
+                //         Optional<Event> event = serializable.getEvent();
+                //         if (event.isEmpty()) {
+                //             throw invalidMessageTypeException;
+                //         }
+                //         if (!(event.get() instanceof MessageEvent messageEvent)) {
+                //             throw invalidMessageTypeException;
+                //         }
+                //         if (!(messageEvent.getPayload() instanceof CommitMessage message)) {
+                //             throw invalidMessageTypeException;
+                //         }
 
-                //         CommitMessage mutatedMessage = message.withSpeculativeHistory(history);
+                //         CommitMessage mutatedMessage = message.withSequenceNumber(message.getSequenceNumber() + random.nextLong(bound));
+                //         mutatedMessage.sign(message.getSignedBy());
+                //         messageEvent.setPayload(mutatedMessage);
+                //     }
+                // },
+                // new MessageMutationFault("hbft-commit-sec-dec", "Decrement Sequence Number", List.of(CommitMessage.class)) {
+                //     @Override
+                //     public void accept(FaultContext serializable) {
+                //         Optional<Event> event = serializable.getEvent();
+                //         if (event.isEmpty()) {
+                //             throw invalidMessageTypeException;
+                //         }
+                //         if (!(event.get() instanceof MessageEvent messageEvent)) {
+                //             throw invalidMessageTypeException;
+                //         }
+                //         if (!(messageEvent.getPayload() instanceof CommitMessage message)) {
+                //             throw invalidMessageTypeException;
+                //         }
+                //         CommitMessage mutatedMessage = message.withSequenceNumber(message.getSequenceNumber() - random.nextLong(bound));
                 //         mutatedMessage.sign(message.getSignedBy());
                 //         messageEvent.setPayload(mutatedMessage);
                 //     }
                 // }
+
         );
     }
 }

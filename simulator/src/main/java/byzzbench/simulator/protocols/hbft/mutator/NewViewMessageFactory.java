@@ -1,5 +1,6 @@
 package byzzbench.simulator.protocols.hbft.mutator;
 
+import java.util.ArrayList;
 import java.util.Collection;
 
 import byzzbench.simulator.faults.FaultContext;
@@ -14,6 +15,7 @@ import org.springframework.stereotype.Component;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.Optional;
+import java.util.Random;
 
 import byzzbench.simulator.protocols.hbft.SpeculativeHistory;
 import byzzbench.simulator.protocols.hbft.message.NewViewMessage;
@@ -25,6 +27,8 @@ import byzzbench.simulator.protocols.hbft.utils.Checkpoint;
 @ToString
 public class NewViewMessageFactory extends MessageMutatorFactory {
     RuntimeException invalidMessageTypeException = new IllegalArgumentException("Invalid message type");
+    Random random = new Random();
+    int bound = 100;
 
     @Override
     public List<MessageMutationFault> mutators() {
@@ -381,6 +385,245 @@ public class NewViewMessageFactory extends MessageMutatorFactory {
                         messageEvent.setPayload(mutatedMessage);
                     }
                 }
+
+
+                // ANY-SCOPE mutations
+                // ,new MessageMutationFault("hbft-new-view-view-inc", "Increment View Number",List.of(NewViewMessage.class)) {
+                //     @Override
+                //     public void accept(FaultContext serializable) {
+                //         Optional<Event> event = serializable.getEvent();
+                //         if (event.isEmpty()) {
+                //             throw invalidMessageTypeException;
+                //         }
+                //         if (!(event.get() instanceof MessageEvent messageEvent)) {
+                //             throw invalidMessageTypeException;
+                //         }
+                //         if (!(messageEvent.getPayload() instanceof NewViewMessage message)) {
+                //             throw invalidMessageTypeException;
+                //         }
+                //         NewViewMessage mutatedMessage = message.withNewViewNumber(message.getNewViewNumber() + random.nextLong(bound));
+                //         mutatedMessage.sign(message.getSignedBy());
+                //         messageEvent.setPayload(mutatedMessage);
+                //     }
+                // },
+                // new MessageMutationFault("hbft-new-view-view-dec", "Decrement View Number", List.of(NewViewMessage.class)) {
+                //     @Override
+                //     public void accept(FaultContext serializable) {
+                //         Optional<Event> event = serializable.getEvent();
+                //         if (event.isEmpty()) {
+                //             throw invalidMessageTypeException;
+                //         }
+                //         if (!(event.get() instanceof MessageEvent messageEvent)) {
+                //             throw invalidMessageTypeException;
+                //         }
+                //         if (!(messageEvent.getPayload() instanceof NewViewMessage message)) {
+                //             throw invalidMessageTypeException;
+                //         }
+                //         NewViewMessage mutatedMessage = message.withNewViewNumber(message.getNewViewNumber() - random.nextLong(bound));
+                //         mutatedMessage.sign(message.getSignedBy());
+                //         messageEvent.setPayload(mutatedMessage);
+                //     }
+                // },
+                // new MessageMutationFault("hbft-new-view-checkpoint-decrement-seqNum", "Decrement checkpoint seqNum", List.of(NewViewMessage.class)) {
+                //     @Override
+                //     public void accept(FaultContext serializable) {
+                //         Optional<Event> event = serializable.getEvent();
+                //         if (event.isEmpty()) {
+                //             throw invalidMessageTypeException;
+                //         }
+                //         if (!(event.get() instanceof MessageEvent messageEvent)) {
+                //             throw invalidMessageTypeException;
+                //         }
+                //         if (!(messageEvent.getPayload() instanceof NewViewMessage message)) {
+                //             throw invalidMessageTypeException;
+                //         }
+                //         Checkpoint checkpoint = message.getCheckpoint();
+                //         Long randomLong = random.nextLong(bound);
+                //         checkpoint.setSequenceNumber(checkpoint.getSequenceNumber() - randomLong);
+                //         checkpoint.setHistory(checkpoint.getHistory().getHistoryBefore(checkpoint.getSequenceNumber() - randomLong));
+                //         NewViewMessage mutatedMessage = message.withCheckpoint(checkpoint);
+                //         mutatedMessage.sign(message.getSignedBy());
+                //         messageEvent.setPayload(mutatedMessage);
+                //     }
+                // },
+                // new MessageMutationFault("hbft-new-view-checkpoint-increment-seqNum", "Increment checkpoint seqNum", List.of(NewViewMessage.class)) {
+                //     @Override
+                //     public void accept(FaultContext serializable) {
+                //         Optional<Event> event = serializable.getEvent();
+                //         if (event.isEmpty()) {
+                //             throw invalidMessageTypeException;
+                //         }
+                //         if (!(event.get() instanceof MessageEvent messageEvent)) {
+                //             throw invalidMessageTypeException;
+                //         }
+                //         if (!(messageEvent.getPayload() instanceof NewViewMessage message)) {
+                //             throw invalidMessageTypeException;
+                //         }
+                //         Checkpoint checkpoint = message.getCheckpoint();
+                //         checkpoint.setSequenceNumber(checkpoint.getSequenceNumber() + random.nextLong(bound));
+                //         NewViewMessage mutatedMessage = message.withCheckpoint(checkpoint);
+                //         mutatedMessage.sign(message.getSignedBy());
+                //         messageEvent.setPayload(mutatedMessage);
+                //     }
+                // },
+                // new MessageMutationFault("hbft-new-view-remove-random-req-checkpoint", "Remove random request from checkpoint", List.of(NewViewMessage.class)) {
+                //     @Override
+                //     public void accept(FaultContext serializable) {
+                //         Optional<Event> event = serializable.getEvent();
+                //         if (event.isEmpty()) {
+                //             throw invalidMessageTypeException;
+                //         }
+                //         if (!(event.get() instanceof MessageEvent messageEvent)) {
+                //             throw invalidMessageTypeException;
+                //         }
+                //         if (!(messageEvent.getPayload() instanceof NewViewMessage message)) {
+                //             throw invalidMessageTypeException;
+                //         }
+                //         Checkpoint checkpoint = message.getCheckpoint();
+                //         List<Long> keysetAsArray = new ArrayList<Long>(checkpoint.getHistory().getRequests().keySet());
+                //         checkpoint.getHistory().getRequests().remove(keysetAsArray.get(random.nextInt(keysetAsArray.size())));
+                //         NewViewMessage mutatedMessage = message.withCheckpoint(checkpoint);
+                //         mutatedMessage.sign(message.getSignedBy());
+                //         messageEvent.setPayload(mutatedMessage);
+                //     }
+                // },
+                // new MessageMutationFault("hbft-new-view-remove-first-view-change-proof", "Remove first view change proof", List.of(NewViewMessage.class)) {
+                //     @Override
+                //     public void accept(FaultContext serializable) {
+                //         Optional<Event> event = serializable.getEvent();
+                //         if (event.isEmpty()) {
+                //             throw invalidMessageTypeException;
+                //         }
+                //         if (!(event.get() instanceof MessageEvent messageEvent)) {
+                //             throw invalidMessageTypeException;
+                //         }
+                //         if (!(messageEvent.getPayload() instanceof NewViewMessage message)) {
+                //             throw invalidMessageTypeException;
+                //         }
+                //         Collection<ViewChangeMessage> viewChanges = message.getViewChangeProofs();
+                //         viewChanges.remove(viewChanges.iterator().next());
+                //         NewViewMessage mutatedMessage = message.withViewChangeProofs(viewChanges);
+                //         mutatedMessage.sign(message.getSignedBy());
+                //         messageEvent.setPayload(mutatedMessage);
+                //     }
+                // },
+                // new MessageMutationFault("hbft-new-view-change-a-view-change-proof", "Change a view change proof (remove and add a new one)", List.of(NewViewMessage.class)) {
+                //     @Override
+                //     public void accept(FaultContext serializable) {
+                //         Optional<Event> event = serializable.getEvent();
+                //         if (event.isEmpty()) {
+                //             throw invalidMessageTypeException;
+                //         }
+                //         if (!(event.get() instanceof MessageEvent messageEvent)) {
+                //             throw invalidMessageTypeException;
+                //         }
+                //         if (!(messageEvent.getPayload() instanceof NewViewMessage message)) {
+                //             throw invalidMessageTypeException;
+                //         }
+                //         Collection<ViewChangeMessage> viewChanges = message.getViewChangeProofs();
+                //         viewChanges.remove(viewChanges.iterator().next());
+                //         ViewChangeMessage messageToCopy = viewChanges.iterator().next();
+                //         ViewChangeMessage newViewChangeMessage = new ViewChangeMessage(messageToCopy.getNewViewNumber(),
+                //             messageToCopy.getSpeculativeHistoryP(),
+                //             messageToCopy.getSpeculativeHistoryQ(),
+                //             messageToCopy.getRequestsR(),
+                //             messageToCopy.getReplicaId());
+                //         viewChanges.add(newViewChangeMessage);
+                //         NewViewMessage mutatedMessage = message.withViewChangeProofs(viewChanges);
+                //         mutatedMessage.sign(message.getSignedBy());
+                //         messageEvent.setPayload(mutatedMessage);
+                //     }
+                // },
+                // new MessageMutationFault("hbft-new-view-add-increment-random-request", "Increment random req seq number", List.of(NewViewMessage.class)) {
+                //     @Override
+                //     public void accept(FaultContext serializable) {
+                //         Optional<Event> event = serializable.getEvent();
+                //         if (event.isEmpty()) {
+                //             throw invalidMessageTypeException;
+                //         }
+                //         if (!(event.get() instanceof MessageEvent messageEvent)) {
+                //             throw invalidMessageTypeException;
+                //         }
+                //         if (!(messageEvent.getPayload() instanceof NewViewMessage message)) {
+                //             throw invalidMessageTypeException;
+                //         }
+                //         SpeculativeHistory requests = message.getSpeculativeHistory();
+                //         List<Long> keysetAsArray = new ArrayList<Long>(requests.getRequests().keySet());
+                //         Long reqKey = keysetAsArray.get(random.nextInt(keysetAsArray.size()));
+                //         RequestMessage reqValue = requests.getRequests().get(reqKey);
+                //         requests.getRequests().remove(reqKey);
+                //         requests.getRequests().put(reqKey + random.nextLong(bound), reqValue);
+                //         NewViewMessage mutatedMessage = message.withSpeculativeHistory(requests);
+                //         mutatedMessage.sign(message.getSignedBy());
+                //         messageEvent.setPayload(mutatedMessage);
+                //     }
+                // },
+                // new MessageMutationFault("hbft-new-view-add-decrement-random-request", "Decrement random req seq number", List.of(NewViewMessage.class)) {
+                //     @Override
+                //     public void accept(FaultContext serializable) {
+                //         Optional<Event> event = serializable.getEvent();
+                //         if (event.isEmpty()) {
+                //             throw invalidMessageTypeException;
+                //         }
+                //         if (!(event.get() instanceof MessageEvent messageEvent)) {
+                //             throw invalidMessageTypeException;
+                //         }
+                //         if (!(messageEvent.getPayload() instanceof NewViewMessage message)) {
+                //             throw invalidMessageTypeException;
+                //         }
+                //         SpeculativeHistory requests = message.getSpeculativeHistory();
+                //         List<Long> keysetAsArray = new ArrayList<Long>(requests.getRequests().keySet());
+                //         Long reqKey = keysetAsArray.get(random.nextInt(keysetAsArray.size()));
+                //         RequestMessage reqValue = requests.getRequests().get(reqKey);
+                //         requests.getRequests().remove(reqKey);
+                //         requests.getRequests().put(reqKey - random.nextLong(bound), reqValue);
+                //         NewViewMessage mutatedMessage = message.withSpeculativeHistory(requests);
+                //         mutatedMessage.sign(message.getSignedBy());
+                //         messageEvent.setPayload(mutatedMessage);
+                //     }
+                // },
+                // new MessageMutationFault("hbft-new-view-remove-random-request", "Remove random request from R", List.of(NewViewMessage.class)) {
+                //     @Override
+                //     public void accept(FaultContext serializable) {
+                //         Optional<Event> event = serializable.getEvent();
+                //         if (event.isEmpty()) {
+                //             throw invalidMessageTypeException;
+                //         }
+                //         if (!(event.get() instanceof MessageEvent messageEvent)) {
+                //             throw invalidMessageTypeException;
+                //         }
+                //         if (!(messageEvent.getPayload() instanceof NewViewMessage message)) {
+                //             throw invalidMessageTypeException;
+                //         }
+                //         SpeculativeHistory requests = message.getSpeculativeHistory();
+                //         List<Long> keysetAsArray = new ArrayList<Long>(requests.getRequests().keySet());
+                //         requests.getRequests().remove(keysetAsArray.get(random.nextInt(keysetAsArray.size())));
+                //         NewViewMessage mutatedMessage = message.withSpeculativeHistory(requests);
+                //         mutatedMessage.sign(message.getSignedBy());
+                //         messageEvent.setPayload(mutatedMessage);
+                //     }
+                // },
+                // new MessageMutationFault("hbft-new-view-remove-change-random-req-null", "Change random request to null in R", List.of(NewViewMessage.class)) {
+                //     @Override
+                //     public void accept(FaultContext serializable) {
+                //         Optional<Event> event = serializable.getEvent();
+                //         if (event.isEmpty()) {
+                //             throw invalidMessageTypeException;
+                //         }
+                //         if (!(event.get() instanceof MessageEvent messageEvent)) {
+                //             throw invalidMessageTypeException;
+                //         }
+                //         if (!(messageEvent.getPayload() instanceof NewViewMessage message)) {
+                //             throw invalidMessageTypeException;
+                //         }
+                //         SpeculativeHistory requests = message.getSpeculativeHistory();
+                //         List<Long> keysetAsArray = new ArrayList<Long>(requests.getRequests().keySet());
+                //         requests.getRequests().put(keysetAsArray.get(random.nextInt(keysetAsArray.size())), null);
+                //         NewViewMessage mutatedMessage = message.withSpeculativeHistory(requests);
+                //         mutatedMessage.sign(message.getSignedBy());
+                //         messageEvent.setPayload(mutatedMessage);
+                //     }
+                // }
 
         );
     }

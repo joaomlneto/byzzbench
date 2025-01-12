@@ -1,8 +1,10 @@
 package byzzbench.simulator.protocols.hbft.mutator;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.Optional;
+import java.util.Random;
 
 import org.springframework.stereotype.Component;
 
@@ -22,6 +24,8 @@ import lombok.ToString;
 @ToString
 public class CheckpointIMessageMutatorFactory extends MessageMutatorFactory {
     RuntimeException invalidMessageTypeException = new IllegalArgumentException("Invalid message type");
+    Random random = new Random();
+    int bound = 100;
 
     @Override
     public List<MessageMutationFault> mutators() {
@@ -241,6 +245,131 @@ public class CheckpointIMessageMutatorFactory extends MessageMutatorFactory {
                         messageEvent.setPayload(mutatedMessage);
                     }
                 }
+
+
+                // ANY-SCOPE mutations
+                // ,new MessageMutationFault("hbft-checkpointI-seq-inc", "Increment Sequence Number", List.of(CheckpointIMessage.class)) {
+                //     @Override
+                //     public void accept(FaultContext serializable) {
+                //         Optional<Event> event = serializable.getEvent();
+                //         if (event.isEmpty()) {
+                //             throw invalidMessageTypeException;
+                //         }
+                //         if (!(event.get() instanceof MessageEvent messageEvent)) {
+                //             throw invalidMessageTypeException;
+                //         }
+                //         if (!(messageEvent.getPayload() instanceof CheckpointIMessage message)) {
+                //             throw invalidMessageTypeException;
+                //         }
+
+                //         CheckpointIMessage mutatedMessage = message.withLastSeqNumber(message.getLastSeqNumber() + random.nextLong(bound));
+                //         mutatedMessage.sign(message.getSignedBy());
+                //         messageEvent.setPayload(mutatedMessage);
+                //     }
+                // },
+                // new MessageMutationFault("hbft-checkpointI-seq-dec", "Decrement Sequence Number", List.of(CheckpointIMessage.class)) {
+                //     @Override
+                //     public void accept(FaultContext serializable) {
+                //         Optional<Event> event = serializable.getEvent();
+                //         if (event.isEmpty()) {
+                //             throw invalidMessageTypeException;
+                //         }
+                //         if (!(event.get() instanceof MessageEvent messageEvent)) {
+                //             throw invalidMessageTypeException;
+                //         }
+                //         if (!(messageEvent.getPayload() instanceof CheckpointIMessage message)) {
+                //             throw invalidMessageTypeException;
+                //         }
+                //         CheckpointIMessage mutatedMessage = message.withLastSeqNumber(message.getLastSeqNumber() - random.nextLong(bound));
+                //         mutatedMessage.sign(message.getSignedBy());
+                //         messageEvent.setPayload(mutatedMessage);
+                //     }
+                // },
+                // new MessageMutationFault("hbft-checkpointI-remove-random-request", "Remove random request from history", List.of(CheckpointIMessage.class)) {
+                //     @Override
+                //     public void accept(FaultContext serializable) {
+                //         Optional<Event> event = serializable.getEvent();
+                //         if (event.isEmpty()) {
+                //             throw invalidMessageTypeException;
+                //         }
+                //         if (!(event.get() instanceof MessageEvent messageEvent)) {
+                //             throw invalidMessageTypeException;
+                //         }
+                //         if (!(messageEvent.getPayload() instanceof CheckpointIMessage message)) {
+                //             throw invalidMessageTypeException;
+                //         }
+                //         Node sender = serializable.getScenario().getNode(messageEvent.getSenderId());
+                //         if (!(sender instanceof HbftJavaReplica hbftReplica)) {
+                //             throw invalidMessageTypeException;
+                //         }
+                //         SpeculativeHistory history = message.getHistory();
+                //         List<Long> keysetAsArray = new ArrayList<Long>(history.getRequests().keySet());
+                //         history.getRequests().remove(keysetAsArray.get(random.nextInt(keysetAsArray.size())));
+                //         byte[] digest = hbftReplica.digest(history);
+                //         CheckpointIMessage mutatedMessage = message.withHistory(history).withDigest(digest);
+                //         mutatedMessage.sign(message.getSignedBy());
+                //         messageEvent.setPayload(mutatedMessage);
+                //     }
+                // },
+                // new MessageMutationFault("hbft-checkpointI-decrement-random-request-seq", "Decrement random request's seq num from history", List.of(CheckpointIMessage.class)) {
+                //     @Override
+                //     public void accept(FaultContext serializable) {
+                //         Optional<Event> event = serializable.getEvent();
+                //         if (event.isEmpty()) {
+                //             throw invalidMessageTypeException;
+                //         }
+                //         if (!(event.get() instanceof MessageEvent messageEvent)) {
+                //             throw invalidMessageTypeException;
+                //         }
+                //         if (!(messageEvent.getPayload() instanceof CheckpointIMessage message)) {
+                //             throw invalidMessageTypeException;
+                //         }
+                //         Node sender = serializable.getScenario().getNode(messageEvent.getSenderId());
+                //         if (!(sender instanceof HbftJavaReplica hbftReplica)) {
+                //             throw invalidMessageTypeException;
+                //         }
+                //         SpeculativeHistory history = message.getHistory();
+                //         List<Long> keysetAsArray = new ArrayList<Long>(history.getRequests().keySet());
+                //         Long reqKey = keysetAsArray.get(random.nextInt(keysetAsArray.size()));
+                //         RequestMessage reqValue = history.getRequests().get(reqKey);
+                //         history.getRequests().remove(reqKey);
+                //         history.getRequests().put(reqKey - random.nextLong(bound), reqValue);
+                //         byte[] digest = hbftReplica.digest(history);
+                //         CheckpointIMessage mutatedMessage = message.withHistory(history).withDigest(digest);
+                //         mutatedMessage.sign(message.getSignedBy());
+                //         messageEvent.setPayload(mutatedMessage);
+                //     }
+                // },
+                // new MessageMutationFault("hbft-checkpointI-increment-random-request-seq", "Increment random request's seq num from history", List.of(CheckpointIMessage.class)) {
+                //     @Override
+                //     public void accept(FaultContext serializable) {
+                //         Optional<Event> event = serializable.getEvent();
+                //         if (event.isEmpty()) {
+                //             throw invalidMessageTypeException;
+                //         }
+                //         if (!(event.get() instanceof MessageEvent messageEvent)) {
+                //             throw invalidMessageTypeException;
+                //         }
+                //         if (!(messageEvent.getPayload() instanceof CheckpointIMessage message)) {
+                //             throw invalidMessageTypeException;
+                //         }
+                //         Node sender = serializable.getScenario().getNode(messageEvent.getSenderId());
+                //         if (!(sender instanceof HbftJavaReplica hbftReplica)) {
+                //             throw invalidMessageTypeException;
+                //         }
+                //         SpeculativeHistory history = message.getHistory();
+                //         List<Long> keysetAsArray = new ArrayList<Long>(history.getRequests().keySet());
+                //         Long reqKey = keysetAsArray.get(random.nextInt(keysetAsArray.size()));
+                //         RequestMessage reqValue = history.getRequests().get(reqKey);
+                //         history.getRequests().remove(reqKey);
+                //         history.getRequests().put(reqKey + random.nextLong(bound), reqValue);
+                //         byte[] digest = hbftReplica.digest(history);
+                //         CheckpointIMessage mutatedMessage = message.withHistory(history).withDigest(digest);
+                //         mutatedMessage.sign(message.getSignedBy());
+                //         messageEvent.setPayload(mutatedMessage);
+                //     }
+                // }
+
         );
     }
 }
