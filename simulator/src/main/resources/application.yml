@@ -17,27 +17,27 @@ springdoc:
 # ByzzBench configuration
 byzzbench:
   autostart: false # Whether to start running scenarios automatically on startup
-  numScenarios: 80
+  numScenarios: 1000
   #outputPath: /tmp/byzzbench # The path to write the output to
-  outputSchedules: all # which schedules to write to file? one of 'all', 'buggy' or 'none'
+  outputSchedules: buggy # which schedules to write to file? one of 'all', 'buggy' or 'none'
 
   scheduler:
     id: "byzzfuzz" # The ID of the scheduler to use
-    maxDropMessages: 0 # Maximum number of messages to drop per scenario
-    maxMutateMessages: 0 # Maximum number of messages to mutate per scenario
+    maxDropMessages: 1000 # Maximum number of messages to drop per scenario
+    maxMutateMessages: 1000 # Maximum number of messages to mutate per scenario
     deliverTimeoutWeight: 1 # The weight for scheduler to trigger a timeout
     deliverMessageWeight: 99 # The weight for scheduler to deliver a message
     deliverClientRequestWeight: 99 # The weight for scheduler to deliver a client request to a replica
-    dropMessageWeight: 0 # The weight for scheduler to drop a message
-    mutateMessageWeight: 0 # The weight for scheduler to mutate a message
+    dropMessageWeight: 50 # The weight for scheduler to drop a message
+    mutateMessageWeight: 50 # The weight for scheduler to mutate a message
     params: # additional parameters for the scheduler
       # ByzzFuzz
-      numRoundsWithProcessFaults: 1
+      numRoundsWithProcessFaults: 2
       numRoundsWithNetworkFaults: 4
-      numRoundsWithFaults: 5
+      numRoundsWithFaults: 3
       # Twins
-      numReplicas: 1
-      numTwinsPerReplica: 2
+      numReplicas: 2
+      numTwinsPerReplica: 4
 
   scenario:
     id: tendermint
@@ -47,5 +47,5 @@ byzzbench:
       factories: [ ]
     termination: # Success condition for the scenario - terminates it when all conditions are met
       minEvents: 1000 # check if N events have been scheduled. If so, can terminate
-      minRounds: 3 # check if N rounds have elapsed. If so, can terminate
-      samplingFrequency: 10 # check if should terminate every N scheduler decisions
+      minRounds: 10 # check if N rounds have elapsed. If so, can terminate
+      samplingFrequency: 1 # check if should terminate every N scheduler decisions
