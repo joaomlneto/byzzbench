@@ -2,22 +2,38 @@ package byzzbench.simulator.protocols.Zyzzyva.message;
 
 import byzzbench.simulator.transport.MessagePayload;
 import lombok.Data;
-import lombok.EqualsAndHashCode;
 import lombok.With;
 
 import java.io.Serializable;
+import java.util.Objects;
 
 @Data
-@EqualsAndHashCode(callSuper = true)
 @With
-public class SpeculativeResponseWrapper extends MessagePayload {
+public class SpeculativeResponseWrapper extends MessagePayload implements Comparable<SpeculativeResponseWrapper> {
     private final SpeculativeResponse specResponse;
     private final String replicaId;
     private final Serializable reply;
     private final OrderedRequestMessage orderedRequest;
 
     @Override
+    public boolean equals(Object o) {
+        if (o == null || getClass() != o.getClass()) return false;
+        SpeculativeResponseWrapper that = (SpeculativeResponseWrapper) o;
+        return Objects.equals(specResponse, that.specResponse) && Objects.equals(replicaId, that.replicaId) && Objects.equals(reply, that.reply) && Objects.equals(orderedRequest, that.orderedRequest);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(specResponse, replicaId, reply, orderedRequest);
+    }
+
+    @Override
+    public int compareTo(SpeculativeResponseWrapper o) {
+        return this.getReplicaId().compareTo(o.getReplicaId());
+    }
+
+    @Override
     public String getType() {
-        return "CLIENT_REPLY";
+        return "SPECULATIVE_RESPONSE_WRAPPER";
     }
 }

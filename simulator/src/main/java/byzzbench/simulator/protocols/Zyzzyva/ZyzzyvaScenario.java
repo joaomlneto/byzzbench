@@ -25,8 +25,7 @@ public class ZyzzyvaScenario extends BaseScenario {
     protected void setup() {
         SortedSet<String> replicaIds = new TreeSet<>();
         for (int i = 0; i < numReplicas; i++) {
-            System.out.println(replicaIds);
-            replicaIds.add("Replica " + i);
+            replicaIds.add(Character.valueOf((char) ('A' + i)).toString());
         }
 
         for (String replicaId : replicaIds) {

@@ -27,6 +27,15 @@ public class RequestMessage extends MessagePayload {
     }
 
     @Override
+    public String toString() {
+        return "RequestMessage{" +
+                "operation=" + operation +
+                ", timestamp=" + timestamp +
+                ", clientId='" + clientId + '\'' +
+                '}';
+    }
+
+    @Override
     public String getType() {
         return "REQUEST";
     }

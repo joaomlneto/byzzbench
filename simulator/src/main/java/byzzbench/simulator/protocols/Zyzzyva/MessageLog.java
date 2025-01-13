@@ -3,11 +3,14 @@ package byzzbench.simulator.protocols.Zyzzyva;
 import byzzbench.simulator.protocols.Zyzzyva.message.*;
 import lombok.Getter;
 import lombok.Setter;
+import lombok.extern.java.Log;
+import org.apache.commons.lang3.tuple.ImmutablePair;
 
 import java.io.Serializable;
 import java.util.*;
 
 // Should hold the Ordered request message wrappers received by the replica
+@Log
 public class MessageLog implements Serializable {
     /// TODO: Add checkpoints as well as history? Maybe digest the history
     private final int checkpointInterval;
@@ -41,6 +44,10 @@ public class MessageLog implements Serializable {
     private final SortedMap<Long, NewViewMessage> newViewMessages = new TreeMap<>();
 
     @Getter
+    // ClientId, -> (Timestamp, SpeculativeResponseWrapper)
+    private final SortedMap<String, ImmutablePair<RequestMessage, SpeculativeResponseWrapper>> responseCache = new TreeMap<>();
+
+    @Getter
     private final long lastCheckpoint = 0;
 
     @Getter
@@ -70,6 +77,16 @@ public class MessageLog implements Serializable {
         return speculativeResponseHistory;
     }
 
+    public void truncateSpeculativeResponseHistory() {
+        if (this.getSpeculativeResponses().isEmpty()) {
+            return;
+        }
+        long maxSeqNum = this.getSpeculativeResponses().pollLastEntry().getValue().getSequenceNumber();
+        for (long i = 1; i <= maxSeqNum; i++) {
+            this.speculativeResponses.remove(i);
+        }
+    }
+
     public void putIHateThePrimaryMessage(IHateThePrimaryMessage ihtpm) {
         this.getIHateThePrimaries().putIfAbsent(ihtpm.getViewNumber(), new TreeMap<>());
         this.getIHateThePrimaries().get(ihtpm.getViewNumber()).put(ihtpm.getSignedBy(), ihtpm);
@@ -83,5 +100,24 @@ public class MessageLog implements Serializable {
     public void putViewConfirmMessage(ViewConfirmMessage vcm) {
         this.getViewConfirmMessages().putIfAbsent(vcm.getFutureViewNumber(), new ArrayList<>());
         this.getViewConfirmMessages().get(vcm.getFutureViewNumber()).add(vcm);
+    }
+
+    public void putNewViewMessage(NewViewMessage nvm) {
+        this.getNewViewMessages().put(nvm.getFutureViewNumber(), nvm);
+    }
+
+    public void putRequestCache(String clientId, RequestMessage rm, SpeculativeResponseWrapper srw) {
+        if (this.highestTimestampInCacheForClient(clientId) > rm.getTimestamp()) {
+            log.warning("Received a request with a timestamp smaller than the one in the cache");
+            return;
+        }
+        this.getResponseCache().put(clientId, new ImmutablePair<>(rm, srw));
+    }
+
+    public long highestTimestampInCacheForClient(String clientId) {
+        if (!this.getResponseCache().containsKey(clientId)) {
+            return -1;
+        }
+        return this.getResponseCache().get(clientId).getLeft().getTimestamp();
     }
 }

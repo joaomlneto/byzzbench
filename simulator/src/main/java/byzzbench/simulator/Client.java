@@ -8,6 +8,8 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
 import java.io.Serializable;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -28,6 +30,17 @@ public class Client implements Serializable, Node {
     @JsonIgnore
     @NonNull
     private final transient Scenario scenario;
+
+    @JsonIgnore
+    static MessageDigest md;
+
+    static {
+        try {
+            md = MessageDigest.getInstance("SHA-1");
+        } catch (NoSuchAlgorithmException e) {
+            throw new RuntimeException(e);
+        }
+    }
 
     /**
      * The unique ID of the client.
@@ -78,6 +91,16 @@ public class Client implements Serializable, Node {
         if (this.requestSequenceNumber.get() < this.maxRequests) {
             this.sendRequest();
         }
+    }
+
+    /**
+     * Create a digest of a message.
+     *
+     * @param message the message to digest
+     * @return the digest of the message
+     */
+    public byte[] digest(Serializable message) {
+        return md.digest(message.toString().getBytes());
     }
 
     @Override

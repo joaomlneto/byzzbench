@@ -12,14 +12,16 @@ public class CommitCertificate implements Serializable {
     final long viewNumber;
     final long timestamp;
     final byte[] digest;
+    final long history;
     SortedMap<String, SpeculativeResponse> speculativeResponses;
     String clientId;
 
-    public CommitCertificate(long sequenceNumber, long viewNumber, long timestamp, byte[] digest, SortedMap<String, SpeculativeResponse> speculativeResponses, String clientId) {
+    public CommitCertificate(long sequenceNumber, long viewNumber, long timestamp, byte[] digest, long history, SortedMap<String, SpeculativeResponse> speculativeResponses, String clientId) {
         this.sequenceNumber = sequenceNumber;
         this.viewNumber = viewNumber;
         this.timestamp = timestamp;
         this.digest = digest;
+        this.history = history;
         this.speculativeResponses = speculativeResponses;
         this.clientId = clientId;
     }
