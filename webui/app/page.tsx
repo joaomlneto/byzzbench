@@ -1,19 +1,27 @@
 "use client";
 
-import {ClientList} from "@/components/ClientList";
-import {DroppedMessagesList} from "@/components/Events";
-import {ScenarioEnabledFaultsList} from "@/components/FaultsList";
-import {NodeList} from "@/components/NodeList";
-import {PredicateList} from "@/components/PredicateList";
-import {RunningSimulatorStats} from "@/components/RunningSimulatorStats";
-import {ScheduleDetails} from "@/components/Schedule";
-import {ScenarioScheduledFaultsList} from "@/components/ScheduledFaultsList";
-import {useGetMode, useGetSchedule} from "@/lib/byzzbench-client";
-import {Accordion, AppShell, Container, Group, ScrollArea, Stack, Title,} from "@mantine/core";
-import {useLocalStorage} from "@mantine/hooks";
-import dynamic from "next/dynamic";
+import { ClientList } from "@/components/ClientList";
+import { DroppedMessagesList } from "@/components/Events";
+import { ScenarioEnabledFaultsList } from "@/components/FaultsList";
+import { NodeList } from "@/components/NodeList";
+import { PredicateList } from "@/components/PredicateList";
+import { RunningSimulatorStats } from "@/components/RunningSimulatorStats";
+import { ScheduleDetails } from "@/components/Schedule";
+import { ScenarioScheduledFaultsList } from "@/components/ScheduledFaultsList";
+import { useGetMode, useGetSchedule } from "@/lib/byzzbench-client";
+import {
+  Accordion,
+  AppShell,
+  Container,
+  Group,
+  ScrollArea,
+  Stack,
+  Title,
+} from "@mantine/core";
+import { useLocalStorage } from "@mantine/hooks";
 import React from "react";
 
+/*
 const AdoBStateDiagram = dynamic<{}>(
     () =>
         import("@/components/adob/AdoBStateDiagram").then(
@@ -22,26 +30,26 @@ const AdoBStateDiagram = dynamic<{}>(
     {
         ssr: false,
     },
-);
+);*/
 
 export default function Home() {
-    const [selectedAccordionEntries, setSelectedAccordionEntries] =
-        useLocalStorage<string[]>({
-            key: "byzzbench/selectedAccordionEntries",
-            defaultValue: ["nodes", "schedule"],
-        });
+  const [selectedAccordionEntries, setSelectedAccordionEntries] =
+    useLocalStorage<string[]>({
+      key: "byzzbench/selectedAccordionEntries",
+      defaultValue: ["nodes", "schedule"],
+    });
 
-    const {data: schedule} = useGetSchedule();
+  const { data: schedule } = useGetSchedule();
 
-    const mode = useGetMode();
+  const mode = useGetMode();
 
-    if (mode.data?.data === "RUNNING") {
-        return (
-            <Container fluid p="xl">
-                <RunningSimulatorStats/>
-            </Container>
-        );
-    }
+  if (mode.data?.data === "RUNNING") {
+    return (
+      <Container fluid p="xl">
+        <RunningSimulatorStats />
+      </Container>
+    );
+  }
 
     return (
         <Container fluid p="xl">
@@ -68,12 +76,12 @@ export default function Home() {
               <NodeList />
             </Accordion.Panel>
           </Accordion.Item>
-          <Accordion.Item key="adob" value="adob">
+          {/*<Accordion.Item key="adob" value="adob">
             <Accordion.Control>AdoB State</Accordion.Control>
             <Accordion.Panel>
               <AdoBStateDiagram />
             </Accordion.Panel>
-          </Accordion.Item>
+          </Accordion.Item>*/}
         </Accordion>
       </Stack>
       <AppShell.Aside p="md" maw={400}>
@@ -104,7 +112,7 @@ export default function Home() {
             <DroppedMessagesList />
           </Stack>
         </ScrollArea>
-            </AppShell.Aside>
-        </Container>
-    );
+      </AppShell.Aside>
+    </Container>
+  );
 }
