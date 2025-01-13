@@ -169,19 +169,19 @@ public class TwinsTransport extends Transport implements Serializable {
 
     @Override
     public synchronized long setTimeout(Node node, Runnable runnable, Duration timeout) {
-        //return super.setTimeout(node, runnable, timeout);
-        throw new UnsupportedOperationException("Not implemented");
+        return super.setTimeout(node, runnable, timeout);
+        //throw new UnsupportedOperationException("Not implemented");
     }
 
     @Override
     public synchronized void clearTimeout(Node node, long eventId) {
-        //super.clearTimeout(node, eventId);
-        throw new UnsupportedOperationException("Not implemented");
+        super.clearTimeout(node, eventId);
+        //throw new UnsupportedOperationException("Not implemented");
     }
 
     @Override
     public synchronized void clearReplicaTimeouts(Node node) {
-        //super.clearReplicaTimeouts(node);
-        throw new UnsupportedOperationException("Not implemented");
+        super.clearReplicaTimeouts(node);
+        //throw new UnsupportedOperationException("Not implemented");
     }
 }

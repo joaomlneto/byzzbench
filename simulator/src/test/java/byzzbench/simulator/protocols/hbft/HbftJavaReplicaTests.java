@@ -887,6 +887,27 @@ public class HbftJavaReplicaTests {
     } */
 
     /* 
+     * Duplicate view-changes from same replica with small change
+     */
+    @Test
+	void testDuplicateViewChanges() {
+        HbftJavaReplica spyReplica = Mockito.spy(replicaA);
+        RequestMessage request = new RequestMessage("123", 0, "C0");
+        Checkpoint checkpoint = new Checkpoint(0, null);
+        long seqNumber = 1;
+        SpeculativeHistory history = new SpeculativeHistory();
+        history.addEntry(seqNumber, request);
+        ViewChangeMessage viewChange  = new ViewChangeMessage(2, null, null, null, replicaC.getId());
+        ViewChangeMessage viewChange2  = new ViewChangeMessage(2, null, null, history.getRequests(), replicaC.getId());
+        
+        spyReplica.recvViewChange(viewChange);
+        spyReplica.recvViewChange(viewChange2);
+        
+        Assert.isTrue(!replicaA.getMessageLog().getViewChanges().get(2L).get(replicaC.getId()).equals(viewChange), "Should not contain first view change!");
+        Assert.isTrue(replicaA.getMessageLog().getViewChanges().get(2L).get(replicaC.getId()).equals(viewChange2), "Should contain second view change!");
+    }
+
+    /* 
      * Test1 - Correct with replica being empty, and receiving null checkpoint
      * and 1 request in R with correct view-changes
      */

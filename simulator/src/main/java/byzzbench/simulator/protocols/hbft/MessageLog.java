@@ -51,6 +51,7 @@ public class MessageLog implements Serializable {
     private final SortedMap<Long, SortedMap<String, CheckpointMessage>> checkpointsII = new TreeMap<>();
     private final SortedMap<Long, SortedMap<String, CheckpointMessage>> checkpointsIII = new TreeMap<>();
     // Stored as (viewNumber, (replicaId, message))
+    @Getter
     private final SortedMap<Long, SortedMap<String, ViewChangeMessage>> viewChanges = new TreeMap<>();
 
     // Panic messages from replicas
@@ -353,9 +354,9 @@ public class MessageLog implements Serializable {
         // If the replica already sent a view-change for the same view,
         // we disregard it
         // TODO: might cause problems when a view change doesnt happen
-        if (newViewSet.containsKey(replicaId)) {
-            return new ViewChangeResult(false, newViewNumber, false);
-        }
+        // if (newViewSet.containsKey(replicaId)) {
+        //     return new ViewChangeResult(false, newViewNumber, false);
+        // }
 
         newViewSet.put(replicaId, viewChange);
 
