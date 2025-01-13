@@ -797,12 +797,15 @@ public class TendermintReplica extends LeaderBasedProtocolReplica {
         // Calculate the index based on the height and round
         // Using both height and round ensures determinism across rounds and heights
         int index = (int) ((height + round) % proposerList.size());
-
+        if(index < 0) {
+            index = 0;
+        }
         return proposerList.get(index);
     }
 
     @Override
     public void initialize() {
+        startRound(0);
         setView(0, 0);
     }
 
