@@ -16,6 +16,7 @@ import lombok.With;
 public class ProposeMessage extends MessagePayload {
     private final String replicaId;
     private final Pair valueAndProposalNumber;
+    private final String clientId; // The client ID that initiated the request
     private final ProgressCertificate progressCertificate;
 
     @Override

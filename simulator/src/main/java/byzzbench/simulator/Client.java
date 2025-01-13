@@ -43,7 +43,7 @@ public class Client implements Serializable, Node {
     /**
      * The maximum number of requests that can be sent by the client.
      */
-    private final long maxRequests = 10;
+    private final long maxRequests = 1000;
 
     /**
      * The replies received by the client.
@@ -53,7 +53,7 @@ public class Client implements Serializable, Node {
     @Override
     public void initialize() {
         // Send the first request
-        this.sendRequest();
+//        this.sendRequest("A");
         //System.out.println("CLIENT TIMEOUT SETUP");
         //this.setTimeout("sendRequest", this::sendRequest, Duration.ofSeconds(1));
     }
@@ -61,10 +61,10 @@ public class Client implements Serializable, Node {
     /**
      * Sends a request to a replica in the system.
      */
-    public void sendRequest() {
+    public void sendRequest(String senderId) {
         String recipientId = this.getScenario().getReplicas().keySet().iterator().next();
         String requestId = String.format("%s/%d", this.id, this.requestSequenceNumber.getAndIncrement());
-        this.getScenario().getTransport().sendClientRequest(this.id, requestId, recipientId);
+        this.getScenario().getTransport().sendClientRequest(this.id, requestId, senderId);
     }
 
     /**
@@ -76,7 +76,7 @@ public class Client implements Serializable, Node {
     public void handleMessage(String senderId, MessagePayload reply) {
         this.replies.add(reply);
         if (this.requestSequenceNumber.get() < this.maxRequests) {
-            this.sendRequest();
+            this.sendRequest(senderId);
         }
     }
 

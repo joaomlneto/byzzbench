@@ -17,6 +17,6 @@ public class NewViewMessage extends MessagePayload {
 
     @Override
     public String getType() {
-        return "";
+        return "NEW_VIEW";
     }
 }

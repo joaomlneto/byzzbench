@@ -8,6 +8,7 @@ import byzzbench.simulator.faults.faults.ByzzFuzzNetworkFault;
 import byzzbench.simulator.faults.faults.ByzzFuzzProcessFault;
 import byzzbench.simulator.scheduler.ByzzFuzzScheduler;
 import byzzbench.simulator.utils.SetSubsets;
+import lombok.extern.java.Log;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
@@ -18,6 +19,7 @@ import java.util.Set;
 /**
  * Fault factory that generates faults for a given scenario.
  */
+@Log
 @Component
 public class ByzzFuzzScenarioFaultFactory implements FaultFactory {
     private final Random rand = new Random();
@@ -58,7 +60,6 @@ public class ByzzFuzzScenarioFaultFactory implements FaultFactory {
         }
 
         // Faults
-        System.out.println("ByzzFuzzFaults:");
         faults.forEach(fault -> System.out.println(fault.getId()));
 
         return faults;

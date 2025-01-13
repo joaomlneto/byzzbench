@@ -166,6 +166,7 @@ public class MessageLog {
 
         log.info("The number of accepted values for the same proposal value is " + currentAccepted.get());
         if (currentAccepted.get() >= threshold) {
+            log.info("The learner has learned the value");
             this.learnedValue = new Pair(this.replica.getViewNumber(), acceptedValue);
             return true;
         }
@@ -230,7 +231,7 @@ public class MessageLog {
     public Pair onPull(String senderId, PullMessage pullMessage) {
         long viewNumber = pullMessage.getViewNumber();
         if (pullMessages.containsKey(viewNumber)) pullMessages.get(viewNumber).remove(pullMessage);
-        return learnedValue != null ? learnedValue : null;
+        return learnedValue;
     }
 
     public boolean onSuspect(String sender, SuspectMessage suspectMessage, int quorum) {
@@ -294,7 +295,7 @@ public class MessageLog {
     }
 
     public boolean isSatisfied(int quorum) {
-        if (proposersWithLearnedValue != null) return proposersWithLearnedValue.size() >= quorum;
+        if (satisfiedProposerNodes != null) return satisfiedProposersCount() >= quorum;
         return false;
     }
 
