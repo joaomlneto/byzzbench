@@ -153,6 +153,7 @@ public class Transport {
 
         // deliver the reply directly to the client to handle
         Client c = this.scenario.getClients().get(recipient);
+        log.info("Delivered: " + sender.getId() + "->" + recipient + ": " + response);
         c.handleMessage(sender.getId(), response);
     }
 
