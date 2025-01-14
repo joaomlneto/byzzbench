@@ -23,7 +23,7 @@ import java.util.stream.Collectors;
 @Component
 @Log
 public class RandomScheduler extends BaseScheduler {
-    private final Random random = new Random();
+    private final Random random = new Random(2137L);
 
 
     public RandomScheduler(ByzzBenchConfig config, MessageMutatorService messageMutatorService) {

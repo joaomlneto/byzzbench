@@ -20,7 +20,7 @@ import java.util.Set;
  */
 @Component
 public class ByzzFuzzScenarioFaultFactory implements FaultFactory {
-    private final Random rand = new Random();
+    private final Random rand = new Random(2137L);
 
     @Override
     public List<Fault> generateFaults(FaultContext input) {

@@ -15,6 +15,6 @@ public class GossipMessage extends MessagePayload {
 
     @Override
     public String getType() {
-        return "GOSSIP";
+        return "GOSSIP " + gossipMessage.getType();
     }
 }

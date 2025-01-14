@@ -24,7 +24,7 @@ import java.util.Random;
 @Log
 @Component
 public class MutateMessageBehavior implements FaultBehavior {
-    private static final Random rand = new Random();
+    private static final Random rand = new Random(2137L);
 
     @Override
     public String getId() {

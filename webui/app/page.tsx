@@ -46,7 +46,7 @@ export default function Home() {
 
   const [showMailboxes, setShowMailboxes] = useLocalStorage<boolean>({
     key: "byzzbench/showMailboxes",
-    defaultValue: true,
+    defaultValue: false,
   });
 
   if (mode.data?.data === "RUNNING") {
