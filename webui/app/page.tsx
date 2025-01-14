@@ -16,6 +16,7 @@ import {
   Group,
   ScrollArea,
   Stack,
+  Switch,
   Title,
 } from "@mantine/core";
 import { useLocalStorage } from "@mantine/hooks";
@@ -43,6 +44,11 @@ export default function Home() {
 
   const mode = useGetMode();
 
+  const [showMailboxes, setShowMailboxes] = useLocalStorage<boolean>({
+    key: "byzzbench/showMailboxes",
+    defaultValue: true,
+  });
+
   if (mode.data?.data === "RUNNING") {
     return (
       <Container fluid p="xl">
@@ -63,6 +69,13 @@ export default function Home() {
                     <Group wrap="nowrap" gap="xs" align="center">
                         <Title order={3}>{schedule?.data.scenarioId}</Title>
             <PredicateList />
+            <Switch
+              label="Show mailboxes"
+              checked={showMailboxes}
+              onChange={(event) => {
+                setShowMailboxes(event.currentTarget.checked);
+              }}
+            />
           </Group>
           <Accordion.Item key="clients" value="clients">
             <Accordion.Control>Clients</Accordion.Control>
@@ -73,7 +86,7 @@ export default function Home() {
           <Accordion.Item key="nodes" value="nodes">
             <Accordion.Control>Nodes</Accordion.Control>
             <Accordion.Panel>
-              <NodeList />
+              <NodeList showMailboxes={showMailboxes} />
             </Accordion.Panel>
           </Accordion.Item>
           {/*<Accordion.Item key="adob" value="adob">
