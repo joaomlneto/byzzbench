@@ -191,7 +191,7 @@ public class Transport {
      */
     public synchronized void sendClientResponse(Node sender, MessagePayload response, String recipient) {
         // assert that the sender exists
-        if (!this.scenario.getNodes().containsKey(sender)) {
+        if (!this.scenario.getNodes().containsKey(sender.getId())) {
             throw new IllegalArgumentException("Replica not found: " + sender);
         }
 
@@ -323,6 +323,9 @@ public class Transport {
         this.scenario.getSchedule().appendEvent(e);
         e.setStatus(Event.Status.DELIVERED);
 
+        // For timeouts, this should be called before, so the Replica time is updated
+        this.observers.forEach(o -> o.onEventDelivered(e));
+
         switch (e) {
             case ClientRequestEvent c -> {
                 this.scenario.getNodes().get(c.getRecipientId()).handleMessage(c.getSenderId(), c.getPayload());
@@ -337,8 +340,6 @@ public class Transport {
                 throw new IllegalArgumentException("Unknown event type");
             }
         }
-
-        this.observers.forEach(o -> o.onEventDelivered(e));
 
         log.info("Delivered " + e);
     }
@@ -570,19 +571,31 @@ public class Transport {
             this.observers.forEach(o -> o.onEventDropped(events.get(eventId)));
         }
     }
+    
+    /**
+     * Gets all queued timeouts for a given node.
+     *
+     * @param node The node to get timeouts for.
+     * @return A list of event IDs of queued timeouts.
+     */
+    public synchronized List<Long> getQueuedTimeouts(Node node) {
+        return this.events.values()
+                .stream()
+                .filter(e -> e instanceof TimeoutEvent t &&
+                        t.getNodeId().equals(node.getId()) &&
+                        t.getStatus() == Event.Status.QUEUED)
+                .map(Event::getEventId)
+                .toList();
+    }
 
+    /**
+     * Clears all timeouts for a given node.
+     *
+     * @param node The node to clear timeouts for.
+     */
     public synchronized void clearReplicaTimeouts(Node node) {
-        // get all event IDs for timeouts from this replica
-        List<Long> eventIds =
-                this.events.values()
-                        .stream()
-                        .filter(
-                                e
-                                        -> e instanceof TimeoutEvent t &&
-                                        t.getNodeId().equals(node.getId()) &&
-                                        t.getStatus() == Event.Status.QUEUED)
-                        .map(Event::getEventId)
-                        .toList();
+        // get all event IDs for timeouts from this node
+        List<Long> eventIds = this.getQueuedTimeouts(node);
 
         // remove all event IDs
         for (Long eventId : eventIds) {

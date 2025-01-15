@@ -130,6 +130,14 @@ public interface Scenario extends Serializable {
      */
     List<ScenarioObserver> getObservers();
 
+
+    /**
+     * Add an observer to the scenario.
+     *
+     * @param observer The observer to add.
+     */
+    void addObserver(ScenarioObserver observer);
+
     /**
      * Load the parameters for the scenario.
      *

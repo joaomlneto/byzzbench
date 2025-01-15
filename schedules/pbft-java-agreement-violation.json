@@ -1,1 +1,981 @@
-{"events":[{"type":"ClientRequest","eventId":1,"createdAt":1727962969.902616,"status":"DELIVERED","recipientId":"A","senderId":"C0","payload":"123","deliveredAt":null},{"type":"Message","eventId":2,"createdAt":1727962972.068601,"status":"DELIVERED","recipientId":"B","senderId":"A","payload":{"signed":true,"signedBy":"A","operation":"123","timestamp":1727962972068,"clientId":"C0","type":"REQUEST"},"deliveredAt":null},{"type":"Message","eventId":5,"createdAt":1727962974.567227,"status":"DELIVERED","recipientId":"D","senderId":"B","payload":{"signed":true,"signedBy":"B","viewNumber":1,"sequenceNumber":1,"digest":"dl+ancdKj1r+jb4Q7Uf0tWeQgyw=","request":{"signed":true,"signedBy":"A","operation":"123","timestamp":1727962972068,"clientId":"C0","type":"REQUEST"},"type":"PRE-PREPARE"},"deliveredAt":null},{"type":"Message","eventId":7,"createdAt":1727962976.301294,"status":"DELIVERED","recipientId":"B","senderId":"D","payload":{"signed":true,"signedBy":"D","viewNumber":1,"sequenceNumber":1,"digest":"dl+ancdKj1r+jb4Q7Uf0tWeQgyw=","replicaId":"D","type":"PREPARE"},"deliveredAt":null},{"type":"Message","eventId":4,"createdAt":1727962974.567225,"status":"DELIVERED","recipientId":"C","senderId":"B","payload":{"signed":true,"signedBy":"B","viewNumber":1,"sequenceNumber":1,"digest":"dl+ancdKj1r+jb4Q7Uf0tWeQgyw=","request":{"signed":true,"signedBy":"A","operation":"123","timestamp":1727962972068,"clientId":"C0","type":"REQUEST"},"type":"PRE-PREPARE"},"deliveredAt":null},{"type":"Message","eventId":10,"createdAt":1727962981.286863,"status":"DELIVERED","recipientId":"B","senderId":"C","payload":{"signed":true,"signedBy":"C","viewNumber":1,"sequenceNumber":1,"digest":"dl+ancdKj1r+jb4Q7Uf0tWeQgyw=","replicaId":"C","type":"PREPARE"},"deliveredAt":null},{"type":"Message","eventId":12,"createdAt":1727962982.499406,"status":"DELIVERED","recipientId":"A","senderId":"B","payload":{"signed":true,"signedBy":"B","viewNumber":1,"sequenceNumber":1,"digest":"dl+ancdKj1r+jb4Q7Uf0tWeQgyw=","replicaId":"B","type":"COMMIT"},"deliveredAt":null},{"type":"Message","eventId":3,"createdAt":1727962974.567219,"status":"DELIVERED","recipientId":"A","senderId":"B","payload":{"signed":true,"signedBy":"B","viewNumber":1,"sequenceNumber":1,"digest":"dl+ancdKj1r+jb4Q7Uf0tWeQgyw=","request":{"signed":true,"signedBy":"A","operation":"123","timestamp":1727962972068,"clientId":"C0","type":"REQUEST"},"type":"PRE-PREPARE"},"deliveredAt":null},{"type":"Message","eventId":14,"createdAt":1727962982.499421,"status":"DELIVERED","recipientId":"D","senderId":"B","payload":{"signed":true,"signedBy":"B","viewNumber":1,"sequenceNumber":1,"digest":"dl+ancdKj1r+jb4Q7Uf0tWeQgyw=","replicaId":"B","type":"COMMIT"},"deliveredAt":null},{"type":"Message","eventId":8,"createdAt":1727962976.301301,"status":"DELIVERED","recipientId":"C","senderId":"D","payload":{"signed":true,"signedBy":"D","viewNumber":1,"sequenceNumber":1,"digest":"dl+ancdKj1r+jb4Q7Uf0tWeQgyw=","replicaId":"D","type":"PREPARE"},"deliveredAt":null},{"type":"Message","eventId":18,"createdAt":1727962991.076529,"status":"DELIVERED","recipientId":"A","senderId":"C","payload":{"signed":true,"signedBy":"C","viewNumber":1,"sequenceNumber":1,"digest":"dl+ancdKj1r+jb4Q7Uf0tWeQgyw=","replicaId":"C","type":"COMMIT"},"deliveredAt":null},{"type":"Message","eventId":9,"createdAt":1727962981.286845,"status":"DELIVERED","recipientId":"A","senderId":"C","payload":{"signed":true,"signedBy":"C","viewNumber":1,"sequenceNumber":1,"digest":"dl+ancdKj1r+jb4Q7Uf0tWeQgyw=","replicaId":"C","type":"PREPARE"},"deliveredAt":null},{"type":"Message","eventId":22,"createdAt":1727962997.24177,"status":"DELIVERED","recipientId":"C","senderId":"A","payload":{"signed":true,"signedBy":"A","viewNumber":1,"sequenceNumber":1,"digest":"dl+ancdKj1r+jb4Q7Uf0tWeQgyw=","replicaId":"A","type":"COMMIT"},"deliveredAt":null},{"type":"Message","eventId":19,"createdAt":1727962991.076543,"status":"DELIVERED","recipientId":"B","senderId":"C","payload":{"signed":true,"signedBy":"C","viewNumber":1,"sequenceNumber":1,"digest":"dl+ancdKj1r+jb4Q7Uf0tWeQgyw=","replicaId":"C","type":"COMMIT"},"deliveredAt":null},{"type":"Message","eventId":20,"createdAt":1727962991.076547,"status":"DELIVERED","recipientId":"D","senderId":"C","payload":{"signed":true,"signedBy":"C","viewNumber":1,"sequenceNumber":1,"digest":"dl+ancdKj1r+jb4Q7Uf0tWeQgyw=","replicaId":"C","type":"COMMIT"},"deliveredAt":null},{"type":"Message","eventId":15,"createdAt":1727962988.567052,"status":"DELIVERED","recipientId":"B","senderId":"A","payload":{"signed":true,"signedBy":"A","viewNumber":1,"sequenceNumber":1,"digest":"dl+ancdKj1r+jb4Q7Uf0tWeQgyw=","replicaId":"A","type":"PREPARE"},"deliveredAt":null},{"type":"Message","eventId":21,"createdAt":1727962997.241759,"status":"DELIVERED","recipientId":"B","senderId":"A","payload":{"signed":true,"signedBy":"A","viewNumber":1,"sequenceNumber":1,"digest":"dl+ancdKj1r+jb4Q7Uf0tWeQgyw=","replicaId":"A","type":"COMMIT"},"deliveredAt":null},{"type":"Message","eventId":17,"createdAt":1727962988.56708,"status":"DELIVERED","recipientId":"D","senderId":"A","payload":{"signed":true,"signedBy":"A","viewNumber":1,"sequenceNumber":1,"digest":"dl+ancdKj1r+jb4Q7Uf0tWeQgyw=","replicaId":"A","type":"PREPARE"},"deliveredAt":null},{"type":"Message","eventId":13,"createdAt":1727962982.499417,"status":"DELIVERED","recipientId":"C","senderId":"B","payload":{"signed":true,"signedBy":"B","viewNumber":1,"sequenceNumber":1,"digest":"dl+ancdKj1r+jb4Q7Uf0tWeQgyw=","replicaId":"B","type":"COMMIT"},"deliveredAt":null},{"type":"Message","eventId":27,"createdAt":1727963176.823144,"status":"DELIVERED","recipientId":"B","senderId":"D","payload":{"signed":true,"signedBy":"D","viewNumber":1,"sequenceNumber":1,"digest":"dl+ancdKj1r+jb4Q7Uf0tWeQgyw=","replicaId":"D","type":"COMMIT"},"deliveredAt":null},{"type":"Message","eventId":26,"createdAt":1727963176.823123,"status":"DELIVERED","recipientId":"A","senderId":"D","payload":{"signed":true,"signedBy":"D","viewNumber":1,"sequenceNumber":1,"digest":"dl+ancdKj1r+jb4Q7Uf0tWeQgyw=","replicaId":"D","type":"COMMIT"},"deliveredAt":null},{"type":"Message","eventId":11,"createdAt":1727962981.286866,"status":"DELIVERED","recipientId":"D","senderId":"C","payload":{"signed":true,"signedBy":"C","viewNumber":1,"sequenceNumber":1,"digest":"dl+ancdKj1r+jb4Q7Uf0tWeQgyw=","replicaId":"C","type":"PREPARE"},"deliveredAt":null},{"type":"ClientRequest","eventId":25,"createdAt":1727963031.137264,"status":"DELIVERED","recipientId":"A","senderId":"C0","payload":"C0/1","deliveredAt":null},{"type":"Message","eventId":16,"createdAt":1727962988.567072,"status":"DELIVERED","recipientId":"C","senderId":"A","payload":{"signed":true,"signedBy":"A","viewNumber":1,"sequenceNumber":1,"digest":"dl+ancdKj1r+jb4Q7Uf0tWeQgyw=","replicaId":"A","type":"PREPARE"},"deliveredAt":null},{"type":"ClientRequest","eventId":29,"createdAt":1727963176.823476,"status":"DELIVERED","recipientId":"A","senderId":"C0","payload":"C0/2","deliveredAt":null},{"type":"Message","eventId":28,"createdAt":1727963176.823146,"status":"DELIVERED","recipientId":"C","senderId":"D","payload":{"signed":true,"signedBy":"D","viewNumber":1,"sequenceNumber":1,"digest":"dl+ancdKj1r+jb4Q7Uf0tWeQgyw=","replicaId":"D","type":"COMMIT"},"deliveredAt":null},{"type":"Message","eventId":31,"createdAt":1727963312.943755,"status":"DELIVERED","recipientId":"B","senderId":"A","payload":{"signed":true,"signedBy":"A","operation":"C0/2","timestamp":1727963312943,"clientId":"C0","type":"REQUEST"},"deliveredAt":null},{"type":"Message","eventId":30,"createdAt":1727963292.452294,"status":"DELIVERED","recipientId":"B","senderId":"A","payload":{"signed":true,"signedBy":"A","operation":"C0/1","timestamp":1727963292452,"clientId":"C0","type":"REQUEST"},"deliveredAt":null},{"type":"Message","eventId":34,"createdAt":1727963366.595001,"status":"DELIVERED","recipientId":"D","senderId":"B","payload":{"signed":true,"signedBy":"B","viewNumber":1,"sequenceNumber":2,"digest":"ufdOB3p6qQAIhIEv7Dll5rUmK3w=","request":{"signed":true,"signedBy":"A","operation":"C0/2","timestamp":1727963312943,"clientId":"C0","type":"REQUEST"},"type":"PRE-PREPARE"},"deliveredAt":null},{"type":"Message","eventId":33,"createdAt":1727963366.594998,"status":"DELIVERED","recipientId":"C","senderId":"B","payload":{"signed":true,"signedBy":"B","viewNumber":1,"sequenceNumber":2,"digest":"ufdOB3p6qQAIhIEv7Dll5rUmK3w=","request":{"signed":true,"signedBy":"A","operation":"C0/2","timestamp":1727963312943,"clientId":"C0","type":"REQUEST"},"type":"PRE-PREPARE"},"deliveredAt":null},{"type":"Message","eventId":38,"createdAt":1727963429.651575,"status":"DELIVERED","recipientId":"A","senderId":"D","payload":{"signed":true,"signedBy":"D","viewNumber":1,"sequenceNumber":2,"digest":"ufdOB3p6qQAIhIEv7Dll5rUmK3w=","replicaId":"D","type":"PREPARE"},"deliveredAt":null},{"type":"Message","eventId":37,"createdAt":1727963376.007568,"status":"DELIVERED","recipientId":"D","senderId":"B","payload":{"signed":true,"signedBy":"B","viewNumber":1,"sequenceNumber":3,"digest":"u5aikAqn+eN6UniYddaIRkgMvjc=","request":{"signed":true,"signedBy":"A","operation":"C0/1","timestamp":1727963292452,"clientId":"C0","type":"REQUEST"},"type":"PRE-PREPARE"},"deliveredAt":null},{"type":"Message","eventId":39,"createdAt":1727963429.651611,"status":"DELIVERED","recipientId":"B","senderId":"D","payload":{"signed":true,"signedBy":"D","viewNumber":1,"sequenceNumber":2,"digest":"ufdOB3p6qQAIhIEv7Dll5rUmK3w=","replicaId":"D","type":"PREPARE"},"deliveredAt":null},{"type":"Message","eventId":32,"createdAt":1727963366.594974,"status":"DELIVERED","recipientId":"A","senderId":"B","payload":{"signed":true,"signedBy":"B","viewNumber":1,"sequenceNumber":2,"digest":"ufdOB3p6qQAIhIEv7Dll5rUmK3w=","request":{"signed":true,"signedBy":"A","operation":"C0/2","timestamp":1727963312943,"clientId":"C0","type":"REQUEST"},"type":"PRE-PREPARE"},"deliveredAt":null},{"type":"Message","eventId":23,"createdAt":1727962997.241773,"status":"DELIVERED","recipientId":"D","senderId":"A","payload":{"signed":true,"signedBy":"A","viewNumber":1,"sequenceNumber":1,"digest":"dl+ancdKj1r+jb4Q7Uf0tWeQgyw=","replicaId":"A","type":"COMMIT"},"deliveredAt":null},{"type":"Message","eventId":47,"createdAt":1727963631.694303,"status":"DELIVERED","recipientId":"B","senderId":"A","payload":{"signed":true,"signedBy":"A","viewNumber":1,"sequenceNumber":2,"digest":"ufdOB3p6qQAIhIEv7Dll5rUmK3w=","replicaId":"A","type":"PREPARE"},"deliveredAt":null},{"type":"Message","eventId":55,"createdAt":1727963682.634025,"status":"DELIVERED","recipientId":"D","senderId":"B","payload":{"signed":true,"signedBy":"B","viewNumber":1,"sequenceNumber":2,"digest":"ufdOB3p6qQAIhIEv7Dll5rUmK3w=","replicaId":"B","type":"COMMIT"},"deliveredAt":null},{"type":"Message","eventId":46,"createdAt":1727963570.197302,"status":"DELIVERED","recipientId":"C","senderId":"D","payload":{"signed":true,"signedBy":"D","viewNumber":1,"sequenceNumber":3,"digest":"u5aikAqn+eN6UniYddaIRkgMvjc=","replicaId":"D","type":"PREPARE"},"deliveredAt":null},{"type":"Message","eventId":36,"createdAt":1727963376.007554,"status":"DELIVERED","recipientId":"C","senderId":"B","payload":{"signed":true,"signedBy":"B","viewNumber":1,"sequenceNumber":3,"digest":"u5aikAqn+eN6UniYddaIRkgMvjc=","request":{"signed":true,"signedBy":"A","operation":"C0/1","timestamp":1727963292452,"clientId":"C0","type":"REQUEST"},"type":"PRE-PREPARE"},"deliveredAt":null},{"type":"Message","eventId":51,"createdAt":1727963631.694355,"status":"DELIVERED","recipientId":"C","senderId":"A","payload":{"signed":true,"signedBy":"A","viewNumber":1,"sequenceNumber":2,"digest":"ufdOB3p6qQAIhIEv7Dll5rUmK3w=","replicaId":"A","type":"COMMIT"},"deliveredAt":null},{"type":"Message","eventId":52,"createdAt":1727963631.694358,"status":"DELIVERED","recipientId":"D","senderId":"A","payload":{"signed":true,"signedBy":"A","viewNumber":1,"sequenceNumber":2,"digest":"ufdOB3p6qQAIhIEv7Dll5rUmK3w=","replicaId":"A","type":"COMMIT"},"deliveredAt":null},{"type":"Message","eventId":54,"createdAt":1727963682.634022,"status":"DELIVERED","recipientId":"C","senderId":"B","payload":{"signed":true,"signedBy":"B","viewNumber":1,"sequenceNumber":2,"digest":"ufdOB3p6qQAIhIEv7Dll5rUmK3w=","replicaId":"B","type":"COMMIT"},"deliveredAt":null},{"type":"ClientRequest","eventId":24,"createdAt":1727962997.241905,"status":"DELIVERED","recipientId":"A","senderId":"C0","payload":"C0/0","deliveredAt":null},{"type":"Message","eventId":35,"createdAt":1727963376.007507,"status":"DELIVERED","recipientId":"A","senderId":"B","payload":{"signed":true,"signedBy":"B","viewNumber":1,"sequenceNumber":3,"digest":"u5aikAqn+eN6UniYddaIRkgMvjc=","request":{"signed":true,"signedBy":"A","operation":"C0/1","timestamp":1727963292452,"clientId":"C0","type":"REQUEST"},"type":"PRE-PREPARE"},"deliveredAt":null},{"type":"Message","eventId":53,"createdAt":1727963682.634015,"status":"DELIVERED","recipientId":"A","senderId":"B","payload":{"signed":true,"signedBy":"B","viewNumber":1,"sequenceNumber":2,"digest":"ufdOB3p6qQAIhIEv7Dll5rUmK3w=","replicaId":"B","type":"COMMIT"},"deliveredAt":null},{"type":"Message","eventId":64,"createdAt":1727964077.92082,"status":"DELIVERED","recipientId":"C","senderId":"A","payload":{"signed":true,"signedBy":"A","viewNumber":1,"sequenceNumber":3,"digest":"u5aikAqn+eN6UniYddaIRkgMvjc=","replicaId":"A","type":"PREPARE"},"deliveredAt":null},{"type":"Message","eventId":65,"createdAt":1727964077.920825,"status":"DELIVERED","recipientId":"D","senderId":"A","payload":{"signed":true,"signedBy":"A","viewNumber":1,"sequenceNumber":3,"digest":"u5aikAqn+eN6UniYddaIRkgMvjc=","replicaId":"A","type":"PREPARE"},"deliveredAt":null},{"type":"Message","eventId":44,"createdAt":1727963570.197143,"status":"DELIVERED","recipientId":"A","senderId":"D","payload":{"signed":true,"signedBy":"D","viewNumber":1,"sequenceNumber":3,"digest":"u5aikAqn+eN6UniYddaIRkgMvjc=","replicaId":"D","type":"PREPARE"},"deliveredAt":null},{"type":"Message","eventId":69,"createdAt":1727964228.643124,"status":"DELIVERED","recipientId":"B","senderId":"A","payload":{"signed":true,"signedBy":"A","viewNumber":1,"sequenceNumber":3,"digest":"u5aikAqn+eN6UniYddaIRkgMvjc=","replicaId":"A","type":"COMMIT"},"deliveredAt":null},{"type":"Message","eventId":63,"createdAt":1727964077.920803,"status":"DELIVERED","recipientId":"B","senderId":"A","payload":{"signed":true,"signedBy":"A","viewNumber":1,"sequenceNumber":3,"digest":"u5aikAqn+eN6UniYddaIRkgMvjc=","replicaId":"A","type":"PREPARE"},"deliveredAt":null},{"type":"Message","eventId":67,"createdAt":1727964151.642016,"status":"DELIVERED","recipientId":"B","senderId":"D","payload":{"signed":true,"signedBy":"D","viewNumber":1,"sequenceNumber":3,"digest":"u5aikAqn+eN6UniYddaIRkgMvjc=","replicaId":"D","type":"COMMIT"},"deliveredAt":null},{"type":"Message","eventId":42,"createdAt":1727963451.894169,"status":"DELIVERED","recipientId":"B","senderId":"C","payload":{"signed":true,"signedBy":"C","viewNumber":1,"sequenceNumber":2,"digest":"ufdOB3p6qQAIhIEv7Dll5rUmK3w=","replicaId":"C","type":"PREPARE"},"deliveredAt":null},{"type":"Message","eventId":62,"createdAt":1727964068.193877,"status":"DELIVERED","recipientId":"B","senderId":"A","payload":{"signed":true,"signedBy":"A","operation":"C0/0","timestamp":1727964068193,"clientId":"C0","type":"REQUEST"},"deliveredAt":null},{"type":"Message","eventId":57,"createdAt":1727963982.110717,"status":"DELIVERED","recipientId":"B","senderId":"C","payload":{"signed":true,"signedBy":"C","viewNumber":1,"sequenceNumber":3,"digest":"u5aikAqn+eN6UniYddaIRkgMvjc=","replicaId":"C","type":"PREPARE"},"deliveredAt":null},{"type":"Message","eventId":75,"createdAt":1727965018.98043,"status":"DELIVERED","recipientId":"A","senderId":"B","payload":{"signed":true,"signedBy":"B","viewNumber":1,"sequenceNumber":3,"digest":"u5aikAqn+eN6UniYddaIRkgMvjc=","replicaId":"B","type":"COMMIT"},"deliveredAt":null},{"type":"Message","eventId":77,"createdAt":1727965018.98044,"status":"DELIVERED","recipientId":"D","senderId":"B","payload":{"signed":true,"signedBy":"B","viewNumber":1,"sequenceNumber":3,"digest":"u5aikAqn+eN6UniYddaIRkgMvjc=","replicaId":"B","type":"COMMIT"},"deliveredAt":null},{"type":"Message","eventId":40,"createdAt":1727963429.651614,"status":"DELIVERED","recipientId":"C","senderId":"D","payload":{"signed":true,"signedBy":"D","viewNumber":1,"sequenceNumber":2,"digest":"ufdOB3p6qQAIhIEv7Dll5rUmK3w=","replicaId":"D","type":"PREPARE"},"deliveredAt":null}],"brokenInvariants":[],"buggy":false,"scenarioId":"pbft-java","finalized":false}
+{
+  "events": [
+    {
+      "type": "ClientRequest",
+      "eventId": 1,
+      "createdAt": 1736327391.002258,
+      "status": "DELIVERED",
+      "recipientId": "A",
+      "senderId": "C0",
+      "payload": {
+        "operation": "C0/0",
+        "signed": false,
+        "signedBy": null,
+        "type": "DefaultClientRequest"
+      },
+      "deliveredAt": null
+    },
+    {
+      "type": "Message",
+      "eventId": 3,
+      "createdAt": 1736327395.306674,
+      "status": "DELIVERED",
+      "recipientId": "B",
+      "senderId": "A",
+      "payload": {
+        "operation": "C0/0",
+        "timestamp": 1736327395305,
+        "clientId": "C0",
+        "signed": true,
+        "signedBy": "A",
+        "type": "REQUEST"
+      },
+      "deliveredAt": null
+    },
+    {
+      "type": "MutateMessage",
+      "eventId": 7,
+      "senderId": "B",
+      "recipientId": "A",
+      "payload": {
+        "eventId": 4,
+        "mutatorId": "pbft-preprepare-seq-inc"
+      },
+      "createdAt": 1736327399.1104,
+      "status": "DELIVERED",
+      "deliveredAt": null
+    },
+    {
+      "type": "Message",
+      "eventId": 4,
+      "createdAt": 1736327396.948613,
+      "status": "DELIVERED",
+      "recipientId": "A",
+      "senderId": "B",
+      "payload": {
+        "viewNumber": 1,
+        "sequenceNumber": 1,
+        "digest": "AA==",
+        "request": {
+          "operation": "C0/0",
+          "timestamp": 1736327395305,
+          "clientId": "C0",
+          "signed": true,
+          "signedBy": "A",
+          "type": "REQUEST"
+        },
+        "signed": true,
+        "signedBy": "B",
+        "type": "PRE-PREPARE",
+        "round": 1
+      },
+      "deliveredAt": null
+    },
+    {
+      "type": "Message",
+      "eventId": 5,
+      "createdAt": 1736327396.94864,
+      "status": "DELIVERED",
+      "recipientId": "C",
+      "senderId": "B",
+      "payload": {
+        "viewNumber": 1,
+        "sequenceNumber": 0,
+        "digest": "AA==",
+        "request": {
+          "operation": "C0/0",
+          "timestamp": 1736327395305,
+          "clientId": "C0",
+          "signed": true,
+          "signedBy": "A",
+          "type": "REQUEST"
+        },
+        "signed": true,
+        "signedBy": "B",
+        "type": "PRE-PREPARE",
+        "round": 0
+      },
+      "deliveredAt": null
+    },
+    {
+      "type": "Message",
+      "eventId": 6,
+      "createdAt": 1736327396.948649,
+      "status": "DELIVERED",
+      "recipientId": "D",
+      "senderId": "B",
+      "payload": {
+        "viewNumber": 1,
+        "sequenceNumber": 0,
+        "digest": "AA==",
+        "request": {
+          "operation": "C0/0",
+          "timestamp": 1736327395305,
+          "clientId": "C0",
+          "signed": true,
+          "signedBy": "A",
+          "type": "REQUEST"
+        },
+        "signed": true,
+        "signedBy": "B",
+        "type": "PRE-PREPARE",
+        "round": 0
+      },
+      "deliveredAt": null
+    },
+    {
+      "type": "Message",
+      "eventId": 11,
+      "createdAt": 1736327401.555079,
+      "status": "DELIVERED",
+      "recipientId": "A",
+      "senderId": "C",
+      "payload": {
+        "viewNumber": 1,
+        "sequenceNumber": 0,
+        "digest": "AA==",
+        "replicaId": "C",
+        "signed": true,
+        "signedBy": "C",
+        "type": "PREPARE",
+        "round": 0
+      },
+      "deliveredAt": null
+    },
+    {
+      "type": "Message",
+      "eventId": 14,
+      "createdAt": 1736327402.662572,
+      "status": "DELIVERED",
+      "recipientId": "A",
+      "senderId": "D",
+      "payload": {
+        "viewNumber": 1,
+        "sequenceNumber": 0,
+        "digest": "AA==",
+        "replicaId": "D",
+        "signed": true,
+        "signedBy": "D",
+        "type": "PREPARE",
+        "round": 0
+      },
+      "deliveredAt": null
+    },
+    {
+      "type": "Message",
+      "eventId": 8,
+      "createdAt": 1736327400.379664,
+      "status": "DELIVERED",
+      "recipientId": "B",
+      "senderId": "A",
+      "payload": {
+        "viewNumber": 1,
+        "sequenceNumber": 1,
+        "digest": "AA==",
+        "replicaId": "A",
+        "signed": true,
+        "signedBy": "A",
+        "type": "PREPARE",
+        "round": 1
+      },
+      "deliveredAt": null
+    },
+    {
+      "type": "Message",
+      "eventId": 12,
+      "createdAt": 1736327401.555106,
+      "status": "DELIVERED",
+      "recipientId": "B",
+      "senderId": "C",
+      "payload": {
+        "viewNumber": 1,
+        "sequenceNumber": 0,
+        "digest": "AA==",
+        "replicaId": "C",
+        "signed": true,
+        "signedBy": "C",
+        "type": "PREPARE",
+        "round": 0
+      },
+      "deliveredAt": null
+    },
+    {
+      "type": "Message",
+      "eventId": 15,
+      "createdAt": 1736327402.662593,
+      "status": "DELIVERED",
+      "recipientId": "B",
+      "senderId": "D",
+      "payload": {
+        "viewNumber": 1,
+        "sequenceNumber": 0,
+        "digest": "AA==",
+        "replicaId": "D",
+        "signed": true,
+        "signedBy": "D",
+        "type": "PREPARE",
+        "round": 0
+      },
+      "deliveredAt": null
+    },
+    {
+      "type": "Message",
+      "eventId": 9,
+      "createdAt": 1736327400.379686,
+      "status": "DELIVERED",
+      "recipientId": "C",
+      "senderId": "A",
+      "payload": {
+        "viewNumber": 1,
+        "sequenceNumber": 1,
+        "digest": "AA==",
+        "replicaId": "A",
+        "signed": true,
+        "signedBy": "A",
+        "type": "PREPARE",
+        "round": 1
+      },
+      "deliveredAt": null
+    },
+    {
+      "type": "Message",
+      "eventId": 16,
+      "createdAt": 1736327402.662634,
+      "status": "DELIVERED",
+      "recipientId": "C",
+      "senderId": "D",
+      "payload": {
+        "viewNumber": 1,
+        "sequenceNumber": 0,
+        "digest": "AA==",
+        "replicaId": "D",
+        "signed": true,
+        "signedBy": "D",
+        "type": "PREPARE",
+        "round": 0
+      },
+      "deliveredAt": null
+    },
+    {
+      "type": "Message",
+      "eventId": 10,
+      "createdAt": 1736327400.379694,
+      "status": "DELIVERED",
+      "recipientId": "D",
+      "senderId": "A",
+      "payload": {
+        "viewNumber": 1,
+        "sequenceNumber": 1,
+        "digest": "AA==",
+        "replicaId": "A",
+        "signed": true,
+        "signedBy": "A",
+        "type": "PREPARE",
+        "round": 1
+      },
+      "deliveredAt": null
+    },
+    {
+      "type": "Message",
+      "eventId": 13,
+      "createdAt": 1736327401.555111,
+      "status": "DELIVERED",
+      "recipientId": "D",
+      "senderId": "C",
+      "payload": {
+        "viewNumber": 1,
+        "sequenceNumber": 0,
+        "digest": "AA==",
+        "replicaId": "C",
+        "signed": true,
+        "signedBy": "C",
+        "type": "PREPARE",
+        "round": 0
+      },
+      "deliveredAt": null
+    },
+    {
+      "type": "Message",
+      "eventId": 17,
+      "createdAt": 1736327407.80967,
+      "status": "DELIVERED",
+      "recipientId": "A",
+      "senderId": "B",
+      "payload": {
+        "viewNumber": 1,
+        "sequenceNumber": 0,
+        "digest": "AA==",
+        "replicaId": "B",
+        "signed": true,
+        "signedBy": "B",
+        "type": "COMMIT",
+        "round": 0
+      },
+      "deliveredAt": null
+    },
+    {
+      "type": "Message",
+      "eventId": 20,
+      "createdAt": 1736327410.304332,
+      "status": "DELIVERED",
+      "recipientId": "A",
+      "senderId": "C",
+      "payload": {
+        "viewNumber": 1,
+        "sequenceNumber": 0,
+        "digest": "AA==",
+        "replicaId": "C",
+        "signed": true,
+        "signedBy": "C",
+        "type": "COMMIT",
+        "round": 0
+      },
+      "deliveredAt": null
+    },
+    {
+      "type": "Message",
+      "eventId": 23,
+      "createdAt": 1736327412.775859,
+      "status": "DELIVERED",
+      "recipientId": "A",
+      "senderId": "D",
+      "payload": {
+        "viewNumber": 1,
+        "sequenceNumber": 0,
+        "digest": "AA==",
+        "replicaId": "D",
+        "signed": true,
+        "signedBy": "D",
+        "type": "COMMIT",
+        "round": 0
+      },
+      "deliveredAt": null
+    },
+    {
+      "type": "Message",
+      "eventId": 21,
+      "createdAt": 1736327410.304344,
+      "status": "DELIVERED",
+      "recipientId": "B",
+      "senderId": "C",
+      "payload": {
+        "viewNumber": 1,
+        "sequenceNumber": 0,
+        "digest": "AA==",
+        "replicaId": "C",
+        "signed": true,
+        "signedBy": "C",
+        "type": "COMMIT",
+        "round": 0
+      },
+      "deliveredAt": null
+    },
+    {
+      "type": "Message",
+      "eventId": 24,
+      "createdAt": 1736327412.775875,
+      "status": "DELIVERED",
+      "recipientId": "B",
+      "senderId": "D",
+      "payload": {
+        "viewNumber": 1,
+        "sequenceNumber": 0,
+        "digest": "AA==",
+        "replicaId": "D",
+        "signed": true,
+        "signedBy": "D",
+        "type": "COMMIT",
+        "round": 0
+      },
+      "deliveredAt": null
+    },
+    {
+      "type": "Message",
+      "eventId": 18,
+      "createdAt": 1736327407.809685,
+      "status": "DELIVERED",
+      "recipientId": "C",
+      "senderId": "B",
+      "payload": {
+        "viewNumber": 1,
+        "sequenceNumber": 0,
+        "digest": "AA==",
+        "replicaId": "B",
+        "signed": true,
+        "signedBy": "B",
+        "type": "COMMIT",
+        "round": 0
+      },
+      "deliveredAt": null
+    },
+    {
+      "type": "Message",
+      "eventId": 25,
+      "createdAt": 1736327412.775879,
+      "status": "DELIVERED",
+      "recipientId": "C",
+      "senderId": "D",
+      "payload": {
+        "viewNumber": 1,
+        "sequenceNumber": 0,
+        "digest": "AA==",
+        "replicaId": "D",
+        "signed": true,
+        "signedBy": "D",
+        "type": "COMMIT",
+        "round": 0
+      },
+      "deliveredAt": null
+    },
+    {
+      "type": "Message",
+      "eventId": 19,
+      "createdAt": 1736327407.809689,
+      "status": "DELIVERED",
+      "recipientId": "D",
+      "senderId": "B",
+      "payload": {
+        "viewNumber": 1,
+        "sequenceNumber": 0,
+        "digest": "AA==",
+        "replicaId": "B",
+        "signed": true,
+        "signedBy": "B",
+        "type": "COMMIT",
+        "round": 0
+      },
+      "deliveredAt": null
+    },
+    {
+      "type": "Message",
+      "eventId": 22,
+      "createdAt": 1736327410.304347,
+      "status": "DELIVERED",
+      "recipientId": "D",
+      "senderId": "C",
+      "payload": {
+        "viewNumber": 1,
+        "sequenceNumber": 0,
+        "digest": "AA==",
+        "replicaId": "C",
+        "signed": true,
+        "signedBy": "C",
+        "type": "COMMIT",
+        "round": 0
+      },
+      "deliveredAt": null
+    },
+    {
+      "type": "ClientRequest",
+      "eventId": 2,
+      "createdAt": 1736327391.002775,
+      "status": "DELIVERED",
+      "recipientId": "A",
+      "senderId": "C0",
+      "payload": {
+        "operation": "C0/1",
+        "signed": false,
+        "signedBy": null,
+        "type": "DefaultClientRequest"
+      },
+      "deliveredAt": null
+    },
+    {
+      "type": "Message",
+      "eventId": 36,
+      "createdAt": 1736327476.860689,
+      "status": "DELIVERED",
+      "recipientId": "B",
+      "senderId": "A",
+      "payload": {
+        "operation": "C0/1",
+        "timestamp": 1736327476860,
+        "clientId": "C0",
+        "signed": true,
+        "signedBy": "A",
+        "type": "REQUEST"
+      },
+      "deliveredAt": null
+    },
+    {
+      "type": "Message",
+      "eventId": 37,
+      "createdAt": 1736327481.406768,
+      "status": "DELIVERED",
+      "recipientId": "A",
+      "senderId": "B",
+      "payload": {
+        "viewNumber": 1,
+        "sequenceNumber": 1,
+        "digest": "AA==",
+        "request": {
+          "operation": "C0/1",
+          "timestamp": 1736327476860,
+          "clientId": "C0",
+          "signed": true,
+          "signedBy": "A",
+          "type": "REQUEST"
+        },
+        "signed": true,
+        "signedBy": "B",
+        "type": "PRE-PREPARE",
+        "round": 1
+      },
+      "deliveredAt": null
+    },
+    {
+      "type": "Message",
+      "eventId": 38,
+      "createdAt": 1736327481.406803,
+      "status": "DELIVERED",
+      "recipientId": "C",
+      "senderId": "B",
+      "payload": {
+        "viewNumber": 1,
+        "sequenceNumber": 1,
+        "digest": "AA==",
+        "request": {
+          "operation": "C0/1",
+          "timestamp": 1736327476860,
+          "clientId": "C0",
+          "signed": true,
+          "signedBy": "A",
+          "type": "REQUEST"
+        },
+        "signed": true,
+        "signedBy": "B",
+        "type": "PRE-PREPARE",
+        "round": 1
+      },
+      "deliveredAt": null
+    },
+    {
+      "type": "Message",
+      "eventId": 39,
+      "createdAt": 1736327481.406814,
+      "status": "DELIVERED",
+      "recipientId": "D",
+      "senderId": "B",
+      "payload": {
+        "viewNumber": 1,
+        "sequenceNumber": 1,
+        "digest": "AA==",
+        "request": {
+          "operation": "C0/1",
+          "timestamp": 1736327476860,
+          "clientId": "C0",
+          "signed": true,
+          "signedBy": "A",
+          "type": "REQUEST"
+        },
+        "signed": true,
+        "signedBy": "B",
+        "type": "PRE-PREPARE",
+        "round": 1
+      },
+      "deliveredAt": null
+    },
+    {
+      "type": "Message",
+      "eventId": 46,
+      "createdAt": 1736327485.321598,
+      "status": "DELIVERED",
+      "recipientId": "A",
+      "senderId": "C",
+      "payload": {
+        "viewNumber": 1,
+        "sequenceNumber": 1,
+        "digest": "AA==",
+        "replicaId": "C",
+        "signed": true,
+        "signedBy": "C",
+        "type": "PREPARE",
+        "round": 1
+      },
+      "deliveredAt": null
+    },
+    {
+      "type": "Message",
+      "eventId": 52,
+      "createdAt": 1736327488.175899,
+      "status": "DELIVERED",
+      "recipientId": "A",
+      "senderId": "D",
+      "payload": {
+        "viewNumber": 1,
+        "sequenceNumber": 1,
+        "digest": "AA==",
+        "replicaId": "D",
+        "signed": true,
+        "signedBy": "D",
+        "type": "PREPARE",
+        "round": 1
+      },
+      "deliveredAt": null
+    },
+    {
+      "type": "Message",
+      "eventId": 40,
+      "createdAt": 1736327483.699898,
+      "status": "DELIVERED",
+      "recipientId": "B",
+      "senderId": "A",
+      "payload": {
+        "viewNumber": 1,
+        "sequenceNumber": 1,
+        "digest": "AA==",
+        "replicaId": "A",
+        "signed": true,
+        "signedBy": "A",
+        "type": "PREPARE",
+        "round": 1
+      },
+      "deliveredAt": null
+    },
+    {
+      "type": "Message",
+      "eventId": 47,
+      "createdAt": 1736327485.32163,
+      "status": "DELIVERED",
+      "recipientId": "B",
+      "senderId": "C",
+      "payload": {
+        "viewNumber": 1,
+        "sequenceNumber": 1,
+        "digest": "AA==",
+        "replicaId": "C",
+        "signed": true,
+        "signedBy": "C",
+        "type": "PREPARE",
+        "round": 1
+      },
+      "deliveredAt": null
+    },
+    {
+      "type": "Message",
+      "eventId": 53,
+      "createdAt": 1736327488.175913,
+      "status": "DELIVERED",
+      "recipientId": "B",
+      "senderId": "D",
+      "payload": {
+        "viewNumber": 1,
+        "sequenceNumber": 1,
+        "digest": "AA==",
+        "replicaId": "D",
+        "signed": true,
+        "signedBy": "D",
+        "type": "PREPARE",
+        "round": 1
+      },
+      "deliveredAt": null
+    },
+    {
+      "type": "Message",
+      "eventId": 41,
+      "createdAt": 1736327483.699912,
+      "status": "DELIVERED",
+      "recipientId": "C",
+      "senderId": "A",
+      "payload": {
+        "viewNumber": 1,
+        "sequenceNumber": 1,
+        "digest": "AA==",
+        "replicaId": "A",
+        "signed": true,
+        "signedBy": "A",
+        "type": "PREPARE",
+        "round": 1
+      },
+      "deliveredAt": null
+    },
+    {
+      "type": "Message",
+      "eventId": 54,
+      "createdAt": 1736327488.175916,
+      "status": "DELIVERED",
+      "recipientId": "C",
+      "senderId": "D",
+      "payload": {
+        "viewNumber": 1,
+        "sequenceNumber": 1,
+        "digest": "AA==",
+        "replicaId": "D",
+        "signed": true,
+        "signedBy": "D",
+        "type": "PREPARE",
+        "round": 1
+      },
+      "deliveredAt": null
+    },
+    {
+      "type": "Message",
+      "eventId": 42,
+      "createdAt": 1736327483.699915,
+      "status": "DELIVERED",
+      "recipientId": "D",
+      "senderId": "A",
+      "payload": {
+        "viewNumber": 1,
+        "sequenceNumber": 1,
+        "digest": "AA==",
+        "replicaId": "A",
+        "signed": true,
+        "signedBy": "A",
+        "type": "PREPARE",
+        "round": 1
+      },
+      "deliveredAt": null
+    },
+    {
+      "type": "Message",
+      "eventId": 48,
+      "createdAt": 1736327485.32164,
+      "status": "DELIVERED",
+      "recipientId": "D",
+      "senderId": "C",
+      "payload": {
+        "viewNumber": 1,
+        "sequenceNumber": 1,
+        "digest": "AA==",
+        "replicaId": "C",
+        "signed": true,
+        "signedBy": "C",
+        "type": "PREPARE",
+        "round": 1
+      },
+      "deliveredAt": null
+    },
+    {
+      "type": "Message",
+      "eventId": 49,
+      "createdAt": 1736327485.321731,
+      "status": "DELIVERED",
+      "recipientId": "A",
+      "senderId": "C",
+      "payload": {
+        "viewNumber": 1,
+        "sequenceNumber": 1,
+        "digest": "AA==",
+        "replicaId": "C",
+        "signed": true,
+        "signedBy": "C",
+        "type": "COMMIT",
+        "round": 1
+      },
+      "deliveredAt": null
+    },
+    {
+      "type": "Message",
+      "eventId": 55,
+      "createdAt": 1736327488.175935,
+      "status": "DELIVERED",
+      "recipientId": "A",
+      "senderId": "D",
+      "payload": {
+        "viewNumber": 1,
+        "sequenceNumber": 1,
+        "digest": "AA==",
+        "replicaId": "D",
+        "signed": true,
+        "signedBy": "D",
+        "type": "COMMIT",
+        "round": 1
+      },
+      "deliveredAt": null
+    },
+    {
+      "type": "Message",
+      "eventId": 58,
+      "createdAt": 1736327493.78356,
+      "status": "DELIVERED",
+      "recipientId": "A",
+      "senderId": "B",
+      "payload": {
+        "viewNumber": 1,
+        "sequenceNumber": 1,
+        "digest": "AA==",
+        "replicaId": "B",
+        "signed": true,
+        "signedBy": "B",
+        "type": "COMMIT",
+        "round": 1
+      },
+      "deliveredAt": null
+    },
+    {
+      "type": "Message",
+      "eventId": 43,
+      "createdAt": 1736327483.699942,
+      "status": "DELIVERED",
+      "recipientId": "B",
+      "senderId": "A",
+      "payload": {
+        "viewNumber": 1,
+        "sequenceNumber": 1,
+        "digest": "AA==",
+        "replicaId": "A",
+        "signed": true,
+        "signedBy": "A",
+        "type": "COMMIT",
+        "round": 1
+      },
+      "deliveredAt": null
+    },
+    {
+      "type": "Message",
+      "eventId": 50,
+      "createdAt": 1736327485.321743,
+      "status": "DELIVERED",
+      "recipientId": "B",
+      "senderId": "C",
+      "payload": {
+        "viewNumber": 1,
+        "sequenceNumber": 1,
+        "digest": "AA==",
+        "replicaId": "C",
+        "signed": true,
+        "signedBy": "C",
+        "type": "COMMIT",
+        "round": 1
+      },
+      "deliveredAt": null
+    },
+    {
+      "type": "Message",
+      "eventId": 56,
+      "createdAt": 1736327488.175938,
+      "status": "DELIVERED",
+      "recipientId": "B",
+      "senderId": "D",
+      "payload": {
+        "viewNumber": 1,
+        "sequenceNumber": 1,
+        "digest": "AA==",
+        "replicaId": "D",
+        "signed": true,
+        "signedBy": "D",
+        "type": "COMMIT",
+        "round": 1
+      },
+      "deliveredAt": null
+    },
+    {
+      "type": "Message",
+      "eventId": 44,
+      "createdAt": 1736327483.699945,
+      "status": "DELIVERED",
+      "recipientId": "C",
+      "senderId": "A",
+      "payload": {
+        "viewNumber": 1,
+        "sequenceNumber": 1,
+        "digest": "AA==",
+        "replicaId": "A",
+        "signed": true,
+        "signedBy": "A",
+        "type": "COMMIT",
+        "round": 1
+      },
+      "deliveredAt": null
+    },
+    {
+      "type": "Message",
+      "eventId": 57,
+      "createdAt": 1736327488.175941,
+      "status": "DELIVERED",
+      "recipientId": "C",
+      "senderId": "D",
+      "payload": {
+        "viewNumber": 1,
+        "sequenceNumber": 1,
+        "digest": "AA==",
+        "replicaId": "D",
+        "signed": true,
+        "signedBy": "D",
+        "type": "COMMIT",
+        "round": 1
+      },
+      "deliveredAt": null
+    },
+    {
+      "type": "Message",
+      "eventId": 59,
+      "createdAt": 1736327493.783589,
+      "status": "DELIVERED",
+      "recipientId": "C",
+      "senderId": "B",
+      "payload": {
+        "viewNumber": 1,
+        "sequenceNumber": 1,
+        "digest": "AA==",
+        "replicaId": "B",
+        "signed": true,
+        "signedBy": "B",
+        "type": "COMMIT",
+        "round": 1
+      },
+      "deliveredAt": null
+    },
+    {
+      "type": "Message",
+      "eventId": 45,
+      "createdAt": 1736327483.699947,
+      "status": "DELIVERED",
+      "recipientId": "D",
+      "senderId": "A",
+      "payload": {
+        "viewNumber": 1,
+        "sequenceNumber": 1,
+        "digest": "AA==",
+        "replicaId": "A",
+        "signed": true,
+        "signedBy": "A",
+        "type": "COMMIT",
+        "round": 1
+      },
+      "deliveredAt": null
+    },
+    {
+      "type": "Message",
+      "eventId": 51,
+      "createdAt": 1736327485.321752,
+      "status": "DELIVERED",
+      "recipientId": "D",
+      "senderId": "C",
+      "payload": {
+        "viewNumber": 1,
+        "sequenceNumber": 1,
+        "digest": "AA==",
+        "replicaId": "C",
+        "signed": true,
+        "signedBy": "C",
+        "type": "COMMIT",
+        "round": 1
+      },
+      "deliveredAt": null
+    },
+    {
+      "type": "Message",
+      "eventId": 60,
+      "createdAt": 1736327493.783599,
+      "status": "DELIVERED",
+      "recipientId": "D",
+      "senderId": "B",
+      "payload": {
+        "viewNumber": 1,
+        "sequenceNumber": 1,
+        "digest": "AA==",
+        "replicaId": "B",
+        "signed": true,
+        "signedBy": "B",
+        "type": "COMMIT",
+        "round": 1
+      },
+      "deliveredAt": null
+    }
+  ],
+  "brokenInvariants": [],
+  "finalized": false,
+  "scenarioId": "pbft-java"
+}
