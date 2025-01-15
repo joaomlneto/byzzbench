@@ -422,10 +422,11 @@ public class ViewChangeMessageFactory extends MessageMutatorFactory {
                         SortedMap<Long, RequestMessage> requests = message.getRequestsR();
                         Entry<Long, RequestMessage> lastReq = requests.lastEntry();
                         if (sender instanceof HbftJavaReplica replica) {
-                            for (Long key : replica.getSpeculativeRequests().keySet()) {
-                                if (!replica.getSpeculativeRequests().get(key).equals(lastReq.getValue())) {
+                            SortedMap<Long, RequestMessage> specRequests = replica.getSpeculativeRequests();
+                            for (Long key : specRequests.keySet()) {
+                                if (!specRequests.get(key).equals(lastReq.getValue())) {
                                     requests.remove(lastReq.getKey());
-                                    requests.put(key, replica.getSpeculativeRequests().get(key));
+                                    requests.put(lastReq.getKey(), specRequests.get(key));
                                     ViewChangeMessage mutatedMessage = message.withRequestsR(requests);
                                     mutatedMessage.sign(message.getSignedBy());
                                     messageEvent.setPayload(mutatedMessage);
