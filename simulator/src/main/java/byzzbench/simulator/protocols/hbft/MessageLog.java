@@ -502,7 +502,7 @@ public class MessageLog implements Serializable {
         for (SortedMap<Long, RequestMessage> requests : allRequests) {
             for (Map.Entry<Long, RequestMessage> request : requests.entrySet()) {
                 ClientRequestKey key = new ClientRequestKey(request.getKey(), request.getValue().getClientId());
-                System.out.println(selectedHistoryM + " " + request + " " + (requestMap.get(key) >= tolerance + 1));
+                //System.out.println(selectedHistoryM + " " + request + " " + (requestMap.get(key) >= tolerance + 1));
                 if ((selectedHistoryM == null || request.getKey() > selectedHistoryM.getGreatestSeqNumber()) && requestMap.get(key) >= tolerance + 1) {
                     sortedRequests.addEntry(request.getKey(), request.getValue());
                 } else if (selectedHistoryM == null || request.getKey() > selectedHistoryM.getGreatestSeqNumber()) {
@@ -603,7 +603,7 @@ public class MessageLog implements Serializable {
             && firstViewChange.getSpeculativeHistoryP() != null
             && (firstViewChange.getSpeculativeHistoryP().getGreatestSeqNumber() != checkpoint.getSequenceNumber()
             || !firstViewChange.getSpeculativeHistoryP().equals(checkpoint.getHistory()))) {
-                System.out.println("Checkpoint should be matching! (SpeculativeHistoryP)");
+                //System.out.println("Checkpoint should be matching! (SpeculativeHistoryP)");
                 logger.writeLog("Checkpoint should be matching! (SpeculativeHistoryP)");
                 return false;
             }
@@ -623,7 +623,7 @@ public class MessageLog implements Serializable {
             if (historyQmap.get(check) >= thresholdForCheckpointI) {
                 if (check.getSequenceNumber() != checkpoint.getSequenceNumber()
                     || !check.getHistory().equals(checkpoint.getHistory())) {
-                    System.out.println("Checkpoint-I should be matching! (SpeculativeHistoryQ)");
+                    //System.out.println("Checkpoint-I should be matching! (SpeculativeHistoryQ)");
                     logger.writeLog("Checkpoint-I should be matching! (SpeculativeHistoryQ)");
                     return false;
                 }
@@ -685,7 +685,7 @@ public class MessageLog implements Serializable {
             }
         }
 
-        System.out.println("Locally sorted requests: " + sortedRequests + "\n Received: " + requestsFromNewView);
+        //System.out.println("Locally sorted requests: " + sortedRequests + "\n Received: " + requestsFromNewView);
 
         if (!sortedRequests.getRequests().keySet().equals(requestsFromNewView.getRequests().keySet())) {
             logger.writeLog("Requests received and sorted do not match!");

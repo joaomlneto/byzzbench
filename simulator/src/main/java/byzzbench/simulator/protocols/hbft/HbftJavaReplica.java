@@ -108,7 +108,7 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
 
     @Override
     public void initialize() {
-        System.out.println("Initializing replica " + this.getId());
+        //System.out.println("Initializing replica " + this.getId());
 
         this.setView(1);
     }
@@ -375,6 +375,10 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
 
         long seqNumber = message.getSequenceNumber();
 
+        // If there is already a committed request at this seq number, we dont accept
+        if (this.speculativeHistory.getRequests().get(seqNumber) != null) {
+            return false;
+        }
 
         /* 
          * This is different from PBFT where PBFT accepts
@@ -657,7 +661,7 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
                  * use the same as for PBFT, where the sequence number mod 
                  * the interval reaches 0.
                  */
-                if (seqNumber % 2 == 0 && this.getId().equals(this.getPrimaryId())) {
+                if (seqNumber % 20 == 0 && this.getId().equals(this.getPrimaryId())) {
                     CheckpointMessage checkpoint = new CheckpointIMessage(
                         seqNumber,
                         this.digest(this.speculativeHistory),
@@ -669,7 +673,7 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
 
                     // Log own checkpoint in accordance to hBFT 4.2
                     //messageLog.appendCheckpoint(checkpoint, this.tolerance, this.speculativeHistory, this.getViewNumber());
-                } else if (seqNumber % 2 == 0) {
+                } else if (seqNumber % 20 == 0) {
                     this.setTimeout(this::sendViewChangeOnTimeout, this.CHECKPOINT_TIMEOUT, "CHECKPOINT");
                 }
             } else if (ticket.isCommittedConflicting(this.tolerance)) {
