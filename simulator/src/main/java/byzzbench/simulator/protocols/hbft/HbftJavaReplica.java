@@ -89,7 +89,7 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
 
     // The received requests stored as <timestamp, clientId>
     @Getter
-    private final SortedMap<Long, String> receivedRequests = new TreeMap<>();
+    private final SortedMap<ReplicaRequestKey, String> receivedRequests = new TreeMap<>();
 
     public HbftJavaReplica(String replicaId,
                            SortedSet<String> nodeIds,
@@ -174,12 +174,11 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
             }
         }
 
-        // TODO: Maybe timestamp needs to be double checked
-        // FIXME: This is not good requests can be discarded
-        if (this.receivedRequests.get(request.getTimestamp()) != null) {
+        // TODO: Should double check if this is correct
+        if (this.receivedRequests.get(key) != null) {
             return;
         }
-        this.receivedRequests.put(request.getTimestamp(), request.getClientId());
+        this.receivedRequests.put(key, request.getClientId());
 
 
         String primaryId = this.getPrimaryId();

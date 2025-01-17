@@ -437,7 +437,7 @@ public class MessageLog implements Serializable {
             allRequests.add(requests);
 
             for (long seqNum : requests.keySet()) {
-                ClientRequestKey key = new ClientRequestKey(seqNum, requests.get(seqNum).getClientId());
+                ClientRequestKey key = new ClientRequestKey(seqNum, requests.get(seqNum).getOperation().toString());
                 requestMap.put(key, requestMap.getOrDefault(key, 0) + 1);
             }
             
@@ -501,7 +501,7 @@ public class MessageLog implements Serializable {
          */
         for (SortedMap<Long, RequestMessage> requests : allRequests) {
             for (Map.Entry<Long, RequestMessage> request : requests.entrySet()) {
-                ClientRequestKey key = new ClientRequestKey(request.getKey(), request.getValue().getClientId());
+                ClientRequestKey key = new ClientRequestKey(request.getKey(), request.getValue().getOperation().toString());
                 //System.out.println(selectedHistoryM + " " + request + " " + (requestMap.get(key) >= tolerance + 1));
                 if ((selectedHistoryM == null || request.getKey() > selectedHistoryM.getGreatestSeqNumber()) && requestMap.get(key) >= tolerance + 1) {
                     sortedRequests.addEntry(request.getKey(), request.getValue());
@@ -654,12 +654,13 @@ public class MessageLog implements Serializable {
             allRequests.add(requestsPerReplica);
 
             for (long seqNum : requestsPerReplica.keySet()) {
-                ClientRequestKey key = new ClientRequestKey(seqNum, requestsPerReplica.get(seqNum).getClientId());
+                ClientRequestKey key = new ClientRequestKey(seqNum, requestsPerReplica.get(seqNum).getOperation().toString());
                 requestMap.put(key, requestMap.getOrDefault(key, 0) + 1);
             }
         }
 
         SpeculativeHistory sortedRequests = new SpeculativeHistory();
+        // System.out.println(requestMap + " " + allRequests);
 
         /*  
          * Select every request in R if f+1 replicas include it
@@ -667,7 +668,7 @@ public class MessageLog implements Serializable {
          */
         for (SortedMap<Long, RequestMessage> requests : allRequests) {
             for (Map.Entry<Long, RequestMessage> request : requests.entrySet()) {
-                ClientRequestKey key = new ClientRequestKey(request.getKey(), request.getValue().getClientId());
+                ClientRequestKey key = new ClientRequestKey(request.getKey(), request.getValue().getOperation().toString());
                 if ((checkpoint == null || request.getKey() > checkpoint.getSequenceNumber()) && requestMap.get(key) >= tolerance + 1) {
                     sortedRequests.addEntry(request.getKey(), request.getValue());
                 } else if (checkpoint == null || request.getKey() > checkpoint.getSequenceNumber()) {
