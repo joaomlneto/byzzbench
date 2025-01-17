@@ -1,5 +1,6 @@
-package byzzbench.simulator.protocols.fab.messages;
+package byzzbench.simulator.protocols.fab2.messages;
 
+import byzzbench.simulator.protocols.fab2.ProposalNumber;
 import byzzbench.simulator.protocols.pbft_java.message.IPhaseMessage;
 import byzzbench.simulator.transport.MessagePayload;
 import lombok.*;
@@ -14,7 +15,7 @@ import lombok.*;
 public class SuspectMessage extends IPhaseMessage {
     private final String senderId;
     private final String suspectId;
-    private final long proposalNumber;
+    private final ProposalNumber proposalNumber;
 
     @Override
     public String getType() {
@@ -23,12 +24,12 @@ public class SuspectMessage extends IPhaseMessage {
 
     @Override
     public long getViewNumber() {
-        return proposalNumber;
+        return proposalNumber.getViewNumber();
     }
 
     @Override
     public long getSequenceNumber() {
-        return proposalNumber;
+        return proposalNumber.getSequenceNumber();
     }
 
     @Override

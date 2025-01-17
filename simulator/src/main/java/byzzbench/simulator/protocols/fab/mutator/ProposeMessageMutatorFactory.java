@@ -12,6 +12,7 @@ import org.springframework.stereotype.Component;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Random;
 
 @Component
 @ToString
@@ -78,6 +79,38 @@ public class ProposeMessageMutatorFactory extends MessageMutatorFactory {
                         messageEvent.setPayload(mutatedMessage);
                     }
                 }
+
+//                new MessageMutationFault(
+//                        "fab-propose-any",
+//                        "Any Propose Number",
+//                        List.of(ProposeMessage.class)
+//                ) {
+//                    @Override
+//                    public void accept(FaultContext serializable) {
+//                        Optional<Event> event = serializable.getEvent();
+//                        Random random = new Random();
+//                        int mutation = random.nextInt(2, 100);
+//
+//                        if (event.isEmpty()) {
+//                            throw new IllegalArgumentException("Invalid message type");
+//                        }
+//
+//                        if (!(event.get() instanceof MessageEvent messageEvent)) {
+//                            throw new IllegalArgumentException("Invalid message type");
+//                        }
+//
+//                        if (!(messageEvent.getPayload() instanceof ProposeMessage message)) {
+//                            throw new IllegalArgumentException("Invalid message type");
+//                        }
+//
+//                        ProposeMessage mutatedMessage = message.withValueAndProposalNumber(
+//                                new Pair(message.getValueAndProposalNumber().getNumber() + mutation,
+//                                        message.getValueAndProposalNumber().getValue())
+//                        );
+//
+//                        messageEvent.setPayload(mutatedMessage);
+//                    }
+//                }
         );
     }
 }

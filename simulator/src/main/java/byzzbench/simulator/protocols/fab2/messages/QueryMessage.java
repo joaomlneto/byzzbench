@@ -1,5 +1,7 @@
-package byzzbench.simulator.protocols.fab.messages;
+package byzzbench.simulator.protocols.fab2.messages;
 
+import byzzbench.simulator.protocols.fab.ProgressCertificate;
+import byzzbench.simulator.protocols.fab2.ProposalNumber;
 import byzzbench.simulator.protocols.pbft_java.message.IPhaseMessage;
 import byzzbench.simulator.transport.MessagePayload;
 import lombok.AllArgsConstructor;
@@ -8,27 +10,27 @@ import lombok.EqualsAndHashCode;
 import lombok.With;
 
 /**
- * <p>Message sent by Learner replicas to Learner replicas to request the other's learned value.</p>
+ * <p>Message sent by Proposer replicas to Acceptor replicas to recover after new leader election.</p>
  */
 @AllArgsConstructor
 @Data
 @EqualsAndHashCode(callSuper = true)
 @With
-public class PullMessage extends IPhaseMessage {
-    private final long proposalNumber;
+public class QueryMessage extends IPhaseMessage {
+    private final ProposalNumber proposalNumber;
 
     public String getType() {
-        return "PULL";
+        return "QUERY";
     }
 
     @Override
     public long getViewNumber() {
-        return proposalNumber;
+        return proposalNumber.getViewNumber();
     }
 
     @Override
     public long getSequenceNumber() {
-        return proposalNumber;
+        return proposalNumber.getSequenceNumber();
     }
 
     @Override

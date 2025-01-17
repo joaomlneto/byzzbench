@@ -1,4 +1,4 @@
-package byzzbench.simulator.protocols.fab;
+package byzzbench.simulator.protocols.fab2;
 
 import byzzbench.simulator.Client;
 import byzzbench.simulator.Scenario;
@@ -66,7 +66,8 @@ import java.util.concurrent.atomic.AtomicLong;
 //    }
 //}
 
-public class FastByzantineClient extends Client {
+public class
+FastByzantineClient extends Client {
     private final AtomicLong learners = new AtomicLong(0);
     private final AtomicBoolean isFinished = new AtomicBoolean(false);
     private final List<String> learnersList = new ArrayList<>();

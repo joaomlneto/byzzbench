@@ -1,5 +1,6 @@
-package byzzbench.simulator.protocols.fab.messages;
+package byzzbench.simulator.protocols.fab2.messages;
 
+import byzzbench.simulator.protocols.fab2.ProposalNumber;
 import byzzbench.simulator.protocols.pbft_java.message.IPhaseMessage;
 import byzzbench.simulator.transport.MessagePayload;
 import lombok.AllArgsConstructor;
@@ -15,7 +16,7 @@ import lombok.With;
 @EqualsAndHashCode(callSuper = true)
 @With
 public class PullMessage extends IPhaseMessage {
-    private final long proposalNumber;
+    private final ProposalNumber proposalNumber;
 
     public String getType() {
         return "PULL";
@@ -23,12 +24,12 @@ public class PullMessage extends IPhaseMessage {
 
     @Override
     public long getViewNumber() {
-        return proposalNumber;
+        return proposalNumber.getViewNumber();
     }
 
     @Override
     public long getSequenceNumber() {
-        return proposalNumber;
+        return proposalNumber.getSequenceNumber();
     }
 
     @Override

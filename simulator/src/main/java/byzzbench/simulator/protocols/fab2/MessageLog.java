@@ -1,6 +1,6 @@
-package byzzbench.simulator.protocols.fab;
+package byzzbench.simulator.protocols.fab2;
 
-import byzzbench.simulator.protocols.fab.messages.*;
+import byzzbench.simulator.protocols.fab2.messages.*;
 import byzzbench.simulator.transport.DefaultClientRequestPayload;
 import byzzbench.simulator.transport.MessagePayload;
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -10,7 +10,6 @@ import lombok.extern.java.Log;
 
 import java.io.Serializable;
 import java.util.*;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 @Log
@@ -30,15 +29,17 @@ public class MessageLog {
     private Pair acceptedProposal;
     @Getter
     private SortedMap<String, SignedResponse> responses = new TreeMap<>();
-    private SortedMap<Long, List<ProposeMessage>> proposeMessages = new TreeMap<>();
-    private SortedMap<Long, List<AcceptMessage>> acceptMessages = new TreeMap<>();
-    private SortedMap<Long, List<LearnMessage>> learnMessages = new TreeMap<>();
-    private SortedMap<Long, List<SatisfiedMessage>> satisfiedMessages = new TreeMap<>();
-    private SortedMap<Long, List<ReplyMessage>> replyMessages = new TreeMap<>();
-    private SortedMap<Long, List<PullMessage>> pullMessages = new TreeMap<>();
+    private SortedMap<ProposalNumber, List<ProposeMessage>> proposeMessages = new TreeMap<>();
+    private SortedMap<ProposalNumber, List<AcceptMessage>> acceptMessages = new TreeMap<>();
+    private SortedMap<ProposalNumber, List<LearnMessage>> learnMessages = new TreeMap<>();
+    private SortedMap<ProposalNumber, List<SatisfiedMessage>> satisfiedMessages = new TreeMap<>();
+    private SortedMap<ProposalNumber, List<ReplyMessage>> replyMessages = new TreeMap<>();
+    private SortedMap<ProposalNumber, List<PullMessage>> pullMessages = new TreeMap<>();
+    // Takes into consideration only the view number
     private SortedMap<Long, List<SuspectMessage>> suspectMessages = new TreeMap<>();
+    // Takes into consideration only the view number
     private SortedMap<Long, List<QueryMessage>> queryMessages = new TreeMap<>();
-    private SortedMap<Long, List<ViewChangeMessage>> viewChangeMessages = new TreeMap<>();
+    private SortedMap<ProposalNumber, List<ViewChangeMessage>> viewChangeMessages = new TreeMap<>();
     private SortedMap<String, List<DefaultClientRequestPayload>> clientRequestMessages = new TreeMap<>();
 
     public MessageLog(FastByzantineReplica replica) {
@@ -61,43 +62,23 @@ public class MessageLog {
         clientRequestMessages = new TreeMap<>();
     }
 
-//    public MessageLog(NewFastByzantineReplica replica) {
-//        this.newFastByzantineReplica = replica;
-//        this.acceptorsWithAcceptedProposal = new TreeMap<>();
-//        this.proposersWithLearnedValue = new TreeMap<>();
-//        this.satisfiedProposerNodes = new TreeMap<>();
-//        this.learnersWithLearnedValue = new TreeMap<>();
-//        this.nodesSuspectingLeader = new TreeSet<>();
-//        this.responses = new TreeMap<>();
-//        proposeMessages = new TreeMap<>();
-//        acceptMessages = new TreeMap<>();
-//        learnMessages = new TreeMap<>();
-//        satisfiedMessages = new TreeMap<>();
-//        replyMessages = new TreeMap<>();
-//        pullMessages = new TreeMap<>();
-//        suspectMessages = new TreeMap<>();
-//        queryMessages = new TreeMap<>();
-//        viewChangeMessages = new TreeMap<>();
-//        clientRequestMessages = new TreeMap<>();
-//    }
-
     public void addMessage(String sender, MessagePayload message) {
         if (message instanceof ProposeMessage) {
-            proposeMessages.computeIfAbsent(((ProposeMessage) message).getValueAndProposalNumber().getNumber(), k -> new ArrayList<>()).add((ProposeMessage) message);
+            proposeMessages.computeIfAbsent(((ProposeMessage) message).getValueAndProposalNumber().getProposalNumber(), k -> new ArrayList<>()).add((ProposeMessage) message);
         } else if (message instanceof AcceptMessage acceptMessage) {
-            acceptMessages.computeIfAbsent(acceptMessage.getValueAndProposalNumber().getNumber(), k -> new ArrayList<>()).add(acceptMessage);
+            acceptMessages.computeIfAbsent(acceptMessage.getValueAndProposalNumber().getProposalNumber(), k -> new ArrayList<>()).add(acceptMessage);
         } else if (message instanceof LearnMessage learnMessage) {
-            learnMessages.computeIfAbsent(learnMessage.getValueAndProposalNumber().getNumber(), k -> new ArrayList<>()).add(learnMessage);
+            learnMessages.computeIfAbsent(learnMessage.getValueAndProposalNumber().getProposalNumber(), k -> new ArrayList<>()).add(learnMessage);
         } else if (message instanceof SatisfiedMessage satisfiedMessage) {
-            satisfiedMessages.computeIfAbsent(satisfiedMessage.getValueAndProposalNumber().getNumber(), k -> new ArrayList<>()).add(satisfiedMessage);
+            satisfiedMessages.computeIfAbsent(satisfiedMessage.getValueAndProposalNumber().getProposalNumber(), k -> new ArrayList<>()).add(satisfiedMessage);
         } else if (message instanceof ReplyMessage replyMessage) {
-            replyMessages.computeIfAbsent(replyMessage.getValueAndProposalNumber().getNumber(), k -> new ArrayList<>()).add(replyMessage);
+            replyMessages.computeIfAbsent(replyMessage.getValueAndProposalNumber().getProposalNumber(), k -> new ArrayList<>()).add(replyMessage);
         } else if (message instanceof PullMessage pullMessage) {
-            pullMessages.computeIfAbsent(pullMessage.getViewNumber(), k -> new ArrayList<>()).add(pullMessage);
+            pullMessages.computeIfAbsent(pullMessage.getProposalNumber(), k -> new ArrayList<>()).add(pullMessage);
         } else if (message instanceof SuspectMessage suspectMessage) {
-            suspectMessages.computeIfAbsent(suspectMessage.getViewNumber(), k -> new ArrayList<>()).add(suspectMessage);
+            suspectMessages.computeIfAbsent(suspectMessage.getProposalNumber().getViewNumber(), k -> new ArrayList<>()).add(suspectMessage);
         } else if (message instanceof QueryMessage queryMessage) {
-            queryMessages.computeIfAbsent(queryMessage.getViewNumber(), k -> new ArrayList<>()).add(queryMessage);
+            queryMessages.computeIfAbsent(queryMessage.getProposalNumber().getViewNumber(), k -> new ArrayList<>()).add(queryMessage);
         } else if (message instanceof ViewChangeMessage viewChangeMessage) {
             viewChangeMessages.computeIfAbsent(viewChangeMessage.getProposalNumber(), k -> new ArrayList<>()).add(viewChangeMessage);
         } else if (message instanceof DefaultClientRequestPayload clientRequestMessage) {
@@ -140,7 +121,7 @@ public class MessageLog {
 
     public boolean onPropose(String senderId, ProposeMessage proposeMessage, int vouchingThreshold) {
         // Remove message from the proposeMessages queue
-        long proposalNumber = proposeMessage.getValueAndProposalNumber().getNumber();
+        ProposalNumber proposalNumber = proposeMessage.getValueAndProposalNumber().getProposalNumber();
         if (proposeMessages.containsKey(proposalNumber)) {
             proposeMessages.get(proposalNumber).remove(proposeMessage);
         }
@@ -149,17 +130,15 @@ public class MessageLog {
         byte[] messageProposedValue = proposeMessage.getValueAndProposalNumber().getValue();
         ProgressCertificate progressCertificate = proposeMessage.getProgressCertificate();
 
-        if (proposalNumber != this.replica.getViewNumber()) {
+        if (proposalNumber.getViewNumber() != this.replica.getViewNumber() || proposalNumber.getSequenceNumber() != this.replica.getProposalNumber()) {
             log.info("The view number of the PROPOSE message is not the same as the current view number");
             return false; // Only listen to current leader
         }
 
-        if (acceptedProposal != null && acceptedProposal.getNumber() == proposalNumber) {
+        if (acceptedProposal != null && acceptedProposal.getProposalNumber().equals(proposalNumber)) {
             log.info("Duplicate proposal received.");
             return false; // Ignore duplicate proposals
         }
-
-//        log.info("Progress certificate: " + progressCertificate);
 
         if (acceptedProposal != null && !Arrays.equals(acceptedProposal.getValue(), messageProposedValue) && progressCertificate != null &&
                 !progressCertificate.vouchesFor(messageProposedValue, vouchingThreshold)) {
@@ -181,12 +160,14 @@ public class MessageLog {
         acceptorsWithAcceptedProposal.put(senderId, acceptValue);
 
         byte[] acceptedValue = acceptMessage.getValueAndProposalNumber().getValue();
-        long proposalNumber = acceptMessage.getValueAndProposalNumber().getNumber();
+        ProposalNumber proposalNumber = acceptMessage.getValueAndProposalNumber().getProposalNumber();
 
         AtomicInteger currentAccepted = new AtomicInteger();
         // If there are acceptedThreshold accepted values for the same proposalValue, send a LEARN message to all Proposer replicas
         acceptorsWithAcceptedProposal.values().forEach(pair -> {
-            if (pair.getNumber() == this.replica.getViewNumber() && Arrays.equals(pair.getValue(), acceptedValue)) {
+            if (pair.getProposalNumber().getViewNumber() == this.replica.getViewNumber()
+                    && pair.getProposalNumber().getSequenceNumber() == proposalNumber.getSequenceNumber()
+                    && Arrays.equals(pair.getValue(), acceptedValue)) {
                 currentAccepted.getAndIncrement();
             }
         });
@@ -194,7 +175,8 @@ public class MessageLog {
         log.info("The number of accepted values for the same proposal value is " + currentAccepted.get());
         if (currentAccepted.get() >= threshold) {
             log.info("The learner has learned the value");
-            this.learnedValue = new Pair(this.replica.getViewNumber(), acceptedValue);
+            // TODO: Changed here proposal number
+            this.learnedValue = new Pair(acceptedValue, proposalNumber);
             return true;
         }
 
@@ -213,13 +195,13 @@ public class MessageLog {
         learnersWithLearnedValue.put(senderId, learnValue);
 
         // Delete the message from the learnMessages map
-        if (learnMessages.containsKey(learnValue.getNumber())) learnMessages.get(learnValue.getNumber()).remove(learnMessage);
+        if (learnMessages.containsKey(learnValue.getProposalNumber())) learnMessages.get(learnValue.getProposalNumber()).remove(learnMessage);
     }
 
     public boolean learnerHasLearnedValue(Pair learnValue, int quorum) {
         AtomicInteger currentLearnedWithSamePair = new AtomicInteger();
         learnersWithLearnedValue.values().forEach(pair -> {
-            if (Objects.equals(pair.getNumber(), learnValue.getNumber()) && Arrays.equals(pair.getValue(), learnValue.getValue())) {
+            if (Objects.equals(pair.getProposalNumber(), learnValue.getProposalNumber()) && Arrays.equals(pair.getValue(), learnValue.getValue())) {
                 currentLearnedWithSamePair.getAndIncrement();
             }
         });
@@ -252,7 +234,7 @@ public class MessageLog {
         Pair satisfiedValue = satisfiedMessage.getValueAndProposalNumber();
         satisfiedProposerNodes.computeIfAbsent(senderId, k -> satisfiedValue);
         // Remove the message from the satisfiedMessages map
-        if (satisfiedMessages.containsKey(satisfiedValue.getNumber())) satisfiedMessages.get(satisfiedValue.getNumber()).remove(satisfiedMessage);
+        if (satisfiedMessages.containsKey(satisfiedValue.getProposalNumber())) satisfiedMessages.get(satisfiedValue.getProposalNumber()).remove(satisfiedMessage);
     }
 
     public Pair onPull(String senderId, PullMessage pullMessage) {
@@ -286,7 +268,7 @@ public class MessageLog {
     }
 
     public void onReply(String sender, ReplyMessage replyMessage) {
-        replyMessages.get(replyMessage.getValueAndProposalNumber().getNumber()).remove(replyMessage);
+        replyMessages.get(replyMessage.getValueAndProposalNumber().getProposalNumber()).remove(replyMessage);
 
         if (replyMessage.getValueAndProposalNumber() == null) {
             log.info("The REPLY message does not contain a value and proposal number");
@@ -294,15 +276,16 @@ public class MessageLog {
         }
 
         byte[] value = replyMessage.getValueAndProposalNumber().getValue();
-        long viewNumber = replyMessage.getValueAndProposalNumber().getNumber();
+        long viewNumber = replyMessage.getValueAndProposalNumber().getProposalNumber().getViewNumber();
+        long sequenceNumber = replyMessage.getValueAndProposalNumber().getProposalNumber().getSequenceNumber();
         boolean isSigned = replyMessage.isSigned();
         String replySender = replyMessage.getSender();
-        responses.put(sender, new SignedResponse(value, viewNumber, isSigned, replySender));
+        responses.put(sender, new SignedResponse(value, replyMessage.getValueAndProposalNumber().getProposalNumber(), isSigned, replySender));
     }
 
     public void acceptViewChange(ViewChangeMessage viewChangeMessage) {
         // Accept latest view change from viewChanges map
-        if (viewChangeMessage.getProposalNumber() < this.replica.getViewNumber()) {
+        if (viewChangeMessage.getProposalNumber().getViewNumber() < this.replica.getViewNumber()) {
             log.info(this.replica.getViewNumber() + " " + viewChangeMessage.getProposalNumber());
             log.info("The view number of the VIEW-CHANGE message is not greater than the current view number");
             return;

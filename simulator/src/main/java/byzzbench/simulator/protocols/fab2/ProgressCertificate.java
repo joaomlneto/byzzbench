@@ -1,8 +1,6 @@
-package byzzbench.simulator.protocols.fab;
+package byzzbench.simulator.protocols.fab2;
 
 import java.util.*;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 
 public record ProgressCertificate(long proposalNumber, SortedMap<String, SignedResponse> responses) {
     // Ensure the certificate is valid and complete

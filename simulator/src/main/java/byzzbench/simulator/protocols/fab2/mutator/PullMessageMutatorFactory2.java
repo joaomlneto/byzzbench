@@ -1,10 +1,9 @@
-package byzzbench.simulator.protocols.fab.mutator;
+package byzzbench.simulator.protocols.fab2.mutator;
 
 import byzzbench.simulator.faults.FaultContext;
 import byzzbench.simulator.faults.factories.MessageMutatorFactory;
 import byzzbench.simulator.faults.faults.MessageMutationFault;
-import byzzbench.simulator.protocols.fab.Pair;
-import byzzbench.simulator.protocols.fab.messages.ReplyMessage;
+import byzzbench.simulator.protocols.fab.messages.PullMessage;
 import byzzbench.simulator.transport.Event;
 import byzzbench.simulator.transport.MessageEvent;
 import lombok.ToString;
@@ -12,18 +11,17 @@ import org.springframework.stereotype.Component;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.Random;
 
 @Component
 @ToString
-public class ReplyMessageMutatorFactory extends MessageMutatorFactory {
+public class PullMessageMutatorFactory2 extends MessageMutatorFactory {
     @Override
     public List<MessageMutationFault> mutators() {
         return List.of(
                 new MessageMutationFault(
-                        "fab-reply-inc",
-                        "Increment Reply Number",
-                        List.of(ReplyMessage.class)
+                        "fab-pull-inc2",
+                        "Increment Pull Number",
+                        List.of(PullMessage.class)
                 ) {
                     @Override
                     public void accept(FaultContext serializable) {
@@ -37,27 +35,26 @@ public class ReplyMessageMutatorFactory extends MessageMutatorFactory {
                             throw new IllegalArgumentException("Invalid message type");
                         }
 
-                        if (!(messageEvent.getPayload() instanceof ReplyMessage message)) {
+                        if (!(messageEvent.getPayload() instanceof PullMessage message)) {
                             throw new IllegalArgumentException("Invalid message type");
                         }
 
-                        ReplyMessage mutatedMessage = message.withValueAndProposalNumber(
-                                new Pair(message.getValueAndProposalNumber().getNumber() + 1,
-                                        message.getValueAndProposalNumber().getValue())
+                        PullMessage mutatedMessage = message.withProposalNumber(
+                                message.getViewNumber() + 1
                         );
 
                         messageEvent.setPayload(mutatedMessage);
                     }
                 },
+
                 new MessageMutationFault(
-                        "fab-reply-dec",
-                        "Decrement Reply Number",
-                        List.of(ReplyMessage.class)
+                        "fab-pull-dec2",
+                        "Decrement Pull Number",
+                        List.of(PullMessage.class)
                 ) {
                     @Override
                     public void accept(FaultContext serializable) {
                         Optional<Event> event = serializable.getEvent();
-
                         if (event.isEmpty()) {
                             throw new IllegalArgumentException("Invalid message type");
                         }
@@ -66,13 +63,12 @@ public class ReplyMessageMutatorFactory extends MessageMutatorFactory {
                             throw new IllegalArgumentException("Invalid message type");
                         }
 
-                        if (!(messageEvent.getPayload() instanceof ReplyMessage message)) {
+                        if (!(messageEvent.getPayload() instanceof PullMessage message)) {
                             throw new IllegalArgumentException("Invalid message type");
                         }
 
-                        ReplyMessage mutatedMessage = message.withValueAndProposalNumber(
-                                new Pair(message.getValueAndProposalNumber().getNumber() - 1,
-                                        message.getValueAndProposalNumber().getValue())
+                        PullMessage mutatedMessage = message.withProposalNumber(
+                                message.getViewNumber() - 1
                         );
 
                         messageEvent.setPayload(mutatedMessage);
@@ -80,9 +76,9 @@ public class ReplyMessageMutatorFactory extends MessageMutatorFactory {
                 }
 
 //                new MessageMutationFault(
-//                        "fab-reply-any",
-//                        "Any Reply Number",
-//                        List.of(ReplyMessage.class)
+//                        "fab-pull-any",
+//                        "Any Pull Number",
+//                        List.of(PullMessage.class)
 //                ) {
 //                    @Override
 //                    public void accept(FaultContext serializable) {
@@ -98,13 +94,12 @@ public class ReplyMessageMutatorFactory extends MessageMutatorFactory {
 //                            throw new IllegalArgumentException("Invalid message type");
 //                        }
 //
-//                        if (!(messageEvent.getPayload() instanceof ReplyMessage message)) {
+//                        if (!(messageEvent.getPayload() instanceof PullMessage message)) {
 //                            throw new IllegalArgumentException("Invalid message type");
 //                        }
 //
-//                        ReplyMessage mutatedMessage = message.withValueAndProposalNumber(
-//                                new Pair(message.getValueAndProposalNumber().getNumber() + mutation,
-//                                        message.getValueAndProposalNumber().getValue())
+//                        PullMessage mutatedMessage = message.withProposalNumber(
+//                                message.getViewNumber() + mutation
 //                        );
 //
 //                        messageEvent.setPayload(mutatedMessage);

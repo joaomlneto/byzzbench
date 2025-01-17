@@ -1,7 +1,11 @@
-package byzzbench.simulator.protocols.fab;
+package byzzbench.simulator.protocols.fab2;
 
 import byzzbench.simulator.BaseScenario;
 import byzzbench.simulator.Replica;
+import byzzbench.simulator.protocols.fab2.FastByzantineClient;
+import byzzbench.simulator.protocols.fab2.FastByzantineReplica;
+import byzzbench.simulator.protocols.fab2.FastByzantineTerminationCondition;
+import byzzbench.simulator.protocols.fab2.Role;
 import byzzbench.simulator.scheduler.Scheduler;
 import byzzbench.simulator.scheduler.twins.TwinsScheduler;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -19,7 +23,7 @@ public class FastByzantineScenario extends BaseScenario {
 //    }
 
     public FastByzantineScenario(Scheduler scheduler) {
-        super("fab-java", scheduler);
+        super("fab-java2", scheduler);
         this.terminationCondition = new FastByzantineTerminationCondition();
     }
 

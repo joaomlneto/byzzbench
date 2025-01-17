@@ -11,6 +11,7 @@ import org.springframework.stereotype.Component;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Random;
 
 @Component
 @ToString
@@ -74,6 +75,37 @@ public class ViewChangeMessageMutatorFactory extends MessageMutatorFactory {
                         messageEvent.setPayload(mutatedMessage);
                     }
                 }
+
+//                new MessageMutationFault(
+//                        "fab-view-change-any",
+//                        "Any View Change Number",
+//                        List.of(ViewChangeMessage.class)
+//                ) {
+//                    @Override
+//                    public void accept(FaultContext serializable) {
+//                        Optional<Event> event = serializable.getEvent();
+//                        Random random = new Random();
+//                        int mutation = random.nextInt(2, 100);
+//
+//                        if (event.isEmpty()) {
+//                            throw new IllegalArgumentException("Invalid message type");
+//                        }
+//
+//                        if (!(event.get() instanceof MessageEvent messageEvent)) {
+//                            throw new IllegalArgumentException("Invalid message type");
+//                        }
+//
+//                        if (!(messageEvent.getPayload() instanceof ViewChangeMessage message)) {
+//                            throw new IllegalArgumentException("Invalid message type");
+//                        }
+//
+//                        ViewChangeMessage mutatedMessage = message.withProposalNumber(
+//                                message.getProposalNumber() + mutation
+//                        );
+//
+//                        messageEvent.setPayload(mutatedMessage);
+//                    }
+//                }
         );
     }
 

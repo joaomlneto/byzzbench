@@ -1,4 +1,4 @@
-package byzzbench.simulator.protocols.fab.mutator;
+package byzzbench.simulator.protocols.fab2.mutator;
 
 import byzzbench.simulator.faults.FaultContext;
 import byzzbench.simulator.faults.factories.MessageMutatorFactory;
@@ -12,16 +12,15 @@ import org.springframework.stereotype.Component;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.Random;
 
 @Component
 @ToString
-public class ReplyMessageMutatorFactory extends MessageMutatorFactory {
+public class ReplyMessageMutatorFactory2 extends MessageMutatorFactory {
     @Override
     public List<MessageMutationFault> mutators() {
         return List.of(
                 new MessageMutationFault(
-                        "fab-reply-inc",
+                        "fab-reply-inc2",
                         "Increment Reply Number",
                         List.of(ReplyMessage.class)
                 ) {
@@ -50,7 +49,7 @@ public class ReplyMessageMutatorFactory extends MessageMutatorFactory {
                     }
                 },
                 new MessageMutationFault(
-                        "fab-reply-dec",
+                        "fab-reply-dec2",
                         "Decrement Reply Number",
                         List.of(ReplyMessage.class)
                 ) {

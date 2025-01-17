@@ -1,6 +1,6 @@
-package byzzbench.simulator.protocols.fab.messages;
+package byzzbench.simulator.protocols.fab2.messages;
 
-import byzzbench.simulator.protocols.fab.Pair;
+import byzzbench.simulator.protocols.fab2.Pair;
 import byzzbench.simulator.protocols.pbft_java.message.IPhaseMessage;
 import byzzbench.simulator.transport.MessagePayload;
 import lombok.AllArgsConstructor;
@@ -27,12 +27,12 @@ public class ReplyMessage extends IPhaseMessage {
 
     @Override
     public long getViewNumber() {
-        return valueAndProposalNumber.getNumber();
+        return valueAndProposalNumber.getProposalNumber().getViewNumber();
     }
 
     @Override
     public long getSequenceNumber() {
-        return valueAndProposalNumber.getNumber();
+        return valueAndProposalNumber.getProposalNumber().getSequenceNumber();
     }
 
     @Override
