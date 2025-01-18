@@ -1,5 +1,0 @@
-COMMITED SerializableLogEntry(entry=234) at 2 at replica A
-CHECKPOINT-III from C to A with (seqNum: 2, history: SpeculativeHistory(history={1=RequestMessage(operation=123, timestamp=0, clientId=C0), 2=RequestMessage(operation=234, timestamp=0, clientId=C0)}))
-CHECKPOINT-III from D to A with (seqNum: 2, history: SpeculativeHistory(history={1=RequestMessage(operation=123, timestamp=0, clientId=C0), 2=RequestMessage(operation=234, timestamp=0, clientId=C0)}))
-CHECKPOINT-III from B to A with (seqNum: 2, history: SpeculativeHistory(history={1=RequestMessage(operation=123, timestamp=0, clientId=C0), 2=RequestMessage(operation=234, timestamp=0, clientId=C0)}))
-COMMITED SerializableLogEntry(entry=123) at 1 at replica A
