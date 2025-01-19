@@ -28,7 +28,12 @@ public class ViewChangeMessage extends IPhaseMessage {
 
     @Override
     public long getSequenceNumber() {
-        return proposalNumber.getSequenceNumber();
+        return 0;
+    }
+
+    @Override
+    public long getRound() {
+        return 0;
     }
 
     @Override

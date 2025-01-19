@@ -28,7 +28,7 @@ public record ProgressCertificate(long proposalNumber, SortedMap<String, SignedR
     public boolean vouchesFor(byte[] value, int quorumSize) {
         // Count the number of responses that vouch for the value
         long count = responses.entrySet().stream()
-                .filter(entry -> Arrays.equals(entry.getValue().getValue(), value))
+                .filter(entry -> entry.getValue().getValue() != null && Arrays.equals(entry.getValue().getValue(), value))
                 .count();
 
         // Check if the count exceeds the threshold

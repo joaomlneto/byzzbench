@@ -70,7 +70,7 @@ public class FastByzantineScenario extends BaseScenario {
 
             FastByzantineReplica replica3 = new FastByzantineReplica("C", nodesIds, transport, this, proposerAndAcceptorAndLearner, false,2 * timeout, p, a, l, f,
                     new TreeSet<>(List.of("A", "B", "C", "D", "E", "F")),
-                    new TreeSet<>(List.of("D", "E", "F")),
+                    new TreeSet<>(List.of("C", "D", "E", "F")),
                     new TreeSet<>(List.of("A", "B", "C", "D")),
                     "A",
                     "C0");

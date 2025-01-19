@@ -32,7 +32,13 @@ public class ReplyMessage extends IPhaseMessage {
 
     @Override
     public long getSequenceNumber() {
-        return valueAndProposalNumber.getProposalNumber().getSequenceNumber();
+//        return valueAndProposalNumber.getProposalNumber().getSequenceNumber();
+        return 0;
+    }
+
+    @Override
+    public long getRound() {
+        return 0;
     }
 
     @Override

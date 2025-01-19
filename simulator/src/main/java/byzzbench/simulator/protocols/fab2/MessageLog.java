@@ -130,16 +130,22 @@ public class MessageLog {
         byte[] messageProposedValue = proposeMessage.getValueAndProposalNumber().getValue();
         ProgressCertificate progressCertificate = proposeMessage.getProgressCertificate();
 
-        if (proposalNumber.getViewNumber() != this.replica.getViewNumber() || proposalNumber.getSequenceNumber() != this.replica.getProposalNumber()) {
+        // Checking if the proposed value is for the same view and sequence number
+        if (proposalNumber.getViewNumber() != this.replica.getViewNumber()) {
             log.info("The view number of the PROPOSE message is not the same as the current view number");
             return false; // Only listen to current leader
+        } else if (proposalNumber.getSequenceNumber() != this.replica.getProposalNumber()) {
+            log.info("The sequence number of the PROPOSE message is not the same as the current sequence number");
+            return false; // Ignore proposals with different sequence numbers
         }
 
+        // If the accepted proposal has the same view and sequence number as the proposed value, ignore the proposal
         if (acceptedProposal != null && acceptedProposal.getProposalNumber().equals(proposalNumber)) {
             log.info("Duplicate proposal received.");
             return false; // Ignore duplicate proposals
         }
 
+        // Accepted value changes only with valid progress certificate
         if (acceptedProposal != null && !Arrays.equals(acceptedProposal.getValue(), messageProposedValue) && progressCertificate != null &&
                 !progressCertificate.vouchesFor(messageProposedValue, vouchingThreshold)) {
             log.info("The proposal is not vouched for by the progress certificate");
@@ -151,7 +157,8 @@ public class MessageLog {
             return false; // Ignore proposals that are not vouched for by the progress certificate
         }
 
-        acceptedProposal = proposed; // Accept the proposal
+        // Accept the proposal
+        acceptedProposal = proposed;
         return true;
     }
 
@@ -192,6 +199,17 @@ public class MessageLog {
 
     public void learnerOnLearned(String senderId, LearnMessage learnMessage) {
         Pair learnValue = learnMessage.getValueAndProposalNumber();
+        long viewNumber = learnValue.getProposalNumber().getViewNumber();
+        long sequenceNumber = learnValue.getProposalNumber().getSequenceNumber();
+
+        if (viewNumber != this.replica.getViewNumber()) {
+            log.info("The view number of the LEARN message is not the same as the current view number");
+            return;
+        } else if (sequenceNumber != this.replica.getProposalNumber()) {
+            log.info("The sequence number of the LEARN message is not the same as the current sequence number");
+            return;
+        }
+
         learnersWithLearnedValue.put(senderId, learnValue);
 
         // Delete the message from the learnMessages map
@@ -225,6 +243,17 @@ public class MessageLog {
 
     public boolean isLearned(String senderId, LearnMessage learnMessage, int quorum) {
         Pair learnValue = learnMessage.getValueAndProposalNumber();
+        long viewNumber = learnValue.getProposalNumber().getViewNumber();
+        long sequenceNumber = learnValue.getProposalNumber().getSequenceNumber();
+
+        if (learnValue.getProposalNumber().getViewNumber() != this.replica.getViewNumber()) {
+            log.info("The view number of the LEARN message is not the same as the current view number");
+            return false;
+        } else if (learnValue.getProposalNumber().getSequenceNumber() != this.replica.getProposalNumber()) {
+            log.info("The sequence number of the LEARN message is not the same as the current sequence number");
+            return false;
+        }
+
         proposersWithLearnedValue.put(senderId, learnValue);
 
         return proposersWithLearnedValue.size() >= quorum;
@@ -238,15 +267,15 @@ public class MessageLog {
     }
 
     public Pair onPull(String senderId, PullMessage pullMessage) {
-        long viewNumber = pullMessage.getViewNumber();
-        if (pullMessages.containsKey(viewNumber)) pullMessages.get(viewNumber).remove(pullMessage);
+        ProposalNumber proposalNumber = pullMessage.getProposalNumber();
+        if (pullMessages.containsKey(proposalNumber)) pullMessages.get(proposalNumber).remove(pullMessage);
         return learnedValue;
     }
 
     public boolean onSuspect(String sender, SuspectMessage suspectMessage, int quorum) {
         nodesSuspectingLeader.add(sender);
-        if (suspectMessages.containsKey(suspectMessage.getViewNumber())) {
-            suspectMessages.get(suspectMessage.getViewNumber()).remove(suspectMessage);
+        if (suspectMessages.containsKey(suspectMessage.getProposalNumber().getViewNumber())) {
+            suspectMessages.get(suspectMessage.getProposalNumber().getViewNumber()).remove(suspectMessage);
         }
 
         return nodesSuspectingLeader.size() >= quorum;

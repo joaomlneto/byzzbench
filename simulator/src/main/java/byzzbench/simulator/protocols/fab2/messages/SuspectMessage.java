@@ -12,7 +12,7 @@ import lombok.*;
 @Data
 @EqualsAndHashCode(callSuper = true)
 @With
-public class SuspectMessage extends IPhaseMessage {
+public class SuspectMessage extends MessagePayload {
     private final String senderId;
     private final String suspectId;
     private final ProposalNumber proposalNumber;
@@ -22,19 +22,22 @@ public class SuspectMessage extends IPhaseMessage {
         return "SUSPECT";
     }
 
-    @Override
-    public long getViewNumber() {
-        return proposalNumber.getViewNumber();
-    }
-
-    @Override
-    public long getSequenceNumber() {
-        return proposalNumber.getSequenceNumber();
-    }
-
-    @Override
-    public byte[] getDigest() {
-        return suspectId.getBytes();
-    }
+//    @Override
+//    public long getViewNumber() {
+//        return proposalNumber.getViewNumber();
+//    }
+//
+//    @Override
+//    public long getSequenceNumber() { return 0; }
+//
+//    @Override
+//    public byte[] getDigest() {
+//        return suspectId.getBytes();
+//    }
+//
+//    @Override
+//    public long getRound() {
+//        return 0;
+//    }
 }
 
