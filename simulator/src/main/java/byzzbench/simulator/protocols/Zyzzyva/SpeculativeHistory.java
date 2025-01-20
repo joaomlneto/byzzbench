@@ -1,13 +1,15 @@
 package byzzbench.simulator.protocols.Zyzzyva;
 
 import java.util.LinkedHashMap;
+import lombok.extern.java.Log;
 
+@Log
 public class SpeculativeHistory {
     private final LinkedHashMap<Long, Long> speculativeHistory;
 
     public SpeculativeHistory() {
         this.speculativeHistory = new LinkedHashMap<>();
-        this.speculativeHistory.put(-1L, 0L);
+        this.speculativeHistory.put(0L, 0L);
     }
 
     /**
@@ -42,6 +44,10 @@ public class SpeculativeHistory {
             return;
         }
         long i = this.speculativeHistory.sequencedKeySet().getFirst();
+        if (index == i) {
+            log.warning("Trying to truncate to the same index");
+            return;
+        }
         while (i < index) {
             this.speculativeHistory.remove(i);
             i = this.speculativeHistory.sequencedKeySet().getFirst();
@@ -55,7 +61,7 @@ public class SpeculativeHistory {
      */
     public long get(long index) throws IndexOutOfBoundsException {
         if (!this.has(index)) {
-            throw new IndexOutOfBoundsException("Index not found");
+            throw new IndexOutOfBoundsException("Index " + index + " not found, currently have " + this.speculativeHistory.keySet());
         }
         return this.speculativeHistory.get(index);
     }

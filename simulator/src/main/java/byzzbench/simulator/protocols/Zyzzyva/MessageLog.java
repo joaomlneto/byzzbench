@@ -13,7 +13,6 @@ import java.util.*;
 @Log
 public class MessageLog implements Serializable {
     /// TODO: Add checkpoints as well as history? Maybe digest the history
-    private final int checkpointInterval;
 
     @Getter
     // SequenceNumber, OrderedRequestMessageWrapper
@@ -22,6 +21,10 @@ public class MessageLog implements Serializable {
     @Getter
     // SequenceNumber, SpeculativeResponse
     private final SortedMap<Long, SpeculativeResponse> speculativeResponses = new TreeMap<>();
+
+    @Getter
+    // SequenceNumber, Map(ReplicaId -> SpeculativeResponse)
+    private final SortedMap<Long, SortedMap<String, SpeculativeResponse>> speculativeResponsesCheckpoint = new TreeMap<>();
 
     @Getter
     // ViewNumber, Map(ReplicaId -> IHateThePrimaryMessage)
@@ -48,14 +51,20 @@ public class MessageLog implements Serializable {
     private final SortedMap<String, ImmutablePair<RequestMessage, SpeculativeResponseWrapper>> responseCache = new TreeMap<>();
 
     @Getter
-    private final long lastCheckpoint = 0;
+    // SequenceNumber, Map(ReplicaId -> CheckpointMessage)
+    private final SortedMap<Long, SortedMap<String, CheckpointMessage>> checkpointMessages = new TreeMap<>();
+
+    @Getter
+    @Setter
+    private Long lastCheckpoint;
 
     @Getter
     @Setter
     private CommitCertificate maxCC;
 
-    public MessageLog(int checkpointInterval) {
-        this.checkpointInterval = checkpointInterval;
+    public MessageLog() {
+        // create a null checkpoint message
+        this.setLastCheckpoint(0L);
     }
 
     public List<OrderedRequestMessageWrapper> getOrderedRequestHistory() {
@@ -77,16 +86,6 @@ public class MessageLog implements Serializable {
         return speculativeResponseHistory;
     }
 
-    public void truncateSpeculativeResponseHistory() {
-        if (this.getSpeculativeResponses().isEmpty()) {
-            return;
-        }
-        long maxSeqNum = this.getSpeculativeResponses().pollLastEntry().getValue().getSequenceNumber();
-        for (long i = 1; i <= maxSeqNum; i++) {
-            this.speculativeResponses.remove(i);
-        }
-    }
-
     public void putIHateThePrimaryMessage(IHateThePrimaryMessage ihtpm) {
         this.getIHateThePrimaries().putIfAbsent(ihtpm.getViewNumber(), new TreeMap<>());
         this.getIHateThePrimaries().get(ihtpm.getViewNumber()).put(ihtpm.getSignedBy(), ihtpm);
@@ -103,7 +102,80 @@ public class MessageLog implements Serializable {
     }
 
     public void putNewViewMessage(NewViewMessage nvm) {
+        /// TODO: check if it's sanitized? as in the new view number is sent by the appropriate replica
         this.getNewViewMessages().put(nvm.getFutureViewNumber(), nvm);
+    }
+
+    public void putCheckpointMessage(CheckpointMessage cm) {
+        this.getCheckpointMessages().putIfAbsent(cm.getSequenceNumber(), new TreeMap<>());
+        this.getCheckpointMessages().get(cm.getSequenceNumber()).put(cm.getReplicaId(), cm);
+    }
+
+    public void putSpeculativeResponseCheckpoint(long sequenceNumber, SpeculativeResponse speculativeResponse) {
+        this.getSpeculativeResponsesCheckpoint().putIfAbsent(sequenceNumber, new TreeMap<>());
+        this.getSpeculativeResponsesCheckpoint().get(sequenceNumber).put(speculativeResponse.getSignedBy(), speculativeResponse);
+    }
+
+    /**
+     * Truncate the checkpoint message history
+     * @param sequenceNumber - the sequence number to truncate the history to (non-inclusive)
+     */
+    public void truncateCheckpointMessages(long sequenceNumber) {
+        if (this.getCheckpointMessages().isEmpty()) {
+            return;
+        }
+        Set<Long> keys = new HashSet<>(this.getCheckpointMessages().keySet());
+        for (long seqNum : keys) {
+            if (seqNum < sequenceNumber) {
+                this.getCheckpointMessages().remove(seqNum);
+            }
+        }
+    }
+
+    /**
+     * Truncate the speculative response history
+     * Used in garbage collection after checkpointing
+     * @param sequenceNumber - the sequence number to truncate the history to (non-inclusive)
+     */
+    public void truncateSpeculativeResponseMessages(long sequenceNumber) {
+        if (this.getSpeculativeResponses().isEmpty()) return;
+        Set<Long> keys = new HashSet<>(this.getSpeculativeResponses().keySet());
+
+        for (long seqNum : keys) {
+            if (seqNum < sequenceNumber) {
+                this.getSpeculativeResponses().remove(seqNum);
+            }
+        }
+    }
+
+    /**
+     * Truncate the ordered request history
+     * @param sequenceNumber - the sequence number to truncate the history to (non-inclusive)
+     */
+    public void truncateOrderedRequestMessages(long sequenceNumber) {
+        if (this.getOrderedMessages().isEmpty()) return;
+        Set<Long> keys = new HashSet<>(this.getOrderedMessages().keySet());
+
+        for (long seqNum : keys) {
+            if (seqNum < sequenceNumber) {
+                this.getOrderedMessages().remove(seqNum);
+            }
+        }
+    }
+
+    /**
+     * Truncate the fill hole message history
+     * @param sequenceNumber - the sequence number to truncate the history to (non-inclusive)
+     */
+    public void truncateFillHoleMessages(long sequenceNumber) {
+        if (this.getFillHoleMessages().isEmpty()) return;
+        Set<Long> keys = new HashSet<>(this.getFillHoleMessages().keySet());
+
+        for (long seqNum : keys) {
+            if (seqNum < sequenceNumber) {
+                this.getFillHoleMessages().remove(seqNum);
+            }
+        }
     }
 
     public void putRequestCache(String clientId, RequestMessage rm, SpeculativeResponseWrapper srw) {
@@ -120,4 +192,5 @@ public class MessageLog implements Serializable {
         }
         return this.getResponseCache().get(clientId).getLeft().getTimestamp();
     }
+
 }
