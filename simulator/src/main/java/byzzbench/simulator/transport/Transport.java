@@ -314,7 +314,7 @@ public class Transport {
 
         // if it is a MessageEvent and there is no connectivity between the nodes, drop it
         if (e instanceof MessageEvent m && !router.haveConnectivity(m.getSenderId(), m.getRecipientId())) {
-            log.info("Dropped: " + m.getSenderId() + "->" + m.getRecipientId() + ": " + m.getPayload());
+            //log.info("Dropped: " + m.getSenderId() + "->" + m.getRecipientId() + ": " + m.getPayload());
             m.setStatus(Event.Status.DROPPED);
             return;
         }
@@ -341,7 +341,7 @@ public class Transport {
             }
         }
 
-        log.info("Delivered " + e);
+        //log.info("Delivered " + e);
     }
 
     /**
@@ -361,7 +361,7 @@ public class Transport {
         }
         e.setStatus(Event.Status.DROPPED);
         this.observers.forEach(o -> o.onEventDropped(e));
-        log.info("Dropped: " + e);
+        //log.info("Dropped: " + e);
     }
 
     /**
@@ -432,7 +432,7 @@ public class Transport {
         this.scenario.getSchedule().appendEvent(mutateMessageEvent);
         this.observers.forEach(o -> o.onMessageMutation(mutateMessageEvent.getPayload()));
 
-        log.info("Mutated: " + m);
+        //log.info("Mutated: " + m);
     }
 
     public synchronized void applyFault(String faultId) {
@@ -485,7 +485,7 @@ public class Transport {
                 .build();
         this.appendEvent(timeoutEvent);
         this.observers.forEach(o -> o.onTimeout(timeoutEvent));
-        log.info("Timeout set for " + node.getId() + " in " + timeout + "ms: " + timeoutEvent);
+        //log.info("Timeout set for " + node.getId() + " in " + timeout + "ms: " + timeoutEvent);
         return timeoutEvent.getEventId();
     }
 
@@ -503,8 +503,8 @@ public class Transport {
         this.observers.forEach(o -> o.onTimeout(timeoutEvent));
 
 
-        log.info(description + " timeout set for " + replica.getId() + " in " +
-                timeout + "ms: " + timeoutEvent);
+        //log.info(description + " timeout set for " + replica.getId() + " in " +
+                //timeout + "ms: " + timeoutEvent);
         return timeoutEvent.getEventId();
     }
 
@@ -523,8 +523,8 @@ public class Transport {
         this.observers.forEach(o -> o.onTimeout(timeoutEvent));
 
 
-        log.info("Timeout set for " + clientId + " in " +
-                timeout + "ms: " + timeoutEvent);
+        //log.info("Timeout set for " + clientId + " in " +
+                //timeout + "ms: " + timeoutEvent);
         return timeoutEvent.getEventId();
     }
 

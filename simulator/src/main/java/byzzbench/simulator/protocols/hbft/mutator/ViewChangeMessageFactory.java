@@ -8,9 +8,11 @@ import java.util.SortedMap;
 
 import org.springframework.stereotype.Component;
 
+import byzzbench.simulator.Replica;
 import byzzbench.simulator.faults.FaultContext;
 import byzzbench.simulator.faults.factories.MessageMutatorFactory;
 import byzzbench.simulator.faults.faults.MessageMutationFault;
+import byzzbench.simulator.protocols.hbft.HbftJavaReplica;
 import byzzbench.simulator.protocols.hbft.message.RequestMessage;
 import byzzbench.simulator.protocols.hbft.message.ViewChangeMessage;
 import byzzbench.simulator.transport.Event;
@@ -455,6 +457,40 @@ public class ViewChangeMessageFactory extends MessageMutatorFactory {
                         
                 //     }
                 // }
+                ,
+                new MessageMutationFault("hbft-view-change-first-req-in-R", "Change first request in R", List.of(ViewChangeMessage.class)) {
+                    @Override
+                    public void accept(FaultContext serializable) {
+                        Optional<Event> event = serializable.getEvent();
+                        if (event.isEmpty()) {
+                            throw invalidMessageTypeException;
+                        }
+                        if (!(event.get() instanceof MessageEvent messageEvent)) {
+                            throw invalidMessageTypeException;
+                        }
+                        if (!(messageEvent.getPayload() instanceof ViewChangeMessage message)) {
+                            throw invalidMessageTypeException;
+                        }
+                        String senderId = messageEvent.getSenderId();
+                        Replica sender = serializable.getScenario().getReplicas().get(senderId);
+                        SortedMap<Long, RequestMessage> requests = message.getRequestsR();
+                        Entry<Long, RequestMessage> firstReq = requests.firstEntry();
+                        if (sender instanceof HbftJavaReplica replica) {
+                            SortedMap<Long, RequestMessage> specRequests = replica.getSpeculativeRequests();
+                            for (Long key : specRequests.keySet()) {
+                                if (!specRequests.get(key).equals(firstReq.getValue())) {
+                                    requests.remove(firstReq.getKey());
+                                    requests.put(firstReq.getKey(), specRequests.get(key));
+                                    ViewChangeMessage mutatedMessage = message.withRequestsR(requests);
+                                    mutatedMessage.sign(message.getSignedBy());
+                                    messageEvent.setPayload(mutatedMessage);
+                                    break;
+                                }
+                            }
+                        }
+                        
+                    }
+                }
                 // //TODO: be able to change the first or last request
 
 
