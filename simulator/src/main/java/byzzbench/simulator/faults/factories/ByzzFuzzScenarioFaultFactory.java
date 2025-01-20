@@ -6,6 +6,7 @@ import byzzbench.simulator.faults.FaultContext;
 import byzzbench.simulator.faults.FaultFactory;
 import byzzbench.simulator.faults.faults.ByzzFuzzNetworkFault;
 import byzzbench.simulator.faults.faults.ByzzFuzzProcessFault;
+import byzzbench.simulator.protocols.event_driven_hotstuff.EDHotStuffScenario;
 import byzzbench.simulator.scheduler.ByzzFuzzScheduler;
 import byzzbench.simulator.utils.SetSubsets;
 import org.springframework.stereotype.Component;
@@ -36,7 +37,7 @@ public class ByzzFuzzScenarioFaultFactory implements FaultFactory {
         int c = scheduler.getNumRoundsWithProcessFaults();
         int d = scheduler.getNumRoundsWithNetworkFaults();
         int r = scheduler.getNumRoundsWithFaults();
-        Set<String> nodeIds = scenario.getNodes().keySet();
+        Set<String> nodeIds = scenario.getReplicas().keySet();
 
         // Create network faults
         for (int i = 1; i <= d; i++) {
@@ -58,8 +59,14 @@ public class ByzzFuzzScenarioFaultFactory implements FaultFactory {
         }
 
         // Faults
-        System.out.println("ByzzFuzzFaults:");
-        faults.forEach(fault -> System.out.println(fault.getId()));
+        if(input.getScenario() instanceof EDHotStuffScenario edHotStuffScenario) {
+            edHotStuffScenario.log("ByzzFuzzFaults:");
+            faults.forEach(fault -> edHotStuffScenario.log(fault.getId()));
+        }
+        else {
+            System.out.println("ByzzFuzzFaults:");
+            faults.forEach(fault -> System.out.println(fault.getId()));
+        }
 
         return faults;
     }

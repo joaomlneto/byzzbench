@@ -2,6 +2,7 @@ package byzzbench.simulator.transport;
 
 import lombok.Getter;
 
+import java.util.HashSet;
 import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -27,6 +28,12 @@ public class Router {
      */
     @Getter
     private final SortedMap<String, Integer> partitions = new TreeMap<>();
+
+    private final HashSet<String> immuneNodes = new HashSet<>();
+
+    public void addImmuneNode(String immuneNode) {
+        immuneNodes.add(immuneNode);
+    }
 
     /**
      * Isolates a node from the rest of the network.
@@ -79,6 +86,7 @@ public class Router {
      * @return True if the nodes are on the same partition, false otherwise.
      */
     public boolean haveConnectivity(String nodeId1, String nodeId2) {
+        if(immuneNodes.contains(nodeId1) || immuneNodes.contains(nodeId2)) return true;
         return this.getNodePartition(nodeId1) == this.getNodePartition(nodeId2);
     }
 

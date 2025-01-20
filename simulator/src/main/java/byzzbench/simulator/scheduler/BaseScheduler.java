@@ -156,4 +156,14 @@ public abstract class BaseScheduler implements Scheduler {
         int remaining = remainingMutateMessages.computeIfAbsent(scenario, s -> config.getScheduler().getMaxMutateMessages());
         return remaining > 0 ? config.getScheduler().getMutateMessageWeight() : 0;
     }
+
+    public void decreaseRemainingMutations(Scenario scenario) {
+        int remaining = remainingMutateMessages.computeIfAbsent(scenario, s -> config.getScheduler().getMaxMutateMessages());
+        remainingMutateMessages.put(scenario, remaining - 1);
+    }
+
+    public void decreaseRemainingDrops(Scenario scenario) {
+        int remaining = remainingDropMessages.computeIfAbsent(scenario, s -> config.getScheduler().getMaxDropMessages());
+        remainingDropMessages.put(scenario, remaining - 1);
+    }
 }

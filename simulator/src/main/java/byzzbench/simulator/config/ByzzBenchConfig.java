@@ -20,6 +20,8 @@ import java.util.Map;
 @Data
 @Validated
 public class ByzzBenchConfig {
+    private boolean smallScope = true;
+
     /**
      * Whether to start generating scenarios on startup automatically.
      */

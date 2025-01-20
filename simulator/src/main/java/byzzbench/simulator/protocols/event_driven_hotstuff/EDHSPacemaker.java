@@ -26,7 +26,7 @@ public class EDHSPacemaker {
     }
 
     public String getLeaderId(long viewNumber) {
-        int leaderIndex = (int) (viewNumber % (replica.getReplicaIds().size()));
+        int leaderIndex = (int) (Math.floor((double) viewNumber / 4) % (replica.getReplicaIds().size()));
 
         return replica.getReplicaIds().get(leaderIndex);
     }
@@ -57,9 +57,21 @@ public class EDHSPacemaker {
         }
     }
 
-    public void onNewViewQuorum() { onBeat(); }
-    public void onNewQC() { onBeat(); }
-    public void onClientRequest() { onBeat(); }
+    public void onNewViewQuorum() {
+        onBeat();
+
+        replica.log("PM: on NEW-VIEW quorum");
+    }
+    public void onNewQC() {
+        onBeat();
+
+        replica.log("PM: on new QC");
+    }
+    public void onClientRequest() {
+        onBeat();
+
+        replica.log("PM: on client request");
+    }
 
     private void onBeat() {
         try {
@@ -82,10 +94,11 @@ public class EDHSPacemaker {
     }
 
     public void onNextSyncView() {
+        replica.log("Next view sync timeout");
+
+        replica.increaseTimeout();
         replica.nextView();
         replica.sendMessage(new NewViewMessage(replica.getViewNumber(), highQC), getLeaderId());
-
-        replica.log("Next view sync timeout");
     }
 
     // NEW-VIEW

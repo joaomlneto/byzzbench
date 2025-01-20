@@ -1,12 +1,12 @@
 package byzzbench.simulator.protocols.event_driven_hotstuff;
 
 import byzzbench.simulator.LeaderBasedProtocolReplica;
-import byzzbench.simulator.Scenario;
 import byzzbench.simulator.protocols.event_driven_hotstuff.messages.*;
 import byzzbench.simulator.state.SerializableLogEntry;
 import byzzbench.simulator.state.TotalOrderCommitLog;
 import byzzbench.simulator.transport.DefaultClientRequestPayload;
 import byzzbench.simulator.transport.MessagePayload;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Getter;
 
 import java.io.Serializable;
@@ -15,6 +15,9 @@ import java.time.Duration;
 import java.util.*;
 
 public class EDHotStuffReplica extends LeaderBasedProtocolReplica {
+
+    @JsonIgnore
+    private transient EDHotStuffScenario scenario;
 
     @Getter
     long lastVoteHeight;
@@ -37,8 +40,8 @@ public class EDHotStuffReplica extends LeaderBasedProtocolReplica {
     @Getter
     HashSet<ClientRequest> commitedRequests;
 
-    @Getter
-    PriorityQueue<GenericMessage> pendingProposals;
+    //@Getter
+    //PriorityQueue<GenericMessage> pendingProposals;
     @Getter
     ArrayList<String> replicaIds;
     @Getter
@@ -53,14 +56,24 @@ public class EDHotStuffReplica extends LeaderBasedProtocolReplica {
     @Getter
     int timeout;
 
-    public void log(String message) {
-        debugLog.add(message);
-        System.out.println("Replica " + getId() + ": " + message);
+    boolean processingMessage;
+
+    public boolean isProcessingMessage() {
+        synchronized (this) {
+            return processingMessage;
+        }
     }
 
-    public EDHotStuffReplica(String nodeId, Scenario scenario, ArrayList<String> replicaIds) {
+    public void log(String message) {
+        debugLog.add(message);
+        scenario.log("Replica " + getId() + ": " + message);
+    }
+
+    public EDHotStuffReplica(String nodeId, EDHotStuffScenario scenario, ArrayList<String> replicaIds) {
         super(nodeId, scenario, new TotalOrderCommitLog());
         this.replicaIds = replicaIds;
+        this.scenario = scenario;
+        this.processingMessage = false;
     }
 
     public EDHSNode getNode(String nodeHash) {
@@ -78,6 +91,10 @@ public class EDHotStuffReplica extends LeaderBasedProtocolReplica {
         return getLeaderViewState(getViewNumber());
     }
 
+    public void increaseTimeout() {
+        timeout = timeout + 1; // * 2;
+    }
+
     public void nextView() {
         clearAllTimeouts();
 
@@ -89,14 +106,21 @@ public class EDHotStuffReplica extends LeaderBasedProtocolReplica {
         if(leaderViewState != null) leaderViewState.onViewStart();
 
         log("View change. This is view " + getViewNumber());
+        if(pacemaker.isLeader()) log("Leader for view " + getViewNumber());
 
-        timeout = timeout * 2;
         setTimeout("onNextSyncView timout",pacemaker::onNextSyncView, Duration.ofSeconds(timeout));
+        scenario.onViewChange();
+    }
+
+    public int getMaxFaultyReplicas() {
+        int n = replicaIds.size();
+        int f = (int) Math.floor((double) (n - 1) / 3);
+        return f;
     }
 
     public int getMinValidVotes() {
         int n = replicaIds.size();
-        int f = (int) Math.floor((double) (n - 1) / 3);
+        int f = getMaxFaultyReplicas();
         return n - f;
     }
 
@@ -112,8 +136,8 @@ public class EDHotStuffReplica extends LeaderBasedProtocolReplica {
         commitedRequests = new HashSet<>();
         incompleteMessages = new HashMap<>();
 
-        Comparator<GenericMessage> messageComparator = (m1, m2) -> (int) (m1.getViewNumber() - m2.getViewNumber());
-        pendingProposals = new PriorityQueue<>(messageComparator);
+        //Comparator<GenericMessage> messageComparator = (m1, m2) -> (int) (m1.getViewNumber() - m2.getViewNumber());
+        //pendingProposals = new PriorityQueue<>(messageComparator);
 
         try {
             EDHSQuorumCertificate genesisQC0 = new EDHSQuorumCertificate("GENESIS", new QuorumSignature(new HashSet<>()));
@@ -163,28 +187,36 @@ public class EDHotStuffReplica extends LeaderBasedProtocolReplica {
     @Override
     public void handleClientRequest(String clientId, Serializable request) throws Exception {
         synchronized(this) {
-            if (request instanceof ClientRequest) {
+            processingMessage = true;
+
+            if (request instanceof ClientRequest clientRequest) {
                 log("Received client request");
 
-                pendingRequests.add((ClientRequest) request);
+                if(!commitedRequests.contains(clientRequest)) pendingRequests.add(clientRequest);
                 pacemaker.onClientRequest();
             }
+
+            processingMessage = false;
         }
     }
 
     @Override
     public void handleMessage(String sender, MessagePayload message) throws Exception {
         synchronized(this) {
+            processingMessage = true;
+
             switch (message) {
                 case DefaultClientRequestPayload clientRequest ->
                         handleClientRequest(sender, clientRequest.getOperation());
                 case NewViewMessage newViewMessage -> onReceiveNewView(newViewMessage, sender);
                 case GenericVote genericVote -> onReceiveVote(genericVote, sender);
-                case GenericMessage genericMessage -> rememberProposal(genericMessage, sender);
+                case GenericMessage genericMessage -> onReceiveProposal(genericMessage, sender);
                 case AskMessage askMessage -> onAskMessage(askMessage, sender);
                 case TellMessage tellMessage -> onTellMessage(tellMessage, sender);
                 default -> throw new IllegalStateException("Message type not supported.");
             }
+
+            processingMessage = false;
         }
     }
 
@@ -199,10 +231,11 @@ public class EDHotStuffReplica extends LeaderBasedProtocolReplica {
         long newViewNumber = newViewMessage.getViewNumber();
         LeaderViewState leaderViewState = getLeaderViewState(newViewNumber);
         if(leaderViewState != null) leaderViewState.addNewViewMessage(newViewMessage, senderId);
-        else log("Discarding NEW-VIEW message. Not loeader for view " + newViewNumber);
+        else log("Discarding NEW-VIEW message. Not leader for view " + newViewNumber);
     }
 
     // GENERIC
+    /*
     private void rememberProposal(GenericMessage proposal, String senderId) {
         long proposalView = proposal.getViewNumber();
         log("Received GENERIC message from " + senderId + " for view " + proposalView + ", current view is " + getViewNumber());
@@ -221,25 +254,34 @@ public class EDHotStuffReplica extends LeaderBasedProtocolReplica {
             pendingProposals.add(proposal);
         }
 
-    }
+    }*/
 
-    private void onReceiveProposal(GenericMessage proposal) {
+    private void onReceiveProposal(GenericMessage proposal, String senderId) {
+        long proposalView = proposal.getViewNumber();
+        log("Received GENERIC message from " + senderId + " for view " + proposalView + ", current view is " + getViewNumber());
+
+        if(isQCNodeMissing(proposal, senderId)) return;
+        hashNodeMap.put(proposal.getNode().getHash(), proposal.getNode());
+        if(!isProposalValid(proposal, senderId)) return;
+
         EDHSNode proposedNode = proposal.getNode();
-        hashNodeMap.put(proposedNode.getHash(), proposedNode);
 
         // Remember client request to avoid duplicates
+
         ClientRequest clientRequest = proposedNode.getClientRequest();
         log("Processing proposal with height " + proposedNode.getHeight() + " for request " + clientRequest.getRequestId());
-        if (commitedRequests.contains(clientRequest)) {
+        /*if (commitedRequests.contains(clientRequest)) {
             log("Received proposal of already commited request. RequestId: " + clientRequest.getRequestId());
             return;
-        }
+        }*/
+
+
         EDHSNode node2 = hashNodeMap.get(proposedNode.getJustify().getNodeHash());
-        EDHSNode node1 = hashNodeMap.get(node2.getJustify().getNodeHash());
-        EDHSNode node0 = hashNodeMap.get(node1.getJustify().getNodeHash());
-        if(node2.getClientRequest().equals(clientRequest) && proposedNode.isChildOf(node2)) return;
-        if(node1.getClientRequest().equals(clientRequest) && node2.isChildOf(node1) && proposedNode.isChildOf(node2)) return;
-        if(node0.getClientRequest().equals(clientRequest) && node1.isChildOf(node0) && node2.isChildOf(node1)) return;
+        //EDHSNode node1 = hashNodeMap.get(node2.getJustify().getNodeHash());
+        //EDHSNode node0 = hashNodeMap.get(node1.getJustify().getNodeHash());
+        //if(node2.getClientRequest().equals(clientRequest) && proposedNode.isChildOf(node2)) return;
+        //if(node1.getClientRequest().equals(clientRequest) && node2.isChildOf(node1) && proposedNode.isChildOf(node2)) return;
+        //if(node0.getClientRequest().equals(clientRequest) && node1.isChildOf(node0) && node2.isChildOf(node1)) return;
 
         // vote
         if ((proposedNode.getHeight() > lastVoteHeight) && ((proposedNode.isExtensionOf(lockedNode, hashNodeMap)) || (node2.getHeight() > lockedNode.getHeight()))) {
@@ -255,9 +297,9 @@ public class EDHotStuffReplica extends LeaderBasedProtocolReplica {
         update(proposedNode);
 
         // viewChange
-        nextView();
+        if(proposedNode.getHeight() == getViewNumber()) nextView();
 
-        processIncompleteMessages(proposedNode);
+        catchUp(proposedNode);
     }
 
     private void update(EDHSNode proposedNode) {
@@ -273,6 +315,7 @@ public class EDHotStuffReplica extends LeaderBasedProtocolReplica {
             log("COMMIT. Locked node updated with node " + node1.getHash() + " with height " + node1.getHeight());
         }
         // DECIDE
+        //if (node2.isExtensionOf(node1, hashNodeMap) && node1.isExtensionOf(node0, hashNodeMap)) {
         if (node2.isChildOf(node1) && node1.isChildOf(node0)) {
             if(onCommit(node0)) execNode = node0;
             log("DECIDE. node " + node0.getHash() + " with height " + node0.getHeight());
@@ -281,6 +324,7 @@ public class EDHotStuffReplica extends LeaderBasedProtocolReplica {
 
     private boolean onCommit(EDHSNode node) {
         if (execNode.getHeight() < node.getHeight()) {
+            this.scenario.registerCommit(getViewNumber());
             onCommit(hashNodeMap.get(node.getParentHash()));
             commitOperation(new SerializableLogEntry(node.getClientRequest()));
             commitedRequests.add(node.getClientRequest());
@@ -324,23 +368,27 @@ public class EDHotStuffReplica extends LeaderBasedProtocolReplica {
     // Catch up mechanism
     // only use for messages with QC
     public boolean isQCNodeMissing(AbstractMessage message, String senderId) {
-        EDHSQuorumCertificate qc;
+        //EDHSQuorumCertificate qc;
+        HashSet<String> referencedNodes = new HashSet<>();
         switch (message) {
-            case NewViewMessage newViewMessage -> qc = newViewMessage.getJustify();
-            case GenericMessage genericMessage -> qc = genericMessage.getNode().getJustify();
-            case GenericVote genericVote -> qc = genericVote.getNode().getJustify();
-            case TellMessage tellMessage -> qc = tellMessage.getNode().getJustify();
+            case NewViewMessage newViewMessage -> referencedNodes.add(newViewMessage.getJustify().getNodeHash());
+            case GenericMessage genericMessage -> referencedNodes.addAll(List.of(genericMessage.getNode().getParentHash(), genericMessage.getNode().getJustify().getNodeHash()));
+            case GenericVote genericVote -> referencedNodes.addAll(List.of(genericVote.getNode().getParentHash(), genericVote.getNode().getJustify().getNodeHash()));
+            case TellMessage tellMessage -> referencedNodes.addAll(List.of(tellMessage.getNode().getParentHash(), tellMessage.getNode().getJustify().getNodeHash()));
             default -> throw new IllegalStateException("isQCNodeMissing: Unsupported message type");
         }
-        String nodeHash = qc.getNodeHash();
-        if (hashNodeMap.containsKey(nodeHash)) return false;
+        HashSet<String> missingNodes = new HashSet<>(referencedNodes.stream().filter(nodeHash -> !hashNodeMap.containsKey(nodeHash)).toList());
+        if (missingNodes.isEmpty()) return false;
         else {
-            log("QC node is missing. Cannot process " + message.getType() + " message.");
-            log("ASK for node " + nodeHash);
-            sendMessage(new AskMessage(getViewNumber(), nodeHash), senderId);
-            if(!incompleteMessages.containsKey(nodeHash)) incompleteMessages.put(nodeHash, new ArrayList<>());
-            ArrayList<IncompleteMessage> incompleteMessagesForNode = incompleteMessages.get(nodeHash);
-            incompleteMessagesForNode.add(new IncompleteMessage(message, senderId));
+            log("Referenced nodes are missing. Cannot process " + message.getType() + " message.");
+            IncompleteMessage incompleteMessage = new IncompleteMessage(message, senderId, missingNodes);
+            for(String missingNode : missingNodes) {
+                log("ASK for node " + missingNode);
+                sendMessage(new AskMessage(getViewNumber(), missingNode), senderId);
+                if (!incompleteMessages.containsKey(missingNode)) incompleteMessages.put(missingNode, new ArrayList<>());
+                ArrayList<IncompleteMessage> incompleteMessagesForNode = incompleteMessages.get(missingNode);
+                incompleteMessagesForNode.add(incompleteMessage);
+            }
             return true;
         }
     }
@@ -367,31 +415,35 @@ public class EDHotStuffReplica extends LeaderBasedProtocolReplica {
     }
 
     public void catchUp(EDHSNode missingNode) {
-        if(hashNodeMap.containsKey(missingNode.getHash())) return;
+        //if(hashNodeMap.containsKey(missingNode.getHash())) return;
         hashNodeMap.put(missingNode.getHash(), missingNode);
 
-        update(missingNode);
+        //update(missingNode);
 
-        if(missingNode.getHeight() == getViewNumber()) nextView();
+        //if(missingNode.getHeight() == getViewNumber()) nextView();
         processIncompleteMessages(missingNode);
-
-        log("Caught up with node " + missingNode.getHash());
     }
 
     public void processIncompleteMessages(EDHSNode missingNode) {
         if(!incompleteMessages.containsKey(missingNode.getHash())) return;
         ArrayList<IncompleteMessage> incompleteMessagesForNode = incompleteMessages.get(missingNode.getHash());
         incompleteMessagesForNode.forEach(im -> {
-            log("Processing incomplete message " + im.getMessage().getType());
-            switch (im.getMessage()) {
-                case NewViewMessage m -> onReceiveNewView(m, im.getSenderId());
-                case GenericMessage m -> rememberProposal(m, im.getSenderId());
-                case GenericVote m -> onReceiveVote(m, im.getSenderId());
-                case TellMessage m -> onTellMessage(m, im.getSenderId());
-                default -> throw new IllegalStateException("catchUp: Unsupported message type");
-            }
+            log("Processing incomplete message " + im.getMessage().getType() + " after receiving node " + missingNode.getHash());
+            im.getMissingNodes().remove(missingNode.getHash());
+            if(im.getMissingNodes().isEmpty()) {
+                log("Message will be processed. No other node missing");
+                switch (im.getMessage()) {
+                    case NewViewMessage m -> onReceiveNewView(m, im.getSenderId());
+                    case GenericMessage m -> onReceiveProposal(m, im.getSenderId());
+                    case GenericVote m -> onReceiveVote(m, im.getSenderId());
+                    case TellMessage m -> onTellMessage(m, im.getSenderId());
+                    default -> throw new IllegalStateException("catchUp: Unsupported message type");
+                }
+            } else log("Message will NOT be processed. Nodes are still missing. " + im.getMissingNodes());
         });
         incompleteMessages.remove(missingNode.getHash());
+
+        log("Caught up with node " + missingNode.getHash());
     }
 
     public void sendReplyToClient(ClientRequest clientRequest) {
@@ -405,15 +457,26 @@ public class EDHotStuffReplica extends LeaderBasedProtocolReplica {
     public ClientRequest nextClientRequest(EDHSNode leaf) {
         List<ClientRequest> requestlist = pendingRequests.stream().toList();
         for(ClientRequest clientRequest : requestlist) {
-            if(leaf.getClientRequest().equals(clientRequest)) continue;
-            EDHSNode node2 = hashNodeMap.get(leaf.getJustify().getNodeHash());
-            if(node2.getClientRequest().equals(clientRequest) && leaf.isChildOf(node2)) continue;
-            EDHSNode node1 = hashNodeMap.get(node2.getJustify().getNodeHash());
-            if(node1.getClientRequest().equals(clientRequest) && node2.isChildOf(node1) && leaf.isChildOf(node2)) continue;
+
+            EDHSNode walk = leaf;
+            boolean shouldContinue = false;
+            while (walk.getHeight() > execNode.getHeight()) {
+                if(walk.getClientRequest().equals(clientRequest)) {
+                    shouldContinue = true;
+                    break;
+                }
+                walk = hashNodeMap.get(walk.getParentHash());
+            }
+            if(shouldContinue) continue;
+            //EDHSNode node2 = hashNodeMap.get(leaf.getJustify().getNodeHash());
+            //if(node2.getClientRequest().equals(clientRequest) && leaf.isChildOf(node2)) continue;
+            //EDHSNode node1 = hashNodeMap.get(node2.getJustify().getNodeHash());
+            //if(node1.getClientRequest().equals(clientRequest) && node2.isChildOf(node1) && leaf.isChildOf(node2)) continue;
 
             return clientRequest;
         }
-        return null;
+
+        return requestlist.isEmpty() ? null : requestlist.getFirst(); // Breaks de-duplication
     }
 
     private void broadcastToAllReplicas(AbstractMessage message) {
@@ -431,6 +494,14 @@ public class EDHotStuffReplica extends LeaderBasedProtocolReplica {
     }
 
     public boolean isProposalValid(GenericMessage proposal, String senderId) {
+        if(proposal.getViewNumber() != getViewNumber()) {
+            log("Discarding proposal. Not in view " + proposal.getViewNumber() + ". Current view is " + getViewNumber());
+            return false;
+        }
+        if(proposal.getViewNumber() < 0) {
+            log("Discarding proposal. Invalid view number");
+            return false;
+        }
         if(!pacemaker.getLeaderId(proposal.getViewNumber()).equals(senderId)) {
             log("Discarding proposal. Proposer is not a leader");
             return false;

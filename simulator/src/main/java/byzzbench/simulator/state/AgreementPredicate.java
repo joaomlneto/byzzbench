@@ -3,6 +3,7 @@ package byzzbench.simulator.state;
 import byzzbench.simulator.Replica;
 import byzzbench.simulator.Scenario;
 import byzzbench.simulator.ScenarioPredicate;
+import byzzbench.simulator.protocols.event_driven_hotstuff.EDHotStuffScenario;
 
 import java.util.Collection;
 import java.util.List;
@@ -37,7 +38,9 @@ public class AgreementPredicate implements ScenarioPredicate {
                     .distinct()
                     .toList();
             if (distinctIthEntries.size() > 1) {
-                System.out.println("AgreementPredicate: Disagreement at index " + i);
+                if(scenarioExecutor instanceof EDHotStuffScenario edHotStuffScenario)
+                    edHotStuffScenario.log("AgreementPredicate: Disagreement at index " + i);
+                else System.out.println("AgreementPredicate: Disagreement at index " + i);
                 System.out.println("REPLICAS:");
                 for (Replica replica : replicas) {
                     try {

@@ -5,6 +5,9 @@ import byzzbench.simulator.Node;
 import byzzbench.simulator.Scenario;
 import byzzbench.simulator.faults.Fault;
 import byzzbench.simulator.faults.FaultContext;
+import byzzbench.simulator.faults.ReplicaFault;
+import byzzbench.simulator.faults.RoundBasedFault;
+import byzzbench.simulator.protocols.event_driven_hotstuff.EDHotStuffScenario;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -65,6 +68,8 @@ public class Transport {
     @Getter(onMethod_ = {@Synchronized})
     private final Router router = new Router();
 
+    //private final HashSet<Long> roundsWithFaults = new HashSet<>();
+
     /**
      * List of observers for the transport layer.
      */
@@ -94,11 +99,30 @@ public class Transport {
      * @param fault The fault to add.
      */
     public synchronized void addFault(Fault fault, boolean triggerAutomatically) {
+        if (this.scenario instanceof EDHotStuffScenario edHotStuffScenario) {
+            if (fault instanceof RoundBasedFault roundBasedFault) {
+                if (fault instanceof ReplicaFault replicaFault) edHotStuffScenario.registerFaultyReplica(roundBasedFault.getRound(), replicaFault.getFaultyReplicaId());
+                else edHotStuffScenario.registerNetworkFault(roundBasedFault.getRound());
+            }
+        }
         if (triggerAutomatically) {
             this.automaticFaults.put(fault.getId(), fault);
         } else {
             this.networkFaults.put(fault.getId(), fault);
         }
+    }
+
+   /*public synchronized boolean hasFaultForRound(long round) {
+        if (this.scenario instanceof EDHotStuffScenario edHotStuffScenario) {
+
+        }
+        else {
+            return roundsWithFaults.contains(round);
+        }
+    }*/
+
+    public void addImmuneNode(String nodeId) {
+        router.addImmuneNode(nodeId);
     }
 
     /**

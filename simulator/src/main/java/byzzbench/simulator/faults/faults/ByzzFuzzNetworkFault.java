@@ -1,8 +1,10 @@
 package byzzbench.simulator.faults.faults;
 
 import byzzbench.simulator.faults.BaseFault;
+import byzzbench.simulator.faults.RoundBasedFault;
 import byzzbench.simulator.faults.behaviors.CreateNetworkPartitionsBehavior;
 import byzzbench.simulator.faults.predicates.MessageRoundPredicate;
+import lombok.Getter;
 
 import java.util.Set;
 
@@ -12,7 +14,10 @@ import java.util.Set;
  * matches the round number of the fault, and the sender and receiver of the message
  * are not in the same partition, the message will be dropped.
  */
-public class ByzzFuzzNetworkFault extends BaseFault {
+public class ByzzFuzzNetworkFault extends BaseFault implements RoundBasedFault {
+
+    @Getter
+    private final long round;
     /**
      * Create a new ByzzFuzzNetworkFault
      *
@@ -25,5 +30,6 @@ public class ByzzFuzzNetworkFault extends BaseFault {
                 new MessageRoundPredicate(round),
                 new CreateNetworkPartitionsBehavior(partition)
         );
+        this.round = round;
     }
 }

@@ -18,7 +18,7 @@ public class LeaderViewState {
     private final long viewNumber;
 
     private final HashSet<String> newViewMessages;
-    private final HashMap<String, HashSet<GenericVote>> votes;
+    private final HashMap<String, HashMap<PartialSignature, GenericVote>> votes;
     private boolean done;
     private boolean madeQC;
 
@@ -38,6 +38,8 @@ public class LeaderViewState {
     }
 
     public void addNewViewMessage(NewViewMessage message, String senderId) {
+        replica.log("Processing NEW-VIEW message for view " + message.getViewNumber());
+
         if(message.getViewNumber() == viewNumber) newViewMessages.add(senderId);
         checkForNewViewQuorum();
     }
@@ -51,13 +53,14 @@ public class LeaderViewState {
     }
 
     public void addVote(GenericVote vote) {
-        // TODO: make sure we have processed the node we collect votes on
+        replica.log("Processing vote for node " + vote.getNode().getHash() + " with height " + vote.getNode().getHeight() + " with signature for node " + vote.getPartialSignature().getProposedNodeHash() + " signed by " + vote.getPartialSignature().getSenderId());
+
 
         String nodeHash = vote.getNode().getHash();
-        if(!votes.containsKey(nodeHash)) votes.put(nodeHash, new HashSet<>());
-        HashSet<GenericVote> voteSet = votes.get(nodeHash);
+        if(!votes.containsKey(nodeHash)) votes.put(nodeHash, new HashMap<>());
+        HashMap<PartialSignature, GenericVote> voteSet = votes.get(nodeHash);
 
-        voteSet.add(vote);
+        voteSet.put(vote.getPartialSignature(), vote);
 
         makeQCIfReady();
     }
@@ -69,10 +72,10 @@ public class LeaderViewState {
     public boolean hasMadeQC() { return madeQC; }
 
     public HashSet<GenericVote> getQuorumVotes() {
-        List<HashSet<GenericVote>> quorumSets = votes.values().stream().filter(votessSet -> votessSet.size() >= replica.getMinValidVotes()).toList();
+        List<HashMap<PartialSignature, GenericVote>> quorumSets = votes.values().stream().filter(votesSet -> votesSet.size() >= replica.getMinValidVotes()).toList();
         if(quorumSets.isEmpty()) return null;
 
-        return quorumSets.getFirst();
+        return new HashSet<>(quorumSets.getFirst().values());
     }
 
     private void makeQCIfReady() {
@@ -85,6 +88,10 @@ public class LeaderViewState {
             if(!replica.hashNodeMap.containsKey(quorumNodeHash)) replica.catchUp(voteNode);
             HashSet<PartialSignature> signatures = new HashSet<>(quorumVotes.stream().map(GenericVote::getPartialSignature).toList());
             EDHSQuorumCertificate newQC = new EDHSQuorumCertificate(quorumNodeHash, new QuorumSignature(signatures));
+            replica.log("Created new QC for node " + quorumNodeHash + " with height " + voteNode.getHeight());
+            replica.log("Quorum votes size: " + quorumVotes.size());
+            replica.log("signatures size: " + signatures.size());
+            replica.log("QC signatures: " + signatures.stream().map(s -> "signature for " + s.getProposedNodeHash() + " from " + s.getSenderId()).toList());
             pacemaker.updateHighQC(newQC);
             madeQC = true;
 
