@@ -23,7 +23,7 @@ byzzbench:
 
   scheduler:
     id: "byzzfuzz" # The ID of the scheduler to use
-    executionMode: async # async (default, any message delivered) or sync (communication-closure hypothesis, FIFO)
+    executionMode: sync # async (default, any message delivered) or sync (communication-closure hypothesis, FIFO)
     maxDropMessages: 0 # Maximum number of messages to drop per scenario
     maxMutateMessages: 0 # Maximum number of messages to mutate per scenario
     deliverTimeoutWeight: 1 # The weight for scheduler to trigger a timeout
@@ -35,7 +35,7 @@ byzzbench:
       # ByzzFuzz
       numRoundsWithProcessFaults: 1
       numRoundsWithNetworkFaults: 1
-      numRoundsWithFaults: 8
+      numRoundsWithFaults: 2
       # Twins
       numReplicas: 1
       numTwinsPerReplica: 2
@@ -47,6 +47,6 @@ byzzbench:
     scheduledFaults:
       factories: [ ]
     termination: # Success condition for the scenario - terminates it when all conditions are met
-      minEvents: 500 # check if N events have been scheduled. If so, can terminate
-      minRounds: 8 # check if N rounds have elapsed. If so, can terminate
+      minEvents: 100 # check if N events have been scheduled. If so, can terminate
+      minRounds: 2 # check if N rounds have elapsed. If so, can terminate
       samplingFrequency: 30 # check if should terminate every N scheduler decisions
