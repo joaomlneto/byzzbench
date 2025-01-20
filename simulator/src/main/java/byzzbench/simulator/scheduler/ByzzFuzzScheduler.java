@@ -89,16 +89,4 @@ public class ByzzFuzzScheduler extends RandomScheduler {
         faults.forEach(fault -> scenario.getTransport().addFault(fault, true));
     }
 
-    @Override
-    public int dropMessageWeight(Scenario scenario) {
-        // ByzzFuzz does not drop messages as a scheduler decision
-        return 0;
-    }
-
-    @Override
-    public int mutateMessageWeight(Scenario scenario) {
-        // ByzzFuzz does not mutate messages as a scheduler decision
-        return 0;
-    }
-
 }

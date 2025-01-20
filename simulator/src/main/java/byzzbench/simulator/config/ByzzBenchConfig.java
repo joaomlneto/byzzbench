@@ -84,6 +84,10 @@ public class ByzzBenchConfig {
          */
         private String id;
         /**
+         * Execution mode for the scheduler, limiting which messages can be delivered as the next scheduler action.
+         */
+        private ExecutionMode executionMode = ExecutionMode.ASYNC;
+        /**
          * Maximum number of messages to drop for a given scenario.
          */
         private int maxDropMessages = 0;
@@ -113,11 +117,24 @@ public class ByzzBenchConfig {
          * The default is 0 (no messages are mutated as a scheduler decision).
          */
         private int mutateMessageWeight = 0;
-
         private Map<String, String> params;
-
         private List<FaultConfig> faults = new ArrayList<>();
         private List<FaultConfig> mutations = new ArrayList<>();
+
+        // execution should be either "async" or "sync". Here is the enum:
+        public enum ExecutionMode {
+            /**
+             * The scheduler will deliver any message that is currently queued.
+             * This is the default behavior.
+             */
+            ASYNC,
+            /**
+             * The scheduler will deliver the earliest-sent message that is currently queued.
+             * This follows the communication-closure hypothesis.
+             * This should be used with a non-zero "dropMessageWeight" to emulate the behavior in ByzzFuzz.
+             */
+            SYNC,
+        }
     }
 
     /**

@@ -62,16 +62,4 @@ public class TwinsScheduler extends RandomScheduler {
         }
     }
 
-    @Override
-    public int dropMessageWeight(Scenario scenario) {
-        // Twins does not drop messages as a scheduler decision
-        return 0;
-    }
-
-    @Override
-    public int mutateMessageWeight(Scenario scenario) {
-        // Twins does not mutate messages as a scheduler decision
-        return 0;
-    }
-
 }
