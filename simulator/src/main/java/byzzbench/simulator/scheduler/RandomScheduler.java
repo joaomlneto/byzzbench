@@ -30,6 +30,7 @@ public class RandomScheduler extends BaseScheduler {
         super(config, messageMutatorService);
     }
 
+    @Override
     public String getId() {
         return "Random";
     }
@@ -74,7 +75,7 @@ public class RandomScheduler extends BaseScheduler {
         // check if we should deliver a message (without changes)
         dieRoll -= deliverMessageWeight;
         if (dieRoll < 0) {
-            Event message = messageEvents.get(random.nextInt(messageEvents.size()));
+            Event message = getNextMessageEvent(messageEvents);
             scenario.getTransport().deliverEvent(message.getEventId());
             EventDecision decision = new EventDecision(EventDecision.DecisionType.DELIVERED, message.getEventId());
             return Optional.of(decision);
