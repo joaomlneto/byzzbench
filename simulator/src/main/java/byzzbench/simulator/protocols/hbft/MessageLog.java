@@ -551,7 +551,7 @@ public class MessageLog implements Serializable {
          * 4.4. This means that any view change votes and pending tickets that
          * are not in the new view are removed.
          */
-        this.viewChanges.remove(newViewNumber);
+        this.viewChanges.clear();
 
         Iterator<TicketKey> iterator = this.tickets.keySet().iterator();
         while (iterator.hasNext()) {
