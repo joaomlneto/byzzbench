@@ -3,6 +3,7 @@ package byzzbench.simulator.protocols.fab2.messages;
 import byzzbench.simulator.protocols.fab2.ProposalNumber;
 import byzzbench.simulator.protocols.pbft_java.message.IPhaseMessage;
 import byzzbench.simulator.transport.MessagePayload;
+import byzzbench.simulator.transport.messages.MessageWithRound;
 import lombok.*;
 
 /**
@@ -12,7 +13,7 @@ import lombok.*;
 @Data
 @EqualsAndHashCode(callSuper = true)
 @With
-public class ViewChangeMessage extends IPhaseMessage {
+public class ViewChangeMessage extends MessagePayload {
     private final String senderId;
     private final ProposalNumber proposalNumber;
     private final String newLeaderId;
@@ -21,23 +22,24 @@ public class ViewChangeMessage extends IPhaseMessage {
         return "VIEW_CHANGE";
     }
 
-    @Override
-    public long getViewNumber() {
-        return proposalNumber.getViewNumber();
-    }
-
-    @Override
-    public long getSequenceNumber() {
-        return 0;
-    }
-
-    @Override
-    public long getRound() {
-        return 0;
-    }
-
-    @Override
-    public byte[] getDigest() {
-        return newLeaderId.getBytes();
-    }
+//    @Override
+//    public long getViewNumber() {
+//        return proposalNumber.getViewNumber();
+//    }
+//
+//    // This message should not take into consideration the sequence number
+//    @Override
+//    public long getSequenceNumber() {
+//        return 0;
+//    }
+//
+//    @Override
+//    public long getRound() {
+//        return 0;
+//    }
+//
+//    @Override
+//    public byte[] getDigest() {
+//        return newLeaderId.getBytes();
+//    }
 }

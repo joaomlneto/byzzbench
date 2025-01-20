@@ -691,7 +691,7 @@ public class FastByzantineReplica extends LeaderBasedProtocolReplica {
             this.viewNumber = proposalNumber;
             this.leaderId = viewChangeMessage.getNewLeaderId();
             this.setView(this.viewNumber, this.leaderId);
-            this.proposalNumber = 1;
+            this.proposalNumber++;
             this.clearAllTimeouts();
             messageLog.acceptViewChange(viewChangeMessage);
             this.isCurrentlyLeader = true;
@@ -742,7 +742,7 @@ public class FastByzantineReplica extends LeaderBasedProtocolReplica {
             return;
         }
 
-        log.info("Replica " + getId() + " is moving to the next view number: view " + newViewMessage.getViewNumber());
+        log.info("Replica " + getId() + " is moving to the next view number: view " + newViewMessage.getProposalNumber());
         this.viewNumber = proposalNumber;
         this.leaderId = newViewMessage.getNewLeaderId();
         this.setView(this.viewNumber, newViewMessage.getNewLeaderId());
@@ -758,7 +758,7 @@ public class FastByzantineReplica extends LeaderBasedProtocolReplica {
         this.learnerTimeoutId = -1;
         this.forwards = 0;
         this.viewChangeRequests = 0;
-        this.proposalNumber = 1;
+        this.proposalNumber++;
 
         if (isProposer()) proposerOnStart();
         if (isLearner()) learnerOnStart();

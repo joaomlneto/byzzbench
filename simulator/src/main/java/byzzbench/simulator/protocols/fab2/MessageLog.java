@@ -188,7 +188,7 @@ public class MessageLog {
         }
 
         // Remove message from the acceptMessages map
-        if (acceptMessages.containsKey(proposalNumber)) acceptMessages.get(proposalNumber).remove(acceptMessage);
+//        if (acceptMessages.containsKey(proposalNumber)) acceptMessages.get(proposalNumber).remove(acceptMessage);
 
         return false;
     }
