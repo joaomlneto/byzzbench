@@ -107,7 +107,7 @@ FastByzantineClient extends Client {
         this.replies.add(reply);
         if (learnersList.contains(senderId)) {
             learners.incrementAndGet();
-            if (learners.get() == 4) {
+            if (learners.get() == 3) {
                 for (String proposer : proposersList) {
                     this.sendRequest(proposer);
                 }

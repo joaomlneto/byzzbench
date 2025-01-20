@@ -444,7 +444,8 @@ public class FastByzantineReplica extends LeaderBasedProtocolReplica {
             }
 
             // Leader is ready to move to the next request.
-            if (isLeader() && !requests.isEmpty()) {
+            if (isLeader() && !requests.isEmpty()
+            && messageLog.getProposersWithLearnedValue().size() >= p) {
                 Serializable request = requests.poll();
                 this.proposalNumber++;
                 log.info("Increasing proposal number: " + this.proposalNumber);
