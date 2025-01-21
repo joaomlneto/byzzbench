@@ -74,6 +74,11 @@ public class Timekeeper implements Serializable, TransportObserver {
     }
 
     @Override
+    public void onEventRequeued(Event event) {
+        // nothing to do
+    }
+
+    @Override
     public void onEventDelivered(Event event) {
         // check if it was a timeout
         if (!(event instanceof TimeoutEvent timeoutEvent)) {
