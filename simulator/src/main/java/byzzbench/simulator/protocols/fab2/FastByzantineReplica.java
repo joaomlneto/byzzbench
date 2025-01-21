@@ -742,7 +742,7 @@ public class FastByzantineReplica extends LeaderBasedProtocolReplica {
             return;
         }
 
-        log.info("Replica " + getId() + " is moving to the next view number: view " + newViewMessage.getViewNumber());
+        log.info("Replica " + getId() + " is moving to the next view number: view " + newViewMessage.getProposalNumber());
         this.viewNumber = proposalNumber;
         this.leaderId = newViewMessage.getNewLeaderId();
         this.setView(this.viewNumber, newViewMessage.getNewLeaderId());

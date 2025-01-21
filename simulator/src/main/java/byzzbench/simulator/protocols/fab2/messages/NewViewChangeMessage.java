@@ -1,6 +1,7 @@
 package byzzbench.simulator.protocols.fab2.messages;
 
 import byzzbench.simulator.protocols.pbft_java.message.IPhaseMessage;
+import byzzbench.simulator.transport.MessagePayload;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
@@ -9,7 +10,7 @@ import lombok.With;
 @Data
 @EqualsAndHashCode(callSuper = true)
 @With
-public class NewViewChangeMessage extends IPhaseMessage {
+public class NewViewChangeMessage extends MessagePayload {
     @Getter
     private final long proposalNumber;
     private final String newLeaderId;
@@ -20,27 +21,28 @@ public class NewViewChangeMessage extends IPhaseMessage {
     }
 
     @Override
-    public long getViewNumber() {
-        return proposalNumber;
-    }
-
-    @Override
     public String getType() {
         return "NEW_VIEW";
     }
 
-    @Override
-    public long getSequenceNumber() {
-        return 0;
-    }
-
-    @Override
-    public long getRound() {
-        return 0;
-    }
-
-    @Override
-    public byte[] getDigest() {
-        return new byte[0];
-    }
+//    @Override
+//    public long getViewNumber() {
+//        return proposalNumber;
+//    }
+//
+//
+//    @Override
+//    public long getSequenceNumber() {
+//        return 0;
+//    }
+//
+//    @Override
+//    public long getRound() {
+//        return 0;
+//    }
+//
+//    @Override
+//    public byte[] getDigest() {
+//        return new byte[0];
+//    }
 }

@@ -15,7 +15,7 @@ import lombok.With;
 @Data
 @EqualsAndHashCode(callSuper = true)
 @With
-public class ReplyMessage extends IPhaseMessage {
+public class ReplyMessage extends MessagePayload {
     private final Pair valueAndProposalNumber;
     private final boolean isSigned;
     private final String sender;
@@ -25,24 +25,24 @@ public class ReplyMessage extends IPhaseMessage {
         return "RESPONSE";
     }
 
-    @Override
-    public long getViewNumber() {
-        return valueAndProposalNumber.getProposalNumber().getViewNumber();
-    }
-
-    @Override
-    public long getSequenceNumber() {
-//        return valueAndProposalNumber.getProposalNumber().getSequenceNumber();
-        return 0;
-    }
-
-    @Override
-    public long getRound() {
-        return 0;
-    }
-
-    @Override
-    public byte[] getDigest() {
-        return valueAndProposalNumber.getValue();
-    }
+//    @Override
+//    public long getViewNumber() {
+//        return valueAndProposalNumber.getProposalNumber().getViewNumber();
+//    }
+//
+//    @Override
+//    public long getSequenceNumber() {
+////        return valueAndProposalNumber.getProposalNumber().getSequenceNumber();
+//        return 0;
+//    }
+//
+//    @Override
+//    public long getRound() {
+//        return 0;
+//    }
+//
+//    @Override
+//    public byte[] getDigest() {
+//        return valueAndProposalNumber.getValue();
+//    }
 }

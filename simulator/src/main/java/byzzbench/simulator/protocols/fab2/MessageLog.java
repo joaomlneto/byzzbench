@@ -282,11 +282,11 @@ public class MessageLog {
     }
 
     public Pair onQuery(String sender, QueryMessage queryMessage, int quorum) {
-        if (queryMessages.containsKey(queryMessage.getViewNumber())) {
-            queryMessages.get(queryMessage.getViewNumber()).remove(queryMessage);
+        if (queryMessages.containsKey(queryMessage.getProposalNumber().getViewNumber())) {
+            queryMessages.get(queryMessage.getProposalNumber().getViewNumber()).remove(queryMessage);
         }
 
-        long messageViewNumber = queryMessage.getViewNumber();
+        long messageViewNumber = queryMessage.getProposalNumber().getViewNumber();
 
         // Ignore bad requests.
 //        if (messageViewNumber < this.replica.getViewNumber()) {
