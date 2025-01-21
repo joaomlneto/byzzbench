@@ -10,7 +10,7 @@ import java.util.TreeSet;
 
 public class ZyzzyvaScenario extends BaseScenario {
     private final int numReplicas = 4;
-    private final int numClients = 1;
+    private final int numClients = 2;
 
     public ZyzzyvaScenario(Scheduler scheduler) {
         super("zyzzyva", scheduler);
@@ -29,7 +29,7 @@ public class ZyzzyvaScenario extends BaseScenario {
         }
 
         for (String replicaId : replicaIds) {
-            ZyzzyvaReplica replica = new ZyzzyvaReplica(replicaId, replicaIds, this, 5);
+            ZyzzyvaReplica replica = new ZyzzyvaReplica(replicaId, replicaIds, this, 15);
             this.addNode(replica);
         }
 
@@ -57,6 +57,6 @@ public class ZyzzyvaScenario extends BaseScenario {
 
     @Override
     public Replica cloneReplica(Replica replica) {
-        return new ZyzzyvaReplica(replica.getId(), replica.getNodeIds(), this, 5);
+        return new ZyzzyvaReplica(replica.getId(), replica.getNodeIds(), this, 15);
     }
 }
