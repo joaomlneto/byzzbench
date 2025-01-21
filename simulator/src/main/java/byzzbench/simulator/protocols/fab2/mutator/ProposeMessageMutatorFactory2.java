@@ -120,6 +120,41 @@ public class ProposeMessageMutatorFactory2 extends MessageMutatorFactory {
 
                         messageEvent.setPayload(mutatedMessage);
                     }
+                },
+
+                new MessageMutationFault(
+                        "fab-propose-value",
+                        "Any Propose Number",
+                        List.of(ProposeMessage.class)
+                ) {
+                    @Override
+                    public void accept(FaultContext serializable) {
+                        Optional<Event> event = serializable.getEvent();
+                        Random random = new Random();
+                        int mutation = random.nextInt(2, 100);
+
+                        if (event.isEmpty()) {
+                            throw new IllegalArgumentException("Invalid message type");
+                        }
+
+                        if (!(event.get() instanceof MessageEvent messageEvent)) {
+                            throw new IllegalArgumentException("Invalid message type");
+                        }
+
+                        if (!(messageEvent.getPayload() instanceof ProposeMessage message)) {
+                            throw new IllegalArgumentException("Invalid message type");
+                        }
+
+                        ProposeMessage mutatedMessage = message.withValueAndProposalNumber(
+                                new Pair("value".getBytes(),
+                                        new ProposalNumber(
+                                                message.getValueAndProposalNumber().getProposalNumber().getViewNumber(),
+                                                message.getValueAndProposalNumber().getProposalNumber().getSequenceNumber()
+                                        ))
+                        );
+
+                        messageEvent.setPayload(mutatedMessage);
+                    }
                 }
         );
     }

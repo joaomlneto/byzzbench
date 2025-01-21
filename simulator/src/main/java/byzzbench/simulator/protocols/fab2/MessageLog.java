@@ -179,6 +179,11 @@ public class MessageLog {
             }
         });
 
+        // Log the values in the acceptorsWithAcceptedProposals
+        acceptorsWithAcceptedProposal.forEach((k, v) -> {
+            log.info("Acceptor " + k + " accepted value " + Arrays.toString(v.getValue()) + " with proposal number " + v.getProposalNumber());
+        });
+
         log.info("The number of accepted values for the same proposal value is " + currentAccepted.get());
         if (currentAccepted.get() >= threshold) {
             log.info("The learner has learned the value");
@@ -188,7 +193,7 @@ public class MessageLog {
         }
 
         // Remove message from the acceptMessages map
-//        if (acceptMessages.containsKey(proposalNumber)) acceptMessages.get(proposalNumber).remove(acceptMessage);
+        if (acceptMessages.containsKey(proposalNumber)) acceptMessages.get(proposalNumber).remove(acceptMessage);
 
         return false;
     }
@@ -224,6 +229,7 @@ public class MessageLog {
             }
         });
 
+        log.info("The number of learned values for the same proposal value is " + currentLearnedWithSamePair.get());
         if (currentLearnedWithSamePair.get() >= quorum && learnedValue == null) {
             this.learnedValue = learnValue;
             return true;

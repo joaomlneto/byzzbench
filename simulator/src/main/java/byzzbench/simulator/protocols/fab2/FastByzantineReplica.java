@@ -31,7 +31,6 @@ public class FastByzantineReplica extends LeaderBasedProtocolReplica {
 
     // The number of replicas in the system with each role.
     private final int p, a, l, f;
-    // The message round number.
     private long viewNumber;
     private long proposalNumber;
     // The value that the leader replica is proposing - changes each round, depending on the client request.
@@ -386,7 +385,11 @@ public class FastByzantineReplica extends LeaderBasedProtocolReplica {
             moveToNextProposal();
         }
 
-        log.info("Learner " + getId() + " received ACCEPT from " + sender + " and proposal number " + proposalNumber);
+        log.info("Learner " + getId() +
+                " received ACCEPT from " + sender +
+                " and proposal number " + sequenceNumber
+        + " with value " + new String(acceptMessage.getValueAndProposalNumber().getValue()));
+
         int acceptedThreshold = (int) Math.ceil((a + (3 * f) + 1) / 2.0);
         boolean isAccepted = messageLog.onAccept(sender, acceptMessage, acceptedThreshold);
         operation = acceptMessage.getValueAndProposalNumber().getValue();
@@ -444,8 +447,9 @@ public class FastByzantineReplica extends LeaderBasedProtocolReplica {
             }
 
             // Leader is ready to move to the next request.
+            // Leader is ready to move to the next request.
             if (isLeader() && !requests.isEmpty()
-            && messageLog.getProposersWithLearnedValue().size() >= p) {
+            && messageLog.getProposersWithLearnedValue().size() >= l) {
                 Serializable request = requests.poll();
                 this.proposalNumber++;
                 log.info("Increasing proposal number: " + this.proposalNumber);
@@ -499,9 +503,9 @@ public class FastByzantineReplica extends LeaderBasedProtocolReplica {
 
                 log.info("Learner " + getId() + " sending reply to client...");
                 this.sendReplyToClient(clientId, learnMessage.getValueAndProposalNumber().getValue());
-
             }
 
+            multicastMessage(new LearnMessage(learnMessage.getValueAndProposalNumber()), this.proposerNodeIds);
             if (this.learnerTimeoutId != -1) this.clearTimeout(this.learnerTimeoutId);
         } else {
             log.info("Learner " + getId() + " has not learned the value yet");
