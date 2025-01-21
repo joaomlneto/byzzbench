@@ -18,6 +18,7 @@ import org.apache.commons.lang3.tuple.Pair;
 import java.io.Serializable;
 import java.time.Duration;
 import java.util.*;
+import java.util.stream.Collectors;
 
 /// TODO: Check all fillhole logic
 /// TODO: Check all view change logic
@@ -170,7 +171,12 @@ public class ZyzzyvaReplica extends LeaderBasedProtocolReplica {
             log.warning("Trying to calculate history hash for a sequence number that is too high expected: " + (this.getHighestSequenceNumber() + 1) + " received: " + sequenceNumber);
             return -1;
         }
-        return (this.getHistory().get(sequenceNumber - 1)) ^ Arrays.hashCode(digest);
+//        return (this.getHistory().get(sequenceNumber - 1)) ^ Arrays.hashCode(digest);
+        return calculateHistory(this.getHistory().get(sequenceNumber - 1), Arrays.hashCode(digest));
+    }
+
+    public long calculateHistory(long prevHistory, int digestHashCode) {
+        return prevHistory ^ digestHashCode;
     }
 
     /**
@@ -263,7 +269,7 @@ public class ZyzzyvaReplica extends LeaderBasedProtocolReplica {
             this.handleClientRequest(crm.getRequestMessage().getClientId(), crm.getRequestMessage());
         }
     }
-
+    /// TODO: handle noops
     /**
      * Handle an ordered request message wrapper received by this replica and sends response to the client
      * Corresponds to A3 in the paper
@@ -295,7 +301,10 @@ public class ZyzzyvaReplica extends LeaderBasedProtocolReplica {
             log.warning("Failed to clear forward to primary timeout, possibly because it's been triggered");
         } catch (NullPointerException ignored) {
         }
+        executeOrderedRequest(ormw);
+    }
 
+    public void executeOrderedRequest(OrderedRequestMessageWrapper ormw) {
         // get the client ID from the request message
         String clientId = ormw.getRequestMessage().getClientId();
         SpeculativeResponseWrapper srw = this.handleOrderedRequestMessage(ormw.getOrderedRequest(), ormw.getRequestMessage());
@@ -785,28 +794,36 @@ public class ZyzzyvaReplica extends LeaderBasedProtocolReplica {
      */
     private void commitToViewChange() {
         List<IHateThePrimaryMessage> iHateThePrimaryMessages = List.copyOf(this.getMessageLog().getIHateThePrimaries().get(this.getViewNumber()).values());
+        // redundant check but okay
         if (iHateThePrimaryMessages.size() < this.faultsTolerated + 1) {
             log.warning("Number of IHateThePrimary messages is less than f + 1");
             return;
         }
-        Serializable cc;
+        CommitCertificate cc = null;
         // creates the CCs
         if (this.getMessageLog().getMaxCC() != null && this.getMessageLog().getMaxCC().getViewNumber() == this.getViewNumber()) {
             cc = this.getMessageLog().getMaxCC();
-        } else if (this.getMessageLog()
-                .getViewConfirmMessages()
-                .getOrDefault(this.getViewNumber(), new ArrayList<>())
-                .size() >= this.faultsTolerated + 1) {
-            cc = new ArrayList<>(this.getMessageLog().getViewConfirmMessages().get(this.getViewNumber()));
-        } else {
-            if(this.getMessageLog().getNewViewMessages().isEmpty()) {log.warning("New view messages is empty"); return;}
-            cc = this.getMessageLog().getNewViewMessages().sequencedValues().getLast();
         }
+//        } else if (this.getMessageLog()
+//                .getViewConfirmMessages()
+//                .getOrDefault(this.getViewNumber(), new ArrayList<>())
+//                .size() >= this.faultsTolerated + 1) {
+//            cc = new ArrayList<>(this.getMessageLog().getViewConfirmMessages().get(this.getViewNumber()));
+//        } else {
+//            if(this.getMessageLog().getNewViewMessages().isEmpty()) {log.warning("New view messages is empty"); return;}
+//            cc = this.getMessageLog().getNewViewMessages().sequencedValues().getLast();
+//        }
 
         ViewChangeMessage vcm = new ViewChangeMessage(
+                // future view number
                 this.getViewNumber() + 1,
+                // last checkpoint
+                this.getMessageLog().getLastCheckpoint(),
+                // checkpoint messages
+                this.getMessageLog().getCheckpointMessages().get(this.getMessageLog().getLastCheckpoint()).values().stream().toList(),
+                // commit certificate
                 cc,
-                // denoted in the extended technical report
+                // ordered requests since last checkpoint
                 this.getMessageLog().getOrderedRequestHistory(this.getMessageLog().getLastCheckpoint()),
                 this.getId()
         );
@@ -845,19 +862,19 @@ public class ZyzzyvaReplica extends LeaderBasedProtocolReplica {
                     futureViewNumber +
                     ". This is usually because we've already changed the view and then received this so it's fine."
                     );
-
             return;
         }
-        // check that there are enough valid IHateThePrimary messages from the view change message
-        if (!(numberIHateThePrimaries(viewChangeMessageWrapper.getIHateThePrimaries()) >= this.faultsTolerated + 1)) {
-            log.warning("Received a view change message with an incorrect number of IHateThePrimary messages");
+        // check if valid
+        if (!this.isValidViewChangeMessageWrapper(viewChangeMessageWrapper)) {
+            log.warning("Received an invalid view change message wrapper");
             return;
         }
 
         // puts the view change message in the view change messages list
         this.getMessageLog().putViewChangeMessage(vcm);
 
-        // if we have enough view change messages, we go on to VC3
+        // if we have more than 2f + 1 view change messages, we go on to VC3
+        // they have already been validated by the time they reach this point
         // note: this can be for any view number > current view number, so v + 100 for example is also valid here
         if (this.getMessageLog()
                 .getViewChangeMessages()
@@ -867,6 +884,50 @@ public class ZyzzyvaReplica extends LeaderBasedProtocolReplica {
             // go on to VC3
             this.viewChange(vcm.getFutureViewNumber());
         }
+    }
+
+    /**
+     * Checks if a given view change message wrapper is valid with the following properties:
+     * - There are at least f + 1 distinct IHateThePrimary messages
+     * - The view change message is valid
+     * @param vcmw - the view change message wrapper to check
+     * @return - if the vcmw is valid
+     */
+    private boolean isValidViewChangeMessageWrapper(ViewChangeMessageWrapper vcmw) {
+        // check that there are enough valid IHateThePrimary messages from the view change message
+        if (!(numberIHateThePrimaries(vcmw.getIHateThePrimaries()) >= this.faultsTolerated + 1)) {
+            log.warning("Received a view change message with an incorrect number of IHateThePrimary messages");
+            return false;
+        }
+
+        return isValidViewChangeMessage(vcmw.getViewChangeMessage());
+    }
+
+    /**
+     * Checks if a given view change message is valid with the following properties:
+     * - Checkpoint messages are signed by the correct replica
+     * - Checkpoint messages are for the stable checkpoint
+     * - There are 2f + 1 unique replicas
+     * @param vcm - the view change message to check
+     * @return - if the vcm is valid
+     */
+    private boolean isValidViewChangeMessage(ViewChangeMessage vcm) {
+        List<CheckpointMessage> checkpoints = vcm.getCheckpoints();
+        long stableCheckpoint = vcm.getStableCheckpoint();
+        Set<String> replicaIds = new HashSet<>();
+
+        for (CheckpointMessage cm : checkpoints) {
+            if (!cm.isSignedBy(cm.getReplicaId())) {
+                // signed property
+                log.warning("Received a view change message with an invalid signature");
+            } else if (cm.getSequenceNumber() != stableCheckpoint) {
+                // sequence number property
+                log.warning("Received a view change message with an incorrect checkpoint");
+            } else {
+                replicaIds.add(cm.getReplicaId());
+            }
+        }
+        return replicaIds.size() >= 2 * this.faultsTolerated + 1;
     }
 
     /**
@@ -899,19 +960,157 @@ public class ZyzzyvaReplica extends LeaderBasedProtocolReplica {
      * @param newViewNumber - the view number for the one we're about to enter
      */
     private void viewChangePrimary(long newViewNumber) {
+        // somewhat redundant check since we already did this but eh
         if (this.getMessageLog().getViewChangeMessages().get(newViewNumber).size() < 2 * this.faultsTolerated + 1) {
             log.warning("Received a view change message with an incorrect number of replicas");
             return;
         }
+        // redundant and should be impossible
+        if (newViewNumber <= this.getViewNumber()) log.warning("Initiating a new view with a smaller number");
+
         // create new-view message
         NewViewMessage nvm = new NewViewMessage(
                 newViewNumber,
-                this.getMessageLog().getViewChangeMessages().get(newViewNumber).values()
+                this.getMessageLog().getViewChangeMessages().get(newViewNumber),
+                computeOrderedRequestHistory(newViewNumber, this.getMessageLog().getViewChangeMessages().get(newViewNumber))
         );
-        if (newViewNumber <= this.getViewNumber()) log.warning("Initiating a new view with a smaller number");
         nvm.sign(this.getId());
         this.broadcastMessage(nvm);
         this.handleNewViewMessage(this.getId(), nvm);
+    }
+
+    /// TODO: check everything's signed and the view numbers are correct
+    /**
+     * Calculates the ordered request history as a primary for a view change
+     * This method is way too big I hate it
+     * Corresponds to VC3 in the paper
+     * @param newViewNumber - the view number for the one we're about to enter
+     * @param viewChangeMessagesMap - the view change messages map (replicaId -> view change message)
+     * @return - the ordered request history as a sorted set
+     */
+    public SortedMap<Long, OrderedRequestMessageWrapper> computeOrderedRequestHistory(long newViewNumber, SortedMap<String, ViewChangeMessage> viewChangeMessagesMap) {
+        // min-s
+        long latestStableCheckpoint = -1;
+        // max-cc
+        long highestCommittedSequenceNumber = -1;
+        // max-r
+        long highestNonCommittedSequenceNumber = -1;
+        // max-s
+        long highestSequenceNumber = -1;
+
+        // replica used to get between min-s and max-cc
+        String maxCCReplica = "";
+        // return value
+        SortedMap<Long, OrderedRequestMessageWrapper> orderedRequestHistory = new TreeMap<>();
+        // used for max-cc to max-s
+        SortedMap<Long, SortedSet<OrderedRequestMessageWrapper>> orderedRequests = new TreeMap<>();
+
+        // the viewChangeMessages have already been validated by the time they reach this point
+        // sets the values for the ordered request history
+        for (ViewChangeMessage vcm : viewChangeMessagesMap.values()) {
+            // updates the highest stable checkpoint (min-s)
+            if (vcm.getStableCheckpoint() > latestStableCheckpoint) {
+                latestStableCheckpoint = vcm.getStableCheckpoint();
+            }
+            // updates the highest committed sequence number (max-cc)
+            if (vcm.getCommitCertificate().getSequenceNumber() > highestCommittedSequenceNumber) {
+                highestCommittedSequenceNumber = vcm.getCommitCertificate().getSequenceNumber();
+                maxCCReplica = vcm.getReplicaId();
+            }
+            // updates the highest sequence number (max-s)
+            if (vcm.getOrderedRequestHistory().lastKey() > highestSequenceNumber) {
+                highestSequenceNumber = vcm.getOrderedRequestHistory().lastKey();
+            }
+            // used to get the collective ordered request history of all the replicas
+            // add all the ordered requests to the map for further processing
+            for (OrderedRequestMessageWrapper ormw : vcm.getOrderedRequestHistory().values()) {
+                orderedRequests.putIfAbsent(ormw.getOrderedRequest().getSequenceNumber(), new TreeSet<>());
+                orderedRequests.get(ormw.getOrderedRequest().getSequenceNumber()).add(ormw);
+            }
+        }
+
+        // Put upto max-cc (inclusive)
+        // Committed requests
+        SortedMap<Long, OrderedRequestMessageWrapper> committedRequests = viewChangeMessagesMap.get(maxCCReplica).getOrderedRequestHistory();
+        for (long i = latestStableCheckpoint; i <= highestCommittedSequenceNumber; i++) {
+            OrderedRequestMessageWrapper ormw = committedRequests.get(i);
+            // update the view number
+            OrderedRequestMessage newOrm = ormw.getOrderedRequest().withViewNumber(newViewNumber);
+            OrderedRequestMessageWrapper newOrmw = new OrderedRequestMessageWrapper(newOrm, ormw.getRequestMessage());
+            newOrmw.sign(this.getId());
+            // add to the ordered request history
+            orderedRequestHistory.put(i, newOrmw);
+        }
+
+        // used to keep track of the last request in order to calculate history
+        long prevHistory = committedRequests.get(highestCommittedSequenceNumber).getOrderedRequest().getHistory();
+
+        // Put upto max-r (inclusive)
+        long currSeqNum = highestCommittedSequenceNumber + 1;
+        while (currSeqNum <= orderedRequests.sequencedKeySet().getLast()) {
+            HashMap<OrderedRequestMessageWrapper, Integer> frequencies = new HashMap<>();
+            // gets the list of ordered request messages for the current sequence number that we're checking
+            List<OrderedRequestMessageWrapper> ormwList = orderedRequests.get(currSeqNum).stream().toList();
+            // add to frequencies
+            for (OrderedRequestMessageWrapper ormw : ormwList) {
+                frequencies.put(ormw, frequencies.getOrDefault(ormw, 0) + 1);
+            }
+
+            // filter out by if there's more than f + 1 ormws and sort by frequency
+            Stack<Map.Entry<OrderedRequestMessageWrapper, Integer>> filtered = frequencies.entrySet()
+                    .stream()
+                    // filter by if there's more than f + 1
+                    .filter(entry -> entry.getValue() >= this.getFaultsTolerated() + 1)
+                    // sort by the frequency in a descending order
+                    .sorted(Map.Entry.<OrderedRequestMessageWrapper, Integer>comparingByValue().reversed())
+                    // go to stack
+                    .collect(Collectors.toCollection(Stack::new));
+
+            // if the stack is empty, then we move onto the requests that are guaranteed not to have completed
+            if (filtered.isEmpty()) {
+                highestNonCommittedSequenceNumber = currSeqNum - 1;
+                break;
+            }
+            // tries to find a correct history
+            OrderedRequestMessageWrapper correct = filtered.pop().getKey();
+            long correctHistory = correct.getOrderedRequest().getSequenceNumber();
+            long calculatedHistory = calculateHistory(prevHistory,this.digest(correct.getRequestMessage()));
+            // goes through the stack and finds a valid history
+            while(!filtered.isEmpty() && correctHistory != calculatedHistory) {
+                correct = filtered.pop().getKey();
+                correctHistory = correct.getOrderedRequest().getSequenceNumber();
+                calculatedHistory = calculateHistory(prevHistory,this.digest(correct.getRequestMessage()));
+            }
+            // if we do find a match, we add it to the history
+            if (correctHistory == calculatedHistory) {
+                // update the view number
+                OrderedRequestMessage newOrm = correct.getOrderedRequest().withViewNumber(newViewNumber);
+                OrderedRequestMessageWrapper newOrmw = new OrderedRequestMessageWrapper(newOrm, correct.getRequestMessage());
+                newOrmw.sign(this.getId());
+                // add to the ordered request history
+                orderedRequestHistory.put(currSeqNum, newOrmw);
+                prevHistory = newOrmw.getOrderedRequest().getHistory();
+            } else {
+                highestNonCommittedSequenceNumber = currSeqNum - 1;
+                break;
+            }
+            currSeqNum++;
+        }
+
+        // create the null requests now to be executed as noops
+        for (long i = highestNonCommittedSequenceNumber + 1; i <= highestSequenceNumber; i++) {
+            OrderedRequestMessage orm = new OrderedRequestMessage(
+                    newViewNumber,
+                    i,
+                    calculateHistory(prevHistory, null),
+                    null
+            );
+            orm.sign(this.getId());
+            OrderedRequestMessageWrapper ormw = new OrderedRequestMessageWrapper(orm, null);
+            orderedRequestHistory.put(i, ormw);
+        }
+
+        return orderedRequestHistory;
     }
 
     /**
@@ -961,7 +1160,7 @@ public class ZyzzyvaReplica extends LeaderBasedProtocolReplica {
 
     /**
      * Checks if a new view message is valid by checking the following properties:
-     * - Signed by primary
+     * - Signed by correct primary
      * - View change messages are signed by the correct replica
      * - Number of replicas is correct
      */
@@ -970,8 +1169,9 @@ public class ZyzzyvaReplica extends LeaderBasedProtocolReplica {
         if (!nvm.isSignedBy(this.computePrimaryId(nvm.getFutureViewNumber()))) {
             log.warning("Received a new view message with an incorrect primary");
         }
+
         Set<String> replicaIds = new HashSet<>();
-        for (ViewChangeMessage vcm : nvm.getViewChangeMessages()) {
+        for (ViewChangeMessage vcm : nvm.getViewChangeMessages().values()) {
             if (!vcm.isSignedBy(vcm.getReplicaId())) {
                 log.warning("Received a new view message with an invalid signature");
                 return false;
@@ -1025,6 +1225,48 @@ public class ZyzzyvaReplica extends LeaderBasedProtocolReplica {
     }
 
     /**
+     * Reconciles the local history with the view change messages
+     * @param viewChangesMessages - the view change messages to reconcile with (provided in the new view message)
+     * @param calculatedHistory - the calculated history from the view change messages (provided in the new view message) (corresponds to G in the extended technical report)
+     */
+    private void reconcileLocalHistoryViewChange(List<ViewChangeMessage> viewChangesMessages, SortedMap<Long, OrderedRequestMessageWrapper> calculatedHistory) {
+        long latestStableCheckpoint = -1;
+
+        for (ViewChangeMessage vcm : viewChangesMessages) {
+            if (vcm.getStableCheckpoint() > latestStableCheckpoint) {
+                latestStableCheckpoint = vcm.getStableCheckpoint();
+            }
+        }
+        long lastHistoryKey = this.getHistory().getLastEntry().getKey();
+        /// TODO: check if we need to check if the ordered request messages are valid? it doesn't seem that way since we calculate ourselves as well
+        /// TODO: check what happens to the speculative histories
+        if (this.getHighestSequenceNumber() < latestStableCheckpoint) {
+            this.getMessageLog().setLastCheckpoint(latestStableCheckpoint);
+            this.getHistory().clear();
+            this.getMessageLog().getOrderedMessages().clear();
+            for (OrderedRequestMessageWrapper ormw : calculatedHistory.values()) {
+                this.executeOrderedRequest(ormw);
+            }
+        } else if ( calculatedHistory.get(lastHistoryKey).getOrderedRequest().getHistory() != this.getHistory().get(lastHistoryKey)) {
+            this.getMessageLog().setLastCheckpoint(latestStableCheckpoint);
+            this.getHistory().clear();
+            this.getMessageLog().getOrderedMessages().clear();
+            for (OrderedRequestMessageWrapper ormw : calculatedHistory.values()) {
+                this.executeOrderedRequest(ormw);
+            }
+        } else {
+            for (long i = this.getHighestSequenceNumber() + 1; i <= calculatedHistory.sequencedKeySet().getLast(); i++) {
+                this.executeOrderedRequest(calculatedHistory.get(i));
+            }
+            if (this.getMessageLog().getLastCheckpoint() < latestStableCheckpoint) {
+                this.getMessageLog().setLastCheckpoint(latestStableCheckpoint);
+            }
+        }
+        /// TODO: update the maxCC
+
+    }
+
+    /**
      * Checks the view confirm messages criteria for the future view number
      * @param futureViewNumber - the future view number to check for
      */
@@ -1049,7 +1291,7 @@ public class ZyzzyvaReplica extends LeaderBasedProtocolReplica {
 
         // if we have enough view confirm messages, we change the view
         if (maxEntry.getValue() >= 2 * this.faultsTolerated + 1) {
-            this.handleViewChange(maxEntry.getKey());
+            this.beginNewView(maxEntry.getKey());
         }
     }
 
@@ -1083,10 +1325,7 @@ public class ZyzzyvaReplica extends LeaderBasedProtocolReplica {
         // add the new view message to the message log
         this.getMessageLog().putNewViewMessage(nvm);
 
-        Pair<Long, Long> lastHistoryFromNewViewMessage = this.getHistoryFromNewViewMessage(nvm);
-        long lastRequest = lastHistoryFromNewViewMessage.getLeft();
-        long lastHistory = lastHistoryFromNewViewMessage.getRight();
-
+        this.computeOrderedRequestHistory(nvm.getFutureViewNumber(), nvm.getViewChangeMessages());
         ViewConfirmMessage vcm = new ViewConfirmMessage(
                 nvm.getFutureViewNumber(),
                 lastRequest,
@@ -1096,66 +1335,68 @@ public class ZyzzyvaReplica extends LeaderBasedProtocolReplica {
 
         vcm.sign(this.getId());
         this.broadcastMessage(vcm);
+        // puts it into the view confirm messages
         this.handleViewConfirmMessage(this.getId(), vcm);
-
+        // checks if the criteria for the view confirm messages are met
+        // if so, then we begin the new view
         this.checkViewConfirmMessages(nvm.getFutureViewNumber());
     }
 
-    private Pair<Long, Long> getHistoryFromNewViewMessage(NewViewMessage nvm) {
-        long lastRequest = -1L;
-        long lastHistory = -1L;
-        int priority = 0;
-        for (Serializable cc : nvm.getViewChangeMessages().stream().map(ViewChangeMessage::getCommitCertificate).toList()) {
-            // we evaluate in order of Commit Certificate, then f + 1 View Confirm Messages, then the last View Change Message
-            switch (cc) {
-                case CommitCertificate commitCertificate -> {
-                    /// TODO: check if we have to see if it's valid because we don't mutate the commit certificates
-                    if (priority < 3 || lastRequest < commitCertificate.getSequenceNumber()) {
-                        // changes to commit certificate
-                        lastRequest = commitCertificate.getSequenceNumber();
-                        lastHistory = commitCertificate.getHistory();
-                        priority = 3;
-                    }
-                }
-                case ArrayList arrayList -> {
-                    // VCM<FutureViewNumber, LastKnownSequenceNumber, History, ReplicaId>
-                    ArrayList<ViewConfirmMessage> castCC = (ArrayList<ViewConfirmMessage>) arrayList;
-                    if (!isValidViewConfirmList(castCC)) {
-                        log.warning("Received a new view message with an invalid view confirm list");
-                        throw new IllegalArgumentException("Invalid view confirm list");
-                    }
-                    if (priority < 2) {
-                        lastRequest = castCC.getFirst().getLastKnownSequenceNumber();
-                        lastHistory = castCC.getFirst().getHistory();
-                        priority = 2;
-                    }
-                }
-                case NewViewMessage prevNvm -> {
-                    if (!isValidNewViewMessage(prevNvm)) {
-                        log.warning("Received a new view message with an invalid new view message");
-                        throw new IllegalArgumentException("Invalid new view message");
-                    }
-                    if (priority < 1) {
-                        Pair<Long, Long> lastHistoryFromNewViewMessage = this.getHistoryFromNewViewMessage(prevNvm);
-                        lastRequest = lastHistoryFromNewViewMessage.getLeft();
-                        lastHistory = lastHistoryFromNewViewMessage.getRight();
-                        priority = 1;
-                    }
-                }
-                case null, default -> {
-                    log.warning("Received a new view message with an invalid commit certificate");
-                    throw new IllegalArgumentException("Invalid commit certificate");
-                }
-            }
-        }
-
-        if (lastRequest > this.getHighestSequenceNumber()) {
-            log.info("Filling holes for new view");
-            this.fillHole(lastRequest);
-        }
-
-        return new ImmutablePair<>(lastRequest, lastHistory);
-    }
+//    private Pair<Long, Long> getHistoryFromNewViewMessage(NewViewMessage nvm) {
+//        long lastRequest = -1L;
+//        long lastHistory = -1L;
+//        int priority = 0;
+//        for (Serializable cc : nvm.getViewChangeMessages().stream().map(ViewChangeMessage::getCommitCertificate).toList()) {
+//            // we evaluate in order of Commit Certificate, then f + 1 View Confirm Messages, then the last View Change Message
+//            switch (cc) {
+//                case CommitCertificate commitCertificate -> {
+//                    /// TODO: check if we have to see if it's valid because we don't mutate the commit certificates
+//                    if (priority < 3 || lastRequest < commitCertificate.getSequenceNumber()) {
+//                        // changes to commit certificate
+//                        lastRequest = commitCertificate.getSequenceNumber();
+//                        lastHistory = commitCertificate.getHistory();
+//                        priority = 3;
+//                    }
+//                }
+//                case ArrayList arrayList -> {
+//                    // VCM<FutureViewNumber, LastKnownSequenceNumber, History, ReplicaId>
+//                    ArrayList<ViewConfirmMessage> castCC = (ArrayList<ViewConfirmMessage>) arrayList;
+//                    if (!isValidViewConfirmList(castCC)) {
+//                        log.warning("Received a new view message with an invalid view confirm list");
+//                        throw new IllegalArgumentException("Invalid view confirm list");
+//                    }
+//                    if (priority < 2) {
+//                        lastRequest = castCC.getFirst().getLastKnownSequenceNumber();
+//                        lastHistory = castCC.getFirst().getHistory();
+//                        priority = 2;
+//                    }
+//                }
+//                case NewViewMessage prevNvm -> {
+//                    if (!isValidNewViewMessage(prevNvm)) {
+//                        log.warning("Received a new view message with an invalid new view message");
+//                        throw new IllegalArgumentException("Invalid new view message");
+//                    }
+//                    if (priority < 1) {
+//                        Pair<Long, Long> lastHistoryFromNewViewMessage = this.getHistoryFromNewViewMessage(prevNvm);
+//                        lastRequest = lastHistoryFromNewViewMessage.getLeft();
+//                        lastHistory = lastHistoryFromNewViewMessage.getRight();
+//                        priority = 1;
+//                    }
+//                }
+//                case null, default -> {
+//                    log.warning("Received a new view message with an invalid commit certificate");
+//                    throw new IllegalArgumentException("Invalid commit certificate");
+//                }
+//            }
+//        }
+//
+//        if (lastRequest > this.getHighestSequenceNumber()) {
+//            log.info("Filling holes for new view");
+//            this.fillHole(lastRequest);
+//        }
+//
+//        return new ImmutablePair<>(lastRequest, lastHistory);
+//    }
 
     /**
      * Checks if the view confirm messages are valid using the following properties:
@@ -1209,7 +1450,7 @@ public class ZyzzyvaReplica extends LeaderBasedProtocolReplica {
      *
      * @param vcm - The view confirm message that was received
      */
-    private void handleViewChange(ViewConfirmMessage vcm) {
+    private void beginNewView(ViewConfirmMessage vcm) {
         // clear view specific messages
         this.getMessageLog().getIHateThePrimaries().getOrDefault(this.getViewNumber(), new TreeMap<>()).clear();
         this.getMessageLog().getFillHoleMessages().clear();

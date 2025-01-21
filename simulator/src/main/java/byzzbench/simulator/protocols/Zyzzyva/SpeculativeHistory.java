@@ -1,6 +1,8 @@
 package byzzbench.simulator.protocols.Zyzzyva;
 
 import java.util.LinkedHashMap;
+import java.util.Map;
+
 import lombok.extern.java.Log;
 
 @Log
@@ -88,6 +90,10 @@ public class SpeculativeHistory {
      */
     public boolean has(long index) {
         return this.speculativeHistory.containsKey(index);
+    }
+
+    public Map.Entry<Long, Long> getLastEntry() {
+        return this.speculativeHistory.lastEntry();
     }
 
     /**

@@ -8,11 +8,20 @@ import java.util.Arrays;
 
 @Data
 @With
-public class OrderedRequestMessage extends MessagePayload {
+public class OrderedRequestMessage extends MessagePayload implements Comparable<OrderedRequestMessage> {
     private final long viewNumber;
     private final long sequenceNumber;
     private final long history;
     private final byte[] digest;
+
+    @Override
+    public int compareTo(OrderedRequestMessage o) {
+        if (this.viewNumber != o.viewNumber) {
+            return Long.compare(this.viewNumber, o.viewNumber);
+        }
+        return Long.compare(this.sequenceNumber, o.sequenceNumber);
+    }
+
 
     @Override
     public boolean equals(Object obj) {

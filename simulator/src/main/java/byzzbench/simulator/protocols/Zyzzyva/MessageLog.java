@@ -76,11 +76,16 @@ public class MessageLog implements Serializable {
         this.setLastCheckpoint(0L);
     }
 
-    public List<OrderedRequestMessageWrapper> getOrderedRequestHistory(long sequenceNumber) {
-        ArrayList<OrderedRequestMessageWrapper> orderedRequestHistory = new ArrayList<>();
+    /**
+     * Get the ordered request history from the sequence number to the end of the ordered messages
+     * @param sequenceNumber - the sequence number to start the history from
+     * @return - a map of the ordered request history with the sequence number as the key
+     */
+    public SortedMap<Long, OrderedRequestMessageWrapper> getOrderedRequestHistory(long sequenceNumber) {
+        SortedMap<Long, OrderedRequestMessageWrapper> orderedRequestHistory = new TreeMap<>();
         long maxSeqNum = this.getOrderedMessages().isEmpty() ? 0 : this.getOrderedMessages().lastKey();
         for (long i = sequenceNumber + 1; i <= maxSeqNum; i++) {
-            orderedRequestHistory.add(this.orderedMessages.get(i));
+            orderedRequestHistory.put(i, this.orderedMessages.get(i));
         }
         return orderedRequestHistory;
     }
@@ -192,6 +197,10 @@ public class MessageLog implements Serializable {
             return;
         }
         this.getResponseCache().put(clientId, new ImmutablePair<>(rm, srw));
+    }
+
+    public void putOrderedRequestMessageWrapper(OrderedRequestMessageWrapper ormw) {
+        this.getOrderedMessages().put(ormw.getOrderedRequest().getSequenceNumber(), ormw);
     }
 
     public long highestTimestampInCacheForClient(String clientId) {
