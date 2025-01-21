@@ -51,6 +51,10 @@ public class MessageLog implements Serializable {
     private final SortedMap<String, ImmutablePair<RequestMessage, SpeculativeResponseWrapper>> responseCache = new TreeMap<>();
 
     @Getter
+    // ClientId, RequestMessage
+    // Used to store the latest request from a client for the forward to primary
+    private final SortedMap<String, RequestMessage> requestCache = new TreeMap<>();
+    @Getter
     // SequenceNumber, Map(ReplicaId -> CheckpointMessage)
     private final SortedMap<Long, SortedMap<String, CheckpointMessage>> checkpointMessages = new TreeMap<>();
 
@@ -191,6 +195,10 @@ public class MessageLog implements Serializable {
             return -1;
         }
         return this.getResponseCache().get(clientId).getLeft().getTimestamp();
+    }
+
+    public void setLastRequest(String clientId, RequestMessage rm) {
+        this.getRequestCache().put(clientId, rm);
     }
 
 }

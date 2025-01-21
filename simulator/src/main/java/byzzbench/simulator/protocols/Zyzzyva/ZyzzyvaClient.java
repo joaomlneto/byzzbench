@@ -95,9 +95,6 @@ public class ZyzzyvaClient extends Client {
         // this.getScenario().getTransport().sendClientRequest(this.getId(), operation, recipientId);
         this.setLapsedRequestTimeoutId(this.setTimeout("lapsedRequestTimeout", this::lapsedRequest, Duration.ofMillis(15000)));
         this.setNumRequests(this.getNumRequests() + 1);
-        if (this.getNumRequests() >= this.MAX_REQUESTS) {
-            log.info("Client " + this.getId() + " has reached the maximum number of requests");
-        }
         this.setLastRequest(requestMessage);
     }
 
