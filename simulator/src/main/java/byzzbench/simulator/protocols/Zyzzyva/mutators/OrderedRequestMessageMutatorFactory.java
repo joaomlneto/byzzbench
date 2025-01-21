@@ -41,7 +41,7 @@ public class OrderedRequestMessageMutatorFactory extends MessageMutatorFactory {
 
                         OrderedRequestMessage orm = message.getOrderedRequest();
                         OrderedRequestMessage mutatedOrm = orm.withSequenceNumber(orm.getSequenceNumber() + 1);
-                        mutatedOrm.sign(calculatePrimaryId(4, mutatedOrm.getViewNumber()));
+                        mutatedOrm.sign(calculatePrimaryId(4, orm.getViewNumber()));
                         OrderedRequestMessageWrapper mutatedMessage = message.withOrderedRequest(mutatedOrm);
                         messageEvent.setPayload(mutatedMessage);
                     }
@@ -60,7 +60,7 @@ public class OrderedRequestMessageMutatorFactory extends MessageMutatorFactory {
                         }
                         OrderedRequestMessage orm = message.getOrderedRequest();
                         OrderedRequestMessage mutatedOrm = orm.withSequenceNumber(orm.getSequenceNumber() - 1);
-                        mutatedOrm.sign(calculatePrimaryId(4, mutatedOrm.getViewNumber()));
+                        mutatedOrm.sign(calculatePrimaryId(4, orm.getViewNumber()));
                         OrderedRequestMessageWrapper mutatedMessage = message.withOrderedRequest(mutatedOrm);
                         messageEvent.setPayload(mutatedMessage);
                     }
@@ -80,7 +80,7 @@ public class OrderedRequestMessageMutatorFactory extends MessageMutatorFactory {
 
                         OrderedRequestMessage orm = message.getOrderedRequest();
                         OrderedRequestMessage mutatedOrm = orm.withViewNumber(orm.getViewNumber() + 1);
-                        mutatedOrm.sign(calculatePrimaryId(4, mutatedOrm.getViewNumber()));
+                        mutatedOrm.sign(calculatePrimaryId(4, orm.getViewNumber()));
                         OrderedRequestMessageWrapper mutatedMessage = message.withOrderedRequest(mutatedOrm);
                         messageEvent.setPayload(mutatedMessage);
                     }
@@ -100,7 +100,7 @@ public class OrderedRequestMessageMutatorFactory extends MessageMutatorFactory {
 
                         OrderedRequestMessage orm = message.getOrderedRequest();
                         OrderedRequestMessage mutatedOrm = orm.withViewNumber(orm.getViewNumber() - 1);
-                        mutatedOrm.sign(calculatePrimaryId(4, mutatedOrm.getViewNumber()));
+                        mutatedOrm.sign(calculatePrimaryId(4, orm.getViewNumber()));
                         OrderedRequestMessageWrapper mutatedMessage = message.withOrderedRequest(mutatedOrm);
                         messageEvent.setPayload(mutatedMessage);
                     }
@@ -121,7 +121,7 @@ public class OrderedRequestMessageMutatorFactory extends MessageMutatorFactory {
 
                         OrderedRequestMessage orm = message.getOrderedRequest();
                         OrderedRequestMessage mutatedOrm = orm.withHistory(orm.getHistory() + 1);
-                        mutatedOrm.sign(calculatePrimaryId(4, mutatedOrm.getViewNumber()));
+                        mutatedOrm.sign(calculatePrimaryId(4, orm.getViewNumber()));
                         OrderedRequestMessageWrapper mutatedMessage = message.withOrderedRequest(mutatedOrm);
                         messageEvent.setPayload(mutatedMessage);
                     }

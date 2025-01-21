@@ -21,7 +21,7 @@ public class ZyzzyvaClient extends Client {
     private final int numFaults;
 
     @Getter
-    private final int MAX_REQUESTS = 50;
+    private final int MAX_REQUESTS = 25;
 
     @Getter
     @Setter
@@ -137,6 +137,7 @@ public class ZyzzyvaClient extends Client {
                 } catch (IllegalArgumentException e) {
                     log.warning("Could not cancel the timeout: " + e.getMessage());
                 }
+                log.info("Received 3f + 1 matching responses for " + this.getLastRequest().getOperation());
                 this.sendRequest();
             }
         } else {
@@ -157,8 +158,10 @@ public class ZyzzyvaClient extends Client {
     public void lapsedRequest () {
         int numMatching = this.numMatchingSpecResponses(this.getSpecResponses().getOrDefault(this.getLastDigest(), new TreeSet<>()));
         if (numMatching >= 3 * this.getNumFaults() + 1) {
+            log.info("Received 3f + 1 matching responses for " + this.getLastRequest().getOperation());
             this.sendRequest();
         } else if (2 * this.getNumFaults() + 1 <= numMatching && numMatching <= 3 * this.getNumFaults()) {
+            log.info("Received between 2f + 1 and 3f matching responses for " + this.getLastRequest().getOperation());
             this.sendCommitMessage();
         } else {
             this.resendRequest();
@@ -169,7 +172,6 @@ public class ZyzzyvaClient extends Client {
      * Sends a commit message to the replicas
      */
     public void sendCommitMessage() {
-        log.info("Sending commit message");
         // Used for grouping SpeculativeResponseWrappers by SpeculativeResponse and finding the largest group
         HashMap<SpeculativeResponse, List<String>> specResponseToReplicaId = new HashMap<>();
         // group replicas by SpeculativeResponse
@@ -202,7 +204,7 @@ public class ZyzzyvaClient extends Client {
         // create the commit message
         CommitMessage commitMessage = getCommitMessage(specResponse, signedBy);
         commitMessage.sign(this.getId());
-
+        log.info("Sending commit message until response for " + this.getLastRequest().getOperation());
         sendCommitUntilResponse(commitMessage);
     }
 
@@ -234,8 +236,10 @@ public class ZyzzyvaClient extends Client {
         this.setTimeout("commitTimeout", () -> {
             if (this.getLocalCommits().getOrDefault(this.getLastDigest(), new TreeSet<>()).size() >= 2 * this.getNumFaults() + 1) {
                 this.getLocalCommits().clear();
+                log.info("Received 2f + 1 local commits for " + this.getLastRequest().getOperation() + ", sending request");
                 this.sendRequest();
             } else {
+                log.warning("Did not receive enough local commits for " + this.getLastRequest().getOperation() + ", resending commit message");
                 this.sendCommitUntilResponse(commitMessage);
             }
         }, Duration.ofMillis(15000));

@@ -60,7 +60,12 @@ public class MessageLog implements Serializable {
 
     @Getter
     @Setter
-    private Long lastCheckpoint;
+    // view number of the last POM
+    private long lastPOM;
+
+    @Getter
+    @Setter
+    private long lastCheckpoint;
 
     @Getter
     @Setter
@@ -71,11 +76,10 @@ public class MessageLog implements Serializable {
         this.setLastCheckpoint(0L);
     }
 
-    public List<OrderedRequestMessageWrapper> getOrderedRequestHistory() {
-        long maxCCSeqNum = this.maxCC.getSequenceNumber();
-        List<OrderedRequestMessageWrapper> orderedRequestHistory = new ArrayList<>();
+    public List<OrderedRequestMessageWrapper> getOrderedRequestHistory(long sequenceNumber) {
+        ArrayList<OrderedRequestMessageWrapper> orderedRequestHistory = new ArrayList<>();
         long maxSeqNum = this.getOrderedMessages().isEmpty() ? 0 : this.getOrderedMessages().lastKey();
-        for (long i = maxCCSeqNum + 1; i <= maxSeqNum; i++) {
+        for (long i = sequenceNumber + 1; i <= maxSeqNum; i++) {
             orderedRequestHistory.add(this.orderedMessages.get(i));
         }
         return orderedRequestHistory;
