@@ -2,8 +2,6 @@ import {
   changeScenario,
   deleteAutomaticFaults,
   deliverMessage,
-  enableNetworkFault,
-  GenericFaultEvent,
   getEvent,
   mutateMessage,
   MutateMessageEvent,
@@ -90,9 +88,10 @@ export const ScheduleMenu = ({ title, schedule }: ScheduleMenuProps) => {
                   );
                   break;
                 case "GenericFault":
-                  await enableNetworkFault(
+                  // Ignore these: messages that were dropped are already dropped anyways
+                  /*await enableNetworkFault(
                     (event as GenericFaultEvent).payload!.id!,
-                  );
+                  );*/
                   break;
                 default:
                   console.error("Unknown event type", event);
