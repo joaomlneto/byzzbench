@@ -1,5 +1,6 @@
 import {
   changeScenario,
+  deleteAutomaticFaults,
   deliverMessage,
   enableNetworkFault,
   GenericFaultEvent,
@@ -35,6 +36,10 @@ export const ScheduleMenu = ({ title, schedule }: ScheduleMenuProps) => {
           onClick={async () => {
             console.log("Materializing Schedule: ", schedule);
             await changeScenario({ scenarioId: schedule.scenarioId }, {});
+            // remove all pre-scheduled faults.
+            // we are going to replay event-by-event.
+            await deleteAutomaticFaults();
+
             let i = 0;
             let hasNotifiedMismatchedEvents = false;
 
