@@ -537,6 +537,11 @@ public class SimulatorController {
                 .collect(Collectors.toCollection(TreeSet::new));
     }
 
+    @DeleteMapping("/automatic-faults")
+    public void deleteAutomaticFaults() {
+        simulatorService.getScenario().getTransport().getAutomaticFaults().clear();
+    }
+
     @GetMapping("/enabled-network-faults")
     public SortedSet<String> getEnabledNetworkFaults() {
         return simulatorService

@@ -561,7 +561,8 @@ public class PbftJavaReplica<O extends Serializable, R extends Serializable> ext
      */
     public void sendCheckpoint(CheckpointMessage checkpoint) {
         // PBFT 4.3 - Multicast checkpoint
-        this.broadcastMessage(checkpoint);
+        // FIXME: not implemented
+        //this.broadcastMessage(checkpoint);
     }
 
     /**
