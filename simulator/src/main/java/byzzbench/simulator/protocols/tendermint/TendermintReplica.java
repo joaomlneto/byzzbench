@@ -180,7 +180,6 @@ public class TendermintReplica extends LeaderBasedProtocolReplica {
         boolean proposalExists = messageLog.getProposals().getOrDefault(proposalMessage.getBlock(), new ArrayList<>()).stream()
                 .filter(proposal -> proposal.getHeight() == height)
                 .filter(proposal -> proposal.getRound() == proposalMessage.getRound())
-                .filter(proposal -> proposal.getRound() == this.round)
                 .filter(proposal -> proposal.getReplicaId().equals(proposer(height, proposalMessage.getRound())))
                 .count() >= 1;
 
@@ -188,7 +187,6 @@ public class TendermintReplica extends LeaderBasedProtocolReplica {
         boolean enoughPrecommits = messageLog.getPrecommits().getOrDefault(proposalMessage.getBlock(), new ArrayList<>()).stream()
                 .filter(precommit -> precommit.getHeight() == height)
                 .filter(precommit -> precommit.getRound() == proposalMessage.getRound())
-                .filter(precommit -> precommit.getRound() == this.round)
                 .count() >= 2 * tolerance + 1;
 
         // while decisionp[hp] = nil
@@ -538,13 +536,11 @@ public class TendermintReplica extends LeaderBasedProtocolReplica {
     private boolean fulfillProposalPrecommitRule(PrecommitMessage precommitMessage) {
         boolean enoughPrecommits = messageLog.getPrecommits().getOrDefault(precommitMessage.getBlock(), new ArrayList<>()).stream()
                 .filter(precommit -> precommit.getHeight() == this.height)
-                .filter(precommit -> precommit.getRound() == this.round)
                 .count() >= 2 * tolerance + 1;
 
         boolean proposalExists = messageLog.getProposals().getOrDefault(precommitMessage.getBlock(), new ArrayList<>()).stream()
                 .filter(proposal -> proposal.getHeight() == this.getHeight())
                 .filter(proposal -> proposal.getRound() == precommitMessage.getRound())
-                .filter(proposal -> proposal.getRound() == this.round)
                 .filter(proposal -> proposal.getReplicaId().equals(proposer(precommitMessage.getHeight(), precommitMessage.getRound())))
                 .count() >= 1;
 
@@ -650,15 +646,8 @@ public class TendermintReplica extends LeaderBasedProtocolReplica {
 
         // Check that the message height matches the current height
         if (message instanceof GenericMessage) {
-            if (((GenericMessage) message).getHeight() < height || ((GenericMessage) message).getRound() < round) {
-                log.warning("Message height or round mismatch: " + ((GenericMessage) message).getHeight());
-                return true;
-            }
-            if (((GenericMessage) message).getAuthor().equals(this.getId())) {
-                if (message instanceof ProposalMessage ) {
-                    log.warning("Can accept proposals from itself: " + ((GenericMessage) message).getRound());
-                    return false;
-                }
+            if (((GenericMessage) message).getHeight() < height) {
+                log.warning("Message height mismatch: " + ((GenericMessage) message).getHeight());
                 return true;
             }
         }
