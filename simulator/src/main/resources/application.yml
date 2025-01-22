@@ -22,20 +22,20 @@ byzzbench:
   outputSchedules: buggy # which schedules to write to file? one of 'all', 'buggy' or 'none'
 
   scheduler:
-    id: "byzzfuzz" # The ID of the scheduler to use
+    id: "random" # The ID of the scheduler to use
     executionMode: sync # async (default, any message delivered) or sync (communication-closure hypothesis, FIFO)
-    maxDropMessages: 0 # Maximum number of messages to drop per scenario
-    maxMutateMessages: 0 # Maximum number of messages to mutate per scenario
-    deliverTimeoutWeight: 1 # The weight for scheduler to trigger a timeout
+    maxDropMessages: 1 # Maximum number of messages to drop per scenario
+    maxMutateMessages: 1 # Maximum number of messages to mutate per scenario
+    deliverTimeoutWeight: 25 # The weight for scheduler to trigger a timeout
     deliverMessageWeight: 99 # The weight for scheduler to deliver a message
     deliverClientRequestWeight: 99 # The weight for scheduler to deliver a client request to a replica
-    dropMessageWeight: 100 # The weight for scheduler to drop a message
-    mutateMessageWeight: 100 # The weight for scheduler to mutate a message
+    dropMessageWeight: 0 # The weight for scheduler to drop a message
+    mutateMessageWeight: 50 # The weight for scheduler to mutate a message
     params: # additional parameters for the scheduler
       # ByzzFuzz
       numRoundsWithProcessFaults: 1
-      numRoundsWithNetworkFaults: 1
-      numRoundsWithFaults: 2
+      numRoundsWithNetworkFaults: 0
+      numRoundsWithFaults: 8
       # Twins
       numReplicas: 1
       numTwinsPerReplica: 2
@@ -47,6 +47,6 @@ byzzbench:
     scheduledFaults:
       factories: [ ]
     termination: # Success condition for the scenario - terminates it when all conditions are met
-      minEvents: 100 # check if N events have been scheduled. If so, can terminate
-      minRounds: 2 # check if N rounds have elapsed. If so, can terminate
+      minEvents: 400 # check if N events have been scheduled. If so, can terminate
+      minRounds: 8 # check if N rounds have elapsed. If so, can terminate
       samplingFrequency: 30 # check if should terminate every N scheduler decisions
