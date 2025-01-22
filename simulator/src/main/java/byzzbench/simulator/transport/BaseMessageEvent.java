@@ -3,6 +3,7 @@ package byzzbench.simulator.transport;
 import byzzbench.simulator.utils.NonNull;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import lombok.ToString;
 import lombok.experimental.SuperBuilder;
 
 import java.io.Serializable;
@@ -10,6 +11,7 @@ import java.io.Serializable;
 @EqualsAndHashCode(callSuper = true)
 @Data
 @SuperBuilder
+@ToString(callSuper = true)
 public abstract class BaseMessageEvent<T extends Serializable> extends BaseEvent implements MailboxEvent {
     /**
      * The unique identifier of the receiving node

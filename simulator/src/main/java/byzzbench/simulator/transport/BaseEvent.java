@@ -37,9 +37,10 @@ public abstract class BaseEvent implements Event {
     private Status status = Status.QUEUED;
 
     public void setStatus(Status status) {
-        if (this.status != Status.QUEUED) {
-            throw new IllegalStateException("Can only change the status of a queued event");
-        }
+        // XXX during GST, dropped messages are re-queued
+        //if (this.status != Status.QUEUED) {
+        //    throw new IllegalStateException("Can only change the status of a queued event");
+        //}
         this.status = status;
     }
 }

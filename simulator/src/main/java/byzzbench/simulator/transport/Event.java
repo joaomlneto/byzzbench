@@ -22,6 +22,7 @@ import java.time.Instant;
 public interface Event extends Serializable {
     /**
      * Get the eventId
+     *
      * @return a long representing the eventId
      */
     @NonNull
@@ -29,12 +30,14 @@ public interface Event extends Serializable {
 
     /**
      * Get the time at which the event was created
+     *
      * @return an Instant representing the time at which the event was created
      */
     Instant getCreatedAt();
 
     /**
      * Get the time at which the event was delivered
+     *
      * @return an Instant representing the time at which the event was delivered
      */
     Instant getDeliveredAt();

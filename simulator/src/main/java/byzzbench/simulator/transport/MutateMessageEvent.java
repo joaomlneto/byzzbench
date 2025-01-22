@@ -4,6 +4,7 @@ import byzzbench.simulator.utils.NonNull;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import lombok.Builder;
 import lombok.Data;
+import lombok.ToString;
 import lombok.experimental.SuperBuilder;
 
 import java.time.Instant;
@@ -16,6 +17,7 @@ import java.time.Instant;
 @Data
 @JsonTypeName("MutateMessage")
 @SuperBuilder
+@ToString(callSuper = true)
 public class MutateMessageEvent implements Event {
     /**
      * The unique identifier of the event.

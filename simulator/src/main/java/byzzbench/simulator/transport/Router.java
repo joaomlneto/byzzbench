@@ -30,6 +30,7 @@ public class Router {
 
     /**
      * Isolates a node from the rest of the network.
+     *
      * @param nodeId The ID of the node to isolate.
      */
     public void isolateNode(String nodeId) {
@@ -38,9 +39,11 @@ public class Router {
 
     /**
      * Isolates a set of nodes from the rest of the network, but not from each other.
+     *
      * @param nodeIds The IDs of the nodes to isolate.
      */
     public void isolateNodes(String[] nodeIds) {
+        System.out.println("Isolating nodes: " + String.join(", ", nodeIds));
         int newPartition = getUnusedPartitionId();
         for (String nodeId : nodeIds) {
             this.partitions.put(nodeId, newPartition);
@@ -49,6 +52,7 @@ public class Router {
 
     /**
      * Re-joins a node to the rest of the network.
+     *
      * @param nodeId The ID of the node to re-join.
      */
     public void healNode(String nodeId) {
@@ -65,6 +69,7 @@ public class Router {
 
     /**
      * Gets the partition ID of a node.
+     *
      * @param nodeId The ID of the node.
      * @return The partition ID of the node.
      */
@@ -74,6 +79,7 @@ public class Router {
 
     /**
      * Checks if two nodes are on the same partition.
+     *
      * @param nodeId1 The ID of the first node.
      * @param nodeId2 The ID of the second node.
      * @return True if the nodes are on the same partition, false otherwise.
@@ -84,6 +90,7 @@ public class Router {
 
     /**
      * Checks if there are any active partitions.
+     *
      * @return True if there are active partitions, false otherwise.
      */
     public boolean hasActivePartitions() {
@@ -92,6 +99,7 @@ public class Router {
 
     /**
      * Gets the next unused partition ID.
+     *
      * @return The next unused partition ID.
      */
     private int getUnusedPartitionId() {
