@@ -105,11 +105,14 @@ public class CheckpointIIIMessageMutatorFactory extends MessageMutatorFactory {
                             throw invalidMessageTypeException;
                         }
                         SpeculativeHistory history = message.getHistory();
-                        history.getRequests().remove(history.getRequests().lastEntry().getKey());
-                        byte[] digest = hbftReplica.digest(history);
-                        CheckpointIIIMessage mutatedMessage = message.withHistory(history).withDigest(digest);
-                        mutatedMessage.sign(message.getSignedBy());
-                        messageEvent.setPayload(mutatedMessage);
+                        if (history != null && !history.getRequests().isEmpty()) {
+                            long key = history.getRequests().lastKey();
+                            history.getRequests().remove(key);
+                            byte[] digest = hbftReplica.digest(history);
+                            CheckpointIIIMessage mutatedMessage = message.withHistory(history).withDigest(digest);
+                            mutatedMessage.sign(message.getSignedBy());
+                            messageEvent.setPayload(mutatedMessage);
+                        }
                     }
                 },
                 new MessageMutationFault("hbft-checkpointIII-remove-first-request", "Remove first request from history", List.of(CheckpointIIIMessage.class)) {
@@ -130,11 +133,14 @@ public class CheckpointIIIMessageMutatorFactory extends MessageMutatorFactory {
                             throw invalidMessageTypeException;
                         }
                         SpeculativeHistory history = message.getHistory();
-                        history.getRequests().remove(history.getRequests().firstEntry().getKey());
-                        byte[] digest = hbftReplica.digest(history);
-                        CheckpointIIIMessage mutatedMessage = message.withHistory(history).withDigest(digest);
-                        mutatedMessage.sign(message.getSignedBy());
-                        messageEvent.setPayload(mutatedMessage);
+                        if (history != null && !history.getRequests().isEmpty()) {
+                            long key = history.getRequests().firstKey();
+                            history.getRequests().remove(history.getRequests().firstEntry().getKey());
+                            byte[] digest = hbftReplica.digest(history);
+                            CheckpointIIIMessage mutatedMessage = message.withHistory(history).withDigest(digest);
+                            mutatedMessage.sign(message.getSignedBy());
+                            messageEvent.setPayload(mutatedMessage);
+                        }
                     }
                 },
                 new MessageMutationFault("hbft-checkpointIII-decrement-last-request-seq", "Decrement last request's seq num from history", List.of(CheckpointIIIMessage.class)) {
@@ -155,13 +161,15 @@ public class CheckpointIIIMessageMutatorFactory extends MessageMutatorFactory {
                             throw invalidMessageTypeException;
                         }
                         SpeculativeHistory history = message.getHistory();
-                        Entry<Long, RequestMessage> lastReq = history.getRequests().lastEntry();
-                        history.getRequests().remove(lastReq.getKey());
-                        history.getRequests().put(lastReq.getKey() - 1, lastReq.getValue());
-                        byte[] digest = hbftReplica.digest(history);
-                        CheckpointIIIMessage mutatedMessage = message.withHistory(history).withDigest(digest);
-                        mutatedMessage.sign(message.getSignedBy());
-                        messageEvent.setPayload(mutatedMessage);
+                        if (history != null && !history.getRequests().isEmpty()) {
+                            Entry<Long, RequestMessage> lastReq = history.getRequests().lastEntry();
+                            history.getRequests().remove(lastReq.getKey());
+                            history.getRequests().put(lastReq.getKey() - 1, lastReq.getValue());
+                            byte[] digest = hbftReplica.digest(history);
+                            CheckpointIIIMessage mutatedMessage = message.withHistory(history).withDigest(digest);
+                            mutatedMessage.sign(message.getSignedBy());
+                            messageEvent.setPayload(mutatedMessage);
+                        }
                     }
                 },
                 new MessageMutationFault("hbft-checkpointIII-increment-last-request-seq", "Increment last request's seq num from history", List.of(CheckpointIIIMessage.class)) {
@@ -182,13 +190,15 @@ public class CheckpointIIIMessageMutatorFactory extends MessageMutatorFactory {
                             throw invalidMessageTypeException;
                         }
                         SpeculativeHistory history = message.getHistory();
-                        Entry<Long, RequestMessage> lastReq = history.getRequests().lastEntry();
-                        history.getRequests().remove(lastReq.getKey());
-                        history.getRequests().put(lastReq.getKey() + 1, lastReq.getValue());
-                        byte[] digest = hbftReplica.digest(history);
-                        CheckpointIIIMessage mutatedMessage = message.withHistory(history).withDigest(digest);
-                        mutatedMessage.sign(message.getSignedBy());
-                        messageEvent.setPayload(mutatedMessage);
+                        if (history != null && !history.getRequests().isEmpty()) {
+                            Entry<Long, RequestMessage> lastReq = history.getRequests().lastEntry();
+                            history.getRequests().remove(lastReq.getKey());
+                            history.getRequests().put(lastReq.getKey() + 1, lastReq.getValue());
+                            byte[] digest = hbftReplica.digest(history);
+                            CheckpointIIIMessage mutatedMessage = message.withHistory(history).withDigest(digest);
+                            mutatedMessage.sign(message.getSignedBy());
+                            messageEvent.setPayload(mutatedMessage);
+                        }
                     }
                 },
                 new MessageMutationFault("hbft-checkpointIII-decrement-first-request-seq", "Decrement first request's seq num from history", List.of(CheckpointIIIMessage.class)) {
@@ -209,13 +219,15 @@ public class CheckpointIIIMessageMutatorFactory extends MessageMutatorFactory {
                             throw invalidMessageTypeException;
                         }
                         SpeculativeHistory history = message.getHistory();
-                        Entry<Long, RequestMessage> firstReq = history.getRequests().firstEntry();
-                        history.getRequests().remove(firstReq.getKey());
-                        history.getRequests().put(firstReq.getKey() - 1, firstReq.getValue());
-                        byte[] digest = hbftReplica.digest(history);
-                        CheckpointIIIMessage mutatedMessage = message.withHistory(history).withDigest(digest);
-                        mutatedMessage.sign(message.getSignedBy());
-                        messageEvent.setPayload(mutatedMessage);
+                        if (history != null && !history.getRequests().isEmpty()) {
+                            Entry<Long, RequestMessage> firstReq = history.getRequests().firstEntry();
+                            history.getRequests().remove(firstReq.getKey());
+                            history.getRequests().put(firstReq.getKey() - 1, firstReq.getValue());
+                            byte[] digest = hbftReplica.digest(history);
+                            CheckpointIIIMessage mutatedMessage = message.withHistory(history).withDigest(digest);
+                            mutatedMessage.sign(message.getSignedBy());
+                            messageEvent.setPayload(mutatedMessage);
+                        }
                     }
                 },
                 new MessageMutationFault("hbft-checkpointIII-increment-first-request-seq", "Increment first request's seq num from history", List.of(CheckpointIIIMessage.class)) {
@@ -236,13 +248,15 @@ public class CheckpointIIIMessageMutatorFactory extends MessageMutatorFactory {
                             throw invalidMessageTypeException;
                         }
                         SpeculativeHistory history = message.getHistory();
-                        Entry<Long, RequestMessage> firstReq = history.getRequests().firstEntry();
-                        history.getRequests().remove(firstReq.getKey());
-                        history.getRequests().put(firstReq.getKey() + 1, firstReq.getValue());
-                        byte[] digest = hbftReplica.digest(history);
-                        CheckpointIIIMessage mutatedMessage = message.withHistory(history).withDigest(digest);
-                        mutatedMessage.sign(message.getSignedBy());
-                        messageEvent.setPayload(mutatedMessage);
+                        if (history != null && !history.getRequests().isEmpty()) {
+                            Entry<Long, RequestMessage> firstReq = history.getRequests().firstEntry();
+                            history.getRequests().remove(firstReq.getKey());
+                            history.getRequests().put(firstReq.getKey() + 1, firstReq.getValue());
+                            byte[] digest = hbftReplica.digest(history);
+                            CheckpointIIIMessage mutatedMessage = message.withHistory(history).withDigest(digest);
+                            mutatedMessage.sign(message.getSignedBy());
+                            messageEvent.setPayload(mutatedMessage);
+                        }
                     }
                 }
 
