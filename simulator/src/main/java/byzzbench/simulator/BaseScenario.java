@@ -68,13 +68,20 @@ public abstract class BaseScenario implements Scenario {
     @JsonIgnore
     private final transient List<ScenarioObserver> observers = new java.util.ArrayList<>();
     /**
+     * The set of faulty replica IDs.
+     */
+    @Getter(onMethod_ = {@Synchronized})
+    private final SortedSet<String> faultyReplicaIds = new TreeSet<>();
+    /**
      * The termination condition for the scenario.
      */
     protected ScenarioPredicate terminationCondition;
     /**
      * Pseudo-random number generator for the scenario.
+     * TODO: parameterize the seed
      */
-    Random rand;
+    @Getter
+    Random random = new Random(1L);
 
     /**
      * Creates a new scenario with the given unique identifier and scheduler.
@@ -104,10 +111,7 @@ public abstract class BaseScenario implements Scenario {
      * Removes all registered clients
      */
     private void removeAllClients() {
-        this.nodes.entrySet().stream()
-                .filter(entry -> entry.getValue() instanceof Client)
-                .map(Map.Entry::getKey)
-                .forEach(this.nodes::remove);
+        this.nodes.clear();
     }
 
     /**
@@ -116,7 +120,6 @@ public abstract class BaseScenario implements Scenario {
      * @param numClients The number of clients to set.
      */
     protected void setNumClients(int numClients) {
-        this.removeAllClients();
         for (int i = 0; i < numClients; i++) {
             String clientId = String.format("C%d", i);
             Client client = Client.builder().id(clientId).scenario(this).build();
@@ -163,6 +166,15 @@ public abstract class BaseScenario implements Scenario {
     @Override
     public final void setupScenario() {
         this.setup();
+
+        // sample f replicas to be faulty at start
+        List<String> replicaIds = new ArrayList<>(this.getReplicas().keySet());
+        Collections.shuffle(replicaIds);
+        int f = this.maxFaultyReplicas();
+        for (int i = 0; i < f; i++) {
+            this.markReplicaFaulty(replicaIds.get(i));
+        }
+
         this.getClients().values().forEach(Client::initialize);
         this.getNodes().values().forEach(Node::initialize);
         this.scheduler.initializeScenario(this);
@@ -282,5 +294,24 @@ public abstract class BaseScenario implements Scenario {
                 .map(Replica.class::cast)
                 .forEach(replica -> replicas.put(replica.getId(), replica));
         return replicas;
+    }
+
+    @Override
+    public boolean isFaultyReplica(String replicaId) {
+        return this.faultyReplicaIds.contains(replicaId);
+    }
+
+    @Override
+    public void markReplicaFaulty(String replicaId) {
+        this.faultyReplicaIds.add(replicaId);
+    }
+
+    @Override
+    public int maxFaultyReplicas() {
+        int f = this.maxFaultyReplicas(this.getReplicas().size());
+        if (f < 1) {
+            log.severe("Scenario does not have enough replicas to tolerate any faults!");
+        }
+        return f;
     }
 }

@@ -23,7 +23,8 @@ byzzbench:
   outputSchedules: all # which schedules to write to file? one of 'all', 'buggy' or 'none'
 
   scheduler:
-    id: "random" # The ID of the scheduler to use
+    id: "byzzfuzz" # The ID of the scheduler to use
+    executionMode: async # async (default, any message delivered) or sync (communication-closure hypothesis, FIFO)
     maxDropMessages: 0 # Maximum number of messages to drop per scenario
     maxMutateMessages: 0 # Maximum number of messages to mutate per scenario
     deliverTimeoutWeight: 1 # The weight for scheduler to trigger a timeout
@@ -36,6 +37,9 @@ byzzbench:
       numRoundsWithProcessFaults: 10
       numRoundsWithNetworkFaults: 1
       numRoundsWithFaults: 20
+      # Twins
+      numReplicas: 1
+      numTwinsPerReplica: 2
 
   scenario:
     id: ed-hotstuff

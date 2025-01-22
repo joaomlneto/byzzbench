@@ -13,10 +13,7 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Abstract base class for a scheduler.
@@ -41,6 +38,11 @@ public abstract class BaseScheduler implements Scheduler {
     @NonNull
     @Getter(AccessLevel.PROTECTED)
     private final transient MessageMutatorService messageMutatorService;
+
+    /**
+     * Random number generator
+     */
+    protected Random rand = new Random();
 
     /**
      * Loads the parameters for the scheduler from a JSON object.
@@ -109,6 +111,25 @@ public abstract class BaseScheduler implements Scheduler {
      * @param parameters The JSON object containing the parameters for the scheduler.
      */
     protected abstract void loadSchedulerParameters(JsonNode parameters);
+
+    /**
+     * Retrieve one of the queued message events.
+     *
+     * @param messageEvents The list of queued message events
+     * @return The next message event
+     */
+    public Event getNextMessageEvent(List<Event> messageEvents) {
+        switch (config.getScheduler().getExecutionMode()) {
+            case SYNC -> {
+                return messageEvents.stream().min(Comparator.comparing(Event::getEventId)).orElseThrow();
+            }
+            case ASYNC -> {
+                return messageEvents.get(rand.nextInt(messageEvents.size()));
+            }
+            default ->
+                    throw new IllegalStateException("Unknown execution mode: " + config.getScheduler().getExecutionMode());
+        }
+    }
 
     /**
      * Returns the weight of delivering a message

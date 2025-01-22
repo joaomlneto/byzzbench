@@ -8,6 +8,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import java.io.Serializable;
 import java.util.List;
 import java.util.NavigableMap;
+import java.util.Random;
 import java.util.SortedSet;
 
 /**
@@ -25,6 +26,21 @@ public interface Scenario extends Serializable {
      * Run the scenario.
      */
     void runScenario();
+
+    /**
+     * Determine whether a replica is faulty.
+     *
+     * @param replicaId The ID of the replica to check.
+     * @return True if the replica is faulty, false otherwise.
+     */
+    boolean isFaultyReplica(String replicaId);
+
+    /**
+     * Mark a replica as faulty.
+     *
+     * @param replicaId The ID of the replica to mark as faulty.
+     */
+    void markReplicaFaulty(String replicaId);
 
     /**
      * Get the scheduler for the scenario.
@@ -114,6 +130,14 @@ public interface Scenario extends Serializable {
      */
     List<ScenarioObserver> getObservers();
 
+
+    /**
+     * Add an observer to the scenario.
+     *
+     * @param observer The observer to add.
+     */
+    void addObserver(ScenarioObserver observer);
+
     /**
      * Load the parameters for the scenario.
      *
@@ -146,4 +170,45 @@ public interface Scenario extends Serializable {
      * @return True if the invariants hold, false otherwise.
      */
     boolean invariantsHold();
+
+    /**
+     * Get the random number generator for the scenario.
+     *
+     * @return The random number generator for the scenario.
+     */
+    Random getRandom();
+
+    /**
+     * Create a copy of a replica.
+     *
+     * @param replica The replica to clone.
+     * @return A copy of the replica.
+     */
+    default Replica cloneReplica(Replica replica) {
+        throw new UnsupportedOperationException("Not implemented!");
+    }
+
+    /**
+     * Get the maximum number of faulty replicas that can be tolerated by the scenario
+     * with the current configuration.
+     *
+     * @return The maximum number of faulty replicas that can be tolerated.
+     */
+    int maxFaultyReplicas();
+
+    /**
+     * Get the maximum number of faulty replicas that can be tolerated by the protocol
+     * given the number of replicas in the system.
+     *
+     * @param n The number of replicas in the system.
+     * @return The maximum number of faulty replicas that can be tolerated.
+     */
+    int maxFaultyReplicas(int n);
+
+    /**
+     * Get the set of IDs of replicas that have deviated from specification.
+     *
+     * @return The set of IDs of faulty replicas.
+     */
+    SortedSet<String> getFaultyReplicaIds();
 }

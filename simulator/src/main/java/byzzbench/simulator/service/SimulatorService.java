@@ -24,6 +24,8 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
+import java.util.OptionalLong;
+import java.util.Set;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -145,7 +147,8 @@ public class SimulatorService {
 
                     try {
                         while (true) {
-                            this.invokeScheduleNext();
+                            this.scenario.getScheduler().scheduleNext(this.scenario);
+
                             long numEvents = this.scenario.getSchedule().getEvents().size();
                             long terminationSamplingFreq = this.byzzBenchConfig.getScenario().getTermination().getSamplingFrequency();
                             boolean shouldCheckTermination = (numEvents % terminationSamplingFreq) == 0;
@@ -263,15 +266,6 @@ public class SimulatorService {
                 }
             }
         });
-    }
-
-    public void invokeScheduleNext() throws Exception {
-        Optional<EventDecision> decisionOptional = this.scenario.getScheduler().scheduleNext(this.scenario);
-        if (decisionOptional.isPresent()) {
-            //EventDecision decision = decisionOptional.get();
-        } else {
-            log.info("Couldn't schedule action");
-        }
     }
 
     public enum SimulatorServiceMode {

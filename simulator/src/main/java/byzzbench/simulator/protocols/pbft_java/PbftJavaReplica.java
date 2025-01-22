@@ -34,7 +34,7 @@ public class PbftJavaReplica<O extends Serializable, R extends Serializable> ext
     /**
      * The current sequence number for the replica.
      */
-    private final AtomicLong seqCounter = new AtomicLong(1);
+    private final AtomicLong seqCounter = new AtomicLong(0);
 
     /**
      * The set of timeouts for the replica?
@@ -467,7 +467,7 @@ public class PbftJavaReplica<O extends Serializable, R extends Serializable> ext
                 RequestMessage request = ticket.getRequest();
                 if (request != null) {
                     Serializable operation = request.getOperation();
-                    Serializable result = this.compute(new SerializableLogEntry(operation));
+                    Serializable result = this.compute(seqNumber, new SerializableLogEntry(operation));
 
                     String clientId = request.getClientId();
                     long timestamp = request.getTimestamp();
@@ -561,7 +561,8 @@ public class PbftJavaReplica<O extends Serializable, R extends Serializable> ext
      */
     public void sendCheckpoint(CheckpointMessage checkpoint) {
         // PBFT 4.3 - Multicast checkpoint
-        this.broadcastMessage(checkpoint);
+        // FIXME: not implemented
+        //this.broadcastMessage(checkpoint);
     }
 
     /**
@@ -714,8 +715,8 @@ public class PbftJavaReplica<O extends Serializable, R extends Serializable> ext
         this.enterNewView(newViewNumber);
     }
 
-    public Serializable compute(LogEntry operation) {
-        this.commitOperation(operation);
+    public Serializable compute(long sequenceNumber, LogEntry operation) {
+        this.commitOperation(sequenceNumber, operation);
         return operation;
     }
 
@@ -743,4 +744,9 @@ public class PbftJavaReplica<O extends Serializable, R extends Serializable> ext
         return messageViewNumber == this.getViewNumber();
     }
 
+    @Override
+    public byte[] digest(Serializable message) {
+        // NoopDigester implementation from PBFT-Java
+        return new byte[]{0};
+    }
 }

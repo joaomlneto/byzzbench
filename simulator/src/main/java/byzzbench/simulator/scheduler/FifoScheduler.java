@@ -20,6 +20,7 @@ public class FifoScheduler extends BaseScheduler {
         super(config, messageMutatorService);
     }
 
+    @Override
     public String getId() {
         return "FIFO";
     }

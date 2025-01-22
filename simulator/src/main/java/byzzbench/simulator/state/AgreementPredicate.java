@@ -5,6 +5,7 @@ import byzzbench.simulator.Scenario;
 import byzzbench.simulator.ScenarioPredicate;
 import byzzbench.simulator.protocols.event_driven_hotstuff.EDHotStuffScenario;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
@@ -17,23 +18,26 @@ public class AgreementPredicate implements ScenarioPredicate {
 
     @Override
     public boolean test(Scenario scenarioExecutor) {
-        Collection<Replica> replicas = scenarioExecutor.getNodes().values().stream()
-                .filter(Replica.class::isInstance)
-                .map(Replica.class::cast)
+        Collection<Replica> replicas = scenarioExecutor.getReplicas().values().stream()
+                .filter(node -> !scenarioExecutor.isFaultyReplica(node.getId()))
                 .toList();
 
         // get the max length of the commit logs of all replicas
-        int commonPrefixLength = replicas.stream()
-                .map(replica -> replica.getCommitLog().getLength())
-                .max(Integer::compareTo)
-                .orElse(0);
+        long lowestSequenceNumber = replicas.stream()
+                .map(replica -> replica.getCommitLog().getLowestSequenceNumber())
+                .min(Long::compareTo)
+                .orElse(0L);
+        long highestSequenceNumber = replicas.stream()
+                .map(replica -> replica.getCommitLog().getHighestSequenceNumber())
+                .max(Long::compareTo)
+                .orElse(0L);
 
         // check if the Nth entry in the commit log of each replica is the same
-        for (int i = 0; i < commonPrefixLength; i++) {
-            final int index = i;
+        for (long i = lowestSequenceNumber; i <= highestSequenceNumber; i++) {
+            final long index = i;
             List<LogEntry> distinctIthEntries = replicas.stream()
                     .map(Replica::getCommitLog)
-                    .map(log -> log.getLength() > index ? log.get(index) : null)
+                    .map(log -> log.get(index))
                     .filter(Objects::nonNull)
                     .distinct()
                     .toList();
