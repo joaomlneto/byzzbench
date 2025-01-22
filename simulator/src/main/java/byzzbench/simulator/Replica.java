@@ -207,7 +207,7 @@ public abstract class Replica implements Node {
      * @param operation the operation to commit
      */
     public void commitOperation(long sequenceNumber, LogEntry operation) {
-        if (this.commitLog.get(sequenceNumber) != null) {
+        if (this.commitLog.get(sequenceNumber) == null) {
             this.commitLog.add(sequenceNumber, operation);
             this.notifyObserversLocalCommit(operation);
         }
