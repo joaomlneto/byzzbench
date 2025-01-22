@@ -42,10 +42,22 @@ public class MessageLog {
 
     /**
      * Adds a message to the message log, maintaining the appropriate mappings.
+     *
+     * @param voteMessage the message to add
+     * @return true if the message was added successfully (not seen before), false otherwise
      */
     public boolean addMessage(GenericMessage voteMessage) {
-        // Add the message to the author's set
-        receivedMessages.computeIfAbsent(voteMessage.getAuthor(), k -> new TreeSet<>()).add(voteMessage);
+        // Get the set of received messages for the author
+        SortedSet<GenericMessage> authorMessages = receivedMessages
+                .computeIfAbsent(voteMessage.getAuthor(), k -> new TreeSet<>());
+
+        // Check if the message already exists
+        boolean isNewMessage = authorMessages.add(voteMessage);
+
+        if (!isNewMessage) {
+            // Message already exists, return false
+            return false;
+        }
 
         // Process the message based on its type
         Block block = voteMessage.getBlock() == null ? NULL_BLOCK : voteMessage.getBlock();
@@ -68,7 +80,7 @@ public class MessageLog {
             }
         }
 
-        return true;
+        return true; // Successfully added a new message
     }
 
     /**

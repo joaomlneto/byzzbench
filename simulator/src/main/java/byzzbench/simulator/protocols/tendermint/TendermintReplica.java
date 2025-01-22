@@ -488,7 +488,7 @@ public class TendermintReplica extends LeaderBasedProtocolReplica {
     private void broadcastPrevote(long height, long round, Block block) {
 //        messageLog.sentPrevote();
         PrevoteMessage prevoteMessage = new PrevoteMessage(height, round, this.getId(), block);
-        broadcastMessage(prevoteMessage);
+        broadcastMessageIncludingSelf(prevoteMessage);
     }
 
     private void onTimeoutPrevote(long height, long round) {
@@ -609,7 +609,7 @@ public class TendermintReplica extends LeaderBasedProtocolReplica {
 
     protected void broadcastPrecommit(long height, long round, Block block) {
         PrecommitMessage precommitMessage = new PrecommitMessage(height, round, this.getId(), block);
-        broadcastMessage(precommitMessage);
+        broadcastMessageIncludingSelf(precommitMessage);
     }
 
     private void onTimeoutPrecommit(long height, long round) {

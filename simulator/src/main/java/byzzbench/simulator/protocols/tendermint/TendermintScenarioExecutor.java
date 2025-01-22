@@ -61,6 +61,6 @@ public class TendermintScenarioExecutor extends BaseScenario {
 
     @Override
     public int maxFaultyReplicas(int n) {
-        return (n - 1) / 3;
+        return 1;
     }
 }

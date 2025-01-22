@@ -266,7 +266,7 @@ public class Transport {
             }
         }
 
-        log.info("Delivered " + e);
+//        log.info("Delivered " + e);
     }
 
     /**
