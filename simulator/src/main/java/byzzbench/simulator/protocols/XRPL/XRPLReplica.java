@@ -7,10 +7,10 @@ import byzzbench.simulator.protocols.XRPL.messages.XRPLSubmitMessage;
 import byzzbench.simulator.protocols.XRPL.messages.XRPLTxMessage;
 import byzzbench.simulator.protocols.XRPL.messages.XRPLValidateMessage;
 import byzzbench.simulator.state.TotalOrderCommitLog;
+import byzzbench.simulator.transport.DefaultClientRequestPayload;
 import byzzbench.simulator.transport.MessagePayload;
 import lombok.Getter;
 
-import java.io.Serializable;
 import java.time.Duration;
 import java.util.*;
 import java.util.Map.Entry;
@@ -55,7 +55,9 @@ public class XRPLReplica extends Replica {
 
     @Override
     public void handleMessage(String sender, MessagePayload message) throws Exception {
-        if (message instanceof XRPLProposeMessage propmsg) {
+        if (message instanceof DefaultClientRequestPayload req) {
+            recvTxHandler(new XRPLTxMessage(req.getOperation().toString(), sender));
+        } else if (message instanceof XRPLProposeMessage propmsg) {
             proposeMessageHandler(propmsg);
         } else if (message instanceof XRPLSubmitMessage submsg) {
             submitMessageHandler(submsg);
@@ -510,12 +512,5 @@ public class XRPLReplica extends Replica {
                 }
             }
         }
-    }
-
-    @Override
-    public void handleClientRequest(String clientId, Serializable request) throws Exception {
-        String tx = request.toString();
-        XRPLTxMessage txmsg = new XRPLTxMessage(tx, clientId);
-        this.handleMessage(clientId, txmsg);
     }
 }

@@ -8,7 +8,6 @@ import byzzbench.simulator.utils.StirlingNumberSecondKind;
 import lombok.Getter;
 import lombok.extern.java.Log;
 
-import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
@@ -127,11 +126,6 @@ public class TwinsReplica extends Replica {
         }
         int index = Integer.parseInt(id.substring(getId().length() + 1));
         return replicas.get(index);
-    }
-
-    @Override
-    public void handleClientRequest(String clientId, Serializable request) {
-        throw new UnsupportedOperationException("Not implemented");
     }
 
     /**

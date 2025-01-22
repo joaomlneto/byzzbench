@@ -4,6 +4,7 @@ import byzzbench.simulator.faults.Fault;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import lombok.ToString;
 import lombok.experimental.SuperBuilder;
 
 /**
@@ -15,6 +16,7 @@ import lombok.experimental.SuperBuilder;
 @Data
 @JsonTypeName("GenericFault")
 @SuperBuilder
+@ToString(callSuper = true)
 public class GenericFaultEvent extends BaseEvent {
     /**
      * The payload of the request.

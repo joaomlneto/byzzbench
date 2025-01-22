@@ -720,7 +720,6 @@ public class PbftJavaReplica<O extends Serializable, R extends Serializable> ext
         return operation;
     }
 
-    @Override
     public void handleClientRequest(String clientId, Serializable request) {
         // FIXME: should not get timestamp from system time
         RequestMessage m = new RequestMessage(request, System.currentTimeMillis(), clientId);

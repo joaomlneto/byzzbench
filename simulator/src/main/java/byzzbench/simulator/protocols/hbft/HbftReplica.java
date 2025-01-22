@@ -8,8 +8,6 @@ import byzzbench.simulator.transport.MessagePayload;
 import lombok.ToString;
 import lombok.extern.java.Log;
 
-import java.io.Serializable;
-
 /**
  * A Replica in the hBFT protocol.
  * <p>
@@ -39,11 +37,6 @@ public class HbftReplica extends Replica {
 
     @Override
     public void initialize() {
-        // TODO
-    }
-
-    @Override
-    public void handleClientRequest(String clientId, Serializable request) throws Exception {
         // TODO
     }
 

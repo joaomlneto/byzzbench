@@ -162,15 +162,6 @@ public abstract class Replica implements Node {
     }
 
     /**
-     * Handle a request received from a client.
-     *
-     * @param clientId the ID of the client
-     * @param request  the request payload
-     * @throws Exception if an error occurs while handling the request
-     */
-    public abstract void handleClientRequest(String clientId, Serializable request) throws Exception;
-
-    /**
      * Send a reply to a client.
      *
      * @param clientId the ID of the client
