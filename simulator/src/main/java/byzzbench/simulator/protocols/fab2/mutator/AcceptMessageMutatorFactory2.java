@@ -150,43 +150,43 @@ public class AcceptMessageMutatorFactory2 extends MessageMutatorFactory {
 
                         messageEvent.setPayload(mutatedMessage);
                     }
-                },
+                }
 
                 // Any-scope
-                new MessageMutationFault(
-                        "fab-accept-any2",
-                        "any-scope AcceptMessage mutation",
-                        List.of(AcceptMessage.class)
-                ) {
-                    @Override
-                    public void accept(FaultContext serializable) {
-                        Optional<Event> event = serializable.getEvent();
-                        Random random = new Random();
-                        int mutation = random.nextInt(2, 100);
-
-                        if (event.isEmpty()) {
-                            throw new IllegalArgumentException("Invalid message type");
-                        }
-
-                        if (!(event.get() instanceof MessageEvent messageEvent)) {
-                            throw new IllegalArgumentException("Invalid message type");
-                        }
-
-                        if (!(messageEvent.getPayload() instanceof AcceptMessage message)) {
-                            throw new IllegalArgumentException("Invalid message type");
-                        }
-
-                        AcceptMessage mutatedMessage = message.withValueAndProposalNumber(
-                                new Pair(message.getValueAndProposalNumber().getValue(),
-                                        new ProposalNumber(
-                                                message.getValueAndProposalNumber().getProposalNumber().getViewNumber(),
-                                                message.getValueAndProposalNumber().getProposalNumber().getSequenceNumber() + mutation
-                                        ))
-                        );
-
-                        messageEvent.setPayload(mutatedMessage);
-                    }
-                }
+//                new MessageMutationFault(
+//                        "fab-accept-any2",
+//                        "any-scope AcceptMessage mutation",
+//                        List.of(AcceptMessage.class)
+//                ) {
+//                    @Override
+//                    public void accept(FaultContext serializable) {
+//                        Optional<Event> event = serializable.getEvent();
+//                        Random random = new Random();
+//                        int mutation = random.nextInt(2, 100);
+//
+//                        if (event.isEmpty()) {
+//                            throw new IllegalArgumentException("Invalid message type");
+//                        }
+//
+//                        if (!(event.get() instanceof MessageEvent messageEvent)) {
+//                            throw new IllegalArgumentException("Invalid message type");
+//                        }
+//
+//                        if (!(messageEvent.getPayload() instanceof AcceptMessage message)) {
+//                            throw new IllegalArgumentException("Invalid message type");
+//                        }
+//
+//                        AcceptMessage mutatedMessage = message.withValueAndProposalNumber(
+//                                new Pair(message.getValueAndProposalNumber().getValue(),
+//                                        new ProposalNumber(
+//                                                message.getValueAndProposalNumber().getProposalNumber().getViewNumber(),
+//                                                message.getValueAndProposalNumber().getProposalNumber().getSequenceNumber() + mutation
+//                                        ))
+//                        );
+//
+//                        messageEvent.setPayload(mutatedMessage);
+//                    }
+//                }
         );
     }
 }

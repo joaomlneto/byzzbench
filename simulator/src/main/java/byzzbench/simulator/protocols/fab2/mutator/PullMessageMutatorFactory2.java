@@ -81,41 +81,41 @@ public class PullMessageMutatorFactory2 extends MessageMutatorFactory {
 
                         messageEvent.setPayload(mutatedMessage);
                     }
-                },
-
-                new MessageMutationFault(
-                        "fab-pull-any",
-                        "Any Pull Number",
-                        List.of(PullMessage.class)
-                ) {
-                    @Override
-                    public void accept(FaultContext serializable) {
-                        Optional<Event> event = serializable.getEvent();
-                        Random random = new Random();
-                        int mutation = random.nextInt(2, 100);
-
-                        if (event.isEmpty()) {
-                            throw new IllegalArgumentException("Invalid message type");
-                        }
-
-                        if (!(event.get() instanceof MessageEvent messageEvent)) {
-                            throw new IllegalArgumentException("Invalid message type");
-                        }
-
-                        if (!(messageEvent.getPayload() instanceof PullMessage message)) {
-                            throw new IllegalArgumentException("Invalid message type");
-                        }
-
-                        PullMessage mutatedMessage = message.withProposalNumber(
-                                new ProposalNumber(
-                                        message.getViewNumber(),
-                                        message.getSequenceNumber() + mutation
-                                )
-                        );
-
-                        messageEvent.setPayload(mutatedMessage);
-                    }
                 }
+
+//                new MessageMutationFault(
+//                        "fab-pull-any",
+//                        "Any Pull Number",
+//                        List.of(PullMessage.class)
+//                ) {
+//                    @Override
+//                    public void accept(FaultContext serializable) {
+//                        Optional<Event> event = serializable.getEvent();
+//                        Random random = new Random();
+//                        int mutation = random.nextInt(2, 100);
+//
+//                        if (event.isEmpty()) {
+//                            throw new IllegalArgumentException("Invalid message type");
+//                        }
+//
+//                        if (!(event.get() instanceof MessageEvent messageEvent)) {
+//                            throw new IllegalArgumentException("Invalid message type");
+//                        }
+//
+//                        if (!(messageEvent.getPayload() instanceof PullMessage message)) {
+//                            throw new IllegalArgumentException("Invalid message type");
+//                        }
+//
+//                        PullMessage mutatedMessage = message.withProposalNumber(
+//                                new ProposalNumber(
+//                                        message.getViewNumber(),
+//                                        message.getSequenceNumber() + mutation
+//                                )
+//                        );
+//
+//                        messageEvent.setPayload(mutatedMessage);
+//                    }
+//                }
         );
     }
 }

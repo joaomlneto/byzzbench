@@ -130,11 +130,16 @@ public class MessageLog {
         byte[] messageProposedValue = proposeMessage.getValueAndProposalNumber().getValue();
         ProgressCertificate progressCertificate = proposeMessage.getProgressCertificate();
 
+        log.info("Replica view: " + this.replica.getViewNumber() + " Proposed view: " + proposalNumber.getViewNumber());
+        log.info("Replica sequence number: " + this.replica.getProposalNumber() + " Proposed seq: " + proposalNumber.getSequenceNumber());
+
         // Checking if the proposed value is for the same view and sequence number
         if (proposalNumber.getViewNumber() != this.replica.getViewNumber()) {
             log.info("The view number of the PROPOSE message is not the same as the current view number");
             return false; // Only listen to current leader
-        } else if (proposalNumber.getSequenceNumber() != this.replica.getProposalNumber()) {
+        }
+
+        if (proposalNumber.getSequenceNumber() != this.replica.getProposalNumber()) {
             log.info("The sequence number of the PROPOSE message is not the same as the current sequence number");
             return false; // Ignore proposals with different sequence numbers
         }

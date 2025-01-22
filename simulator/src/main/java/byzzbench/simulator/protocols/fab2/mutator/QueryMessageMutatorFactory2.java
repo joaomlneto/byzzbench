@@ -144,41 +144,41 @@ public class QueryMessageMutatorFactory2 extends MessageMutatorFactory {
 
                         messageEvent.setPayload(mutatedMessage);
                     }
-                },
-
-                new MessageMutationFault(
-                        "fab-query-any",
-                        "Any Query Number",
-                        List.of(QueryMessage.class)
-                ) {
-                    @Override
-                    public void accept(FaultContext serializable) {
-                        Optional<Event> event = serializable.getEvent();
-                        Random random = new Random();
-                        int mutation = random.nextInt(2, 100);
-
-                        if (event.isEmpty()) {
-                            throw new IllegalArgumentException("Invalid message type");
-                        }
-
-                        if (!(event.get() instanceof MessageEvent messageEvent)) {
-                            throw new IllegalArgumentException("Invalid message type");
-                        }
-
-                        if (!(messageEvent.getPayload() instanceof QueryMessage message)) {
-                            throw new IllegalArgumentException("Invalid message type");
-                        }
-
-                        QueryMessage mutatedMessage = message.withProposalNumber(
-                                new ProposalNumber(
-                                        message.getViewNumber() + mutation,
-                                        message.getSequenceNumber()
-                                )
-                        );
-
-                        messageEvent.setPayload(mutatedMessage);
-                    }
                 }
+
+//                new MessageMutationFault(
+//                        "fab-query-any",
+//                        "Any Query Number",
+//                        List.of(QueryMessage.class)
+//                ) {
+//                    @Override
+//                    public void accept(FaultContext serializable) {
+//                        Optional<Event> event = serializable.getEvent();
+//                        Random random = new Random();
+//                        int mutation = random.nextInt(2, 100);
+//
+//                        if (event.isEmpty()) {
+//                            throw new IllegalArgumentException("Invalid message type");
+//                        }
+//
+//                        if (!(event.get() instanceof MessageEvent messageEvent)) {
+//                            throw new IllegalArgumentException("Invalid message type");
+//                        }
+//
+//                        if (!(messageEvent.getPayload() instanceof QueryMessage message)) {
+//                            throw new IllegalArgumentException("Invalid message type");
+//                        }
+//
+//                        QueryMessage mutatedMessage = message.withProposalNumber(
+//                                new ProposalNumber(
+//                                        message.getViewNumber() + mutation,
+//                                        message.getSequenceNumber()
+//                                )
+//                        );
+//
+//                        messageEvent.setPayload(mutatedMessage);
+//                    }
+//                }
         );
     }
 }
