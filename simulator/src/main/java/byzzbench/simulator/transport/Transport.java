@@ -314,7 +314,7 @@ public class Transport {
 
         // if it is a MessageEvent and there is no connectivity between the nodes, drop it
         if (e instanceof MessageEvent m && !router.haveConnectivity(m.getSenderId(), m.getRecipientId())) {
-            //log.info("Dropped: " + m.getSenderId() + "->" + m.getRecipientId() + ": " + m.getPayload());
+            ////log.info("Dropped: " + m.getSenderId() + "->" + m.getRecipientId() + ": " + m.getPayload());
             m.setStatus(Event.Status.DROPPED);
             return;
         }

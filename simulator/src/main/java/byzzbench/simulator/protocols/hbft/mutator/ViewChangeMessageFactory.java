@@ -327,13 +327,17 @@ public class ViewChangeMessageFactory extends MessageMutatorFactory {
                             throw invalidMessageTypeException;
                         }
                         SortedMap<Long, RequestMessage> requests = message.getRequestsR();
-                        requests.remove(requests.firstEntry().getKey());
-                        Entry<Long, RequestMessage> firstReq = requests.firstEntry();
-                        requests.remove(firstReq.getKey());
-                        requests.put(firstReq.getKey() - 1, firstReq.getValue());
-                        ViewChangeMessage mutatedMessage = message.withRequestsR(requests);
-                        mutatedMessage.sign(message.getSignedBy());
-                        messageEvent.setPayload(mutatedMessage);
+                        if (requests != null && requests.size() > 1) {
+                            long key = requests.firstKey();
+                            requests.remove(key);
+                            Entry<Long, RequestMessage> firstReq = requests.firstEntry();
+                            requests.remove(firstReq.getKey());
+                            requests.put(firstReq.getKey() - 1, firstReq.getValue());
+                            ViewChangeMessage mutatedMessage = message.withRequestsR(requests);
+                            mutatedMessage.sign(message.getSignedBy());
+                            messageEvent.setPayload(mutatedMessage);
+                        }
+                        
                     }
                 }
                 // new MessageMutationFault("hbft-view-change-decrement-last-request-seqNum", "Decrement last request seqNum", List.of(ViewChangeMessage.class)) {
@@ -474,17 +478,19 @@ public class ViewChangeMessageFactory extends MessageMutatorFactory {
                         String senderId = messageEvent.getSenderId();
                         Replica sender = serializable.getScenario().getReplicas().get(senderId);
                         SortedMap<Long, RequestMessage> requests = message.getRequestsR();
-                        Entry<Long, RequestMessage> firstReq = requests.firstEntry();
-                        if (sender instanceof HbftJavaReplica replica) {
-                            SortedMap<Long, RequestMessage> specRequests = replica.getSpeculativeRequests();
-                            for (Long key : specRequests.keySet()) {
-                                if (!specRequests.get(key).equals(firstReq.getValue())) {
-                                    requests.remove(firstReq.getKey());
-                                    requests.put(firstReq.getKey(), specRequests.get(key));
-                                    ViewChangeMessage mutatedMessage = message.withRequestsR(requests);
-                                    mutatedMessage.sign(message.getSignedBy());
-                                    messageEvent.setPayload(mutatedMessage);
-                                    break;
+                        if (requests != null && !requests.isEmpty()) {
+                            Entry<Long, RequestMessage> firstReq = requests.firstEntry();
+                            if (sender instanceof HbftJavaReplica replica) {
+                                SortedMap<Long, RequestMessage> specRequests = replica.getSpeculativeRequests();
+                                for (Long key : specRequests.keySet()) {
+                                    if (!specRequests.get(key).equals(firstReq.getValue())) {
+                                        requests.remove(firstReq.getKey());
+                                        requests.put(firstReq.getKey(), specRequests.get(key));
+                                        ViewChangeMessage mutatedMessage = message.withRequestsR(requests);
+                                        mutatedMessage.sign(message.getSignedBy());
+                                        messageEvent.setPayload(mutatedMessage);
+                                        break;
+                                    }
                                 }
                             }
                         }
@@ -599,115 +605,6 @@ public class ViewChangeMessageFactory extends MessageMutatorFactory {
                 //     }
                 // },
                 // new MessageMutationFault("hbft-view-change-increment-random-req-p", "Increment seq num of random request in P", List.of(ViewChangeMessage.class)) {
-                //     @Override
-                //     public void accept(FaultContext serializable) {
-                //         Optional<Event> event = serializable.getEvent();
-                //         if (event.isEmpty()) {
-                //             throw invalidMessageTypeException;
-                //         }
-                //         if (!(event.get() instanceof MessageEvent messageEvent)) {
-                //             throw invalidMessageTypeException;
-                //         }
-                //         if (!(messageEvent.getPayload() instanceof ViewChangeMessage message)) {
-                //             throw invalidMessageTypeException;
-                //         }
-                //         SpeculativeHistory history = message.getSpeculativeHistoryP();
-                //         List<Long> keysetAsArray = new ArrayList<Long>(history.getRequests().keySet());
-                //         Long reqKey = keysetAsArray.get(random.nextInt(keysetAsArray.size()));
-                //         RequestMessage reqValue = history.getRequests().get(reqKey);
-                //         history.getRequests().remove(reqKey);
-                //         history.getRequests().put(reqKey + random.nextLong(bound), reqValue);
-                //         ViewChangeMessage mutatedMessage = message.withSpeculativeHistoryP(history);
-                //         mutatedMessage.sign(message.getSignedBy());
-                //         messageEvent.setPayload(mutatedMessage);
-                //     }
-                // },
-                // new MessageMutationFault("hbft-view-change-checkpoint-decrement-seqNum", "Decrement checkpoint seqNum", List.of(ViewChangeMessage.class)) {
-                //     @Override
-                //     public void accept(FaultContext serializable) {
-                //         Optional<Event> event = serializable.getEvent();
-                //         if (event.isEmpty()) {
-                //             throw invalidMessageTypeException;
-                //         }
-                //         if (!(event.get() instanceof MessageEvent messageEvent)) {
-                //             throw invalidMessageTypeException;
-                //         }
-                //         if (!(messageEvent.getPayload() instanceof ViewChangeMessage message)) {
-                //             throw invalidMessageTypeException;
-                //         }
-                //         Checkpoint checkpoint = message.getSpeculativeHistoryQ();
-                //         checkpoint.setSequenceNumber(checkpoint.getSequenceNumber() - random.nextLong(bound));
-                //         ViewChangeMessage mutatedMessage = message.withSpeculativeHistoryQ(checkpoint);
-                //         mutatedMessage.sign(message.getSignedBy());
-                //         messageEvent.setPayload(mutatedMessage);
-                //     }
-                // },
-                // new MessageMutationFault("hbft-view-change-checkpoint-increment-seqNum", "Increment checkpoint seqNum", List.of(ViewChangeMessage.class)) {
-                //     @Override
-                //     public void accept(FaultContext serializable) {
-                //         Optional<Event> event = serializable.getEvent();
-                //         if (event.isEmpty()) {
-                //             throw invalidMessageTypeException;
-                //         }
-                //         if (!(event.get() instanceof MessageEvent messageEvent)) {
-                //             throw invalidMessageTypeException;
-                //         }
-                //         if (!(messageEvent.getPayload() instanceof ViewChangeMessage message)) {
-                //             throw invalidMessageTypeException;
-                //         }
-                //         Checkpoint checkpoint = message.getSpeculativeHistoryQ();
-                //         checkpoint.setSequenceNumber(checkpoint.getSequenceNumber() + random.nextLong(bound));
-                //         ViewChangeMessage mutatedMessage = message.withSpeculativeHistoryQ(checkpoint);
-                //         mutatedMessage.sign(message.getSignedBy());
-                //         messageEvent.setPayload(mutatedMessage);
-                //     }
-                // },
-                // new MessageMutationFault("hbft-view-change-remove-random-request", "Remove random request", List.of(ViewChangeMessage.class)) {
-                //     @Override
-                //     public void accept(FaultContext serializable) {
-                //         Optional<Event> event = serializable.getEvent();
-                //         if (event.isEmpty()) {
-                //             throw invalidMessageTypeException;
-                //         }
-                //         if (!(event.get() instanceof MessageEvent messageEvent)) {
-                //             throw invalidMessageTypeException;
-                //         }
-                //         if (!(messageEvent.getPayload() instanceof ViewChangeMessage message)) {
-                //             throw invalidMessageTypeException;
-                //         }
-                //         SortedMap<Long, RequestMessage> requests = message.getRequestsR();
-                //         List<Long> keysetAsArray = new ArrayList<Long>(requests.keySet());
-                //         requests.remove(keysetAsArray.get(random.nextInt(keysetAsArray.size())));
-                //         ViewChangeMessage mutatedMessage = message.withRequestsR(requests);
-                //         mutatedMessage.sign(message.getSignedBy());
-                //         messageEvent.setPayload(mutatedMessage);
-                //     }
-                // },
-                // new MessageMutationFault("hbft-view-change-decrement-random-request-seqNum", "Decrement random request seqNum", List.of(ViewChangeMessage.class)) {
-                //     @Override
-                //     public void accept(FaultContext serializable) {
-                //         Optional<Event> event = serializable.getEvent();
-                //         if (event.isEmpty()) {
-                //             throw invalidMessageTypeException;
-                //         }
-                //         if (!(event.get() instanceof MessageEvent messageEvent)) {
-                //             throw invalidMessageTypeException;
-                //         }
-                //         if (!(messageEvent.getPayload() instanceof ViewChangeMessage message)) {
-                //             throw invalidMessageTypeException;
-                //         }
-                //         SortedMap<Long, RequestMessage> requests = message.getRequestsR();
-                //         List<Long> keysetAsArray = new ArrayList<Long>(requests.keySet());
-                //         Long reqKey = keysetAsArray.get(random.nextInt(keysetAsArray.size()));
-                //         RequestMessage reqValue = requests.get(reqKey);
-                //         requests.remove(reqKey);
-                //         requests.put(reqKey - random.nextLong(bound), reqValue);
-                //         ViewChangeMessage mutatedMessage = message.withRequestsR(requests);
-                //         mutatedMessage.sign(message.getSignedBy());
-                //         messageEvent.setPayload(mutatedMessage);
-                //     }
-                // },
-                // new MessageMutationFault("hbft-view-change-increment-random-request-seqNum", "Increment random request seqNum", List.of(ViewChangeMessage.class)) {
                 //     @Override
                 //     public void accept(FaultContext serializable) {
                 //         Optional<Event> event = serializable.getEvent();

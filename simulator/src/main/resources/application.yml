@@ -22,7 +22,7 @@ byzzbench:
   outputSchedules: buggy # which schedules to write to file? one of 'all', 'buggy' or 'none'
 
   scheduler:
-    id: "random" # The ID of the scheduler to use
+    id: "byzzfuzz" # The ID of the scheduler to use
     executionMode: sync # async (default, any message delivered) or sync (communication-closure hypothesis, FIFO)
     maxDropMessages: 0 # Maximum number of messages to drop per scenario
     maxMutateMessages: 0 # Maximum number of messages to mutate per scenario
@@ -33,9 +33,9 @@ byzzbench:
     mutateMessageWeight: 50 # The weight for scheduler to mutate a message
     params: # additional parameters for the scheduler
       # ByzzFuzz
-      numRoundsWithProcessFaults: 1
+      numRoundsWithProcessFaults: 2
       numRoundsWithNetworkFaults: 0
-      numRoundsWithFaults: 2
+      numRoundsWithFaults: 3
       # Twins
       numReplicas: 1
       numTwinsPerReplica: 2
@@ -48,5 +48,5 @@ byzzbench:
       factories: [ ]
     termination: # Success condition for the scenario - terminates it when all conditions are met
       minEvents: 100 # check if N events have been scheduled. If so, can terminate
-      minRounds: 2 # check if N rounds have elapsed. If so, can terminate
+      minRounds: 3 # check if N rounds have elapsed. If so, can terminate
       samplingFrequency: 30 # check if should terminate every N scheduler decisions

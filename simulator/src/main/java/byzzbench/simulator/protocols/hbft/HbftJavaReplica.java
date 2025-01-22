@@ -638,6 +638,7 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
                     String clientId = request.getClientId();
                     long timestamp = request.getTimestamp();
 
+                    //System.out.println("Called from tryAdvanceState()");
                     // Add operation to commitLog
                     Serializable operation = request.getOperation();
                     this.compute(seqNumber, new SerializableLogEntry(operation));
@@ -660,7 +661,7 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
                  * use the same as for PBFT, where the sequence number mod 
                  * the interval reaches 0.
                  */
-                if (seqNumber % 20 == 0 && this.getId().equals(this.getPrimaryId())) {
+                if (seqNumber % 2 == 0 && this.getId().equals(this.getPrimaryId())) {
                     CheckpointMessage checkpoint = new CheckpointIMessage(
                         seqNumber,
                         this.digest(this.speculativeHistory),
@@ -672,7 +673,7 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
 
                     // Log own checkpoint in accordance to hBFT 4.2
                     //messageLog.appendCheckpoint(checkpoint, this.tolerance, this.speculativeHistory, this.getViewNumber());
-                } else if (seqNumber % 20 == 0) {
+                } else if (seqNumber % 2 == 0) {
                     this.setTimeout(this::sendViewChangeOnTimeout, this.CHECKPOINT_TIMEOUT, "CHECKPOINT");
                 }
             } else if (ticket.isCommittedConflicting(this.tolerance)) {
@@ -863,9 +864,10 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
 
             // All these requests need to be speculatively executed
             this.speculativeRequests.put(seqNumber, requests.get(seqNumber));
-            if (!requests.get(seqNumber).equals(this.speculativeHistory.getHistory().get(seqNumber))) {
+            if (!this.speculativeHistory.getHistory().containsKey(seqNumber)) {
                 // Add operation to commitLog
                 Serializable operation = requests.get(seqNumber).getOperation();
+                //System.out.println("Called from adjustHistory()");
                 Serializable result = this.compute(seqNumber, new SerializableLogEntry(operation));
 
                 long timestamp = requests.get(seqNumber).getTimestamp();
@@ -1055,11 +1057,12 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
 
                 if (maxL < seqNumOfHistory && seqNumOfHistory <= minS 
                     && request != null && !request.equals(this.speculativeHistory.getHistory().get(seqNumOfHistory))) {
-                    this.speculativeHistory.addEntry(seqNumOfHistory, request);
-
                     // Given that these replicas have not commited the request yet
                     Serializable operation = request.getOperation();
+                    //System.out.println("Called from recvNewView()");
                     this.compute(seqNumOfHistory, new SerializableLogEntry(operation));
+
+                    this.speculativeHistory.addEntry(seqNumOfHistory, request);
                 }
             }
             nextSeq = minS;
@@ -1128,6 +1131,7 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
             return;
         }
 
+        //System.out.println("Called from executeRequestFromViewChange()");
         Serializable operation = request.getOperation();
         Serializable result = this.compute(seqNumber, new SerializableLogEntry(operation));
     
@@ -1185,6 +1189,8 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
 
     public Serializable compute(long sequenceNumber, LogEntry operation) {
         if (!this.speculativeHistory.getRequests().keySet().contains(sequenceNumber)) {
+            // System.out.println("Speuclative History: " + this.speculativeHistory.getRequests().keySet());
+            // System.out.println(sequenceNumber);
             logger.writeLog(String.format("COMMITED %s at %d at replica %s", operation.toString(), sequenceNumber, this.getId())); 
             this.commitOperation(sequenceNumber, operation);
         }
