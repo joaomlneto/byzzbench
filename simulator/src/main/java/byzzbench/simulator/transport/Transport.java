@@ -414,9 +414,14 @@ public class Transport {
 
         // check if sender is faulty
         if (!this.scenario.isFaultyReplica(m.getSenderId())) {
-            throw new IllegalArgumentException(
-                    String.format("Cannot mutate message: sender %s is not marked as faulty", m.getSenderId())
-            );
+            // throw new IllegalArgumentException(
+            //         String.format("Cannot mutate message: sender %s is not marked as faulty", m.getSenderId())
+            // );
+            // append the event to the schedule
+            // e.setStatus(Event.Status.DELIVERED);
+            // this.scenario.getSchedule().appendEvent(e);
+            // this.observers.forEach(o -> o.onEventDelivered(e));
+            return;
         }
 
         // create input for the fault

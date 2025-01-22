@@ -22,15 +22,15 @@ byzzbench:
   outputSchedules: buggy # which schedules to write to file? one of 'all', 'buggy' or 'none'
 
   scheduler:
-    id: "random" # The ID of the scheduler to use
+    id: "byzzfuzz" # The ID of the scheduler to use
     executionMode: sync # async (default, any message delivered) or sync (communication-closure hypothesis, FIFO)
     maxDropMessages: 1 # Maximum number of messages to drop per scenario
     maxMutateMessages: 1 # Maximum number of messages to mutate per scenario
     deliverTimeoutWeight: 25 # The weight for scheduler to trigger a timeout
     deliverMessageWeight: 99 # The weight for scheduler to deliver a message
     deliverClientRequestWeight: 99 # The weight for scheduler to deliver a client request to a replica
-    dropMessageWeight: 0 # The weight for scheduler to drop a message
-    mutateMessageWeight: 50 # The weight for scheduler to mutate a message
+    dropMessageWeight: 25 # The weight for scheduler to drop a message
+    mutateMessageWeight: 25 # The weight for scheduler to mutate a message
     params: # additional parameters for the scheduler
       # ByzzFuzz
       numRoundsWithProcessFaults: 1

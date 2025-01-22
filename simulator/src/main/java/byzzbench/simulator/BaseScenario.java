@@ -188,7 +188,7 @@ public abstract class BaseScenario implements Scenario {
             this.markReplicaFaulty(replicaIds.get(i));
         }
 
-        this.getClients().values().forEach(Client::initialize);
+        //this.getClients().values().forEach(Client::initialize);
         this.getNodes().values().forEach(Node::initialize);
         this.scheduler.initializeScenario(this);
     }
