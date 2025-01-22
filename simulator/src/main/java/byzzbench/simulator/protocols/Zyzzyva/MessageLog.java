@@ -19,10 +19,6 @@ public class MessageLog implements Serializable {
     private final SortedMap<Long, OrderedRequestMessageWrapper> orderedMessages = new TreeMap<>();
 
     @Getter
-    // SequenceNumber, SpeculativeResponse
-    private final SortedMap<Long, SpeculativeResponse> speculativeResponses = new TreeMap<>();
-
-    @Getter
     // SequenceNumber, Map(ReplicaId -> SpeculativeResponse)
     private final SortedMap<Long, SortedMap<String, SpeculativeResponse>> speculativeResponsesCheckpoint = new TreeMap<>();
 
@@ -36,7 +32,7 @@ public class MessageLog implements Serializable {
 
     @Getter
     // ViewNumber, ViewConfirmMessage
-    private final SortedMap<Long, List<ViewConfirmMessage>> viewConfirmMessages = new TreeMap<>();
+    private final SortedMap<Long, SortedSet<ViewConfirmMessage>> viewConfirmMessages = new TreeMap<>();
 
     @Getter
     // ViewNumber, ViewChangeMessage
@@ -74,6 +70,18 @@ public class MessageLog implements Serializable {
     public MessageLog() {
         // create a null checkpoint message
         this.setLastCheckpoint(0L);
+        CheckpointMessage cmA = new CheckpointMessage(0L, 0L, "A");
+        cmA.sign("A");
+        CheckpointMessage cmB = new CheckpointMessage(0L, 0L, "B");
+        cmB.sign("B");
+        CheckpointMessage cmC = new CheckpointMessage(0L, 0L, "C");
+        cmC.sign("C");
+        CheckpointMessage cmD = new CheckpointMessage(0L, 0L, "D");
+        cmD.sign("D");
+        this.putCheckpointMessage(cmA);
+        this.putCheckpointMessage(cmB);
+        this.putCheckpointMessage(cmC);
+        this.putCheckpointMessage(cmD);
     }
 
     /**
@@ -90,15 +98,6 @@ public class MessageLog implements Serializable {
         return orderedRequestHistory;
     }
 
-    public List<SpeculativeResponse> getSpeculativeResponseHistory(long index) {
-        long maxSeqNum = this.getSpeculativeResponses().pollLastEntry().getValue().getSequenceNumber();
-        List<SpeculativeResponse> speculativeResponseHistory = new ArrayList<>();
-        for (long i = index + 1; i <= maxSeqNum; i++) {
-            speculativeResponseHistory.add(this.speculativeResponses.get(i));
-        }
-        return speculativeResponseHistory;
-    }
-
     public void putIHateThePrimaryMessage(IHateThePrimaryMessage ihtpm) {
         this.getIHateThePrimaries().putIfAbsent(ihtpm.getViewNumber(), new TreeMap<>());
         this.getIHateThePrimaries().get(ihtpm.getViewNumber()).put(ihtpm.getSignedBy(), ihtpm);
@@ -110,7 +109,7 @@ public class MessageLog implements Serializable {
     }
 
     public void putViewConfirmMessage(ViewConfirmMessage vcm) {
-        this.getViewConfirmMessages().putIfAbsent(vcm.getFutureViewNumber(), new ArrayList<>());
+        this.getViewConfirmMessages().putIfAbsent(vcm.getFutureViewNumber(), new TreeSet<>());
         this.getViewConfirmMessages().get(vcm.getFutureViewNumber()).add(vcm);
     }
 
@@ -141,22 +140,6 @@ public class MessageLog implements Serializable {
         for (long seqNum : keys) {
             if (seqNum < sequenceNumber) {
                 this.getCheckpointMessages().remove(seqNum);
-            }
-        }
-    }
-
-    /**
-     * Truncate the speculative response history
-     * Used in garbage collection after checkpointing
-     * @param sequenceNumber - the sequence number to truncate the history to (non-inclusive)
-     */
-    public void truncateSpeculativeResponseMessages(long sequenceNumber) {
-        if (this.getSpeculativeResponses().isEmpty()) return;
-        Set<Long> keys = new HashSet<>(this.getSpeculativeResponses().keySet());
-
-        for (long seqNum : keys) {
-            if (seqNum < sequenceNumber) {
-                this.getSpeculativeResponses().remove(seqNum);
             }
         }
     }
@@ -193,6 +176,9 @@ public class MessageLog implements Serializable {
 
     public void putRequestCache(String clientId, RequestMessage rm, SpeculativeResponseWrapper srw) {
         if (this.highestTimestampInCacheForClient(clientId) > rm.getTimestamp()) {
+            if (clientId.equals("Noop")) {
+                return;
+            }
             log.warning("Received a request with a timestamp smaller than the one in the cache");
             return;
         }
@@ -208,6 +194,11 @@ public class MessageLog implements Serializable {
             return -1;
         }
         return this.getResponseCache().get(clientId).getLeft().getTimestamp();
+    }
+
+    public void putFillHoleMessage(FillHoleReply fhm) {
+        this.getFillHoleMessages().putIfAbsent(fhm.getOrderedRequestMessage().getSequenceNumber(), new TreeMap<>());
+        this.getFillHoleMessages().get(fhm.getOrderedRequestMessage().getSequenceNumber()).put(fhm.getSignedBy(), fhm);
     }
 
     public void setLastRequest(String clientId, RequestMessage rm) {

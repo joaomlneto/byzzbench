@@ -14,45 +14,36 @@ import java.util.*;
 
 
 /// TODO: POM of the Ordered requests
+@Getter
 @Log
 public class ZyzzyvaClient extends Client {
 
-    @Getter
     private final int numFaults;
 
-    @Getter
-    private final int MAX_REQUESTS = 25;
+    private final int MAX_REQUESTS = 10;
 
-    @Getter
     @Setter
     private int numRequests = 0;
 
-    @Getter
     @Setter
     private long highestTimestamp;
 
-    @Getter
     @Setter
     private long lapsedRequestTimeoutId;
 
-    @Getter
     @Setter
     private RequestMessage lastRequest;
 
-    @Getter
     @Setter
     private int viewNumber;
 
-    @Getter
     // Request digest (using arrays.hashCode), List<SpeculativeResponseWrapper>
     // mustn't allow duplicates
     private final SortedMap<Integer, Set<SpeculativeResponseWrapper>> specResponses;
 
-    @Getter
     // Request digest (using arrays.hashCode), Set<LocalCommitMessage>
     private final SortedMap<Integer, SortedSet<LocalCommitMessage>> localCommits;
 
-    @Getter
     @Setter
     private boolean initialized = false;
 
@@ -91,6 +82,7 @@ public class ZyzzyvaClient extends Client {
 
         RequestMessage requestMessage = new RequestMessage(operation, this.getHighestTimestamp(), this.getId());
         this.getScenario().getTransport().sendMessage(this, requestMessage, recipientId);
+        log.info("Sending request " + operation + " to " + recipientId);
         // transport timestamp alternative, doesn't work since the replica can't keep track of the timestamp
         // this.getScenario().getTransport().sendClientRequest(this.getId(), operation, recipientId);
         this.setLapsedRequestTimeoutId(this.setTimeout("lapsedRequestTimeout", this::lapsedRequest, Duration.ofMillis(15000)));
@@ -105,6 +97,7 @@ public class ZyzzyvaClient extends Client {
     public void resendRequest() {
         SortedSet<String> recipientIds = (SortedSet<String>) this.getScenario().getReplicas().keySet();
         this.getScenario().getTransport().multicast(this, recipientIds, this.getLastRequest());
+        log.info("Resending request " + this.getLastRequest().getOperation() + " to all replicas");
         this.setLapsedRequestTimeoutId(this.setTimeout("resendRequest", this::lapsedRequest, Duration.ofMillis(15000)));
     }
 
@@ -218,6 +211,7 @@ public class ZyzzyvaClient extends Client {
                 sequenceNumber,
                 viewNumber,
                 history,
+                this.digest(this.getLastRequest()),
                 specResponse,
                 signedBy
         );
@@ -232,6 +226,7 @@ public class ZyzzyvaClient extends Client {
     private void sendCommitUntilResponse(CommitMessage commitMessage) {
         SortedSet<String> recipientIds = (SortedSet<String>) this.getScenario().getReplicas().keySet();
         this.getScenario().getTransport().multicast(this, recipientIds, commitMessage);
+        log.info("Sending commit message to all replicas for " + this.getLastRequest().getOperation());
         // Sets the timeout, clears the local commits if the number of local commits is greater than 2f
         this.setTimeout("commitTimeout", () -> {
             if (this.getLocalCommits().getOrDefault(this.getLastDigest(), new TreeSet<>()).size() >= 2 * this.getNumFaults() + 1) {
@@ -240,6 +235,7 @@ public class ZyzzyvaClient extends Client {
                 this.sendRequest();
             } else {
                 log.warning("Did not receive enough local commits for " + this.getLastRequest().getOperation() + ", resending commit message");
+                log.info("Digest expected: " + Arrays.hashCode(this.digest(this.getLastRequest())));
                 this.sendCommitUntilResponse(commitMessage);
             }
         }, Duration.ofMillis(15000));

@@ -17,14 +17,14 @@ springdoc:
 # ByzzBench configuration
 byzzbench:
   autostart: false # Whether to start running scenarios automatically on startup
-  numScenarios: 100
+  numScenarios: 3
   #outputPath: /tmp/byzzbench # The path to write the output to
   outputSchedules: buggy # which schedules to write to file? one of 'all', 'buggy' or 'none'
 
   scheduler:
-    id: "random" # The ID of the scheduler to use
+    id: "byzzfuzz" # The ID of the scheduler to use
     maxDropMessages: 10 # Maximum number of messages to drop per scenario
-    maxMutateMessages: 15 # Maximum number of messages to mutate per scenario
+    maxMutateMessages: 0 # Maximum number of messages to mutate per scenario
     deliverTimeoutWeight: 1 # The weight for scheduler to trigger a timeout
     deliverMessageWeight: 99 # The weight for scheduler to deliver a message
     deliverClientRequestWeight: 99 # The weight for scheduler to deliver a client request to a replica
@@ -46,6 +46,6 @@ byzzbench:
     scheduledFaults:
       factories: [ ]
     termination: # Success condition for the scenario - terminates it when all conditions are met
-      minEvents: 900 # check if N events have been scheduled. If so, can terminate
+      minEvents: 2000 # check if N events have been scheduled. If so, can terminate
       minRounds: 5 # check if N rounds have elapsed. If so, can terminate
       samplingFrequency: 10 # check if should terminate every N scheduler decisions

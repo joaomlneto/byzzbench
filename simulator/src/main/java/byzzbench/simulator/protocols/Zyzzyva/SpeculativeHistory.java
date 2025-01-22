@@ -96,6 +96,25 @@ public class SpeculativeHistory {
         return this.speculativeHistory.lastEntry();
     }
 
+    public void truncateTail(long index) {
+        if (this.speculativeHistory.isEmpty()) {
+            return;
+        }
+        long i = this.speculativeHistory.sequencedKeySet().getLast();
+        if (index == i) {
+            log.warning("Trying to truncate to the same index");
+            return;
+        }
+        while (i > index) {
+            this.speculativeHistory.remove(i);
+            i = this.speculativeHistory.sequencedKeySet().getLast();
+        }
+    }
+
+    public long getFirstKey() {
+        return this.speculativeHistory.sequencedKeySet().getFirst();
+    }
+
     /**
      * Get the length of the speculative history
      * @return the length of the speculative history
