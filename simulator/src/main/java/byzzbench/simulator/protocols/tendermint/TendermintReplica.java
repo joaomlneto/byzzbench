@@ -179,6 +179,8 @@ public class TendermintReplica extends LeaderBasedProtocolReplica {
         // upon ⟨PROPOSAL, hp, r, v, ∗⟩ from proposer(hp, r)
         boolean proposalExists = messageLog.getProposals().getOrDefault(proposalMessage.getBlock(), new ArrayList<>()).stream()
                 .filter(proposal -> proposal.getHeight() == height)
+                .filter(proposal -> proposal.getRound() == proposalMessage.getRound())
+                .filter(proposal -> proposal.getRound() == this.round)
                 .filter(proposal -> proposal.getReplicaId().equals(proposer(height, proposalMessage.getRound())))
                 .count() >= 1;
 
@@ -186,6 +188,7 @@ public class TendermintReplica extends LeaderBasedProtocolReplica {
         boolean enoughPrecommits = messageLog.getPrecommits().getOrDefault(proposalMessage.getBlock(), new ArrayList<>()).stream()
                 .filter(precommit -> precommit.getHeight() == height)
                 .filter(precommit -> precommit.getRound() == proposalMessage.getRound())
+                .filter(precommit -> precommit.getRound() == this.round)
                 .count() >= 2 * tolerance + 1;
 
         // while decisionp[hp] = nil
@@ -315,7 +318,7 @@ public class TendermintReplica extends LeaderBasedProtocolReplica {
             return;
         }
         ProposalMessage proposalMessage = new ProposalMessage(getId(), height, round, validRound, proposal);
-        broadcastMessage(proposalMessage);
+        broadcastMessageIncludingSelf(proposalMessage);
         hasBroadcasted.add(Pair.of(height, round));
 
     }

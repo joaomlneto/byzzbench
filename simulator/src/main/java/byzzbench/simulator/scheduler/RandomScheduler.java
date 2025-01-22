@@ -3,6 +3,7 @@ package byzzbench.simulator.scheduler;
 import byzzbench.simulator.Scenario;
 import byzzbench.simulator.config.ByzzBenchConfig;
 import byzzbench.simulator.faults.faults.MessageMutationFault;
+import byzzbench.simulator.protocols.tendermint.message.GossipMessage;
 import byzzbench.simulator.service.MessageMutatorService;
 import byzzbench.simulator.transport.ClientRequestEvent;
 import byzzbench.simulator.transport.Event;
@@ -95,8 +96,10 @@ public class RandomScheduler extends BaseScheduler {
         if (dieRoll < 0) {
             Event message = messageEvents.get(random.nextInt(messageEvents.size()));
             scenario.getTransport().dropEvent(message.getEventId());
-            EventDecision decision = new EventDecision(EventDecision.DecisionType.DROPPED, message.getEventId());
-            return Optional.of(decision);
+            if(!(message instanceof GossipMessage)) {
+                EventDecision decision = new EventDecision(EventDecision.DecisionType.DROPPED, message.getEventId());
+                return Optional.of(decision);
+            }
         }
 
         // check if we should mutate-and-deliver a message sent between nodes
@@ -108,7 +111,9 @@ public class RandomScheduler extends BaseScheduler {
             if (mutators.isEmpty()) {
                 // no mutators, return nothing
                 log.warning("No mutators available for message " + message.getEventId());
-                return Optional.empty();
+                scenario.getTransport().deliverEvent(message.getEventId());
+                EventDecision decision = new EventDecision(EventDecision.DecisionType.DELIVERED, message.getEventId());
+                return Optional.of(decision);
             }
             scenario.getTransport().applyMutation(
                     message.getEventId(),

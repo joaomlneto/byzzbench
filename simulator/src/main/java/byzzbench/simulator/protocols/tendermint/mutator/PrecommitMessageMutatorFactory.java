@@ -6,6 +6,7 @@ import byzzbench.simulator.faults.faults.MessageMutationFault;
 import byzzbench.simulator.protocols.tendermint.message.PrecommitMessage;
 import byzzbench.simulator.transport.Event;
 import byzzbench.simulator.transport.MessageEvent;
+import byzzbench.simulator.transport.MessagePayload;
 import lombok.ToString;
 import org.springframework.stereotype.Component;
 
@@ -142,6 +143,32 @@ public class PrecommitMessageMutatorFactory extends MessageMutatorFactory {
                         messageEvent.setPayload(mutatedMessage);
                     }
                 }
+//                new MessageMutationFault(
+//                        "tendermint-precommit-known-violation",
+//                        "Known Violation",
+//                        List.of(PrecommitMessage.class)) {
+//                    @Override
+//                    public void accept(FaultContext state) {
+//                        Optional<Event> event = state.getEvent();
+//                        if (event.isEmpty()) {
+//                            throw invalidMessageTypeException;
+//                        }
+//                        if (!(event.get() instanceof MessageEvent messageEvent)) {
+//                            throw invalidMessageTypeException;
+//                        }
+//                        if (!(messageEvent.getPayload() instanceof PrecommitMessage message)) {
+//                            throw invalidMessageTypeException;
+//                        }
+//                        // Check if the recipientId is "B"
+//                        if ("B".equals(messageEvent.getRecipientId()) && "A".equals(message.getAuthor())) {
+//                            return;
+//                        }
+//                        if ("A".equals(messageEvent.getRecipientId()) && "B".equals(message.getAuthor())) {
+//                            return;
+//                        }
+//                        state.getScenario().getTransport().dropEvent(messageEvent.getEventId());
+//                    }
+//                }
         );
     }
 }
