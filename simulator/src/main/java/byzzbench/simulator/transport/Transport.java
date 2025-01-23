@@ -193,12 +193,12 @@ public class Transport {
         // add the event to the map
         this.events.put(event.getEventId(), event);
 
+        // notify observers
+        this.observers.forEach(o -> o.onEventAdded(event));
+
         // apply automatic faults
         this.automaticFaults.values()
                 .forEach(f -> f.testAndAccept(new FaultContext(this.scenario, event)));
-
-        // notify observers
-        this.observers.forEach(o -> o.onEventAdded(event));
     }
 
     /**
