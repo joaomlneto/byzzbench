@@ -116,7 +116,7 @@ public class Transport {
      * @param operation The operation to send
      * @param recipient The ID of the replica receiving the request
      */
-    public synchronized void sendClientRequest(String sender, Serializable operation, String recipient) {
+    public synchronized void sendClientRequest(String sender, Serializable operation, String recipient, Long timestamp) {
         // assert that the sender exists
         if (!this.scenario.getClients().containsKey(sender)) {
             throw new IllegalArgumentException("Client not found: " + sender);
@@ -126,7 +126,7 @@ public class Transport {
         if (!this.scenario.getNodes().containsKey(recipient)) {
             throw new IllegalArgumentException("Replica not found: " + recipient);
         }
-        DefaultClientRequestPayload payload = new DefaultClientRequestPayload(System.currentTimeMillis(), operation);
+        DefaultClientRequestPayload payload = new DefaultClientRequestPayload(timestamp, operation);
         payload.sign(sender);
         Event event = ClientRequestEvent.builder()
                 .eventId(this.eventSeqNum.getAndIncrement())

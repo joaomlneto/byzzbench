@@ -105,8 +105,8 @@ public class XRPLScenario extends BaseScenario {
     @SuppressWarnings("unused")
     private void runScenario1() {
         try {
-            this.transport.sendClientRequest("C0", "0000", "A");
-            this.transport.sendClientRequest("C0", "0001", "B");
+            this.transport.sendClientRequest("C0", "0000", "A", System.currentTimeMillis());
+            this.transport.sendClientRequest("C0", "0001", "B", System.currentTimeMillis());
 
             this.initializeHeartbeats();
         } catch (Exception e) {
@@ -121,7 +121,7 @@ public class XRPLScenario extends BaseScenario {
     @SuppressWarnings("unused")
     private void runScenario2() {
         try {
-            this.transport.sendClientRequest("c1", "0000", "A");
+            this.transport.sendClientRequest("c1", "0000", "A", System.currentTimeMillis());
 
             this.initializeHeartbeats();
         } catch (Exception e) {
@@ -141,10 +141,10 @@ public class XRPLScenario extends BaseScenario {
             this.addClient(new Client(this, "C0") {
                 @Override
                 public void initialize() {
-                    this.getScenario().getTransport().sendClientRequest(this.getId(), "tx", "D");
+                    this.getScenario().getTransport().sendClientRequest(this.getId(), "tx", "D", System.currentTimeMillis());
                 }
             });
-            this.transport.sendClientRequest("C0", "tx", "D");
+            this.transport.sendClientRequest("C0", "tx", "D", System.currentTimeMillis());
             this.initializeHeartbeats();
         } catch (Exception e) {
             e.printStackTrace();

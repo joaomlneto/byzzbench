@@ -77,7 +77,8 @@ public class Client implements Serializable, Node {
     public void sendRequest() {
         String recipientId = this.getScenario().getReplicas().keySet().iterator().next();
         String requestId = String.format("%s/%d", this.id, this.requestSequenceNumber.getAndIncrement());
-        this.getScenario().getTransport().sendClientRequest(this.id, requestId, recipientId);
+        /// TODO: someone in the future should probably change this to not use System.currentTimeMillis()
+        this.getScenario().getTransport().sendClientRequest(this.id, requestId, recipientId, System.currentTimeMillis());
     }
 
     /**
