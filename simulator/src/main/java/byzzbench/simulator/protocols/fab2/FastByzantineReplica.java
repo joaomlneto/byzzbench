@@ -668,10 +668,10 @@ public class FastByzantineReplica extends LeaderBasedProtocolReplica {
                     leaderOnStart(proposeMessage);
                 } else {
                     log.info("Leader " + getId() + " could not find a majority value in the progress certificate");
-                    this.proposedValue = "new_v".getBytes();
-                    ProposeMessage proposeMessage = new ProposeMessage(getId(), new Pair(this.proposedValue, new ProposalNumber(this.viewNumber, this.proposalNumber)), this.pc);
-                    multicastMessage(proposeMessage, this.acceptorNodeIds);
-                    leaderOnStart(proposeMessage);
+//                    this.proposedValue = "new_v".getBytes();
+//                    ProposeMessage proposeMessage = new ProposeMessage(getId(), new Pair(this.proposedValue, new ProposalNumber(this.viewNumber, this.proposalNumber)), this.pc);
+//                    multicastMessage(proposeMessage, this.acceptorNodeIds);
+//                    leaderOnStart(proposeMessage);
                 }
             }
         }

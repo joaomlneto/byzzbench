@@ -120,7 +120,7 @@ public class ProposeMessageMutatorFactory2 extends MessageMutatorFactory {
 //
 //                        messageEvent.setPayload(mutatedMessage);
 //                    }
-//                },
+//                }
 
                 new MessageMutationFault(
                         "fab-propose-value",

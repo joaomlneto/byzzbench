@@ -152,7 +152,7 @@ public class AcceptMessageMutatorFactory2 extends MessageMutatorFactory {
                     }
                 }
 
-                // Any-scope
+//                 Any-scope
 //                new MessageMutationFault(
 //                        "fab-accept-any2",
 //                        "any-scope AcceptMessage mutation",

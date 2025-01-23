@@ -48,4 +48,4 @@ byzzbench:
     termination: # Success condition for the scenario - terminates it when all conditions are met
       minEvents: 500 # check if N events have been scheduled. If so, can terminate
       minRounds: 5 # check if N rounds have elapsed. If so, can terminate
-      samplingFrequency: 200 # check if should terminate every N scheduler decisions
+      samplingFrequency: 100 # check if should terminate every N scheduler decisions

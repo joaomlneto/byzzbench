@@ -3,6 +3,7 @@ package byzzbench.simulator.protocols.fab2.messages;
 import byzzbench.simulator.protocols.fab2.ProposalNumber;
 import byzzbench.simulator.protocols.pbft_java.message.IPhaseMessage;
 import byzzbench.simulator.transport.MessagePayload;
+import byzzbench.simulator.transport.messages.MessageWithRound;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -15,7 +16,7 @@ import lombok.With;
 @Data
 @EqualsAndHashCode(callSuper = true)
 @With
-public class PullMessage extends IPhaseMessage {
+public class PullMessage extends IPhaseMessage implements MessageWithRound {
     private final ProposalNumber proposalNumber;
 
     public String getType() {
@@ -35,5 +36,10 @@ public class PullMessage extends IPhaseMessage {
     @Override
     public byte[] getDigest() {
         return new byte[0];
+    }
+
+    @Override
+    public long getRound() {
+        return 4 * getSequenceNumber();
     }
 }

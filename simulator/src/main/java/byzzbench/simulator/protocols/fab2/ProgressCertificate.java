@@ -1,7 +1,11 @@
 package byzzbench.simulator.protocols.fab2;
 
-import java.util.*;
+import lombok.extern.java.Log;
 
+import java.util.*;
+import java.util.stream.Collectors;
+
+@Log
 public record ProgressCertificate(long proposalNumber, SortedMap<String, SignedResponse> responses) {
     // Ensure the certificate is valid and complete
     public boolean isValid(int quorumSize) {
@@ -18,11 +22,26 @@ public record ProgressCertificate(long proposalNumber, SortedMap<String, SignedR
                 .filter(Objects::nonNull)
                 .forEach(v -> valueCounts.merge(v, 1, Integer::sum));
 
+        log.info("Value counts: " + valueCounts);
+        valueCounts.forEach((k, v) -> log.info("Key: " + Arrays.toString(k) + ", Value: " + v));
+
         // Find the value that exceeds the threshold
-        return valueCounts.entrySet().stream()
-                .filter(entry -> entry.getValue() > threshold)
-                .map(Map.Entry::getKey)
-                .findFirst();
+        // Collect all entries meeting the threshold
+        List<Map.Entry<byte[], Integer>> candidates = valueCounts.entrySet().stream()
+                .filter(entry -> entry.getValue() >= threshold)
+                .toList();
+
+        // Ensure only one unique value meets or exceeds the threshold
+        if (candidates.size() == 1) {
+            return Optional.of(candidates.getFirst().getKey());
+        } else if (candidates.isEmpty()) {
+            return valueCounts.keySet().stream()
+                    .findFirst();
+        }
+        else {
+            log.info("No unique value meets the threshold.");
+            return Optional.empty(); // Return empty if no unique value meets the criteria
+        }
     }
 
     public boolean vouchesFor(byte[] value, int quorumSize) {
