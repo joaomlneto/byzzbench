@@ -10,8 +10,8 @@ import lombok.With;
 public class ProposalMessage extends GenericMessage {
     private final String replicaId; // ID of the proposer
     private final long height; // Current blockchain height
-    private final long round; // Current round in the consensus process
-    private final long validRound; // Round in which the value is valid
+    private final long sequence; // Current round in the consensus process
+    private final long validSequence; // Round in which the value is valid
     private final Block block; // Block being proposed\
 
     @Override
@@ -22,5 +22,10 @@ public class ProposalMessage extends GenericMessage {
     @Override
     public String getAuthor() {
         return replicaId;
+    }
+
+    @Override
+    public long getRound() {
+        return sequence * 3 + 1;
     }
 }

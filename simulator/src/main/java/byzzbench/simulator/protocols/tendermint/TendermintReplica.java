@@ -25,23 +25,23 @@ public class TendermintReplica extends LeaderBasedProtocolReplica {
     // Blockchain height: the current index of the chain being decided
     private long height;
 
-    // Round: the current round within the height, where multiple rounds might be needed to finalize a block
-    private long round;
+    // Sequence: the current sequence within the height, where multiple sequences might be needed to finalize a block
+    private long sequence;
 
-    // Step: the current step within the round (PROPOSE, PREVOTE, PRECOMMIT)
+    // Step: the current step within the sequence (PROPOSE, PREVOTE, PRECOMMIT)
     private Step step;
 
     // Hash of the block this replica is "locked" on (used to ensure no conflicting decisions are made)
     private Block lockedValue;
 
-    // Round number of the block this replica is locked on
-    private long lockedRound;
+    // Sequence number of the block this replica is locked on
+    private long lockedSequence;
 
     // Hash of the block this replica has validated
     private Block validValue;
 
-    // Round number of the block this replica has validated
-    private long validRound;
+    // Sequence number of the block this replica has validated
+    private long validSequence;
 
     private MessageLog messageLog;
 
@@ -67,12 +67,12 @@ public class TendermintReplica extends LeaderBasedProtocolReplica {
         // Initialize replica with node ID, a list of other nodes, transport, and a commit log
         super(nodeId, scenario, new TotalOrderCommitLog());
         this.height = 0;
-        this.round = 0;
+        this.sequence = 0;
         this.step = Step.PROPOSE;
         this.lockedValue = null;
-        this.lockedRound = -1;
+        this.lockedSequence = -1;
         this.validValue = null;
-        this.validRound = -1;
+        this.validSequence = -1;
         this.messageLog = new MessageLog(this);
         this.precommitRule0Check = true;
         this.prevoteRule1Check = true;
@@ -123,9 +123,9 @@ public class TendermintReplica extends LeaderBasedProtocolReplica {
         // upon ⟨PROPOSAL, hp, roundp, v,−1⟩ from proposer(hp, roundp)
         boolean proposalExists = messageLog.getProposals().getOrDefault(block, new ArrayList<>()).stream()
                 .filter(proposal -> proposal.getHeight() == height)
-                .filter(proposal -> proposal.getRound() == round)
-                .filter(proposal -> proposal.getReplicaId().equals(proposer(height, round)))
-                .filter(proposal -> proposal.getValidRound() == -1)
+                .filter(proposal -> proposal.getSequence() == sequence)
+                .filter(proposal -> proposal.getReplicaId().equals(proposer(height, sequence)))
+                .filter(proposal -> proposal.getValidSequence() == -1)
                 .count() >= 1;
 
         // while stepp = propose
@@ -139,17 +139,17 @@ public class TendermintReplica extends LeaderBasedProtocolReplica {
         boolean proposalExists = messageLog.getProposals()
                 .getOrDefault(proposalMessage.getBlock(), new ArrayList<>()).stream()
                 .filter(proposal -> proposal.getHeight() == height)
-                .filter(proposal -> proposal.getRound() == round)
-                .anyMatch(proposal -> proposal.getReplicaId().equals(proposer(height, round)));
+                .filter(proposal -> proposal.getSequence() == sequence)
+                .anyMatch(proposal -> proposal.getReplicaId().equals(proposer(height, sequence)));
 
         // AND 2f + 1 ⟨PREVOTE, hp, vr, id(v)⟩
         boolean enoughPrevotes = messageLog.getPrevotes().getOrDefault(proposalMessage.getBlock(), new ArrayList<>()).stream()
                 .filter(prevote -> prevote.getHeight() == height)
-                .filter(prevote -> prevote.getRound() == proposalMessage.getValidRound())
+                .filter(prevote -> prevote.getSequence() == proposalMessage.getValidSequence())
                 .count() >= 2 * tolerance + 1;
 
         // stepp = propose ∧ (vr ≥ 0 ∧ vr < roundp)
-        boolean b = this.step == Step.PROPOSE && proposalMessage.getValidRound() >= 0 && proposalMessage.getValidRound() < this.round;
+        boolean b = this.step == Step.PROPOSE && proposalMessage.getValidSequence() >= 0 && proposalMessage.getValidSequence() < this.sequence;
 
         return proposalExists && enoughPrevotes && b;
     }
@@ -158,14 +158,14 @@ public class TendermintReplica extends LeaderBasedProtocolReplica {
         // upon ⟨PROPOSAL, hp, roundp, v, ∗⟩ from proposer(hp, roundp)
         boolean proposalExists = messageLog.getProposals().getOrDefault(proposalMessage.getBlock(), new ArrayList<>()).stream()
                 .filter(proposal -> proposal.getHeight() == height)
-                .filter(proposal -> proposal.getRound() == round)
-                .filter(proposal -> proposal.getReplicaId().equals(proposer(height, round)))
+                .filter(proposal -> proposal.getSequence() == sequence)
+                .filter(proposal -> proposal.getReplicaId().equals(proposer(height, sequence)))
                 .count() >= 1;
 
         // 2f + 1 ⟨PREVOTE, hp, roundp, id(v)⟩
         boolean enoughPrevotes = messageLog.getPrevotes().getOrDefault(proposalMessage.getBlock(), new ArrayList<>()).stream()
                 .filter(prevote -> prevote.getHeight() == height)
-                .filter(prevote -> prevote.getRound() == round)
+                .filter(prevote -> prevote.getSequence() == sequence)
                 .count() >= 2 * tolerance + 1;
 
         // valid(v) ∧ stepp ≥ prevote for the first time do
@@ -179,14 +179,14 @@ public class TendermintReplica extends LeaderBasedProtocolReplica {
         // upon ⟨PROPOSAL, hp, r, v, ∗⟩ from proposer(hp, r)
         boolean proposalExists = messageLog.getProposals().getOrDefault(proposalMessage.getBlock(), new ArrayList<>()).stream()
                 .filter(proposal -> proposal.getHeight() == height)
-                .filter(proposal -> proposal.getRound() == proposalMessage.getRound())
-                .filter(proposal -> proposal.getReplicaId().equals(proposer(height, proposalMessage.getRound())))
+                .filter(proposal -> proposal.getSequence() == proposalMessage.getSequence())
+                .filter(proposal -> proposal.getReplicaId().equals(proposer(height, proposalMessage.getSequence())))
                 .count() >= 1;
 
         // AND 2f + 1 ⟨PRECOMMIT, hp, r, id(v)⟩
         boolean enoughPrecommits = messageLog.getPrecommits().getOrDefault(proposalMessage.getBlock(), new ArrayList<>()).stream()
                 .filter(precommit -> precommit.getHeight() == height)
-                .filter(precommit -> precommit.getRound() == proposalMessage.getRound())
+                .filter(precommit -> precommit.getSequence() == proposalMessage.getSequence())
                 .count() >= 2 * tolerance + 1;
 
         // while decisionp[hp] = nil
@@ -221,7 +221,7 @@ public class TendermintReplica extends LeaderBasedProtocolReplica {
                     executeProposalRule(proposalMessage);
                     break;
                 case 1:
-                    executeProposalPrevoteRule1(proposalMessage.getBlock(), proposalMessage.getValidRound());
+                    executeProposalPrevoteRule1(proposalMessage.getBlock(), proposalMessage.getValidSequence());
                     break;
                 case 2:
                     executeProposalPrevoteRule2(proposalMessage.getBlock());
@@ -240,26 +240,26 @@ public class TendermintReplica extends LeaderBasedProtocolReplica {
 
         // if valid(v) ∧ (lockedRoundp = −1 ∨ lockedValuep = v) then
         if (valid(proposalMessage.getBlock()) &&
-                (lockedRound == -1 || lockedValue.equals(proposalMessage.getBlock()))) {
+                (lockedSequence == -1 || lockedValue.equals(proposalMessage.getBlock()))) {
             //24: broadcast ⟨PREVOTE, hp, roundp, id(v)⟩
-            broadcastPrevote(height, round, proposalMessage.getBlock());
+            broadcastPrevote(height, sequence, proposalMessage.getBlock());
         } else {
             //26: broadcast ⟨PREVOTE, hp, roundp, nil⟩
-            broadcastPrevote(height, round, NULL_BLOCK);
+            broadcastPrevote(height, sequence, NULL_BLOCK);
         }
         //27: stepp ← prevote
         this.step = Step.PREVOTE;
     }
 
-    private void executeProposalPrevoteRule1(Block block, long validRound) {
+    private void executeProposalPrevoteRule1(Block block, long validSequence) {
         // if valid(v) ∧ (lockedRoundp ≤ vr ∨ lockedValuep = v) then
         if (valid(block)
-                && (lockedRound <= validRound || lockedValue.equals(block))) {
+                && (lockedSequence <= validSequence || lockedValue.equals(block))) {
             // 30: broadcast ⟨PREVOTE, hp, roundp, id(v)⟩
-            broadcastPrevote(height, round, block);
+            broadcastPrevote(height, sequence, block);
         } else {
             // 32: broadcast ⟨PREVOTE, hp, roundp, nil⟩
-            broadcastPrevote(height, round, NULL_BLOCK);
+            broadcastPrevote(height, sequence, NULL_BLOCK);
         }
         // 33: stepp ← prevote
         this.step = Step.PREVOTE;
@@ -275,14 +275,14 @@ public class TendermintReplica extends LeaderBasedProtocolReplica {
             //40: broadcast ⟨PRECOMMIT, hp, roundp, id(v))⟩
             //41: stepp ← precommit
             lockedValue = block;
-            lockedRound = this.round;
-            broadcastPrecommit(height, round, block);
+            lockedSequence = this.sequence;
+            broadcastPrecommit(height, sequence, block);
             this.step = Step.PRECOMMIT;
         }
         // 42: validV aluep ← v
         //43: validRoundp ← roundp
         validValue = block;
-        validRound = this.round;
+        validSequence = this.sequence;
     }
 
     private void executeProposalPrecommitRule(Block block) {
@@ -311,21 +311,21 @@ public class TendermintReplica extends LeaderBasedProtocolReplica {
         broadcastMessage(new GossipMessage(proposalMessage.getReplicaId(), proposalMessage));
     }
 
-    protected void broadcastProposal(long height, long round, Block proposal, long validRound) {
-        if(hasBroadcasted.contains(Pair.of(height, round))) {
+    protected void broadcastProposal(long height, long sequence, Block proposal, long validSequence) {
+        if(hasBroadcasted.contains(Pair.of(height, sequence))) {
             return;
         }
-        ProposalMessage proposalMessage = new ProposalMessage(getId(), height, round, validRound, proposal);
+        ProposalMessage proposalMessage = new ProposalMessage(getId(), height, sequence, validSequence, proposal);
         broadcastMessageIncludingSelf(proposalMessage);
-        hasBroadcasted.add(Pair.of(height, round));
+        hasBroadcasted.add(Pair.of(height, sequence));
 
     }
 
-    private void onTimeoutPropose(long height, long round) {
+    private void onTimeoutPropose(long height, long sequence) {
         if (this.height == height
-                && this.round == round
+                && this.sequence == sequence
                 && this.step == Step.PROPOSE) {
-            broadcastPrevote(this.height, this.round, NULL_BLOCK);
+            broadcastPrevote(this.height, this.sequence, NULL_BLOCK);
             this.step = Step.PREVOTE;
         }
     }
@@ -373,19 +373,19 @@ public class TendermintReplica extends LeaderBasedProtocolReplica {
         boolean enoughPrevotes = messageLog.getPrevotes()
                 .getOrDefault(prevoteMessage.getBlock(), new ArrayList<>()).stream()
                 .filter(prevote -> prevote.getHeight() == height)
-                .filter(prevote -> prevote.getRound() == prevoteMessage.getRound())
+                .filter(prevote -> prevote.getSequence() == prevoteMessage.getSequence())
                 .count() >= 2 * tolerance + 1;
 
         // ⟨PROPOSAL, hp, roundp, v, vr⟩ from proposer(hp, roundp)
         boolean hasMatchingProposal = messageLog.getProposals()
                 .getOrDefault(prevoteMessage.getBlock(), new ArrayList<>()).stream()
                 .filter(proposal -> proposal.getHeight() == this.height)
-                .filter(proposal -> proposal.getRound() == this.round)
-                .filter(proposal -> proposal.getReplicaId().equals(proposer(this.height, this.round)))
-                .anyMatch(proposal -> proposal.getValidRound() == prevoteMessage.getRound());
+                .filter(proposal -> proposal.getSequence() == this.sequence)
+                .filter(proposal -> proposal.getReplicaId().equals(proposer(this.height, this.sequence)))
+                .anyMatch(proposal -> proposal.getValidSequence() == prevoteMessage.getSequence());
 
         // stepp = propose ∧ (vr ≥ 0 ∧ vr < roundp)
-        boolean b = this.step == Step.PROPOSE && prevoteMessage.getRound() >= 0 && prevoteMessage.getRound() < this.round;
+        boolean b = this.step == Step.PROPOSE && prevoteMessage.getSequence() >= 0 && prevoteMessage.getSequence() < this.sequence;
 
         return enoughPrevotes && hasMatchingProposal && b;
     }
@@ -393,7 +393,7 @@ public class TendermintReplica extends LeaderBasedProtocolReplica {
     private boolean fulfillPrevoteRule1(PrevoteMessage prevoteMessage) {
         boolean enoughPrevotes = messageLog.getPrevotes().getOrDefault(prevoteMessage.getBlock(), new ArrayList<>()).stream()
                 .filter(prevote -> prevote.getHeight() == this.height)
-                .filter(prevote -> prevote.getRound() == this.round)
+                .filter(prevote -> prevote.getSequence() == this.sequence)
                 .count() >= 2 * tolerance + 1;
 
         boolean rest = this.step == Step.PREVOTE;
@@ -404,13 +404,13 @@ public class TendermintReplica extends LeaderBasedProtocolReplica {
     private boolean fulfillPrevoteRule2(PrevoteMessage prevoteMessage) {
         boolean enoughPrevotes = messageLog.getPrevotes().getOrDefault(prevoteMessage.getBlock(), new ArrayList<>()).stream()
                 .filter(prevote -> prevote.getHeight() == height)
-                .filter(prevote -> prevote.getRound() == round)
+                .filter(prevote -> prevote.getSequence() == sequence)
                 .count() >= 2 * tolerance + 1;
 
         boolean proposalExists = messageLog.getProposals().getOrDefault(prevoteMessage.getBlock(), new ArrayList<>()).stream()
                 .filter(proposal -> proposal.getHeight() == height)
-                .filter(proposal -> proposal.getRound() == round)
-                .filter(proposal -> proposal.getReplicaId().equals(proposer(height, round)))
+                .filter(proposal -> proposal.getSequence() == sequence)
+                .filter(proposal -> proposal.getReplicaId().equals(proposer(height, sequence)))
                 .count() >= 1;
 
         boolean b = valid(prevoteMessage.getBlock())
@@ -422,7 +422,7 @@ public class TendermintReplica extends LeaderBasedProtocolReplica {
     private boolean fulfillPrevoteRule3() {
         boolean enoughPrevotes = messageLog.getPrevotes().getOrDefault(NULL_BLOCK, new ArrayList<>()).stream()
                 .filter(prevote -> prevote.getHeight() == height)
-                .filter(prevote -> prevote.getRound() == round)
+                .filter(prevote -> prevote.getSequence() == sequence)
                 .count() >= 2 * tolerance + 1;
         return enoughPrevotes;
     }
@@ -450,7 +450,7 @@ public class TendermintReplica extends LeaderBasedProtocolReplica {
         for (int index : trueIndices) {
             switch (index) {
                 case 0:
-                    executeProposalPrevoteRule1(prevoteMessage.getBlock(), prevoteMessage.getRound());
+                    executeProposalPrevoteRule1(prevoteMessage.getBlock(), prevoteMessage.getSequence());
                     break;
                 case 1:
                     executePrevoteRule1();
@@ -472,12 +472,12 @@ public class TendermintReplica extends LeaderBasedProtocolReplica {
         this.prevoteRule1Check = false;
         Duration duration = Duration.ofSeconds(this.TIMEOUT);
         this.setTimeout("Timeout Prevote", () -> {
-            onTimeoutPrevote(height, round);
+            onTimeoutPrevote(height, sequence);
         }, duration);
     }
 
     private void executePrevoteRule3() {
-        broadcastPrecommit(height, round, NULL_BLOCK);
+        broadcastPrecommit(height, sequence, NULL_BLOCK);
         this.step = Step.PRECOMMIT;
     }
 
@@ -485,17 +485,17 @@ public class TendermintReplica extends LeaderBasedProtocolReplica {
         broadcastMessage(new GossipMessage(prevoteMessage.getReplicaId(), prevoteMessage));
     }
 
-    private void broadcastPrevote(long height, long round, Block block) {
+    private void broadcastPrevote(long height, long sequence, Block block) {
 //        messageLog.sentPrevote();
-        PrevoteMessage prevoteMessage = new PrevoteMessage(height, round, this.getId(), block);
+        PrevoteMessage prevoteMessage = new PrevoteMessage(height, sequence, this.getId(), block);
         broadcastMessageIncludingSelf(prevoteMessage);
     }
 
-    private void onTimeoutPrevote(long height, long round) {
+    private void onTimeoutPrevote(long height, long sequence) {
         if (this.height == height
-                && this.round == round
+                && this.sequence == sequence
                 && this.step == Step.PREVOTE) {
-            broadcastPrecommit(height, round, NULL_BLOCK);
+            broadcastPrecommit(height, sequence, NULL_BLOCK);
             this.step = Step.PRECOMMIT;
         }
     }
@@ -540,8 +540,8 @@ public class TendermintReplica extends LeaderBasedProtocolReplica {
 
         boolean proposalExists = messageLog.getProposals().getOrDefault(precommitMessage.getBlock(), new ArrayList<>()).stream()
                 .filter(proposal -> proposal.getHeight() == this.getHeight())
-                .filter(proposal -> proposal.getRound() == precommitMessage.getRound())
-                .filter(proposal -> proposal.getReplicaId().equals(proposer(precommitMessage.getHeight(), precommitMessage.getRound())))
+                .filter(proposal -> proposal.getSequence() == precommitMessage.getSequence())
+                .filter(proposal -> proposal.getReplicaId().equals(proposer(precommitMessage.getHeight(), precommitMessage.getSequence())))
                 .count() >= 1;
 
         boolean decisionIsNull = getCommitLog().get((int) precommitMessage.getHeight()) == null;
@@ -554,7 +554,7 @@ public class TendermintReplica extends LeaderBasedProtocolReplica {
                 .flatMap(List::stream)  // Flatten the lists into a single stream
                 .toList().stream()
                 .filter(precommitMessage -> precommitMessage.getHeight() == height)
-                .filter(precommitMessage -> precommitMessage.getRound() == round)
+                .filter(precommitMessage -> precommitMessage.getSequence() == sequence)
                 .count() >= 2 * tolerance + 1;
 
         return enoughPrecommits && this.precommitRule0Check;
@@ -599,7 +599,7 @@ public class TendermintReplica extends LeaderBasedProtocolReplica {
         this.precommitRule0Check = false;
         Duration duration = Duration.ofSeconds(this.TIMEOUT);
         this.setTimeout("Timeout Precommit", () -> {
-            onTimeoutPrecommit(height, round);
+            onTimeoutPrecommit(height, sequence);
         }, duration);
     }
 
@@ -607,15 +607,15 @@ public class TendermintReplica extends LeaderBasedProtocolReplica {
         broadcastMessage(new GossipMessage(precommitMessage.getReplicaId(), precommitMessage));
     }
 
-    protected void broadcastPrecommit(long height, long round, Block block) {
-        PrecommitMessage precommitMessage = new PrecommitMessage(height, round, this.getId(), block);
+    protected void broadcastPrecommit(long height, long sequence, Block block) {
+        PrecommitMessage precommitMessage = new PrecommitMessage(height, sequence, this.getId(), block);
         broadcastMessageIncludingSelf(precommitMessage);
     }
 
-    private void onTimeoutPrecommit(long height, long round) {
+    private void onTimeoutPrecommit(long height, long sequence) {
         if (this.height == height
-                && this.round == round) {
-            startRound(this.round + 1);
+                && this.sequence == sequence) {
+            startRound(this.sequence + 1);
         }
         else
             log.info("Timeout Precommit called but height and round do not match");
@@ -627,9 +627,9 @@ public class TendermintReplica extends LeaderBasedProtocolReplica {
 
     private void reset(Block block) {
         this.lockedValue = null;
-        this.lockedRound = -1;
+        this.lockedSequence = -1;
         this.validValue = null;
-        this.validRound = -1;
+        this.validSequence = -1;
 //        this.messageLog.clear(block);
     }
 
@@ -677,9 +677,9 @@ public class TendermintReplica extends LeaderBasedProtocolReplica {
             handleGossipMessage((GossipMessage) message);
         } else {
             assert message instanceof GenericMessage;
-            if (messageLog.fPlus1MessagesInRound(height, ((GenericMessage) message).getRound())) {
+            if (messageLog.fPlus1MessagesInRound(height, ((GenericMessage) message).getSequence())) {
                 GenericMessage m = (GenericMessage) message;
-                startRound(m.getRound());
+                startRound(m.getSequence());
             } else {
                 if (message instanceof ProposalMessage) {
                     handleProposal((ProposalMessage) message);
@@ -703,8 +703,8 @@ public class TendermintReplica extends LeaderBasedProtocolReplica {
             log.warning("Invalid message received from " + message.getReplicaId());
             return;
         }
-        if (messageLog.fPlus1MessagesInRound(message.getGossipMessage().getHeight(), round)) {
-            startRound(message.getGossipMessage().getRound());
+        if (messageLog.fPlus1MessagesInRound(message.getGossipMessage().getHeight(), sequence)) {
+            startRound(message.getGossipMessage().getSequence());
         }
         switch (message.getGossipMessage()) {
             case ProposalMessage proposalMessage -> handleProposal(proposalMessage);
@@ -722,8 +722,8 @@ public class TendermintReplica extends LeaderBasedProtocolReplica {
     private void receiveRequest(String sender, RequestMessage m) {
         messageLog.bufferRequest(m);
         broadcastMessage(new GossipRequest(this.getId(), m));
-        if (proposer(this.height, this.round).equals(this.getId())) {
-            startRound(this.round);
+        if (proposer(this.height, this.sequence).equals(this.getId())) {
+            startRound(this.sequence);
         }
     }
 
@@ -731,26 +731,26 @@ public class TendermintReplica extends LeaderBasedProtocolReplica {
      * MISCELLANEOUS AND UTILITY METHODS
      */
 
-    private void startRound(long roundNumber) {
-        this.setView(height, roundNumber);
-        this.round = roundNumber;
+    private void startRound(long sequenceNumber) {
+        this.setView(height, sequenceNumber);
+        this.sequence = sequenceNumber;
         this.step = Step.PROPOSE;
         this.precommitRule0Check = true;
         this.prevoteRule1Check = true;
         this.prevoteRule2Check = true;
         Block proposal;
-        if (Objects.equals(proposer(height, round), this.getId())) {
+        if (Objects.equals(proposer(height, sequence), this.getId())) {
             if (validValue != null) {
                 proposal = validValue;
             } else {
                 proposal = getValue();
             }
             if (proposal != null)
-                broadcastProposal(height, round, proposal, validRound);
+                broadcastProposal(height, sequence, proposal, validSequence);
         } else {
             Duration duration = Duration.ofSeconds(this.TIMEOUT);
             this.setTimeout("Timeout Propose", () -> {
-                onTimeoutPropose(height, round);
+                onTimeoutPropose(height, sequence);
             }, duration);
         }
     }
@@ -779,7 +779,7 @@ public class TendermintReplica extends LeaderBasedProtocolReplica {
         );
     }
 
-    private String proposer(long height, long round) {
+    private String proposer(long height, long sequence) {
         // Generate the proposer list based on voting power
         List<String> proposerList = new ArrayList<>();
         long maxVotingPower = 0;
@@ -797,7 +797,7 @@ public class TendermintReplica extends LeaderBasedProtocolReplica {
         }
         // Calculate the index based on the height and round
         // Using both height and round ensures determinism across rounds and heights
-        int index = (int) ((height + round) % proposerList.size());
+        int index = (int) ((height + sequence) % proposerList.size());
         if(index < 0) {
             index = 0;
         }
@@ -810,8 +810,8 @@ public class TendermintReplica extends LeaderBasedProtocolReplica {
         setView(0, 0);
     }
 
-    public void setView(long height, long round) {
-        this.setView(height, proposer(height, round));
+    public void setView(long height, long sequence) {
+        this.setView(height, proposer(height, sequence));
     }
 
     public void sendReply(String clientId, ReplyMessage reply) {
@@ -822,12 +822,12 @@ public class TendermintReplica extends LeaderBasedProtocolReplica {
         // print all the attributes of the replica
         log.info("Replica ID: " + this.getId());
         log.info("Height: " + this.height);
-        log.info("Round: " + this.round);
+        log.info("Seq: " + this.sequence);
         log.info("Step: " + this.step);
         log.info("Locked Value: " + this.lockedValue);
-        log.info("Locked Round: " + this.lockedRound);
+        log.info("Locked Seq: " + this.lockedSequence);
         log.info("Valid Value: " + this.validValue);
-        log.info("Valid Round: " + this.validRound);;
+        log.info("Valid Seq: " + this.validSequence);;
         log.info("Tolerance: " + this.tolerance);
 
     }

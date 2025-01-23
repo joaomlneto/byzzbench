@@ -11,6 +11,8 @@ public abstract class GenericMessage extends MessagePayload implements Comparabl
 
     public abstract long getRound();
 
+    public abstract long getSequence();
+
     public abstract String getAuthor();
 
     public abstract long getHeight();

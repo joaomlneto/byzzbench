@@ -40,7 +40,7 @@ public class ByzzFuzzScenarioFaultFactory implements FaultFactory {
 
         // Create network faults
         for (int i = 1; i <= d; i++) {
-            int round = rand.nextInt(0, r + 1);
+            int round = rand.nextInt(r) + 1;
             Set<String> partition = SetSubsets.getRandomNonEmptySubset(replicaIds);
             Fault networkFault = new ByzzFuzzNetworkFault(partition, round);
             faults.add(networkFault);
@@ -48,7 +48,7 @@ public class ByzzFuzzScenarioFaultFactory implements FaultFactory {
 
         // Create process faults
         for (int i = 1; i <= c; i++) {
-            int round = rand.nextInt(0, r + 1);
+            int round = rand.nextInt(r) + 1;
             String sender = replicaIds.stream().skip(rand.nextInt(replicaIds.size())).findFirst().orElseThrow();
             Set<String> recipientIds = SetSubsets.getRandomNonEmptySubset(replicaIds);
 

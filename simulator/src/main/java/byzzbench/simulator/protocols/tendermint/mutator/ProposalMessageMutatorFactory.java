@@ -120,8 +120,8 @@ public class ProposalMessageMutatorFactory extends MessageMutatorFactory {
                     }
                 },
                 new MessageMutationFault(
-                        "tendermint-proposal-round-any",
-                        "Assign Random Round Number",
+                        "tendermint-proposal-sequence-any",
+                        "Assign Random Sequence Number",
                         List.of(ProposalMessage.class)) {
                     @Override
                     public void accept(FaultContext serializable) {
@@ -135,8 +135,8 @@ public class ProposalMessageMutatorFactory extends MessageMutatorFactory {
                         if (!(messageEvent.getPayload() instanceof ProposalMessage message)) {
                             throw invalidMessageTypeException;
                         }
-                        long randomRound = random.nextLong(0, 100000); // Adjust range as needed
-                        ProposalMessage mutatedMessage = message.withRound(randomRound);
+                        long randomSequence = random.nextLong(0, 100000); // Adjust range as needed
+                        ProposalMessage mutatedMessage = message.withSequence(randomSequence);
                         mutatedMessage.sign(message.getSignedBy());
                         messageEvent.setPayload(mutatedMessage);
                     }

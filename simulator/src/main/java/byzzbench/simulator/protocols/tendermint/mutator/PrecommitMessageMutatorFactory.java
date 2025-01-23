@@ -6,7 +6,6 @@ import byzzbench.simulator.faults.faults.MessageMutationFault;
 import byzzbench.simulator.protocols.tendermint.message.PrecommitMessage;
 import byzzbench.simulator.transport.Event;
 import byzzbench.simulator.transport.MessageEvent;
-import byzzbench.simulator.transport.MessagePayload;
 import lombok.ToString;
 import org.springframework.stereotype.Component;
 
@@ -63,7 +62,7 @@ public class PrecommitMessageMutatorFactory extends MessageMutatorFactory {
 //                        messageEvent.setPayload(mutatedMessage);
 //                    }
 //                },
-//                new MessageMutationFault("tendermint-precommit-round-inc", "Increment Round Number", List.of(PrecommitMessage.class)) {
+//                new MessageMutationFault("tendermint-precommit-sequence-inc", "Increment sequence Number", List.of(PrecommitMessage.class)) {
 //                    @Override
 //                    public void accept(FaultContext serializable) {
 //                        Optional<Event> event = serializable.getEvent();
@@ -76,12 +75,12 @@ public class PrecommitMessageMutatorFactory extends MessageMutatorFactory {
 //                        if (!(messageEvent.getPayload() instanceof PrecommitMessage message)) {
 //                            throw invalidMessageTypeException;
 //                        }
-//                        PrecommitMessage mutatedMessage = message.withRound(message.getRound() + 1);
+//                        PrecommitMessage mutatedMessage = message.withSequence(message.getSequence() + 1);
 //                        mutatedMessage.sign(message.getSignedBy());
 //                        messageEvent.setPayload(mutatedMessage);
 //                    }
 //                },
-//                new MessageMutationFault("tendermint-precommit-round-dec", "Decrement Round Number", List.of(PrecommitMessage.class)) {
+//                new MessageMutationFault("tendermint-precommit-sequence-dec", "Decrement Sequence Number", List.of(PrecommitMessage.class)) {
 //                    @Override
 //                    public void accept(FaultContext serializable) {
 //                        Optional<Event> event = serializable.getEvent();
@@ -94,7 +93,7 @@ public class PrecommitMessageMutatorFactory extends MessageMutatorFactory {
 //                        if (!(messageEvent.getPayload() instanceof PrecommitMessage message)) {
 //                            throw invalidMessageTypeException;
 //                        }
-//                        PrecommitMessage mutatedMessage = message.withRound(message.getRound() - 1);
+//                        PrecommitMessage mutatedMessage = message.withSequence(message.getSequence() - 1);
 //                        mutatedMessage.sign(message.getSignedBy());
 //                        messageEvent.setPayload(mutatedMessage);
 //                    }
@@ -122,8 +121,8 @@ public class PrecommitMessageMutatorFactory extends MessageMutatorFactory {
                     }
                 },
                 new MessageMutationFault(
-                        "tendermint-precommit-round-any",
-                        "Assign Random Round Number",
+                        "tendermint-precommit-sequence-any",
+                        "Assign Random Sequence Number",
                         List.of(PrecommitMessage.class)) {
                     @Override
                     public void accept(FaultContext serializable) {
@@ -137,8 +136,8 @@ public class PrecommitMessageMutatorFactory extends MessageMutatorFactory {
                         if (!(messageEvent.getPayload() instanceof PrecommitMessage message)) {
                             throw invalidMessageTypeException;
                         }
-                        long randomRound = random.nextLong(0, 100000); // Adjust range as needed
-                        PrecommitMessage mutatedMessage = message.withRound(randomRound);
+                        long randomSequence = random.nextLong(0, 100000); // Adjust range as needed
+                        PrecommitMessage mutatedMessage = message.withSequence(randomSequence);
                         mutatedMessage.sign(message.getSignedBy());
                         messageEvent.setPayload(mutatedMessage);
                     }
