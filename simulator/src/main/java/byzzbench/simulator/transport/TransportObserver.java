@@ -18,6 +18,13 @@ public interface TransportObserver {
     void onEventDropped(Event event);
 
     /**
+     * Called when the status of an event changes from {@link Event.Status#DROPPED} to {@link Event.Status#QUEUED}.
+     *
+     * @param event The event that was re-queued after being previously dropped.
+     */
+    void onEventRequeued(Event event);
+
+    /**
      * Called when the status of an event changes to {@link Event.Status#DELIVERED}.
      *
      * @param event The event that was delivered.
