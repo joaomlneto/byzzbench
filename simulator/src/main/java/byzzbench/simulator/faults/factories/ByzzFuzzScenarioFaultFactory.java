@@ -50,7 +50,7 @@ public class ByzzFuzzScenarioFaultFactory implements FaultFactory {
         // Create process faults
         for (int i = 1; i <= c; i++) {
             int round = rand.nextInt(r) + 1;
-            String sender = input.getScenario().getFaultyReplicaIds().stream().skip(rand.nextInt(faultyReplicaIds.size())).findFirst().orElseThrow();
+            String sender = faultyReplicaIds.stream().skip(rand.nextInt(faultyReplicaIds.size())).findFirst().orElseThrow();
             Set<String> recipientIds = SetSubsets.getRandomNonEmptySubset(replicaIds);
 
             // generate process fault
