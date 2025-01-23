@@ -167,6 +167,15 @@ public abstract class BaseScenario implements Scenario {
     @Override
     public final void setupScenario() {
         this.setup();
+
+        // sample f replicas to be faulty at start
+        List<String> replicaIds = new ArrayList<>(this.getReplicas().keySet());
+        Collections.shuffle(replicaIds);
+        int f = this.maxFaultyReplicas();
+        for (int i = 0; i < f; i++) {
+            this.markReplicaFaulty(replicaIds.get(i));
+        }
+
         this.getClients().values().forEach(Client::initialize);
         this.getNodes().values().forEach(Node::initialize);
         this.scheduler.initializeScenario(this);

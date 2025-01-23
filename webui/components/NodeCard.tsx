@@ -21,9 +21,10 @@ import React from "react";
 
 export type NodeCardProps = {
   nodeId: string;
+  showMailboxes?: boolean;
 };
 
-export const NodeCard = ({ nodeId }: NodeCardProps) => {
+export const NodeCard = ({ nodeId, showMailboxes = true }: NodeCardProps) => {
   const { data, isLoading } = useGetNode(nodeId);
   const faultyReplicasQuery = useGetFaultyReplicas();
   const partitionsQuery = useGetPartitions();
@@ -69,7 +70,7 @@ export const NodeCard = ({ nodeId }: NodeCardProps) => {
         />
       )}
       <Space h="xs" />
-      <NodeMailbox nodeId={nodeId} />
+      {showMailboxes && <NodeMailbox nodeId={nodeId} />}
     </Card>
   );
 };

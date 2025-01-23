@@ -23,6 +23,7 @@ byzzbench:
 
   scheduler:
     id: "byzzfuzz" # The ID of the scheduler to use
+    executionMode: async # async (default, any message delivered) or sync (communication-closure hypothesis, FIFO)
     maxDropMessages: 5 # Maximum number of messages to drop per scenario
     maxMutateMessages: 5 # Maximum number of messages to mutate per scenario
     deliverTimeoutWeight: 1 # The weight for scheduler to trigger a timeout
