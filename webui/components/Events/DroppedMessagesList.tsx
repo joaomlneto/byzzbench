@@ -5,5 +5,8 @@ import { useGetDroppedMessages } from "@/lib/byzzbench-client";
 
 export const DroppedMessagesList = () => {
   const { data: droppedMessages } = useGetDroppedMessages();
-  return <MessagesList messageIds={droppedMessages?.data ?? []} />;
+
+  const reverseOrder = (droppedMessages?.data ?? []).sort((a, b) => b - a);
+
+  return <MessagesList messageIds={reverseOrder} />;
 };
