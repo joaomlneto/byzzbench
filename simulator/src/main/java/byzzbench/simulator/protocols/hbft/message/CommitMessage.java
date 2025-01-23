@@ -23,4 +23,9 @@ public class CommitMessage extends IPhaseMessage {
     public String getType() {
         return "COMMIT";
     }
+
+    @Override
+    public long getRound() {
+        return this.sequenceNumber * 2;
+    }
 }

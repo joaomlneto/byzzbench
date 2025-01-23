@@ -451,77 +451,77 @@ public class ViewChangeMessageFactory extends MessageMutatorFactory {
                         }
                     }
                 }
-                // // ,
-                // new MessageMutationFault("hbft-view-change-last-req-in-R", "Change last request in R", List.of(ViewChangeMessage.class)) {
-                //     @Override
-                //     public void accept(FaultContext serializable) {
-                //         Optional<Event> event = serializable.getEvent();
-                //         if (event.isEmpty()) {
-                //             throw invalidMessageTypeException;
-                //         }
-                //         if (!(event.get() instanceof MessageEvent messageEvent)) {
-                //             throw invalidMessageTypeException;
-                //         }
-                //         if (!(messageEvent.getPayload() instanceof ViewChangeMessage message)) {
-                //             throw invalidMessageTypeException;
-                //         }
-                //         String senderId = messageEvent.getSenderId();
-                //         Replica sender = serializable.getScenario().getReplicas().get(senderId);
-                //         SortedMap<Long, RequestMessage> requests = message.getRequestsR();
-                //         if (requests != null && !requests.isEmpty()) {
-                //         Entry<Long, RequestMessage> lastReq = requests.lastEntry();
-                //             if (sender instanceof HbftJavaReplica replica) {
-                //                 SortedMap<Long, RequestMessage> specRequests = replica.getSpeculativeRequests();
-                //                 for (Long key : specRequests.keySet()) {
-                //                     if (!specRequests.get(key).equals(lastReq.getValue())) {
-                //                         requests.remove(lastReq.getKey());
-                //                         requests.put(lastReq.getKey(), specRequests.get(key));
-                //                         ViewChangeMessage mutatedMessage = message.withRequestsR(requests);
-                //                         mutatedMessage.sign(message.getSignedBy());
-                //                         messageEvent.setPayload(mutatedMessage);
-                //                         break;
-                //                     }
-                //                 }
-                //             }
-                //         }
+                ,
+                new MessageMutationFault("hbft-view-change-last-req-in-R", "Change last request in R", List.of(ViewChangeMessage.class)) {
+                    @Override
+                    public void accept(FaultContext serializable) {
+                        Optional<Event> event = serializable.getEvent();
+                        if (event.isEmpty()) {
+                            throw invalidMessageTypeException;
+                        }
+                        if (!(event.get() instanceof MessageEvent messageEvent)) {
+                            throw invalidMessageTypeException;
+                        }
+                        if (!(messageEvent.getPayload() instanceof ViewChangeMessage message)) {
+                            throw invalidMessageTypeException;
+                        }
+                        String senderId = messageEvent.getSenderId();
+                        Replica sender = serializable.getScenario().getReplicas().get(senderId);
+                        SortedMap<Long, RequestMessage> requests = message.getRequestsR();
+                        if (requests != null && !requests.isEmpty()) {
+                        Entry<Long, RequestMessage> lastReq = requests.lastEntry();
+                            if (sender instanceof HbftJavaReplica replica) {
+                                SortedMap<Long, RequestMessage> specRequests = replica.getSpeculativeRequests();
+                                for (Long key : specRequests.keySet()) {
+                                    if (!specRequests.get(key).equals(lastReq.getValue())) {
+                                        requests.remove(lastReq.getKey());
+                                        requests.put(lastReq.getKey(), specRequests.get(key));
+                                        ViewChangeMessage mutatedMessage = message.withRequestsR(requests);
+                                        mutatedMessage.sign(message.getSignedBy());
+                                        messageEvent.setPayload(mutatedMessage);
+                                        break;
+                                    }
+                                }
+                            }
+                        }
                         
-                //     }
-                // },
-                // new MessageMutationFault("hbft-view-change-first-req-in-R", "Change first request in R", List.of(ViewChangeMessage.class)) {
-                //     @Override
-                //     public void accept(FaultContext serializable) {
-                //         Optional<Event> event = serializable.getEvent();
-                //         if (event.isEmpty()) {
-                //             throw invalidMessageTypeException;
-                //         }
-                //         if (!(event.get() instanceof MessageEvent messageEvent)) {
-                //             throw invalidMessageTypeException;
-                //         }
-                //         if (!(messageEvent.getPayload() instanceof ViewChangeMessage message)) {
-                //             throw invalidMessageTypeException;
-                //         }
-                //         String senderId = messageEvent.getSenderId();
-                //         Replica sender = serializable.getScenario().getReplicas().get(senderId);
-                //         SortedMap<Long, RequestMessage> requests = message.getRequestsR();
-                //         if (requests != null && !requests.isEmpty()) {
-                //             Entry<Long, RequestMessage> firstReq = requests.firstEntry();
-                //             if (sender instanceof HbftJavaReplica replica) {
-                //                 SortedMap<Long, RequestMessage> specRequests = replica.getSpeculativeRequests();
-                //                 for (Long key : specRequests.keySet()) {
-                //                     if (!specRequests.get(key).equals(firstReq.getValue())) {
-                //                         requests.remove(firstReq.getKey());
-                //                         requests.put(firstReq.getKey(), specRequests.get(key));
-                //                         ViewChangeMessage mutatedMessage = message.withRequestsR(requests);
-                //                         mutatedMessage.sign(message.getSignedBy());
-                //                         messageEvent.setPayload(mutatedMessage);
-                //                         break;
-                //                     }
-                //                 }
-                //             }
-                //         }
+                    }
+                },
+                new MessageMutationFault("hbft-view-change-first-req-in-R", "Change first request in R", List.of(ViewChangeMessage.class)) {
+                    @Override
+                    public void accept(FaultContext serializable) {
+                        Optional<Event> event = serializable.getEvent();
+                        if (event.isEmpty()) {
+                            throw invalidMessageTypeException;
+                        }
+                        if (!(event.get() instanceof MessageEvent messageEvent)) {
+                            throw invalidMessageTypeException;
+                        }
+                        if (!(messageEvent.getPayload() instanceof ViewChangeMessage message)) {
+                            throw invalidMessageTypeException;
+                        }
+                        String senderId = messageEvent.getSenderId();
+                        Replica sender = serializable.getScenario().getReplicas().get(senderId);
+                        SortedMap<Long, RequestMessage> requests = message.getRequestsR();
+                        if (requests != null && !requests.isEmpty()) {
+                            Entry<Long, RequestMessage> firstReq = requests.firstEntry();
+                            if (sender instanceof HbftJavaReplica replica) {
+                                SortedMap<Long, RequestMessage> specRequests = replica.getSpeculativeRequests();
+                                for (Long key : specRequests.keySet()) {
+                                    if (!specRequests.get(key).equals(firstReq.getValue())) {
+                                        requests.remove(firstReq.getKey());
+                                        requests.put(firstReq.getKey(), specRequests.get(key));
+                                        ViewChangeMessage mutatedMessage = message.withRequestsR(requests);
+                                        mutatedMessage.sign(message.getSignedBy());
+                                        messageEvent.setPayload(mutatedMessage);
+                                        break;
+                                    }
+                                }
+                            }
+                        }
                         
-                //     }
-                // }
+                    }
+                }
                 // TODO: be able to change the first or last request
 
 
