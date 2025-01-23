@@ -1639,52 +1639,6 @@ public class ZyzzyvaReplica extends LeaderBasedProtocolReplica {
     }
 
     /**
-     * Checks if the view confirm messages are valid using the following properties:
-     * - The view confirm messages' view numbers are the next view's number
-     * - The view confirm messages are signed by the replicas and aren't duplicated
-     * - The view confirm messages are all equal
-     * - There are more than f + 1 replicas
-     *
-     * @param viewConfirmMessages - the view confirm messages to check
-     * @return - true if the view confirm messages are valid, false otherwise
-     */
-    public boolean isValidViewConfirmList(ArrayList<ViewConfirmMessage> viewConfirmMessages) {
-
-        TreeSet<String> replicaIds = new TreeSet<>();
-
-        // check if the view confirm messages are indeed signed by the replicas
-        for (ViewConfirmMessage vcm : viewConfirmMessages) {
-            /// TODO: check if we have to check the view number
-//            if (vcm.getFutureViewNumber() != this.getViewNumber() + 1) {
-//                log.warning("Received a new view message with an incorrect view number, got: " + vcm.getFutureViewNumber() + " expected: " + (this.getViewNumber() + 1));
-//                return false;
-//            }
-            if (!vcm.isSignedBy(vcm.getReplicaId())) {
-                log.warning("Received a new view message with an invalid signature");
-                return false;
-            }
-            if (!replicaIds.add(vcm.getSignedBy())) {
-                log.warning("Received a new view message with a duplicate replica ID");
-                return false;
-            }
-        }
-        // check that the view confirm messages are all equal
-        if (new HashSet<>(viewConfirmMessages).size() <= 1) {
-            log.warning("Received a new view message with non-identical view confirm messages");
-            return false;
-        }
-
-        if (replicaIds.size() < this.getFaultsTolerated() + 1) {
-            log.warning("Received a new view message with an incorrect number of replicas, " +
-                    "got " + replicaIds.size() +
-                    " expected " + (this.getFaultsTolerated() + 1));
-            return false;
-        }
-
-        return new TreeSet<>(viewConfirmMessages).size() <= 1;
-    }
-
-    /**
      * Begins the new view
      * Corresponds to VC5 in the paper
      *

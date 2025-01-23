@@ -10,60 +10,48 @@ import java.io.Serializable;
 import java.util.*;
 
 // Should hold the Ordered request message wrappers received by the replica
+@Getter
 @Log
 public class MessageLog implements Serializable {
     /// TODO: Add checkpoints as well as history? Maybe digest the history
 
-    @Getter
     // SequenceNumber, OrderedRequestMessageWrapper
     private final SortedMap<Long, OrderedRequestMessageWrapper> orderedMessages = new TreeMap<>();
 
-    @Getter
     // SequenceNumber, Map(ReplicaId -> SpeculativeResponse)
     private final SortedMap<Long, SortedMap<String, SpeculativeResponse>> speculativeResponsesCheckpoint = new TreeMap<>();
 
-    @Getter
     // ViewNumber, Map(ReplicaId -> IHateThePrimaryMessage)
     private final SortedMap<Long, SortedMap<String, IHateThePrimaryMessage>> iHateThePrimaries = new TreeMap<>();
 
-    @Getter
     // SequenceNumber, Map(ReplicaId -> FillHoleMessage) received
     private final SortedMap<Long, SortedMap<String, FillHoleReply>> fillHoleMessages = new TreeMap<>();
 
-    @Getter
     // ViewNumber, ViewConfirmMessage
     private final SortedMap<Long, SortedSet<ViewConfirmMessage>> viewConfirmMessages = new TreeMap<>();
 
-    @Getter
     // ViewNumber, ViewChangeMessage
     private final SortedMap<Long, SortedMap<String, ViewChangeMessage>> viewChangeMessages = new TreeMap<>();
 
-    @Getter
     // ViewNumber, NewViewMessage
     private final SortedMap<Long, NewViewMessage> newViewMessages = new TreeMap<>();
 
-    @Getter
     // ClientId, -> (Timestamp, SpeculativeResponseWrapper)
     private final SortedMap<String, ImmutablePair<RequestMessage, SpeculativeResponseWrapper>> responseCache = new TreeMap<>();
 
-    @Getter
     // ClientId, RequestMessage
     // Used to store the latest request from a client for the forward to primary
     private final SortedMap<String, RequestMessage> requestCache = new TreeMap<>();
-    @Getter
     // SequenceNumber, Map(ReplicaId -> CheckpointMessage)
     private final SortedMap<Long, SortedMap<String, CheckpointMessage>> checkpointMessages = new TreeMap<>();
 
-    @Getter
     @Setter
     // view number of the last POM
     private long lastPOM;
 
-    @Getter
     @Setter
     private long lastCheckpoint;
 
-    @Getter
     @Setter
     private CommitCertificate maxCC;
 

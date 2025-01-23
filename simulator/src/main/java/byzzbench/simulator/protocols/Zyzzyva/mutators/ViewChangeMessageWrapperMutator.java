@@ -6,10 +6,12 @@ import byzzbench.simulator.faults.faults.MessageMutationFault;
 import byzzbench.simulator.protocols.Zyzzyva.message.*;
 import byzzbench.simulator.transport.Event;
 import byzzbench.simulator.transport.MessageEvent;
+import org.springframework.stereotype.Component;
 
 import java.util.List;
 import java.util.Optional;
 
+@Component
 public class ViewChangeMessageWrapperMutator extends MessageMutatorFactory {
     RuntimeException invalidMessageTypeException = new IllegalArgumentException("Invalid message type");
 
@@ -34,7 +36,7 @@ public class ViewChangeMessageWrapperMutator extends MessageMutatorFactory {
                         if (iHateThePrimaries.size() >= 3)
                             iHateThePrimaries = iHateThePrimaries.subList(2, iHateThePrimaries.size());
                         ViewChangeMessageWrapper mutatedMessage = message.withIHateThePrimaries(iHateThePrimaries);
-                        messageEvent.setPayload(message);
+                        messageEvent.setPayload(mutatedMessage);
                     }
                 }, new MessageMutationFault("zyzzyva-view-change-message-view-number-inc", "View change message increment view number", List.of(ViewChangeMessageWrapper.class)) {
                     @Override

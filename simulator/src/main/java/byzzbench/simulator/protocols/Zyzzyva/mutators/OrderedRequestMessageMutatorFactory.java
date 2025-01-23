@@ -18,10 +18,6 @@ import java.util.Optional;
 public class OrderedRequestMessageMutatorFactory extends MessageMutatorFactory {
     RuntimeException invalidMessageTypeException = new IllegalArgumentException("Invalid message type");
 
-    public String calculatePrimaryId(int numReplicas, long viewNumber) {
-        return Character.valueOf((char) ('A' + viewNumber % numReplicas)).toString();
-    }
-
     @Override
     public List<MessageMutationFault> mutators() {
         return List.of(

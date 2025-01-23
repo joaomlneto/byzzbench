@@ -1,7 +1,6 @@
 package byzzbench.simulator.protocols.Zyzzyva;
 
 import java.util.LinkedHashMap;
-import java.util.Map;
 
 import lombok.extern.java.Log;
 

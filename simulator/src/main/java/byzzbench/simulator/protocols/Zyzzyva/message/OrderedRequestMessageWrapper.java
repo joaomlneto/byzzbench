@@ -7,7 +7,6 @@ import lombok.EqualsAndHashCode;
 import lombok.With;
 
 @Data
-@EqualsAndHashCode(callSuper = true)
 @With
 public class OrderedRequestMessageWrapper extends MessagePayload implements Comparable<OrderedRequestMessageWrapper>
         , MessageWithRound {

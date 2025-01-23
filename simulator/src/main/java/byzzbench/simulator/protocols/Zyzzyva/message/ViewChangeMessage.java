@@ -6,10 +6,8 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.With;
 
-import java.io.Serializable;
 import java.util.List;
 import java.util.SortedMap;
-import java.util.SortedSet;
 
 @Data
 @EqualsAndHashCode(callSuper = true)
