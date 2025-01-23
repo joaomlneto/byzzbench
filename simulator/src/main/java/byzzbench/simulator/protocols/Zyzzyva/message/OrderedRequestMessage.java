@@ -1,6 +1,7 @@
 package byzzbench.simulator.protocols.Zyzzyva.message;
 
 import byzzbench.simulator.transport.MessagePayload;
+import byzzbench.simulator.transport.messages.MessageWithRound;
 import lombok.Data;
 import lombok.With;
 
@@ -8,7 +9,9 @@ import java.util.Arrays;
 
 @Data
 @With
-public class OrderedRequestMessage extends MessagePayload implements Comparable<OrderedRequestMessage> {
+public class OrderedRequestMessage extends MessagePayload implements Comparable<OrderedRequestMessage>
+//      ,  MessageWithRound
+{
     private final long viewNumber;
     private final long sequenceNumber;
     private final long history;
@@ -46,4 +49,9 @@ public class OrderedRequestMessage extends MessagePayload implements Comparable<
     public String getType() {
         return "ORDERED_REQUEST";
     }
+
+//    @Override
+//    public long getRound() {
+//        return viewNumber;
+//    }
 }

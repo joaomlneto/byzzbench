@@ -1,6 +1,7 @@
 package byzzbench.simulator.protocols.Zyzzyva.message;
 
 import byzzbench.simulator.transport.MessagePayload;
+import byzzbench.simulator.transport.messages.MessageWithRound;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.With;
@@ -8,10 +9,16 @@ import lombok.With;
 @Data
 @EqualsAndHashCode(callSuper = true)
 @With
-public class OrderedRequestMessageWrapper extends MessagePayload implements Comparable<OrderedRequestMessageWrapper> {
+public class OrderedRequestMessageWrapper extends MessagePayload implements Comparable<OrderedRequestMessageWrapper>
+        , MessageWithRound {
+//{
     private final OrderedRequestMessage orderedRequest;
     private final RequestMessage requestMessage;
 
+    @Override
+    public long getRound() {
+        return orderedRequest.getSequenceNumber();
+    }
     @Override
     public int compareTo(OrderedRequestMessageWrapper o) {
         return orderedRequest.compareTo(o.getOrderedRequest());

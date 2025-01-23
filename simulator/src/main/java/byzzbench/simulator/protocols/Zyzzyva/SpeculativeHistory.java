@@ -38,25 +38,6 @@ public class SpeculativeHistory {
     }
 
     /**
-     * Remove everything before a specific index in the speculative history
-     * @param index - the index to truncate the speculative history to
-     */
-    public void truncate(long index) {
-        if (this.speculativeHistory.isEmpty()) {
-            return;
-        }
-        long i = this.speculativeHistory.sequencedKeySet().getFirst();
-        if (index == i) {
-            log.warning("Trying to truncate to the same index");
-            return;
-        }
-        while (i < index) {
-            this.speculativeHistory.remove(i);
-            i = this.speculativeHistory.sequencedKeySet().getFirst();
-        }
-    }
-
-    /**
      * Get the operation at a specific index
      * @param index - the index to get the operation from
      * @throws IndexOutOfBoundsException - if the index is out of bounds
@@ -90,25 +71,6 @@ public class SpeculativeHistory {
      */
     public boolean has(long index) {
         return this.speculativeHistory.containsKey(index);
-    }
-
-    public Map.Entry<Long, Long> getLastEntry() {
-        return this.speculativeHistory.lastEntry();
-    }
-
-    public void truncateTail(long index) {
-        if (this.speculativeHistory.isEmpty()) {
-            return;
-        }
-        long i = this.speculativeHistory.sequencedKeySet().getLast();
-        if (index == i) {
-            log.warning("Trying to truncate to the same index");
-            return;
-        }
-        while (i > index) {
-            this.speculativeHistory.remove(i);
-            i = this.speculativeHistory.sequencedKeySet().getLast();
-        }
     }
 
     public long getFirstKey() {

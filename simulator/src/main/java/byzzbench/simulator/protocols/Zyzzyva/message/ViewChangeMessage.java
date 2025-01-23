@@ -17,7 +17,6 @@ import java.util.SortedSet;
 public class ViewChangeMessage extends MessagePayload {
     private final long futureViewNumber;
     private final long stableCheckpoint;
-    /// TODO: initialize the message log with checkpoint messages
     private final List<CheckpointMessage> checkpoints;
     // CC is either the most recent commit certificate for a request since the last view change,
     // f + 1 view-confirm messages if no commit certificate is available,

@@ -81,7 +81,8 @@ public class ZyzzyvaClient extends Client {
         }
 
         RequestMessage requestMessage = new RequestMessage(operation, this.getHighestTimestamp(), this.getId());
-        this.getScenario().getTransport().sendMessage(this, requestMessage, recipientId);
+//        this.getScenario().getTransport().sendMessage(this, requestMessage, recipientId);
+        this.getScenario().getTransport().sendClientRequest(this.getId(), operation, recipientId, this.getHighestTimestamp());
         log.info("Sending request " + operation + " to " + recipientId);
         // transport timestamp alternative, doesn't work since the replica can't keep track of the timestamp
         // this.getScenario().getTransport().sendClientRequest(this.getId(), operation, recipientId);

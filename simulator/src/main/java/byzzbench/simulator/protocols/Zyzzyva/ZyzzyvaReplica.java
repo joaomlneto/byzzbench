@@ -19,10 +19,7 @@ import java.time.Duration;
 import java.util.*;
 import java.util.stream.Collectors;
 
-/// TODO: Check all fillhole logic
 /// TODO: Check all view change logic
-/// TODO: Multiple client support, how do we get the last client request? Do we filter out by client then the last one? - The answer is in the image in the paper
-/// TODO: We have a case where we don't update the maxCC after handling, perhaps we can make it so that we update the maxCC after handling the commit certificate instead
 @Getter
 @Log
 @ToString(callSuper = true)
@@ -42,18 +39,20 @@ public class ZyzzyvaReplica extends LeaderBasedProtocolReplica {
 
     private final SortedSet<String> nodeIds;
 
-    // used for the speculative history
-    // we use the commit log for the committed history
+    // used for the speculative history (along with the ordered requests in the messagelog)
     private final SpeculativeHistory history;
 
     @Setter
-    private long forwardToPrimaryTimeout = -1;
+    private long requestTimeoutId = -1;
 
     @Setter
-    private long fillHoleTimeout = -1;
+    private long forwardToPrimaryTimeoutId = -1;
 
     @Setter
-    private long fillHoleTimeoutAll = -1;
+    private long fillHoleTimeoutId = -1;
+
+    @Setter
+    private long fillHoleTimeoutAllId = -1;
 
     @Setter
     private long fillHoleMin = -1;
@@ -140,14 +139,22 @@ public class ZyzzyvaReplica extends LeaderBasedProtocolReplica {
                 handleCommitMessage(sender, commitmessage);
             }
 
-            case IHateThePrimaryMessage iHateThePrimaryMessage ->
-                    handleIHateThePrimaryMessage(sender, iHateThePrimaryMessage);
+            case IHateThePrimaryMessage iHateThePrimaryMessage -> {
+                if (this.disgruntled) {
+                    return;
+                }
+                handleIHateThePrimaryMessage(sender, iHateThePrimaryMessage);
+            }
 
             case ViewChangeMessageWrapper viewChangeMessageWrapper ->
                     handleViewChangeMessageWrapper(sender, viewChangeMessageWrapper);
 
-            case ProofOfMisbehaviorMessage proofOfMisbehaviorMessage ->
+            case ProofOfMisbehaviorMessage proofOfMisbehaviorMessage -> {
+                    if (this.disgruntled) {
+                        return;
+                    }
                     handleProofOfMisbehaviourMessage(sender, proofOfMisbehaviorMessage);
+            }
 
             case ConfirmRequestMessage confirmRequestMessage -> {
                 if (this.disgruntled) {
@@ -303,7 +310,11 @@ public class ZyzzyvaReplica extends LeaderBasedProtocolReplica {
             log.warning("Received an ordered request message from a non-primary replica, expected: " + this.getLeaderId() + " received: " + ormw.getOrderedRequest().getSignedBy());
             return;
         }
-
+        try {
+            this.clearTimeout(this.getRequestTimeoutId());
+        } catch (IllegalArgumentException e) {
+            log.warning("Failed to clear request timeout, possibly because it's been triggered");
+        }
         // reject the message if it's too far ahead
         long lastCheckpoint = this.getMessageLog().getLastCheckpoint();
         if (lastCheckpoint + (2L * this.CP_INTERVAL) + 1 < ormw.getOrderedRequest().getSequenceNumber()) {
@@ -321,12 +332,10 @@ public class ZyzzyvaReplica extends LeaderBasedProtocolReplica {
             return;
         }
 
-        OrderedRequestMessage orm = ormw.getOrderedRequest();
-
         try {
             if (this.getMessageLog().getRequestCache().get(ormw.getRequestMessage().getClientId()).equals(ormw.getRequestMessage())) {
                 log.info("Cleared forward to primary timeout");
-                this.clearTimeout(this.getForwardToPrimaryTimeout());
+                this.clearTimeout(this.getForwardToPrimaryTimeoutId());
             }
         } catch (IllegalArgumentException e) {
             log.warning("Failed to clear forward to primary timeout, possibly because it's been triggered");
@@ -338,6 +347,21 @@ public class ZyzzyvaReplica extends LeaderBasedProtocolReplica {
             return;
         }
         this.sendReplyToClient(ormw.getRequestMessage().getClientId(), response);
+        long lastRequest = this.getHighestSequenceNumber();
+        this.setRequestTimeoutId(this.setTimeout(
+                "requestTimeout",
+                () -> {
+                    if (lastRequest < this.getHighestSequenceNumber()) {
+                        return;
+                    }
+                    log.warning("Didn't receive next request in time, init view change");
+                    IHateThePrimaryMessage ihtpm = new IHateThePrimaryMessage(this.getViewNumber());
+                    ihtpm.sign(this.getId());
+                    this.broadcastMessage(ihtpm);
+                    this.handleIHateThePrimaryMessage(this.getId(), ihtpm);
+                },
+                Duration.ofSeconds(300)
+        ));
     }
 
     /**
@@ -477,8 +501,7 @@ public class ZyzzyvaReplica extends LeaderBasedProtocolReplica {
         this.setFillHoleMin(this.getHighestSequenceNumber() + 1);
         this.setFillHoleMax(receivedSequenceNumber);
         this.setFillHoleActive(true);
-        /// TODO: Change the lapsation to the lapseFillHole method
-        this.setFillHoleTimeout(this.setTimeout(
+        this.setFillHoleTimeoutId(this.setTimeout(
                 "fillHolePrimary",
                 () -> {
                     // check that we have all the responses, if we do, and they're valid, return
@@ -487,7 +510,7 @@ public class ZyzzyvaReplica extends LeaderBasedProtocolReplica {
                         return;
                     }
                     this.broadcastMessage(fhm);
-                    this.setFillHoleTimeoutAll(this.setTimeout(
+                    this.setFillHoleTimeoutAllId(this.setTimeout(
                             "fillHoleAll",
                             () -> {
                                 if (this.receivedFillHole(this.getHighestSequenceNumber() + 1, receivedSequenceNumber)) {
@@ -517,7 +540,11 @@ public class ZyzzyvaReplica extends LeaderBasedProtocolReplica {
         // add to message logs
         for (long i = lowSeqNum; i <= highSeqNum; i++) {
             // we've already check that it's valid
+            if (this.getMessageLog().getFillHoleMessages().get(i) == null) {
+                log.warning("Received a null fill hole message during fill-hole");
+            }
             FillHoleReply fhr = this.getMessageLog().getFillHoleMessages().get(i).sequencedValues().getFirst();
+
             OrderedRequestMessageWrapper ormw = new OrderedRequestMessageWrapper(
                     fhr.getOrderedRequestMessage(),
                     fhr.getRequestMessage()
@@ -618,12 +645,12 @@ public class ZyzzyvaReplica extends LeaderBasedProtocolReplica {
      */
     private void lapsedFillHole() {
         try {
-            this.clearTimeout(this.getFillHoleTimeout());
+            this.clearTimeout(this.getFillHoleTimeoutId());
         } catch (IllegalArgumentException e) {
             log.warning("Failed to clear fill hole timeout, possibly because it's been triggered");
         }
         try {
-            this.clearTimeout(this.getFillHoleTimeoutAll());
+            this.clearTimeout(this.getFillHoleTimeoutAllId());
         } catch (IllegalArgumentException e) {
             log.warning("Failed to clear fill hole timeout all, possibly because it's been triggered");
         }
@@ -668,7 +695,7 @@ public class ZyzzyvaReplica extends LeaderBasedProtocolReplica {
             } else {
                 Set<FillHoleReply> fillHoleReplies = new HashSet<>(this.getMessageLog().getFillHoleMessages().get(i).values());
                 if (fillHoleReplies.size() > 1) {
-                    List<OrderedRequestMessage> orderedRequestMessages = fillHoleReplies.stream().map(FillHoleReply::getOrderedRequestMessage).collect(Collectors.toList());
+                    List<OrderedRequestMessage> orderedRequestMessages = fillHoleReplies.stream().map(FillHoleReply::getOrderedRequestMessage).toList();
                     // create a proof of misbehaviour
                     OrderedRequestMessage orm1 = orderedRequestMessages.getFirst();
                     OrderedRequestMessage orm2 = orderedRequestMessages.getLast();
@@ -772,6 +799,7 @@ public class ZyzzyvaReplica extends LeaderBasedProtocolReplica {
             return false;
         }
 
+
         // check if the history matches
         if (cc.getHistory() != this.getHistory().get(cc.getSequenceNumber())) {
             log.warning("Received a commit certificate with an incorrect history hash, init view change");
@@ -792,7 +820,6 @@ public class ZyzzyvaReplica extends LeaderBasedProtocolReplica {
         // if the currentCC is not null and the sequence number is the same, we return true, this means we commit again?
         if (currentCC != null && cc.getSequenceNumber() == currentCC.getSequenceNumber()) {
             log.warning("Replica " + this.getId() +" received a commit certificate with the same sequence number");
-            /// TODO: Experiment with returning false here
             return false;
         }
 
@@ -813,7 +840,6 @@ public class ZyzzyvaReplica extends LeaderBasedProtocolReplica {
             SpeculativeResponseWrapper srw = this.getMessageLog().getResponseCache().get(clientId).getRight();
             this.sendMessage(srw, clientId);
             // return a local commit as well
-            /// TODO: There is a case where the getOrderedRequest() is null for the client digest, probably has to do with the view change.
             log.info("Replica " + this.getId() + " sending a speculative response to " + clientId + " with digest " + Arrays.hashCode(this.getMessageLog().getMaxCC().getDigest()));
             if (maxCC != null && maxCC.getSpeculativeResponse().getTimestamp() >= rm.getTimestamp()) {
                 LocalCommitMessage lcm = new LocalCommitMessage(
@@ -845,7 +871,7 @@ public class ZyzzyvaReplica extends LeaderBasedProtocolReplica {
             log.info("Replica " + this.getId() + " sent a confirm request message to " + this.getLeaderId());
 
             /// TODO: additional pedantic details
-            this.setForwardToPrimaryTimeout(this.setTimeout(
+            this.setForwardToPrimaryTimeoutId(this.setTimeout(
                     "forwardToPrimary",
                     () -> {
                         // we don't check if we've received here because in most cases, we get more recent requests
@@ -951,6 +977,10 @@ public class ZyzzyvaReplica extends LeaderBasedProtocolReplica {
 //            if(this.getMessageLog().getNewViewMessages().isEmpty()) {log.warning("New view messages is empty"); return;}
 //            cc = this.getMessageLog().getNewViewMessages().sequencedValues().getLast();
 //        }
+
+        if (this.getMessageLog().getCheckpointMessages().get(this.getMessageLog().getLastCheckpoint()) == null) {
+            log.warning("Checkpoint messages is null");
+        }
         ViewChangeMessage vcm = new ViewChangeMessage(
                 // future view number
                 this.getViewNumber() + 1,
@@ -1706,6 +1736,7 @@ public class ZyzzyvaReplica extends LeaderBasedProtocolReplica {
         // add the checkpoint message to the message log
         this.getMessageLog().putCheckpointMessage(cm);
 
+        // if the sequence number is the maxCC, we check if we can commit to the checkpoint
         if (this.getMessageLog().getMaxCC().getSequenceNumber() == cm.getSequenceNumber()) {
             this.checkIfCommitCheckpoint(cm.getSequenceNumber());
         } else log.warning("Waiting for request " + cm.getSequenceNumber() + " to be received before committing to the checkpoint");

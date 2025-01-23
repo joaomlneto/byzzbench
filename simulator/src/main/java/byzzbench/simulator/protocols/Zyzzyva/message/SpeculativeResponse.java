@@ -1,6 +1,7 @@
 package byzzbench.simulator.protocols.Zyzzyva.message;
 
 import byzzbench.simulator.transport.MessagePayload;
+import byzzbench.simulator.transport.messages.MessageWithRound;
 import lombok.Data;
 import lombok.With;
 
@@ -9,8 +10,10 @@ import java.util.Arrays;
 @Data
 @With
 //<SpecResponse, v, n, hn, H(r), c, t>
-public class SpeculativeResponse extends MessagePayload {
+public class SpeculativeResponse extends MessagePayload
 
+//        implements MessageWithRound {
+{
     private final long viewNumber;
     private final long sequenceNumber;
     private final long history;
@@ -40,6 +43,11 @@ public class SpeculativeResponse extends MessagePayload {
                 clientId.hashCode() ^
                 Long.hashCode(timestamp);
     }
+
+//    @Override
+//    public long getRound() {
+//        return sequenceNumber;
+//    }
 
     @Override
     public String getType() {

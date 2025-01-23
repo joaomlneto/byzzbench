@@ -114,7 +114,6 @@ public class MessageLog implements Serializable {
     }
 
     public void putNewViewMessage(NewViewMessage nvm) {
-        /// TODO: check if it's sanitized? as in the new view number is sent by the appropriate replica
         this.getNewViewMessages().put(nvm.getFutureViewNumber(), nvm);
     }
 
@@ -179,6 +178,7 @@ public class MessageLog implements Serializable {
             if (clientId.equals("Noop")) {
                 return;
             }
+            /// TODO: silence this during a view change, it doesn't mean anything. You can do this by comparing the view number to the request cache one.
             log.warning("Received a request with a timestamp smaller than the one in the cache");
             return;
         }

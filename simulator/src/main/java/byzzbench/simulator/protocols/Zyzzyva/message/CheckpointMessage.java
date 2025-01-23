@@ -10,7 +10,6 @@ import java.util.Objects;
 public class CheckpointMessage extends MessagePayload {
     private final long sequenceNumber;
     private final long history;
-    /// TODO: check if we need to add application state?
     private final String replicaId;
 
     @Override
