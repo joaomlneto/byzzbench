@@ -15,7 +15,7 @@ import org.springframework.stereotype.Component;
 import java.util.List;
 import java.util.Optional;
 import java.util.Random;
-import java.util.stream.Collectors;
+import java.util.SortedSet;
 
 /**
  * A scheduler that randomly selects events to deliver, drop, mutate or timeout.
@@ -52,14 +52,17 @@ public class RandomScheduler extends BaseScheduler {
         }
 
         List<TimeoutEvent> timeoutEvents = this.getQueuedTimeoutEvents(scenario);
-        List<Event> clientRequestEvents = availableEvents.stream().filter(ClientRequestEvent.class::isInstance).collect(Collectors.toList());
-        List<Event> messageEvents = availableEvents.stream().filter(MessageEvent.class::isInstance).collect(Collectors.toList());
+        List<Event> clientRequestEvents = availableEvents.stream().filter(ClientRequestEvent.class::isInstance).toList();
+        List<MessageEvent> messageEvents = availableEvents.stream().filter(MessageEvent.class::isInstance).map(MessageEvent.class::cast).toList();
+
+        SortedSet<String> faultyReplicaIds = scenario.getFaultyReplicaIds();
+        List<MessageEvent> mutateableMessageEvents = messageEvents.stream().filter(msg -> faultyReplicaIds.contains(msg.getSenderId())).toList();
 
         int timeoutWeight = timeoutEvents.size() * this.deliverTimeoutWeight();
         int deliverMessageWeight = messageEvents.size() * this.deliverMessageWeight();
         int deliverClientRequestWeight = clientRequestEvents.size() * this.deliverClientRequestWeight();
         int dropMessageWeight = (messageEvents.size() * this.dropMessageWeight(scenario));
-        int mutateMessageWeight = (messageEvents.size() * this.mutateMessageWeight(scenario));
+        int mutateMessageWeight = (mutateableMessageEvents.size() * this.mutateMessageWeight(scenario));
         int dieRoll = random.nextInt(timeoutWeight + deliverMessageWeight
                 + deliverClientRequestWeight + dropMessageWeight + mutateMessageWeight);
 
@@ -102,7 +105,7 @@ public class RandomScheduler extends BaseScheduler {
         // check if we should mutate-and-deliver a message sent between nodes
         dieRoll -= mutateMessageWeight;
         if (dieRoll < 0) {
-            Event message = messageEvents.get(random.nextInt(messageEvents.size()));
+            Event message = mutateableMessageEvents.get(random.nextInt(mutateableMessageEvents.size()));
             List<MessageMutationFault> mutators = this.getMessageMutatorService().getMutatorsForEvent(message);
 
             if (mutators.isEmpty()) {
