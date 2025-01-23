@@ -471,11 +471,13 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
          * received OR that the new PREPARE matches the digest of the one
          * that was already received.
          */
+        logger.writeLog(String.format("Checking prepare message")); 
         Ticket<O, R> ticket = messageLog.getTicket(currentViewNumber, seqNumber);
         if (ticket != null) {
             // PREPARE has previously been inserted into the log for this
             // sequence number - verify the digests match per hBFT 4.1
             for (Object message : ticket.getMessages()) {
+                logger.writeLog(String.format("Ticket messages: " + message)); 
                 if (!(message instanceof PrepareMessage prevPrepare)) {
                     continue;
                 }
@@ -632,8 +634,10 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
              * if it gets f + 1 conflicting COMMIT messages with its PREPARE
              * then it sends a view change message
              */
+            logger.writeLog("Ticket " + ticket.getMessages().toString());
             if (ticket.isCommittedLocal(this.tolerance)) {
                 RequestMessage request = ticket.getRequest();
+                logger.writeLog("Request " + request.toString());
                 if (request != null && !request.equals(this.speculativeHistory.getHistory().get(seqNumber))) {
                     String clientId = request.getClientId();
                     long timestamp = request.getTimestamp();

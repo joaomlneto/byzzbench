@@ -624,6 +624,36 @@
 //     }
 
 //     @Test
+// 	void testRecvIncorrectSeqNumCheckpointIII() {
+//         HbftJavaReplica spyReplica = Mockito.spy(replicaA);
+//         RequestMessage request = new RequestMessage("123", 0, "C0");
+//         SpeculativeHistory history = new SpeculativeHistory();
+//         //history.addEntry(1, request);
+//         history.addEntry(1, request);
+//         SpeculativeHistory history2 = new SpeculativeHistory();
+//         history2.addEntry(0, request);
+//         history2.addEntry(1, request);
+//         byte[] digest = spyReplica.digest(history);
+//         byte[] digest2 = spyReplica.digest(history2);
+//         //CheckpointMessage checkpoint = new CheckpointIMessage(1, digest, primary.getId(), history);
+//         CheckpointMessage checkpoint2 = new CheckpointIIIMessage(1, digest, replicaC.getId(), history);
+//         CheckpointMessage checkpoint3 = new CheckpointIIIMessage(1, digest, replicaD.getId(), history);
+//         CheckpointMessage checkpoint4 = new CheckpointIIIMessage(1, digest2, primary.getId(), history);
+
+//         //spyReplica.recvCheckpoint(checkpoint);
+//         spyReplica.recvCheckpoint(checkpoint2);
+//         spyReplica.recvCheckpoint(checkpoint3);
+//         spyReplica.recvCheckpoint(checkpoint4);
+        
+//         //verify(spyReplica, times(1)).sendViewChange(Mockito.any(ViewChangeMessage.class));
+//         //verify(spyReplica, times(0)).sendCheckpoint(Mockito.any(CheckpointIIMessage.class));
+//         verify(spyReplica, times(0)).sendCheckpoint(Mockito.any(CheckpointIIIMessage.class));
+//         // Assert.isTrue(replicaA.getMessageLog().isCER2(checkpoint4, 1), "Cer2 should be complete with this checkpoint!");
+//         // Assert.isTrue(Arrays.equals(replicaA.digest(replicaA.getSpeculativeHistory()), digest), "Replica should have adopted the speculative hisotry!");
+//         verify(spyReplica, times(0)).adjustHistory(Mockito.any(SortedMap.class));
+//     }
+
+//     @Test
 // 	void testRecvEnoughCorrectViewChange() {
 //         HbftJavaReplica spyReplica = Mockito.spy(replicaA);
 //         ViewChangeMessage viewChange  = new ViewChangeMessage(2, null, null, null, replicaC.getId());
