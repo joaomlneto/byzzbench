@@ -57,17 +57,17 @@ export default function Home() {
     );
   }
 
-    return (
-        <Container fluid p="xl">
-            <Stack gap="md">
-                <Accordion
-                    multiple
-                    variant="separated"
-                    value={selectedAccordionEntries}
-                    onChange={setSelectedAccordionEntries}
-                >
-                    <Group wrap="nowrap" gap="xs" align="center">
-                        <Title order={3}>{schedule?.data.scenarioId}</Title>
+  return (
+    <Container fluid p="xl">
+      <Stack gap="md">
+        <Accordion
+          multiple
+          variant="separated"
+          value={selectedAccordionEntries}
+          onChange={setSelectedAccordionEntries}
+        >
+          <Group wrap="nowrap" gap="xs" align="center">
+            <Title order={3}>{schedule?.data.scenarioId}</Title>
             <PredicateList />
             <Switch
               label="Show mailboxes"
@@ -101,28 +101,31 @@ export default function Home() {
         <ScrollArea type="never" mah="100vh">
           <Stack gap="xs">
             <Title order={5}>Schedule</Title>
-            <ScrollArea mah={500} type="always" style={{ overflowY: 'auto' }}>
-              <div style={{ maxHeight: '500px', overflowY: 'auto' }}>
+            <ScrollArea mah={500} type="always" style={{ overflowY: "auto" }}>
+              <div style={{ maxHeight: "500px", overflowY: "auto" }}>
                 {schedule?.data && (
-                    <ScheduleDetails
-                        hideTitle
-                        hideMaterializeButton
-                        hideDownloadButton
-                        hideDetailsButton
-                        hideScenario
-                        hideSaveButton
-                        title="Current Schedule"
-                        schedule={schedule.data}
-                    />
+                  <ScheduleDetails
+                    hideTitle
+                    hideMaterializeButton
+                    hideDownloadButton
+                    hideDetailsButton
+                    hideScenario
+                    hideSaveButton
+                    title="Current Schedule"
+                    schedule={schedule.data}
+                  />
                 )}
               </div>
             </ScrollArea>
             <Title order={5}>Trigger Faulty Behaviors</Title>
-                    <ScenarioEnabledFaultsList/>
-                    <Title order={5}>ScheduledFaults</Title>
+            <ScenarioEnabledFaultsList />
+            <Title order={5}>ScheduledFaults</Title>
             <ScenarioScheduledFaultsList />
             <Title order={5}>Discarded Events</Title>
-            <DroppedMessagesList />
+
+            <ScrollArea mah={500} type="always" style={{ overflowY: "auto" }}>
+              <DroppedMessagesList />
+            </ScrollArea>
           </Stack>
         </ScrollArea>
       </AppShell.Aside>
