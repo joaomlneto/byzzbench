@@ -2,7 +2,6 @@ package byzzbench.simulator.protocols.tendermint;
 
 import byzzbench.simulator.protocols.tendermint.message.*;
 
-import byzzbench.simulator.transport.DefaultClientRequestPayload;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.java.Log;
@@ -112,17 +111,17 @@ public class MessageLog {
     }
 
     /**
-     * Checks if there are f+1 messages in a specific round after a given round.
+     * Checks if there are f+1 messages in a specific sequence after a given sequence.
      */
-    public boolean fPlus1MessagesInRound(long height, long round) {
-        // Flatten the received messages map and filter by height and round > round
-        Map<Long, Long> roundMessageCounts = receivedMessages.values().stream()
+    public boolean fPlus1MessagesInSequence(long height, long sequence) {
+        // Flatten the received messages map and filter by height and sequence > sequence
+        Map<Long, Long> sequenceMessageCounts = receivedMessages.values().stream()
                 .flatMap(Set::stream) // Flatten all sets of messages into a single stream
-                .filter(m -> m.getHeight() == height && m.getRound() > round) // Apply filters
-                .collect(Collectors.groupingBy(GenericMessage::getRound, Collectors.counting())); // Group by round and count
+                .filter(m -> m.getHeight() == height && m.getSequence() > sequence) // Apply filters
+                .collect(Collectors.groupingBy(GenericMessage::getSequence, Collectors.counting())); // Group by sequence and count
 
-        // Check if any round group has at least f + 1 messages
-        return roundMessageCounts.values().stream()
+        // Check if any sequence group has at least f + 1 messages
+        return sequenceMessageCounts.values().stream()
                 .anyMatch(count -> count >= node.getTolerance() + 1);
     }
 

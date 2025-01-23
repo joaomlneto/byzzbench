@@ -9,7 +9,7 @@ import lombok.With;
 @With
 public class PrecommitMessage extends GenericMessage {
     private final long height;      // Current blockchain height
-    private final long round;       // Current round in the consensus process
+    private final long sequence;       // Current round in the consensus process
     private final String replicaId; // ID of the validator sending the precommit
     private final Block block;
 
@@ -21,5 +21,10 @@ public class PrecommitMessage extends GenericMessage {
     @Override
     public String getAuthor() {
         return replicaId;
+    }
+
+    @Override
+    public long getRound() {
+        return sequence * 3 + 3;
     }
 }
