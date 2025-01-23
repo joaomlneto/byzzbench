@@ -28,6 +28,8 @@ public class TendermintReplica extends LeaderBasedProtocolReplica {
     // Sequence: the current sequence within the height, where multiple sequences might be needed to finalize a block
     private long sequence;
 
+    private long totalSequences;
+
     // Step: the current step within the sequence (PROPOSE, PREVOTE, PRECOMMIT)
     private Step step;
 
@@ -68,6 +70,7 @@ public class TendermintReplica extends LeaderBasedProtocolReplica {
         super(nodeId, scenario, new TotalOrderCommitLog());
         this.height = 0;
         this.sequence = 0;
+        this.totalSequences = 0;
         this.step = Step.PROPOSE;
         this.lockedValue = null;
         this.lockedSequence = -1;
@@ -293,6 +296,7 @@ public class TendermintReplica extends LeaderBasedProtocolReplica {
             //53: reset lockedRoundp, lockedV aluep, validRoundp and validV aluep to initial values and empty message log
             //54: StartRound(0)
             commitOperation(block);
+            this.totalSequences += this.sequence + 1;
             ReplyMessage replyMessage = new ReplyMessage(
                     this.height,
                     block.getRequestMessage().getTimestamp(),
@@ -315,7 +319,7 @@ public class TendermintReplica extends LeaderBasedProtocolReplica {
         if(hasBroadcasted.contains(Pair.of(height, sequence))) {
             return;
         }
-        ProposalMessage proposalMessage = new ProposalMessage(getId(), height, sequence, validSequence, proposal);
+        ProposalMessage proposalMessage = new ProposalMessage(getId(), height, sequence, totalSequences, validSequence, proposal);
         broadcastMessageIncludingSelf(proposalMessage);
         hasBroadcasted.add(Pair.of(height, sequence));
 
@@ -488,7 +492,7 @@ public class TendermintReplica extends LeaderBasedProtocolReplica {
 
     private void broadcastPrevote(long height, long sequence, Block block) {
 //        messageLog.sentPrevote();
-        PrevoteMessage prevoteMessage = new PrevoteMessage(height, sequence, this.getId(), block);
+        PrevoteMessage prevoteMessage = new PrevoteMessage(height, sequence, totalSequences, this.getId(), block);
         broadcastMessageIncludingSelf(prevoteMessage);
     }
 
@@ -609,7 +613,7 @@ public class TendermintReplica extends LeaderBasedProtocolReplica {
     }
 
     protected void broadcastPrecommit(long height, long sequence, Block block) {
-        PrecommitMessage precommitMessage = new PrecommitMessage(height, sequence, this.getId(), block);
+        PrecommitMessage precommitMessage = new PrecommitMessage(height, sequence, totalSequences, this.getId(), block);
         broadcastMessageIncludingSelf(precommitMessage);
     }
 

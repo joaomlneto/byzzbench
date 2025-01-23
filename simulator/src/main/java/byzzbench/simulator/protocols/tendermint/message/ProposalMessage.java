@@ -11,6 +11,7 @@ public class ProposalMessage extends GenericMessage {
     private final String replicaId; // ID of the proposer
     private final long height; // Current blockchain height
     private final long sequence; // Current round in the consensus process
+    private final long totalSeq;
     private final long validSequence; // Round in which the value is valid
     private final Block block; // Block being proposed\
 
@@ -26,6 +27,6 @@ public class ProposalMessage extends GenericMessage {
 
     @Override
     public long getRound() {
-        return sequence * 3 + 1;
+        return totalSeq + 1;
     }
 }

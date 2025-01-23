@@ -21,6 +21,6 @@ public class GossipMessage extends MessagePayload implements MessageWithRound {
 
     @Override
     public long getRound() {
-        return gossipMessage.getRound();
+        return 0;
     }
 }
