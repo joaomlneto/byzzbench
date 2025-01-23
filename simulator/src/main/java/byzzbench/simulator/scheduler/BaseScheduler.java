@@ -14,6 +14,7 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * Abstract base class for a scheduler.
@@ -84,15 +85,33 @@ public abstract class BaseScheduler implements Scheduler {
      * @return The list of timeout events
      */
     public List<TimeoutEvent> getQueuedTimeoutEvents(Scenario scenario) {
+        // get all time out events in order of expiration (earliest first)
         List<TimeoutEvent> events = getQueuedEventsOfType(scenario, TimeoutEvent.class).stream()
                 .sorted(Comparator.comparing(TimeoutEvent::getExpiresAt))
                 .toList();
+        // get the first (earliest-expiring) timeout event for each replica
         Map<String, TimeoutEvent> firstTimeoutForEachReplica = new HashMap<>();
         for (TimeoutEvent event : events) {
             firstTimeoutForEachReplica.putIfAbsent(event.getRecipientId(), event);
         }
 
-        return events;
+        switch (config.getScheduler().getExecutionMode()) {
+            case SYNC -> {
+                // get the set of replica IDs with messages in their mailbox
+                Set<String> replicasWithQueuedMessagesInMailbox = getQueuedMessageEvents(scenario).stream()
+                        .map(MessageEvent::getRecipientId)
+                        .collect(Collectors.toSet());
+                // return only timeouts for replicas without messages in their mailbox
+                return firstTimeoutForEachReplica.values().stream()
+                        .filter(event -> !replicasWithQueuedMessagesInMailbox.contains(event.getRecipientId()))
+                        .toList();
+            }
+            case ASYNC -> {
+                return firstTimeoutForEachReplica.values().stream().toList();
+            }
+            default ->
+                    throw new IllegalStateException("Unknown execution mode: " + config.getScheduler().getExecutionMode());
+        }
     }
 
     /**
