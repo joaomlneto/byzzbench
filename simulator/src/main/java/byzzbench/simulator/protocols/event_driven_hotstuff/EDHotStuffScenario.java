@@ -146,4 +146,9 @@ public class EDHotStuffScenario extends BaseScenario {
         state.setMinView(replicaViews.stream().min(Comparator.comparingLong(a -> a)).get());
         state.setMaxView(replicaViews.stream().max(Comparator.comparingLong(a -> a)).get());
     }
+
+    @Override
+    public int maxFaultyReplicas(int n) {
+        return (int) Math.floor((double) (n - 1) / 3);
+    }
 }

@@ -19,7 +19,7 @@ byzzbench:
 
   autostart: true # Whether to start running scenarios automatically on startup
   numScenarios: 1000
-  #outputPath: /tmp/byzzbench # The path to write the output to
+  outputPath: ./output/b-exec # The path to write the output to
   outputSchedules: all # which schedules to write to file? one of 'all', 'buggy' or 'none'
 
   scheduler:
@@ -34,9 +34,9 @@ byzzbench:
     mutateMessageWeight: 0 # The weight for scheduler to mutate a message
     params: # additional parameters for the scheduler
       # ByzzFuzz
-      numRoundsWithProcessFaults: 10
-      numRoundsWithNetworkFaults: 1
-      numRoundsWithFaults: 20
+      numRoundsWithProcessFaults: 0
+      numRoundsWithNetworkFaults: 0
+      numRoundsWithFaults: 0
       # Twins
       numReplicas: 1
       numTwinsPerReplica: 2

@@ -118,7 +118,7 @@ public abstract class BaseScheduler implements Scheduler {
      * @param messageEvents The list of queued message events
      * @return The next message event
      */
-    public Event getNextMessageEvent(List<Event> messageEvents) {
+    public Event getNextMessageEvent(List<MessageEvent> messageEvents) {
         switch (config.getScheduler().getExecutionMode()) {
             case SYNC -> {
                 return messageEvents.stream().min(Comparator.comparing(Event::getEventId)).orElseThrow();

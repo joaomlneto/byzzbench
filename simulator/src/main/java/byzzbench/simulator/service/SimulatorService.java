@@ -20,6 +20,7 @@ import org.springframework.context.annotation.DependsOn;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Service;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -50,6 +51,7 @@ public class SimulatorService {
     private String scenarioId;
     private JsonNode scenarioParams;
     private Path scenarioPath;
+    private Path resultsPath;
     private int scenarioIndex = 0;
     private final ArrayList<String> failedScenarios = new ArrayList<>();
     private final ArrayList<String> errorScenarios = new ArrayList<>();
@@ -61,6 +63,29 @@ public class SimulatorService {
         this.scenarioId = this.byzzBenchConfig.getScenario().getId();
         this.scenarioParams = JsonNodeFactory.instance.objectNode();
         this.changeScenario(byzzBenchConfig.getScenario().getId(), JsonNodeFactory.instance.objectNode());
+
+        resultsPath = byzzBenchConfig.getOutputPath().resolve("results.txt");
+        if(!Files.exists(byzzBenchConfig.getOutputPath())) {
+            try {
+                Files.createDirectories(byzzBenchConfig.getOutputPath());
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }
+        if(!Files.exists(resultsPath)) {
+            try {
+                Files.write(resultsPath, ("Results for " + byzzBenchConfig.getOutputPath() + "\n\n").getBytes());
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }
+        if(!Files.exists(byzzBenchConfig.getOutputPathForThisRun())) {
+            try {
+                Files.createDirectories(byzzBenchConfig.getOutputPathForThisRun());
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }
 
         if (this.byzzBenchConfig.isAutostart()) {
             this.start();
@@ -91,11 +116,11 @@ public class SimulatorService {
             this.scenarioIndex = this.scenarioService.getScenarios().size();
             scenarioPath = root.resolve(String.format("%s-%d", this.scenario.getId(), scenarioIndex));
             System.out.println("Scenario path: " + scenarioPath);
-            try {
+            /*try {
                 Files.createDirectories(scenarioPath);
             } catch (IOException e) {
                 throw new RuntimeException(e);
-            }
+            }*/
             if(scenario instanceof EDHotStuffScenario edHotStuffScenario)
                 scenarioStates.add(edHotStuffScenario.getState());
         }
@@ -173,6 +198,11 @@ public class SimulatorService {
                                 numTerm++;
                                 failedScenarios.add(String.valueOf(this.scenarioIndex));
                                 if(scenario instanceof EDHotStuffScenario edHotStuffScenario) {
+                                    try {
+                                        Files.createDirectories(scenarioPath);
+                                    } catch (IOException e) {
+                                        throw new RuntimeException(e);
+                                    }
                                     Files.write(scenarioPath.resolve("logs.txt"), String.join("\n", edHotStuffScenario.getLogs()).getBytes());
                                     edHotStuffScenario.getState().setAgreementViolation(agreementViolation);
                                     edHotStuffScenario.getState().setLivenessViolation(livenessViolation);
@@ -222,7 +252,7 @@ public class SimulatorService {
                         numErr += 1;
                     }
 
-                    this.resetScenario();
+                    if(i + 1 < this.byzzBenchConfig.getNumScenarios()) this.resetScenario();
                 }
             } catch (Exception e) {
                 throw new RuntimeException(e);
@@ -237,6 +267,13 @@ public class SimulatorService {
                 System.out.println("failedScenarios: " + String.join(", ", failedScenarios));
                 System.out.println("errorScenarios: " + String.join(", ", errorScenarios));
                 try {
+                    long validCount =  scenarioStates.stream().filter(s -> s.isValidAssumptions()).count();
+                    long validA = scenarioStates.stream().filter(s -> s.isValidAssumptions() && s.isAgreementViolation()).count();
+                    long validT = scenarioStates.stream().filter(s -> s.isValidAssumptions() && s.isLivenessViolation()).count();
+                    long invalidCount = scenarioStates.stream().filter(s -> !s.isValidAssumptions()).count();
+                    long invalidA = scenarioStates.stream().filter(s -> !s.isValidAssumptions() && s.isAgreementViolation()).count();
+                    long invalidT = scenarioStates.stream().filter(s -> !s.isValidAssumptions() && s.isLivenessViolation()).count();
+
                     String summary =
                             "byzzbench config: " + byzzBenchConfig + "\n\n" +
                             "count: " + scenarioStates.size() + "\n" +
@@ -248,19 +285,25 @@ public class SimulatorService {
                             "both: " + bothViolations + "\n" +
                             "total failed: " + numTerm + "\n" +
                             "\nONLY-CORRECT-ASSUMPTIONS\n" +
-                            "count: " + scenarioStates.stream().filter(s -> s.isValidAssumptions()).count() + "\n" +
-                            "liveness: " + scenarioStates.stream().filter(s -> s.isValidAssumptions() && s.isLivenessViolation()).count() + "\n" +
-                            "agreement " + scenarioStates.stream().filter(s -> s.isValidAssumptions() && s.isAgreementViolation()).count() + "\n" +
+                            "count: " + validCount + "\n" +
+                            "liveness: " + validT + "\n" +
+                            "agreement " + validA + "\n" +
                             "both: " + scenarioStates.stream().filter(s -> s.isValidAssumptions() && s.isAgreementViolation() && s.isLivenessViolation()).count() + "\n" +
                             "\nONLY-INVALID-ASSUMPTIONS\n" +
-                            "count: " + scenarioStates.stream().filter(s -> !s.isValidAssumptions()).count() + "\n" +
-                            "liveness: " + scenarioStates.stream().filter(s -> !s.isValidAssumptions() && s.isLivenessViolation()).count() + "\n" +
-                            "agreement " + scenarioStates.stream().filter(s -> !s.isValidAssumptions() && s.isAgreementViolation()).count() + "\n" +
+                            "count: " + invalidCount + "\n" +
+                            "liveness: " + invalidT + "\n" +
+                            "agreement " + invalidA + "\n" +
                             "both: " + scenarioStates.stream().filter(s -> !s.isValidAssumptions() && s.isAgreementViolation() && s.isLivenessViolation()).count() + "\n"
                             + "\n";
 
                     String states = String.join("\n", scenarioStates.stream().map(EDHSScenarioState::toString).toList());
                     Files.write(byzzBenchConfig.getOutputPathForThisRun().resolve("states" + scenarioStates.size() + ".txt"), (summary + states).getBytes());
+                    System.out.println(summary);
+
+                    String results = Files.readString(resultsPath);
+                    results += byzzBenchConfig.getRunName().replaceAll("-", " & ") + " & " ;
+                    results += validCount + " & " + validA  + " & " + validT  + " & " + (validA + validT)  + " & " + invalidCount  + " & " + invalidA  + " & " + invalidT  + " & " + (invalidA + invalidT) + " & " + (validA + validT + invalidA + invalidT) + " \\\\\n";
+                    Files.writeString(resultsPath, results);
                 } catch (IOException e) {
                     throw new RuntimeException(e);
                 }

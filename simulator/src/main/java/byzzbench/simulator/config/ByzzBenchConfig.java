@@ -52,7 +52,26 @@ public class ByzzBenchConfig {
      * @return The output path for this run.
      */
     public Path getOutputPathForThisRun() {
-        return this.outputPath.resolve(String.valueOf(SimulatorApplication.getStartTime().getEpochSecond()));
+        return this.outputPath.resolve(getRunName() + "-T" + String.valueOf(SimulatorApplication.getStartTime().getEpochSecond()));
+    }
+
+    public String getRunName() {
+        String runName = scheduler.getId().toLowerCase();
+        boolean hasMutations = false;
+        if(scheduler.getId().equalsIgnoreCase("byzzfuzz")) {
+            hasMutations = Integer.parseInt(scheduler.getParams().get("numRoundsWithProcessFaults")) > 0;
+            runName += "-" + scheduler.getParams().get("numRoundsWithProcessFaults");
+            runName += "-" + scheduler.getParams().get("numRoundsWithNetworkFaults");
+            runName += "-" + scheduler.getParams().get("numRoundsWithFaults");
+        } else if (scheduler.getId().equalsIgnoreCase("random")) {
+            hasMutations = (scheduler.getMaxMutateMessages() > 0) && (scheduler.getMutateMessageWeight() > 0);
+            runName += "-" + scheduler.getMaxMutateMessages();
+            runName += "-" + scheduler.getMaxDropMessages();
+            runName += "-" + scheduler.getMutateMessageWeight();
+            runName += "-" + scheduler.getDropMessageWeight();
+        }
+        runName += "-" + (hasMutations ? (isSmallScope() ? "small" : "any") : " ");
+        return runName;
     }
 
     /**
