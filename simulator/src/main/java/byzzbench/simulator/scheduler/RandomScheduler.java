@@ -25,9 +25,12 @@ import java.util.SortedSet;
 public class RandomScheduler extends BaseScheduler {
     private final Random random = new Random();
 
-
     public RandomScheduler(ByzzBenchConfig config, MessageMutatorService messageMutatorService) {
         super(config, messageMutatorService);
+    }
+
+    public <T> T getRandomElement(List<T> list) {
+        return list.get(random.nextInt(list.size()));
     }
 
     @Override
@@ -69,7 +72,7 @@ public class RandomScheduler extends BaseScheduler {
         // check if we should trigger a timeout
         dieRoll -= timeoutWeight;
         if (dieRoll < 0) {
-            Event timeout = timeoutEvents.get(random.nextInt(timeoutEvents.size()));
+            Event timeout = getRandomElement(timeoutEvents);
             scenario.getTransport().deliverEvent(timeout.getEventId());
             EventDecision decision = new EventDecision(EventDecision.DecisionType.DELIVERED, timeout.getEventId());
             return Optional.of(decision);
@@ -87,7 +90,7 @@ public class RandomScheduler extends BaseScheduler {
         // check if we should target delivering a request from a client to a replica
         dieRoll -= deliverClientRequestWeight;
         if (dieRoll < 0) {
-            Event request = clientRequestEvents.get(random.nextInt(clientRequestEvents.size()));
+            Event request = getRandomElement(clientRequestEvents);
             scenario.getTransport().deliverEvent(request.getEventId());
             EventDecision decision = new EventDecision(EventDecision.DecisionType.DELIVERED, request.getEventId());
             return Optional.of(decision);
@@ -96,7 +99,7 @@ public class RandomScheduler extends BaseScheduler {
         // check if we should drop a message sent between nodes
         dieRoll -= dropMessageWeight;
         if (dieRoll < 0) {
-            Event message = messageEvents.get(random.nextInt(messageEvents.size()));
+            Event message = getRandomElement(messageEvents);
             scenario.getTransport().dropEvent(message.getEventId());
             EventDecision decision = new EventDecision(EventDecision.DecisionType.DROPPED, message.getEventId());
             return Optional.of(decision);
@@ -105,7 +108,7 @@ public class RandomScheduler extends BaseScheduler {
         // check if we should mutate-and-deliver a message sent between nodes
         dieRoll -= mutateMessageWeight;
         if (dieRoll < 0) {
-            Event message = mutateableMessageEvents.get(random.nextInt(mutateableMessageEvents.size()));
+            Event message = getRandomElement(mutateableMessageEvents);
             List<MessageMutationFault> mutators = this.getMessageMutatorService().getMutatorsForEvent(message);
 
             if (mutators.isEmpty()) {
@@ -115,7 +118,7 @@ public class RandomScheduler extends BaseScheduler {
             }
             scenario.getTransport().applyMutation(
                     message.getEventId(),
-                    mutators.get(random.nextInt(mutators.size())));
+                    getRandomElement(mutators));
             scenario.getTransport().deliverEvent(message.getEventId());
 
             EventDecision decision = new EventDecision(EventDecision.DecisionType.MUTATED_AND_DELIVERED, message.getEventId());
