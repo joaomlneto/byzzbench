@@ -341,6 +341,7 @@ public class TendermintReplica extends LeaderBasedProtocolReplica {
         }
 
         boolean added = messageLog.addMessage(prevoteMessage);
+        log.info("Added prevote?: " + prevoteMessage + " " + added);
         if (!added) {
             return;
         } else {
@@ -677,7 +678,7 @@ public class TendermintReplica extends LeaderBasedProtocolReplica {
             handleGossipMessage((GossipMessage) message);
         } else {
             assert message instanceof GenericMessage;
-            if (messageLog.fPlus1MessagesInRound(height, ((GenericMessage) message).getSequence())) {
+            if (messageLog.fPlus1MessagesInSequence(height, ((GenericMessage) message).getSequence())) {
                 GenericMessage m = (GenericMessage) message;
                 startRound(m.getSequence());
             } else {
@@ -703,7 +704,7 @@ public class TendermintReplica extends LeaderBasedProtocolReplica {
             log.warning("Invalid message received from " + message.getReplicaId());
             return;
         }
-        if (messageLog.fPlus1MessagesInRound(message.getGossipMessage().getHeight(), sequence)) {
+        if (messageLog.fPlus1MessagesInSequence(message.getGossipMessage().getHeight(), sequence)) {
             startRound(message.getGossipMessage().getSequence());
         }
         switch (message.getGossipMessage()) {

@@ -26,7 +26,7 @@ public abstract class GenericMessage extends MessagePayload implements Comparabl
         }
 
         return Comparator.comparing(GenericMessage::getHeight)
-                .thenComparing(GenericMessage::getRound)
+                .thenComparing(GenericMessage::getSequence)
                 .thenComparing(GenericMessage::getBlock, Comparator.nullsFirst(Comparator.naturalOrder()))
                 .thenComparing(GenericMessage::getAuthor, Comparator.nullsFirst(Comparator.naturalOrder()))
                 .thenComparing(GenericMessage::getType, Comparator.nullsFirst(Comparator.naturalOrder()))
@@ -39,7 +39,7 @@ public abstract class GenericMessage extends MessagePayload implements Comparabl
         if (o == null || getClass() != o.getClass()) return false;
         GenericMessage that = (GenericMessage) o;
         return getHeight() == that.getHeight() &&
-                getRound() == that.getRound() &&
+                getSequence() == that.getSequence() &&
                 getType().equals(that.getType()) &&
                 getBlock().equals(that.getBlock()) &&
                 getAuthor().equals(that.getAuthor());
@@ -47,7 +47,7 @@ public abstract class GenericMessage extends MessagePayload implements Comparabl
 
     @Override
     public int hashCode() {
-        return Objects.hash(getHeight(), getRound(), getType(), getBlock(), getAuthor());
+        return Objects.hash(getHeight(), getSequence(), getType(), getBlock(), getAuthor());
     }
 
 }
