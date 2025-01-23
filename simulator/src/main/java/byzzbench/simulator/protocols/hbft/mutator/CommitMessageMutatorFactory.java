@@ -249,79 +249,79 @@ public class CommitMessageMutatorFactory extends MessageMutatorFactory {
 
                 // ANY-SCOPE mutations
                 //,
-                new MessageMutationFault("hbft-commit-view-inc", "Increment View Number",List.of(CommitMessage.class)) {
-                    @Override
-                    public void accept(FaultContext serializable) {
-                        Optional<Event> event = serializable.getEvent();
-                        if (event.isEmpty()) {
-                            throw invalidMessageTypeException;
-                        }
-                        if (!(event.get() instanceof MessageEvent messageEvent)) {
-                            throw invalidMessageTypeException;
-                        }
-                        if (!(messageEvent.getPayload() instanceof CommitMessage message)) {
-                            throw invalidMessageTypeException;
-                        }
-                        CommitMessage mutatedMessage = message.withViewNumber(message.getViewNumber() + random.nextLong(bound));
-                        mutatedMessage.sign(message.getSignedBy());
-                        messageEvent.setPayload(mutatedMessage);
-                    }
-                },
-                new MessageMutationFault("hbft-commit-view-dec", "Decrement View Number", List.of(CommitMessage.class)) {
-                    @Override
-                    public void accept(FaultContext serializable) {
-                        Optional<Event> event = serializable.getEvent();
-                        if (event.isEmpty()) {
-                            throw invalidMessageTypeException;
-                        }
-                        if (!(event.get() instanceof MessageEvent messageEvent)) {
-                            throw invalidMessageTypeException;
-                        }
-                        if (!(messageEvent.getPayload() instanceof CommitMessage message)) {
-                            throw invalidMessageTypeException;
-                        }
-                        CommitMessage mutatedMessage = message.withViewNumber(message.getViewNumber() - random.nextLong(bound));
-                        mutatedMessage.sign(message.getSignedBy());
-                        messageEvent.setPayload(mutatedMessage);
-                    }
-                },
-                new MessageMutationFault("hbft-commit-seq-inc", "Increment Sequence Number", List.of(CommitMessage.class)) {
-                    @Override
-                    public void accept(FaultContext serializable) {
-                        Optional<Event> event = serializable.getEvent();
-                        if (event.isEmpty()) {
-                            throw invalidMessageTypeException;
-                        }
-                        if (!(event.get() instanceof MessageEvent messageEvent)) {
-                            throw invalidMessageTypeException;
-                        }
-                        if (!(messageEvent.getPayload() instanceof CommitMessage message)) {
-                            throw invalidMessageTypeException;
-                        }
+                // new MessageMutationFault("hbft-commit-view-inc", "Increment View Number",List.of(CommitMessage.class)) {
+                //     @Override
+                //     public void accept(FaultContext serializable) {
+                //         Optional<Event> event = serializable.getEvent();
+                //         if (event.isEmpty()) {
+                //             throw invalidMessageTypeException;
+                //         }
+                //         if (!(event.get() instanceof MessageEvent messageEvent)) {
+                //             throw invalidMessageTypeException;
+                //         }
+                //         if (!(messageEvent.getPayload() instanceof CommitMessage message)) {
+                //             throw invalidMessageTypeException;
+                //         }
+                //         CommitMessage mutatedMessage = message.withViewNumber(message.getViewNumber() + random.nextLong(bound));
+                //         mutatedMessage.sign(message.getSignedBy());
+                //         messageEvent.setPayload(mutatedMessage);
+                //     }
+                // },
+                // new MessageMutationFault("hbft-commit-view-dec", "Decrement View Number", List.of(CommitMessage.class)) {
+                //     @Override
+                //     public void accept(FaultContext serializable) {
+                //         Optional<Event> event = serializable.getEvent();
+                //         if (event.isEmpty()) {
+                //             throw invalidMessageTypeException;
+                //         }
+                //         if (!(event.get() instanceof MessageEvent messageEvent)) {
+                //             throw invalidMessageTypeException;
+                //         }
+                //         if (!(messageEvent.getPayload() instanceof CommitMessage message)) {
+                //             throw invalidMessageTypeException;
+                //         }
+                //         CommitMessage mutatedMessage = message.withViewNumber(message.getViewNumber() - random.nextLong(bound));
+                //         mutatedMessage.sign(message.getSignedBy());
+                //         messageEvent.setPayload(mutatedMessage);
+                //     }
+                // },
+                // new MessageMutationFault("hbft-commit-seq-inc", "Increment Sequence Number", List.of(CommitMessage.class)) {
+                //     @Override
+                //     public void accept(FaultContext serializable) {
+                //         Optional<Event> event = serializable.getEvent();
+                //         if (event.isEmpty()) {
+                //             throw invalidMessageTypeException;
+                //         }
+                //         if (!(event.get() instanceof MessageEvent messageEvent)) {
+                //             throw invalidMessageTypeException;
+                //         }
+                //         if (!(messageEvent.getPayload() instanceof CommitMessage message)) {
+                //             throw invalidMessageTypeException;
+                //         }
 
-                        CommitMessage mutatedMessage = message.withSequenceNumber(message.getSequenceNumber() + random.nextLong(bound));
-                        mutatedMessage.sign(message.getSignedBy());
-                        messageEvent.setPayload(mutatedMessage);
-                    }
-                },
-                new MessageMutationFault("hbft-commit-sec-dec", "Decrement Sequence Number", List.of(CommitMessage.class)) {
-                    @Override
-                    public void accept(FaultContext serializable) {
-                        Optional<Event> event = serializable.getEvent();
-                        if (event.isEmpty()) {
-                            throw invalidMessageTypeException;
-                        }
-                        if (!(event.get() instanceof MessageEvent messageEvent)) {
-                            throw invalidMessageTypeException;
-                        }
-                        if (!(messageEvent.getPayload() instanceof CommitMessage message)) {
-                            throw invalidMessageTypeException;
-                        }
-                        CommitMessage mutatedMessage = message.withSequenceNumber(message.getSequenceNumber() - random.nextLong(bound));
-                        mutatedMessage.sign(message.getSignedBy());
-                        messageEvent.setPayload(mutatedMessage);
-                    }
-                }
+                //         CommitMessage mutatedMessage = message.withSequenceNumber(message.getSequenceNumber() + random.nextLong(bound));
+                //         mutatedMessage.sign(message.getSignedBy());
+                //         messageEvent.setPayload(mutatedMessage);
+                //     }
+                // },
+                // new MessageMutationFault("hbft-commit-sec-dec", "Decrement Sequence Number", List.of(CommitMessage.class)) {
+                //     @Override
+                //     public void accept(FaultContext serializable) {
+                //         Optional<Event> event = serializable.getEvent();
+                //         if (event.isEmpty()) {
+                //             throw invalidMessageTypeException;
+                //         }
+                //         if (!(event.get() instanceof MessageEvent messageEvent)) {
+                //             throw invalidMessageTypeException;
+                //         }
+                //         if (!(messageEvent.getPayload() instanceof CommitMessage message)) {
+                //             throw invalidMessageTypeException;
+                //         }
+                //         CommitMessage mutatedMessage = message.withSequenceNumber(message.getSequenceNumber() - random.nextLong(bound));
+                //         mutatedMessage.sign(message.getSignedBy());
+                //         messageEvent.setPayload(mutatedMessage);
+                //     }
+                // }
 
         );
     }
