@@ -24,7 +24,7 @@ import java.util.Random;
 @Log
 @Component
 public class MutateMessageBehavior implements FaultBehavior {
-    private static final Random rand = new Random(2137L);
+    private static final Random rand = new Random();
 
     @Override
     public String getId() {
@@ -66,6 +66,8 @@ public class MutateMessageBehavior implements FaultBehavior {
 
         // apply the random mutator
         MessageMutationFault mutator = mutators.get(rand.nextInt(mutators.size()));
-        context.getScenario().getTransport().applyMutation(e.getEventId(), mutator);
+        if(e.getStatus() == Event.Status.QUEUED) {
+            context.getScenario().getTransport().applyMutation(e.getEventId(), mutator);
+        }
     }
 }

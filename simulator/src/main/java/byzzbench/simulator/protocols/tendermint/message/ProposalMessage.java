@@ -27,6 +27,6 @@ public class ProposalMessage extends GenericMessage {
 
     @Override
     public long getRound() {
-        return totalSeq + 1;
+        return totalSeq + sequence + 1;
     }
 }

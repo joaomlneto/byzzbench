@@ -234,7 +234,8 @@ public class Transport {
 
         // check if it is in QUEUED state
         if (e.getStatus() != Event.Status.QUEUED) {
-            throw new IllegalArgumentException("Event not in QUEUED state");
+//            throw new IllegalArgumentException("Event not in QUEUED state");
+            return;
         }
 
         // if it is a MessageEvent and there is no connectivity between the nodes, drop it
@@ -279,7 +280,8 @@ public class Transport {
         Event e = events.get(eventId);
 
         if (e.getStatus() != Event.Status.QUEUED) {
-            throw new IllegalArgumentException("Event not found or not in QUEUED state");
+            return;
+//            throw new IllegalArgumentException("Event not found or not in QUEUED state");
         }
         e.setStatus(Event.Status.DROPPED);
         this.observers.forEach(o -> o.onEventDropped(e));
@@ -317,7 +319,8 @@ public class Transport {
 
         // check if event is not in QUEUED state
         if (e.getStatus() != Event.Status.QUEUED) {
-            throw new IllegalArgumentException("Message not found or not in QUEUED state");
+            return;
+//            throw new IllegalArgumentException("Message not found or not in QUEUED state");
         }
 
         // check it is a message event!

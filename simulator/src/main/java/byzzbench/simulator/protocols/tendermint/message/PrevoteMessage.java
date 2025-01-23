@@ -26,6 +26,6 @@ public class PrevoteMessage extends GenericMessage {
 
     @Override
     public long getRound() {
-        return totalSeq + 2;
+        return totalSeq + sequence + 2;
     }
 }

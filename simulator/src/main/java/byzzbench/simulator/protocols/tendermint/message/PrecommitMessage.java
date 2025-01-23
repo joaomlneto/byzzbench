@@ -26,6 +26,6 @@ public class PrecommitMessage extends GenericMessage {
 
     @Override
     public long getRound() {
-        return totalSeq + 3;
+        return totalSeq + sequence + 3;
     }
 }
