@@ -3,6 +3,7 @@ package byzzbench.simulator.faults.faults;
 import byzzbench.simulator.faults.BaseFault;
 import byzzbench.simulator.faults.RoundBasedFault;
 import byzzbench.simulator.faults.behaviors.CreateNetworkPartitionsBehavior;
+import byzzbench.simulator.faults.behaviors.ByzzFuzzDropMessageBehavior;
 import byzzbench.simulator.faults.predicates.MessageRoundPredicate;
 import lombok.Getter;
 
@@ -28,7 +29,7 @@ public class ByzzFuzzNetworkFault extends BaseFault implements RoundBasedFault {
         super(
                 "byzzfuzznetworkfault-%d-%s".formatted(round, String.join("-", partition)),
                 new MessageRoundPredicate(round),
-                new CreateNetworkPartitionsBehavior(partition)
+                new ByzzFuzzDropMessageBehavior(partition)
         );
         this.round = round;
     }

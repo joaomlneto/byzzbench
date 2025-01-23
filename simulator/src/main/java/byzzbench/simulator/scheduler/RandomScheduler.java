@@ -18,6 +18,10 @@ import java.sql.Time;
 import java.time.Instant;
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.List;
+import java.util.Optional;
+import java.util.Random;
+import java.util.SortedSet;
 
 /**
  * A scheduler that randomly selects events to deliver, drop, mutate or timeout.
@@ -27,9 +31,12 @@ import java.util.stream.Collectors;
 public class RandomScheduler extends BaseScheduler {
     private final Random random = new Random();
 
-
     public RandomScheduler(ByzzBenchConfig config, MessageMutatorService messageMutatorService) {
         super(config, messageMutatorService);
+    }
+
+    public <T> T getRandomElement(List<T> list) {
+        return list.get(random.nextInt(list.size()));
     }
 
     @Override
@@ -59,11 +66,14 @@ public class RandomScheduler extends BaseScheduler {
         List<ClientRequestEvent> clientRequestEvents = availableEvents.stream().filter(ClientRequestEvent.class::isInstance).map(e -> (ClientRequestEvent)e).collect(Collectors.toList());
         List<MessageEvent> messageEvents = availableEvents.stream().filter(MessageEvent.class::isInstance).map(e -> (MessageEvent)e).collect(Collectors.toList());
 
+        SortedSet<String> faultyReplicaIds = scenario.getFaultyReplicaIds();
+        List<MessageEvent> mutateableMessageEvents = messageEvents.stream().filter(msg -> faultyReplicaIds.contains(msg.getSenderId())).toList();
+
         int timeoutWeight = timeoutEvents.size() * this.deliverTimeoutWeight();
         int deliverMessageWeight = messageEvents.size() * this.deliverMessageWeight();
         int deliverClientRequestWeight = clientRequestEvents.size() * this.deliverClientRequestWeight();
         int dropMessageWeight = (messageEvents.size() * this.dropMessageWeight(scenario));
-        int mutateMessageWeight = (messageEvents.size() * this.mutateMessageWeight(scenario));
+        int mutateMessageWeight = (mutateableMessageEvents.size() * this.mutateMessageWeight(scenario));
         int dieRoll = random.nextInt(timeoutWeight + deliverMessageWeight
                 + deliverClientRequestWeight + dropMessageWeight + mutateMessageWeight);
 
@@ -98,7 +108,7 @@ public class RandomScheduler extends BaseScheduler {
         // check if we should target delivering a request from a client to a replica
         dieRoll -= deliverClientRequestWeight;
         if (dieRoll < 0) {
-            Event request = clientRequestEvents.get(random.nextInt(clientRequestEvents.size()));
+            Event request = getRandomElement(clientRequestEvents);
             scenario.getTransport().deliverEvent(request.getEventId());
             EventDecision decision = new EventDecision(EventDecision.DecisionType.DELIVERED, request.getEventId());
             return Optional.of(decision);
@@ -107,7 +117,7 @@ public class RandomScheduler extends BaseScheduler {
         // check if we should drop a message sent between nodes
         dieRoll -= dropMessageWeight;
         if (dieRoll < 0) {
-            MessageEvent message = messageEvents.get(random.nextInt(messageEvents.size()));
+            MessageEvent message = getRandomElement(messageEvents);
             if(scenario instanceof EDHotStuffScenario edHotStuffScenario) {
                 long view = -1;
                 if(message.getPayload() instanceof AbstractMessage abstractMessage) view = abstractMessage.getViewNumber();
@@ -122,7 +132,7 @@ public class RandomScheduler extends BaseScheduler {
         // check if we should mutate-and-deliver a message sent between nodes
         dieRoll -= mutateMessageWeight;
         if (dieRoll < 0) {
-            MessageEvent message = messageEvents.get(random.nextInt(messageEvents.size()));
+            MessageEvent message = getRandomElement(mutateableMessageEvents);
             List<MessageMutationFault> mutators = this.getMessageMutatorService().getMutatorsForEvent(message);
 
             if (mutators.isEmpty()) {
@@ -142,7 +152,7 @@ public class RandomScheduler extends BaseScheduler {
 
             scenario.getTransport().applyMutation(
                     message.getEventId(),
-                    mutators.get(random.nextInt(mutators.size())));
+                    getRandomElement(mutators));
             scenario.getTransport().deliverEvent(message.getEventId());
 
             EventDecision decision = new EventDecision(EventDecision.DecisionType.MUTATED_AND_DELIVERED, message.getEventId());
