@@ -8,6 +8,7 @@ import byzzbench.simulator.transport.Event;
 import byzzbench.simulator.transport.MessageEvent;
 import org.springframework.stereotype.Component;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -156,7 +157,7 @@ public class ViewChangeMessageWrapperMutator extends MessageMutatorFactory {
                         }
 
                         ViewChangeMessage vcm = message.getViewChangeMessage();
-                        List<CheckpointMessage> checkpoints = vcm.getCheckpoints();
+                        ArrayList<CheckpointMessage> checkpoints = new ArrayList<>(vcm.getCheckpoints());
                         CheckpointMessage fakeCheckpoint = new CheckpointMessage(-1, -1, "fake");
                         checkpoints.add(fakeCheckpoint);
                         ViewChangeMessage mutatedVcm = vcm.withCheckpoints(checkpoints);

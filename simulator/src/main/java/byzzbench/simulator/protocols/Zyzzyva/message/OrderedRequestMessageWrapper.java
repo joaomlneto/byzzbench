@@ -3,7 +3,6 @@ package byzzbench.simulator.protocols.Zyzzyva.message;
 import byzzbench.simulator.transport.MessagePayload;
 import byzzbench.simulator.transport.messages.MessageWithRound;
 import lombok.Data;
-import lombok.EqualsAndHashCode;
 import lombok.With;
 
 @Data
@@ -16,7 +15,8 @@ public class OrderedRequestMessageWrapper extends MessagePayload implements Comp
 
     @Override
     public long getRound() {
-        return orderedRequest.getSequenceNumber();
+        // there are two messages sent per round, the ORMW and the SRW
+        return orderedRequest.getSequenceNumber() * 2 - 1;
     }
     @Override
     public int compareTo(OrderedRequestMessageWrapper o) {

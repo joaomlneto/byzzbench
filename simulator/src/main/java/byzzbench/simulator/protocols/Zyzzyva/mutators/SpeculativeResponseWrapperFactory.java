@@ -125,7 +125,7 @@ public class SpeculativeResponseWrapperFactory extends MessageMutatorFactory {
                         SpeculativeResponseWrapper mutatedMessage = message.withReplicaId(newReplicaId);
                         messageEvent.setPayload(mutatedMessage);
                     }
-                }, new MessageMutationFault("zyzzyva-speculative-response-change-ordered-request-history", "Change Ordered request history", List.of(SpeculativeResponseWrapper.class)) {
+                }, new MessageMutationFault("zyzzyva-speculative-response-prev-ordered-history", "Previous Ordered request history", List.of(SpeculativeResponseWrapper.class)) {
                     @Override
                     public void accept(FaultContext serializable) {
                         Optional<Event> event = serializable.getEvent();
@@ -144,6 +144,25 @@ public class SpeculativeResponseWrapperFactory extends MessageMutatorFactory {
                         OrderedRequestMessage mutatedOrm = orm.withHistory(orm.getHistory() ^ Arrays.hashCode(orm.getDigest()));
                         mutatedOrm.sign(orm.getSignedBy());
                         SpeculativeResponseWrapper mutatedMessage = message.withOrderedRequest(mutatedOrm);
+                        messageEvent.setPayload(mutatedMessage);
+                    }
+                }, new MessageMutationFault("zyzzyva-speculative-response-inc-reply", "Increment reply", List.of(SpeculativeResponseWrapper.class)) {
+                    @Override
+                    public void accept(FaultContext serializable) {
+                        Optional<Event> event = serializable.getEvent();
+                        if (event.isEmpty()) {
+                            throw invalidMessageTypeException;
+                        }
+                        if (!(event.get() instanceof MessageEvent messageEvent)) {
+                            throw invalidMessageTypeException;
+                        }
+                        if (!(messageEvent.getPayload() instanceof SpeculativeResponseWrapper message)) {
+                            throw invalidMessageTypeException;
+                        }
+
+                        String response = message.getReply().toString();
+                        String mutatedResponse = response + "1";
+                        SpeculativeResponseWrapper mutatedMessage = message.withReply(mutatedResponse);
                         messageEvent.setPayload(mutatedMessage);
                     }
                 }

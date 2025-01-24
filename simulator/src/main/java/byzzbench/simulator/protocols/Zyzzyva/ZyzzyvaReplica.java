@@ -88,6 +88,18 @@ public class ZyzzyvaReplica extends LeaderBasedProtocolReplica {
         );
         // we set this as a null commit certificate for view changes etc. this is the first instance the system is stable
         this.getMessageLog().setMaxCC(startCC);
+
+        this.setRequestTimeoutId(this.setTimeout(
+                "requestTimeout",
+                () -> {
+                    log.warning("Replica " + this.getId() + " didn't receive next request in time, init view change");
+                    IHateThePrimaryMessage ihtpm = new IHateThePrimaryMessage(this.getViewNumber());
+                    ihtpm.sign(this.getId());
+                    this.broadcastMessage(ihtpm);
+                    this.handleIHateThePrimaryMessage(this.getId(), ihtpm);
+                },
+                Duration.ofSeconds(300)
+        ));
     }
 
     @Override
@@ -263,8 +275,8 @@ public class ZyzzyvaReplica extends LeaderBasedProtocolReplica {
             log.info("Replica " + this.getId() + " ordering request with sequence number " + orm.getSequenceNumber());
             orm.sign(this.getId());
             OrderedRequestMessageWrapper ormw = new OrderedRequestMessageWrapper(orm, requestMessage);
-            this.broadcastMessage(ormw);
-            this.handleOrderedRequestMessageWrapper(this.getId(), ormw);
+            this.broadcastMessageIncludingSelf(ormw);
+//            this.handleOrderedRequestMessageWrapper(this.getId(), ormw);
         } else if (this.getId().equals(this.getLeaderId())) {
             log.warning("Retrieving cache as primary");
             SpeculativeResponseWrapper srw = this.getMessageLog().getResponseCache().get(clientId).getRight();
@@ -318,7 +330,14 @@ public class ZyzzyvaReplica extends LeaderBasedProtocolReplica {
         // reject the message if it's too far ahead
         long lastCheckpoint = this.getMessageLog().getLastCheckpoint();
         if (lastCheckpoint + (2L * this.CP_INTERVAL) + 1 < ormw.getOrderedRequest().getSequenceNumber()) {
-            log.warning("Received an ordered request message after 2x CP_INTERVAL since last committed checkpoint");
+            log.warning("Received an ordered request message after 2x CP_INTERVAL since last committed checkpoint, resending checkpoint message");
+            CheckpointMessage cm = new CheckpointMessage(
+                    lastCheckpoint,
+                    this.getHistory().get(lastCheckpoint),
+                    this.getId()
+            );
+            cm.sign(this.getId());
+            this.broadcastMessage(cm);
             return;
         }
 
@@ -328,7 +347,8 @@ public class ZyzzyvaReplica extends LeaderBasedProtocolReplica {
         }
 
         // check if the ordered request message is valid
-        if (!this.isValidOrderedRequestMessage(ormw.getOrderedRequest(), ormw.getRequestMessage())) {
+        // IMPORTANT: as the primary, we don't check if it's valid because it won't allow for byzantine behavior
+        if (!this.getId().equals(this.getLeaderId()) && !this.isValidOrderedRequestMessage(ormw.getOrderedRequest(), ormw.getRequestMessage())) {
             return;
         }
 
@@ -347,21 +367,6 @@ public class ZyzzyvaReplica extends LeaderBasedProtocolReplica {
             return;
         }
         this.sendReplyToClient(ormw.getRequestMessage().getClientId(), response);
-        long lastRequest = this.getHighestSequenceNumber();
-        this.setRequestTimeoutId(this.setTimeout(
-                "requestTimeout",
-                () -> {
-                    if (lastRequest < this.getHighestSequenceNumber()) {
-                        return;
-                    }
-                    log.warning("Didn't receive next request in time, init view change");
-                    IHateThePrimaryMessage ihtpm = new IHateThePrimaryMessage(this.getViewNumber());
-                    ihtpm.sign(this.getId());
-                    this.broadcastMessage(ihtpm);
-                    this.handleIHateThePrimaryMessage(this.getId(), ihtpm);
-                },
-                Duration.ofSeconds(300)
-        ));
     }
 
     /**
@@ -411,7 +416,12 @@ public class ZyzzyvaReplica extends LeaderBasedProtocolReplica {
             log.warning("Received an ordered request message with a smaller than expected sequence number");
         }
         this.setHighestSequenceNumber(orm.getSequenceNumber());
-        this.updateHistory(orm.getSequenceNumber(), orm.getDigest());
+        // this happens after a view change, no need to worry
+        if (this.getHistory().getSize() == 0) {
+            this.getHistory().add(orm.getSequenceNumber(), orm.getHistory());
+        } else {
+            this.updateHistory(orm.getSequenceNumber(), orm.getDigest());
+        }
 
         SpeculativeResponse sr = new SpeculativeResponse(
                 this.getViewNumber(),
@@ -476,7 +486,7 @@ public class ZyzzyvaReplica extends LeaderBasedProtocolReplica {
 
         // check if the history hash is correct
         if (orm.getHistory() != this.calculateHistory(orm.getSequenceNumber(), messageDigest)) {
-            log.warning("Received an ordered request message with an incorrect history hash");
+            log.warning("Replica " + this.getId() + " received an ordered request message with an incorrect history hash");
             return false;
         }
         return true;
@@ -505,7 +515,7 @@ public class ZyzzyvaReplica extends LeaderBasedProtocolReplica {
                 "fillHolePrimary",
                 () -> {
                     // check that we have all the responses, if we do, and they're valid, return
-                    if (this.receivedFillHole(this.getHighestSequenceNumber() + 1, receivedSequenceNumber)) {
+                    if (this.receivedFillHole(this.getFillHoleMin(), this.getFillHoleMax())) {
                         this.lapsedFillHole();
                         return;
                     }
@@ -513,10 +523,10 @@ public class ZyzzyvaReplica extends LeaderBasedProtocolReplica {
                     this.setFillHoleTimeoutAllId(this.setTimeout(
                             "fillHoleAll",
                             () -> {
-                                if (this.receivedFillHole(this.getHighestSequenceNumber() + 1, receivedSequenceNumber)) {
+                                if (this.receivedFillHole(this.getFillHoleMin(), this.getFillHoleMax())) {
                                     this.lapsedFillHole();
                                 } else {
-                                    log.warning("Failed to fill hole");
+                                    log.warning("Failed to fill hole, init view change");
                                     IHateThePrimaryMessage ihtpm = new IHateThePrimaryMessage(this.getViewNumber());
                                     ihtpm.sign(this.getId());
                                     this.broadcastMessage(ihtpm);
@@ -710,6 +720,7 @@ public class ZyzzyvaReplica extends LeaderBasedProtocolReplica {
                 }
             }
         }
+        log.info("Replica " + this.getId() + " received all fill hole messages between " + expectedSequenceNumber + " and " + receivedSequenceNumber);
         return true;
     }
 
@@ -721,6 +732,19 @@ public class ZyzzyvaReplica extends LeaderBasedProtocolReplica {
     private void handleCommitMessage(String sender, CommitMessage commitMessage) {
         // check if the commit message is valid
         CommitCertificate cc = commitMessage.getCommitCertificate();
+
+        if (cc.getSequenceNumber() <= this.getMessageLog().getMaxCC().getSequenceNumber()) {
+            LocalCommitMessage lcm = new LocalCommitMessage(
+                    cc.getViewNumber(),
+                    cc.getDigest(),
+                    cc.getHistory(),
+                    this.getId(),
+                    sender
+            );
+            lcm.sign(this.getId());
+            this.sendMessage(lcm, sender);
+            return;
+        }
 
         // check validity
         if (!this.isValidCommitCertificate(cc)) {
@@ -750,8 +774,9 @@ public class ZyzzyvaReplica extends LeaderBasedProtocolReplica {
 
         // get the last committed sequence number
         long oldSeqNum = (currentCC != null) ? currentCC.getSequenceNumber() : 0;
-
-
+        if (this.getMessageLog().getLastCheckpoint() > oldSeqNum) {
+            oldSeqNum = this.getMessageLog().getLastCheckpoint();
+        }
 
         // commit the operation to the log
         for (long i = oldSeqNum + 1; i <= cc.getSequenceNumber(); i++) {
@@ -852,7 +877,6 @@ public class ZyzzyvaReplica extends LeaderBasedProtocolReplica {
                         // replicaId
                         this.getId(),
                         // clientId
-                        /// TODO: check if this is correct
                         clientId
                 );
                 log.info("Replica " + this.getId() + " sent a local commit message to " + clientId + " with digest " + Arrays.toString(lcm.getDigest()));
@@ -870,7 +894,7 @@ public class ZyzzyvaReplica extends LeaderBasedProtocolReplica {
             this.sendMessage(crm, this.getLeaderId());
             log.info("Replica " + this.getId() + " sent a confirm request message to " + this.getLeaderId());
 
-            /// TODO: additional pedantic details
+            /// TODO: would be nice to include the ADP here but not necessary
             this.setForwardToPrimaryTimeoutId(this.setTimeout(
                     "forwardToPrimary",
                     () -> {
@@ -1000,7 +1024,6 @@ public class ZyzzyvaReplica extends LeaderBasedProtocolReplica {
         if (!this.disgruntled) {
             this.broadcastMessage(vcmw);
             this.handleViewChangeMessageWrapper(this.getId(), vcmw);
-
         }
 
         this.setDisgruntled(true);
@@ -1191,6 +1214,10 @@ public class ZyzzyvaReplica extends LeaderBasedProtocolReplica {
             // used to get the collective ordered request history of all the replicas
             // add all the ordered requests to the map for further processing
             for (OrderedRequestMessageWrapper ormw : vcm.getOrderedRequestHistory().values()) {
+                if (ormw == null) {
+                    log.warning("Null ordered request message wrapper while computing ordered request history");
+                    continue;
+                }
                 orderedRequests.putIfAbsent(ormw.getOrderedRequest().getSequenceNumber(), new ArrayList<>());
                 orderedRequests.get(ormw.getOrderedRequest().getSequenceNumber()).add(ormw);
             }
@@ -1359,12 +1386,9 @@ public class ZyzzyvaReplica extends LeaderBasedProtocolReplica {
 
         Set<String> replicaIds = new HashSet<>();
         for (ViewChangeMessage vcm : nvm.getViewChangeMessages().values()) {
-            if (!vcm.isSignedBy(vcm.getReplicaId())) {
-                log.warning("Received a new view message with an invalid signature");
-                return false;
-            }
-            replicaIds.add(vcm.getReplicaId());
+            if(this.isValidViewChangeMessage(vcm)) replicaIds.add(vcm.getReplicaId());
         }
+
         // check if the number of replicas is correct
         if (replicaIds.size() < 2 * this.faultsTolerated + 1) {
             log.warning("Received a new view message with an incorrect number of replicas");
@@ -1418,125 +1442,157 @@ public class ZyzzyvaReplica extends LeaderBasedProtocolReplica {
      */
     private void reconcileLocalHistoryViewChange(Collection<ViewChangeMessage> viewChangeMessages, SortedMap<Long, OrderedRequestMessageWrapper> calculatedHistory) {
         long latestStableCheckpoint = viewChangeMessages.stream().map(ViewChangeMessage::getStableCheckpoint).max(Long::compareTo).orElse(-1L);
-        // if our current maxCC is greater than the one here, won't we have an issue when we try to commit stuff from this maxCC to our current one?
-        // probably isn't possible because 2f + 1 replicas have already committed to this maxCC
-        // but what if they sent their old maxCC and then received a greater MaxCC, we probably shouldn't update our maxCC in that case
-        // however, they are disgruntled so I'm not sure.
         CommitCertificate maxCC = viewChangeMessages.stream().map(ViewChangeMessage::getCommitCertificate).max(Comparator.comparingLong(CommitCertificate::getSequenceNumber)).get();
-        // when we perform a view change directly after a checkpoint
-        // our maxCC is equal to this
+//        // when we perform a view change directly after a checkpoint
+//        // our maxCC is equal to this
+//        if (calculatedHistory.isEmpty()) {
+//            log.info("Calculated history is empty probably because we committed right before the view change");
+//            if (maxCC.getSequenceNumber() != latestStableCheckpoint) {
+//                throw new IllegalStateException("MaxCC sequence number is not equal to the latest stable checkpoint when calculated history is empty");
+//            }
+//            // we are up to speed, nothing to reconcile
+//            if (latestStableCheckpoint == this.getHighestSequenceNumber()) return;
+//            // to create a CC, we need 2f + 1 replicas or more to agree
+//            // to create new view message we need 2f + 1 replicas, so our maxCC will always equal the last cc.
+//            // we therefore roll back to the last CC, since we've already commmitted
+//            /// TODO: change this then
+//            if (latestStableCheckpoint < this.getHighestSequenceNumber() && this.getMessageLog().getLastCheckpoint() == latestStableCheckpoint) {
+//                rollbackToCheckpoint(latestStableCheckpoint, maxCC);
+//                return;
+//            }
+//            // we catch up to the checkpoint
+//            if (latestStableCheckpoint > this.getHighestSequenceNumber()) {
+//                this.catchUpToCheckpoint(latestStableCheckpoint, calculatedHistory, maxCC);
+//                return;
+//            }
+//            throw new IllegalStateException("Something went wrong in empty reconciliation");
+//        }
+
         if (calculatedHistory.isEmpty()) {
-            log.info("Calculated history is empty probably because we committed right before the view change");
-            if (maxCC.getSequenceNumber() != latestStableCheckpoint) {
-                throw new IllegalStateException("MaxCC sequence number is not equal to the latest stable checkpoint when calculated history is empty");
-            }
-            // we are up to speed, nothing to reconcile
+            // nothing to reconcile
             if (latestStableCheckpoint == this.getHighestSequenceNumber()) return;
-            // we roll back otherwise
-            if (latestStableCheckpoint < this.getHighestSequenceNumber() && this.getMessageLog().getLastCheckpoint() == latestStableCheckpoint) {
-                rollbackToCheckpoint(latestStableCheckpoint, maxCC);
+            else if (latestStableCheckpoint < this.getHighestSequenceNumber()) {
+                rollbackToCheckpoint(latestStableCheckpoint, calculatedHistory, maxCC);
                 return;
             }
-            if (latestStableCheckpoint > this.getHighestSequenceNumber()) {
-                this.getMessageLog().setLastCheckpoint(latestStableCheckpoint);
-                this.getMessageLog().getOrderedMessages().clear();
-                this.getMessageLog().getSpeculativeResponsesCheckpoint().clear();
-                this.getHistory().clear();
-                this.getHistory().add(latestStableCheckpoint, maxCC.getHistory());
+            else {
+                catchUpToCheckpoint(latestStableCheckpoint, calculatedHistory, maxCC);
                 return;
             }
-            throw new IllegalStateException("Something went wrong in empty reconciliation");
         }
 
-        // in the case where we have the largest sequence number and the primary didn't receive our view change message
+        // in case the primary didn't receive our view-change message
+        // we roll back to the last checkpoint and execute up to G
+        // we return because we're up to speed then
         if (calculatedHistory.sequencedKeySet().getLast() < this.getHighestSequenceNumber()) {
-            this.getMessageLog().getSpeculativeResponsesCheckpoint().clear();
-            OrderedRequestMessageWrapper ccRequest = this.getMessageLog().getOrderedMessages().get(latestStableCheckpoint);
-            this.getMessageLog().getOrderedMessages().clear();
-            if (latestStableCheckpoint > 0) {
-                this.getMessageLog().putOrderedRequestMessageWrapper(ccRequest);
-            }
-            this.setHighestSequenceNumber(latestStableCheckpoint - 1);
+            this.rollbackToCheckpoint(latestStableCheckpoint, calculatedHistory, maxCC);
+            return;
         }
 
-        // last history key is used to get the last history and compare to the calculated history
-        long lastHistoryKey = (this.getHighestSequenceNumber() < 0 ) ? 0 : this.getHighestSequenceNumber();
-        if (calculatedHistory.get(lastHistoryKey) == null) {
-            log.warning("Last history key is null " + lastHistoryKey);
-        }
         // max-l < min-s
         if (this.getHighestSequenceNumber() < latestStableCheckpoint) {
-            this.getMessageLog().setLastCheckpoint(latestStableCheckpoint);
-            this.getHistory().clear();
-            this.setHighestSequenceNumber(latestStableCheckpoint);
-            OrderedRequestMessageWrapper first = calculatedHistory.get(calculatedHistory.firstKey());
-            this.getHistory().add(latestStableCheckpoint, first.getOrderedRequest().getHistory() ^ Arrays.hashCode(this.digest(first.getRequestMessage())));
-            if (this.getHighestSequenceNumber() != this.getHistory().getFirstKey()) {
-                log.warning("Incorrect highest sequence number");
-            }
-            this.getMessageLog().setMaxCC(maxCC);
-            this.getMessageLog().getOrderedMessages().clear();
-            for (OrderedRequestMessageWrapper ormw : calculatedHistory.values()) {
-                this.executeOrderedRequest(ormw);
-            }
+            this.catchUpToCheckpoint(latestStableCheckpoint, calculatedHistory, maxCC);
         }
-        // if the max-l is equal to the min-s and the histories are the same
-        else if (this.getHighestSequenceNumber() == latestStableCheckpoint &&
-                maxCC.getSequenceNumber() == latestStableCheckpoint &&
-                maxCC.getHistory() == this.getHistory().getLast()) {
-            // max-l = min-s = max-cc
-            this.getMessageLog().setMaxCC(maxCC);
+        // max-l == min-s
+        else if (this.getHighestSequenceNumber() == latestStableCheckpoint) {
             // execute from max-l + 1
-            for (long i = this.getHighestSequenceNumber() + 1; i <= calculatedHistory.sequencedKeySet().getLast(); i++) {
-                this.executeOrderedRequest(calculatedHistory.get(i));
-            }
-            if (this.getMessageLog().getLastCheckpoint() < latestStableCheckpoint) {
-                this.getMessageLog().setLastCheckpoint(latestStableCheckpoint);
-            }
-        }
-        // max-l >= min-s and histories diverge
-        else if (calculatedHistory.get(lastHistoryKey).getOrderedRequest().getHistory() !=
-                this.getHistory().get(lastHistoryKey)) {
-            this.getMessageLog().setLastCheckpoint(latestStableCheckpoint);
-            this.getHistory().clear();
-            this.setHighestSequenceNumber(latestStableCheckpoint);
-            OrderedRequestMessageWrapper first = calculatedHistory.get(calculatedHistory.firstKey());
-            this.getHistory().add(latestStableCheckpoint, first.getOrderedRequest().getHistory() ^ Arrays.hashCode(this.digest(first.getRequestMessage())));
-            if (this.getHighestSequenceNumber() != this.getHistory().getFirstKey()) {
-                log.warning("Incorrect highest sequence number");
-            }
-            this.getMessageLog().setMaxCC(maxCC);
-            this.getMessageLog().getOrderedMessages().clear();
-            for (OrderedRequestMessageWrapper ormw : calculatedHistory.values()) {
+            for (OrderedRequestMessageWrapper ormw : calculatedHistory.sequencedValues()) {
                 this.executeOrderedRequest(ormw);
             }
+            // if we have a higher commit certificate, we set it
+            this.handleCommitCertificate(maxCC);
         }
-        // max-l >= min-s and histories are the same
+        // max-l > min-s and histories diverge
         else {
-            this.getMessageLog().setMaxCC(maxCC);
-            // execute from max-l + 1
-            for (long i = this.getHighestSequenceNumber() + 1; i <= calculatedHistory.sequencedKeySet().getLast(); i++) {
-                this.executeOrderedRequest(calculatedHistory.get(i));
+            long lastHistoryKey = this.getHistory().getLastKey();
+            long lastHistory = this.getHistory().get(lastHistoryKey);
+            if (calculatedHistory.get(lastHistoryKey).getOrderedRequest().getHistory() == lastHistory) {
+                // handle the last commit certificate (make sure everything is committed)
+                // execute from max-l + 1
+                for (long i = this.getHighestSequenceNumber() + 1; i <= calculatedHistory.sequencedKeySet().getLast(); i++) {
+                    this.executeOrderedRequest(calculatedHistory.get(i));
+                }
+                if (this.getMessageLog().getLastCheckpoint() < latestStableCheckpoint) {
+                    this.getMessageLog().setLastCheckpoint(latestStableCheckpoint);
+                }
+                this.handleCommitCertificate(maxCC);
             }
-            if (this.getMessageLog().getLastCheckpoint() < latestStableCheckpoint) {
-                this.getMessageLog().setLastCheckpoint(latestStableCheckpoint);
+            // histories diverge and we roll back
+            else {
+                this.rollbackToCheckpoint(latestStableCheckpoint, calculatedHistory, maxCC);
             }
         }
+
     }
 
-    private void rollbackToCheckpoint(long latestStableCheckpoint, CommitCertificate maxCC) {
-        // removes the checkpoint responses
-        this.getMessageLog().getSpeculativeResponsesCheckpoint().clear();
-        // puts the orm corresponding to the latest stable checkpoint back into the ordered messages
-        OrderedRequestMessageWrapper ccRequest = this.getMessageLog().getOrderedMessages().get(latestStableCheckpoint);
-        if (ccRequest == null) {
-            log.warning("Couldn't find the checkpoint request");
-        }
-        this.getMessageLog().getOrderedMessages().clear();
-        this.getMessageLog().putOrderedRequestMessageWrapper(ccRequest);
+    /**
+     * Catches up to the checkpoint by doing the following:
+     * - Sets the latest checkpoint to the received one
+     * - Clears the history and the ordered request messages in the log
+     * - Sets the highest sequence number to the latest checkpoint
+     * - Executes any future requests
+     * - Handles the maxCC
+     * @param latestStableCheckpoint - the latest stable checkpoint received
+     * @param calculatedHistory - the ormw history calculated from the view change messages (G in the extended technical report)
+     * @param maxCC - the maxCC received from the view change messages
+     */
+    private void catchUpToCheckpoint(long latestStableCheckpoint, SortedMap<Long, OrderedRequestMessageWrapper> calculatedHistory, CommitCertificate maxCC) {
+        // set the latest checkpoint
+        this.getMessageLog().setLastCheckpoint(latestStableCheckpoint);
+        // clear the history
         this.getHistory().clear();
-        this.getHistory().add(latestStableCheckpoint, maxCC.getHistory());
+        // clear the message log
+        this.getMessageLog().getOrderedMessages().clear();
         this.setHighestSequenceNumber(latestStableCheckpoint);
+        // executes the requests from the last checkpoint
+        for (OrderedRequestMessageWrapper ormw : calculatedHistory.sequencedValues()) {
+            this.executeOrderedRequest(ormw);
+        }
+        // commits any more of the requests if they exist
+        this.handleCommitCertificate(maxCC);
+    }
+
+    /**
+     * Rolls back to the previous stable checkpoint by doing the following:
+     * - Removes the checkpoint responses, ordered messages and request cache
+     * - Clears the history
+     * - Sets the highest sequence number to the latest stable checkpoint
+     * - Executes the requests in the calculated history
+     * - Handles the maxCC
+     * @param latestStableCheckpoint - the latest stable checkpoint
+     * @param maxCC - the maxCC received from the view change messages
+     */
+    private void rollbackToCheckpoint(long latestStableCheckpoint, SortedMap<Long, OrderedRequestMessageWrapper> calculatedHistory, CommitCertificate maxCC) {
+//        // removes the checkpoint responses
+//        this.getMessageLog().getSpeculativeResponsesCheckpoint().clear();
+//        // puts the orm corresponding to the latest stable checkpoint back into the ordered messages
+//        OrderedRequestMessageWrapper ccRequest = this.getMessageLog().getOrderedMessages().get(latestStableCheckpoint);
+//        if (ccRequest == null) {
+//            log.warning("Couldn't find the checkpoint request");
+//        }
+//        this.getMessageLog().getOrderedMessages().clear();
+//        this.getMessageLog().putOrderedRequestMessageWrapper(ccRequest);
+//        this.getHistory().clear();
+//        if (maxCC.getSequenceNumber() != latestStableCheckpoint) {
+//            /// TODO: this doesn't seem right
+//            throw new IllegalStateException("MaxCC sequence number is not equal to the latest stable checkpoint when calculated history is empty");
+//        }
+//        this.getHistory().add(latestStableCheckpoint, maxCC.getHistory());
+//        this.setHighestSequenceNumber(latestStableCheckpoint);
+
+        // remove everything in the message logs
+        this.getMessageLog().getSpeculativeResponsesCheckpoint().clear();
+        this.getMessageLog().getOrderedMessages().clear();
+        this.getHistory().clear();
+        this.setHighestSequenceNumber(latestStableCheckpoint);
+        this.getMessageLog().getRequestCache().clear();
+
+        // executes the requests in the calculatedHistory
+        for (OrderedRequestMessageWrapper ormw : calculatedHistory.sequencedValues()) {
+            this.executeOrderedRequest(ormw);
+        }
+        // handles the commit certificate
+        this.handleCommitCertificate(maxCC);
     }
 
     /**
@@ -1565,6 +1621,9 @@ public class ZyzzyvaReplica extends LeaderBasedProtocolReplica {
         // if we have enough view confirm messages, we change the view
         if (maxEntry.getValue() >= 2 * this.faultsTolerated + 1) {
             this.beginNewView(maxEntry.getKey());
+
+        } else{
+            log.info("Not enough view confirm messages for view number " + futureViewNumber);
         }
     }
 
@@ -1605,15 +1664,21 @@ public class ZyzzyvaReplica extends LeaderBasedProtocolReplica {
             log.warning("Received a new view message with an incorrect ordered request history");
             return;
         }
+
         // reconcile the local history with the view change messages
         this.reconcileLocalHistoryViewChange(nvm.getViewChangeMessages().values(), calculatedHistory);
+        long history = 0;
+        if (!(this.getHistory().getSize() == 0)) {
+            history = this.getHistory().getLast();
+        }
+
         ViewConfirmMessage vcm = new ViewConfirmMessage(
                 nvm.getFutureViewNumber(),
                 this.getHighestSequenceNumber(),
-                this.getHistory().getLast(),
+                history,
                 this.getId()
                 );
-
+        log.info("Replica " + this.getId() + " sending view confirm message for view number " + nvm.getFutureViewNumber());
         vcm.sign(this.getId());
         this.broadcastMessage(vcm);
         // puts it into the view confirm messages
@@ -1664,9 +1729,11 @@ public class ZyzzyvaReplica extends LeaderBasedProtocolReplica {
                 " and sequence number: " +
                 this.getHighestSequenceNumber()
                 );
-
+        if (this.getHistory().getSize() == 0) {
+            this.getHistory().add(vcm.getLastKnownSequenceNumber(), vcm.getHistory());
+        }
         this.setView(vcm.getFutureViewNumber());
-
+        this.clearAllTimeouts();
         this.setDisgruntled(false);
     }
 

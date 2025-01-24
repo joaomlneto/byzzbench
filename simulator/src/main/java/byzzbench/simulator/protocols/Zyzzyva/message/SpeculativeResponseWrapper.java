@@ -20,7 +20,7 @@ public class SpeculativeResponseWrapper extends MessagePayload implements Compar
 
     @Override
     public long getRound() {
-        return orderedRequest.getSequenceNumber();
+        return orderedRequest.getSequenceNumber() * 2;
     }
 
     @Override

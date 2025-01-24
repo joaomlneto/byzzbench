@@ -81,7 +81,7 @@ public class ZyzzyvaClient extends Client {
         }
 
         RequestMessage requestMessage = new RequestMessage(operation, this.getHighestTimestamp(), this.getId());
-//        this.getScenario().getTransport().sendMessage(this, requestMessage, recipientId);
+        // this.getScenario().getTransport().sendMessage(this, requestMessage, recipientId);
         this.getScenario().getTransport().sendClientRequest(this.getId(), operation, recipientId, this.getHighestTimestamp());
         log.info("Sending request " + operation + " to " + recipientId);
         // transport timestamp alternative, doesn't work since the replica can't keep track of the timestamp
@@ -153,6 +153,7 @@ public class ZyzzyvaClient extends Client {
         int numMatching = this.numMatchingSpecResponses(this.getSpecResponses().getOrDefault(this.getLastDigest(), new TreeSet<>()));
         if (numMatching >= 3 * this.getNumFaults() + 1) {
             log.info("Received 3f + 1 matching responses for " + this.getLastRequest().getOperation());
+
             this.sendRequest();
         } else if (2 * this.getNumFaults() + 1 <= numMatching && numMatching <= 3 * this.getNumFaults()) {
             log.info("Received between 2f + 1 and 3f matching responses for " + this.getLastRequest().getOperation());
@@ -207,7 +208,6 @@ public class ZyzzyvaClient extends Client {
         long viewNumber = specResponse.getViewNumber();
         long history = specResponse.getHistory();
 
-        /// TODO: ask about the signed responses (additional pedantic details 4b)
         CommitCertificate cc = new CommitCertificate(
                 sequenceNumber,
                 viewNumber,

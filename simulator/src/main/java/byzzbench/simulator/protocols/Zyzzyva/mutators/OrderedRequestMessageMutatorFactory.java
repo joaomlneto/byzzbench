@@ -10,8 +10,10 @@ import byzzbench.simulator.transport.MessageEvent;
 import lombok.extern.java.Log;
 import org.springframework.stereotype.Component;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
+import java.util.Random;
 
 @Component
 @Log
@@ -100,7 +102,7 @@ public class OrderedRequestMessageMutatorFactory extends MessageMutatorFactory {
                         OrderedRequestMessageWrapper mutatedMessage = message.withOrderedRequest(mutatedOrm);
                         messageEvent.setPayload(mutatedMessage);
                     }
-                }, new MessageMutationFault("zyzzyva-ordered-request-history-inc", "Increment History", List.of(OrderedRequestMessageWrapper.class)) {
+                }, new MessageMutationFault("zyzzyva-ordered-request-prev-history", "Previous History", List.of(OrderedRequestMessageWrapper.class)) {
                     // Increment the history field of the OrderedRequestMessage, not the next history :(
                     @Override
                     public void accept(FaultContext serializable) {
@@ -116,7 +118,7 @@ public class OrderedRequestMessageMutatorFactory extends MessageMutatorFactory {
                         }
 
                         OrderedRequestMessage orm = message.getOrderedRequest();
-                        OrderedRequestMessage mutatedOrm = orm.withHistory(orm.getHistory() + 1);
+                        OrderedRequestMessage mutatedOrm = orm.withHistory(orm.getHistory() ^ Arrays.hashCode(orm.getDigest()));
                         mutatedOrm.sign(orm.getSignedBy());
                         OrderedRequestMessageWrapper mutatedMessage = message.withOrderedRequest(mutatedOrm);
                         messageEvent.setPayload(mutatedMessage);
@@ -142,7 +144,7 @@ public class OrderedRequestMessageMutatorFactory extends MessageMutatorFactory {
                         OrderedRequestMessageWrapper mutatedMessage = message.withOrderedRequest(mutatedOrm);
                         messageEvent.setPayload(mutatedMessage);
                     }
-                }, new MessageMutationFault("zyzzyva-ordered-request-digest-none", "Digest none", List.of(OrderedRequestMessageWrapper.class)) {
+                }, new MessageMutationFault("zyzzyva-ordered-request-digest-random", "Digest random", List.of(OrderedRequestMessageWrapper.class)) {
                     // Increment the history field of the OrderedRequestMessage, not the next history :(
                     @Override
                     public void accept(FaultContext serializable) {
@@ -159,7 +161,10 @@ public class OrderedRequestMessageMutatorFactory extends MessageMutatorFactory {
                         }
 
                         OrderedRequestMessage orm = message.getOrderedRequest();
-                        OrderedRequestMessage mutatedOrm = orm.withDigest(new byte[0]);
+                        byte[] mutatedDigest = new byte[orm.getDigest().length];
+                        Random random = new Random();
+                        random.nextBytes(mutatedDigest);
+                        OrderedRequestMessage mutatedOrm = orm.withDigest(mutatedDigest);
                         mutatedOrm.sign(orm.getSignedBy());
                         OrderedRequestMessageWrapper mutatedMessage = message.withOrderedRequest(mutatedOrm);
                         messageEvent.setPayload(mutatedMessage);

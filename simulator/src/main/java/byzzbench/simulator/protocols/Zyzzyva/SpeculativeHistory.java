@@ -72,15 +72,15 @@ public class SpeculativeHistory {
         return this.speculativeHistory.containsKey(index);
     }
 
-    public long getFirstKey() {
-        return this.speculativeHistory.sequencedKeySet().getFirst();
-    }
-
     /**
      * Get the length of the speculative history
      * @return the length of the speculative history
      */
     public int getSize() {
         return this.speculativeHistory.size();
+    }
+
+    public long getLastKey() {
+        return this.speculativeHistory.sequencedKeySet().getLast();
     }
 }
