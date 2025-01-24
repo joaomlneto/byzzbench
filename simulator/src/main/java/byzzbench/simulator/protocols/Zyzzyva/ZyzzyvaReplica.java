@@ -88,18 +88,6 @@ public class ZyzzyvaReplica extends LeaderBasedProtocolReplica {
         );
         // we set this as a null commit certificate for view changes etc. this is the first instance the system is stable
         this.getMessageLog().setMaxCC(startCC);
-
-        this.setRequestTimeoutId(this.setTimeout(
-                "requestTimeout",
-                () -> {
-                    log.warning("Replica " + this.getId() + " didn't receive next request in time, init view change");
-                    IHateThePrimaryMessage ihtpm = new IHateThePrimaryMessage(this.getViewNumber());
-                    ihtpm.sign(this.getId());
-                    this.broadcastMessage(ihtpm);
-                    this.handleIHateThePrimaryMessage(this.getId(), ihtpm);
-                },
-                Duration.ofSeconds(300)
-        ));
     }
 
     @Override
@@ -272,7 +260,7 @@ public class ZyzzyvaReplica extends LeaderBasedProtocolReplica {
                     this.calculateHistory(this.getHighestSequenceNumber() + 1, digest),
                     // digest
                     digest);
-            log.info("Replica " + this.getId() + " ordering request with sequence number " + orm.getSequenceNumber());
+            log.info("Replica " + this.getId() + " ordering request with sequence number " + orm.getSequenceNumber() + " and operation " + requestMessage.getOperation());
             orm.sign(this.getId());
             OrderedRequestMessageWrapper ormw = new OrderedRequestMessageWrapper(orm, requestMessage);
             this.broadcastMessage(ormw);
@@ -366,12 +354,19 @@ public class ZyzzyvaReplica extends LeaderBasedProtocolReplica {
             log.warning("Failed to clear forward to primary timeout, possibly because it's been triggered");
         } catch (NullPointerException ignored) {
         }
-        SpeculativeResponseWrapper response = this.executeOrderedRequest(ormw);
+        SpeculativeResponseWrapper srw = this.executeOrderedRequest(ormw);
         if (ormw.getRequestMessage().getClientId().equals("Noop")) {
             log.info("Received a noop");
             return;
         }
-        this.sendReplyToClient(ormw.getRequestMessage().getClientId(), response);
+        this.sendReplyToClient(ormw.getRequestMessage().getClientId(), srw);
+
+        // checkpointing
+        if (ormw.getOrderedRequest().getSequenceNumber() % this.getCP_INTERVAL() == 0) {
+            log.info("Replica " + this.getId() + " going to checkpoint");
+            this.broadcastMessage(srw.getSpecResponse());
+            this.handleSpeculativeResponse(this.getId(), srw.getSpecResponse());
+        }
     }
 
     /**
@@ -393,13 +388,6 @@ public class ZyzzyvaReplica extends LeaderBasedProtocolReplica {
         this.getMessageLog().getOrderedMessages().put(ormw.getOrderedRequest().getSequenceNumber(), ormw);
         // updates the request cache
         this.getMessageLog().putResponseCache(clientId, ormw.getRequestMessage(), srw);
-
-        // checkpointing
-        if (ormw.getOrderedRequest().getSequenceNumber() % this.getCP_INTERVAL() == 0) {
-            log.info("Checkpointing");
-            this.broadcastMessage(srw.getSpecResponse());
-            this.handleSpeculativeResponse(this.getId(), srw.getSpecResponse());
-        }
 
         return srw;
     }
@@ -756,6 +744,7 @@ public class ZyzzyvaReplica extends LeaderBasedProtocolReplica {
             log.warning("Received invalid commit certificate from " + sender);
             return;
         }
+        log.info("Received a commit certificate from " + sender + " with sequence number " + cc.getSequenceNumber());
         // commit the operations
         this.handleCommitCertificate(cc);
         LocalCommitMessage lcm = new LocalCommitMessage(
@@ -764,6 +753,7 @@ public class ZyzzyvaReplica extends LeaderBasedProtocolReplica {
                 cc.getHistory(),
                 this.getId(),
                 sender);
+        log.info("Replica " + this.getId() + " sending a local commit message to " + sender);
         lcm.sign(this.getId());
         this.sendMessage(lcm, sender);
     }
@@ -801,6 +791,7 @@ public class ZyzzyvaReplica extends LeaderBasedProtocolReplica {
         this.getMessageLog().setMaxCC(cc);
         if (this.getCommitLog().getHighestSequenceNumber() > this.getMessageLog().getMaxCC().getSequenceNumber()) {
             log.warning("Replica " + this.getId() + " has a higher sequence number in the commit log than the maxCC");
+            throw new IllegalStateException("Replica " + this.getId() + " has a higher sequence number in the commit log than the maxCC");
         }
     }
 
@@ -849,7 +840,7 @@ public class ZyzzyvaReplica extends LeaderBasedProtocolReplica {
 
         // if the currentCC is not null and the sequence number is the same, we return true, this means we commit again?
         if (currentCC != null && cc.getSequenceNumber() == currentCC.getSequenceNumber()) {
-            log.warning("Replica " + this.getId() +" received a commit certificate with the same sequence number");
+            log.warning("Replica " + this.getId() + " received a commit certificate with the same sequence number ");
             return false;
         }
 
@@ -994,21 +985,6 @@ public class ZyzzyvaReplica extends LeaderBasedProtocolReplica {
             log.warning("MaxCC is null");
         }
 
-
-        // creates the CCs
-//        if (this.getMessageLog().getMaxCC() != null && this.getMessageLog().getMaxCC().getViewNumber() == this.getViewNumber()) {
-//            cc = this.getMessageLog().getMaxCC();
-//        }
-//        } else if (this.getMessageLog()
-//                .getViewConfirmMessages()
-//                .getOrDefault(this.getViewNumber(), new ArrayList<>())
-//                .size() >= this.faultsTolerated + 1) {
-//            cc = new ArrayList<>(this.getMessageLog().getViewConfirmMessages().get(this.getViewNumber()));
-//        } else {
-//            if(this.getMessageLog().getNewViewMessages().isEmpty()) {log.warning("New view messages is empty"); return;}
-//            cc = this.getMessageLog().getNewViewMessages().sequencedValues().getLast();
-//        }
-
         if (this.getMessageLog().getCheckpointMessages().get(this.getMessageLog().getLastCheckpoint()) == null) {
             log.warning("Checkpoint messages is null");
         }
@@ -1032,7 +1008,7 @@ public class ZyzzyvaReplica extends LeaderBasedProtocolReplica {
             this.broadcastMessage(vcmw);
             this.handleViewChangeMessageWrapper(this.getId(), vcmw);
         }
-
+        log.info("Replica " + this.getId() + " committed to a view change with maxCC " + cc.getSequenceNumber() + ", last checkpoint " + this.getMessageLog().getLastCheckpoint() + " and highest sequence number " + this.getHighestSequenceNumber());
         this.setDisgruntled(true);
     }
 
@@ -1450,31 +1426,7 @@ public class ZyzzyvaReplica extends LeaderBasedProtocolReplica {
     private void reconcileLocalHistoryViewChange(Collection<ViewChangeMessage> viewChangeMessages, SortedMap<Long, OrderedRequestMessageWrapper> calculatedHistory) {
         long latestStableCheckpoint = viewChangeMessages.stream().map(ViewChangeMessage::getStableCheckpoint).max(Long::compareTo).orElse(-1L);
         CommitCertificate maxCC = viewChangeMessages.stream().map(ViewChangeMessage::getCommitCertificate).max(Comparator.comparingLong(CommitCertificate::getSequenceNumber)).get();
-//        // when we perform a view change directly after a checkpoint
-//        // our maxCC is equal to this
-//        if (calculatedHistory.isEmpty()) {
-//            log.info("Calculated history is empty probably because we committed right before the view change");
-//            if (maxCC.getSequenceNumber() != latestStableCheckpoint) {
-//                throw new IllegalStateException("MaxCC sequence number is not equal to the latest stable checkpoint when calculated history is empty");
-//            }
-//            // we are up to speed, nothing to reconcile
-//            if (latestStableCheckpoint == this.getHighestSequenceNumber()) return;
-//            // to create a CC, we need 2f + 1 replicas or more to agree
-//            // to create new view message we need 2f + 1 replicas, so our maxCC will always equal the last cc.
-//            // we therefore roll back to the last CC, since we've already commmitted
-//            /// TODO: change this then
-//            if (latestStableCheckpoint < this.getHighestSequenceNumber() && this.getMessageLog().getLastCheckpoint() == latestStableCheckpoint) {
-//                rollbackToCheckpoint(latestStableCheckpoint, maxCC);
-//                return;
-//            }
-//            // we catch up to the checkpoint
-//            if (latestStableCheckpoint > this.getHighestSequenceNumber()) {
-//                this.catchUpToCheckpoint(latestStableCheckpoint, calculatedHistory, maxCC);
-//                return;
-//            }
-//            throw new IllegalStateException("Something went wrong in empty reconciliation");
-//        }
-
+        log.info("Replica " + this.getId() + " reconciling local history with maxCC " + maxCC.getSequenceNumber() + ", latest stable checkpoint " + latestStableCheckpoint + " and highest sequence number " + this.getHighestSequenceNumber());
         if (calculatedHistory.isEmpty()) {
             // nothing to reconcile
             if (latestStableCheckpoint == this.getHighestSequenceNumber()) return;
@@ -1509,24 +1461,49 @@ public class ZyzzyvaReplica extends LeaderBasedProtocolReplica {
             // if we have a higher commit certificate, we set it
             this.handleCommitCertificate(maxCC);
         }
-        // max-l > min-s and histories diverge
+        // max-l > min-s
         else {
-            long lastHistoryKey = this.getHistory().getLastKey();
+            long lastHistoryKey;
+            try {
+                lastHistoryKey = this.getHistory().getLastKey();
+            } catch (NoSuchElementException e) {
+                log.warning("No last history key found");
+                return;
+            }
+
             long lastHistory = this.getHistory().get(lastHistoryKey);
             if (calculatedHistory.get(lastHistoryKey).getOrderedRequest().getHistory() == lastHistory) {
                 // handle the last commit certificate (make sure everything is committed)
                 // execute from max-l + 1
+
                 for (long i = this.getHighestSequenceNumber() + 1; i <= calculatedHistory.sequencedKeySet().getLast(); i++) {
                     this.executeOrderedRequest(calculatedHistory.get(i));
                 }
                 if (this.getMessageLog().getLastCheckpoint() < latestStableCheckpoint) {
                     this.getMessageLog().setLastCheckpoint(latestStableCheckpoint);
                 }
-                this.handleCommitCertificate(maxCC);
+
+                if (this.getMessageLog().getMaxCC().getSequenceNumber() < maxCC.getSequenceNumber()) {
+                    this.handleCommitCertificate(maxCC);
+                }
             }
             // histories diverge and we roll back
             else {
-                this.rollbackToCheckpoint(latestStableCheckpoint, calculatedHistory, maxCC);
+                if (this.getMessageLog().getMaxCC().getSequenceNumber() > maxCC.getSequenceNumber()) {
+                    log.info("Diverging histories, rolling back to checkpoint");
+                    this.getMessageLog().getOrderedMessages().clear();
+                    this.getHistory().clear();
+                    this.getMessageLog().getRequestCache().clear();
+                    for (OrderedRequestMessageWrapper ormw : calculatedHistory.sequencedValues()) {
+                        if (ormw.getOrderedRequest().getSequenceNumber() <= this.getMessageLog().getMaxCC().getSequenceNumber()) {
+                            continue;
+                        }
+                        this.executeOrderedRequest(ormw);
+                    }
+
+                } else {
+                    this.rollbackToCheckpoint(latestStableCheckpoint, calculatedHistory, maxCC);
+                }
             }
         }
 
@@ -1544,6 +1521,7 @@ public class ZyzzyvaReplica extends LeaderBasedProtocolReplica {
      * @param maxCC - the maxCC received from the view change messages
      */
     private void catchUpToCheckpoint(long latestStableCheckpoint, SortedMap<Long, OrderedRequestMessageWrapper> calculatedHistory, CommitCertificate maxCC) {
+        log.info("Replica " + this.getId() + " catching up to checkpoint " + latestStableCheckpoint);
         // set the latest checkpoint
         this.getMessageLog().setLastCheckpoint(latestStableCheckpoint);
         // clear the history
@@ -1570,23 +1548,7 @@ public class ZyzzyvaReplica extends LeaderBasedProtocolReplica {
      * @param maxCC - the maxCC received from the view change messages
      */
     private void rollbackToCheckpoint(long latestStableCheckpoint, SortedMap<Long, OrderedRequestMessageWrapper> calculatedHistory, CommitCertificate maxCC) {
-//        // removes the checkpoint responses
-//        this.getMessageLog().getSpeculativeResponsesCheckpoint().clear();
-//        // puts the orm corresponding to the latest stable checkpoint back into the ordered messages
-//        OrderedRequestMessageWrapper ccRequest = this.getMessageLog().getOrderedMessages().get(latestStableCheckpoint);
-//        if (ccRequest == null) {
-//            log.warning("Couldn't find the checkpoint request");
-//        }
-//        this.getMessageLog().getOrderedMessages().clear();
-//        this.getMessageLog().putOrderedRequestMessageWrapper(ccRequest);
-//        this.getHistory().clear();
-//        if (maxCC.getSequenceNumber() != latestStableCheckpoint) {
-//            /// TODO: this doesn't seem right
-//            throw new IllegalStateException("MaxCC sequence number is not equal to the latest stable checkpoint when calculated history is empty");
-//        }
-//        this.getHistory().add(latestStableCheckpoint, maxCC.getHistory());
-//        this.setHighestSequenceNumber(latestStableCheckpoint);
-
+        log.info("Replica " + this.getId() + " rolling back to checkpoint " + latestStableCheckpoint);
         // remove everything in the message logs
         this.getMessageLog().getSpeculativeResponsesCheckpoint().clear();
         this.getMessageLog().getOrderedMessages().clear();
@@ -1665,6 +1627,10 @@ public class ZyzzyvaReplica extends LeaderBasedProtocolReplica {
         if(!isValidNewViewMessage(nvm)) {
             return;
         }
+        if (this.getMessageLog().getNewViewMessages().containsKey(nvm.getFutureViewNumber())) {
+            log.info("Received a new view message for a view number that we've already received");
+            return;
+        }
 
         // add the new view message to the message log
         this.getMessageLog().putNewViewMessage(nvm);
@@ -1723,11 +1689,6 @@ public class ZyzzyvaReplica extends LeaderBasedProtocolReplica {
         // clear view specific messages
         this.getMessageLog().getIHateThePrimaries().getOrDefault(this.getViewNumber(), new TreeMap<>()).clear();
         this.getMessageLog().getFillHoleMessages().clear();
-
-//        this.getHistory().clear();
-//        this.getHistory().add(vcm.getLastKnownSequenceNumber(), vcm.getHistory());
-        /// TODO: See if this is higher than what we have so far, because it might mess with the ordering and cause a replica to skip.
-//        this.setHighestSequenceNumber(vcm.getLastKnownSequenceNumber());
 
         // sets the view number and primary
         log.info("Replica " +
@@ -1813,6 +1774,7 @@ public class ZyzzyvaReplica extends LeaderBasedProtocolReplica {
      * @param sequenceNumber - the sequence number to create the checkpoint for
      */
     private void createCheckpoint(long sequenceNumber) {
+        log.info("Replica " + this.getId() + " created stable checkpoint for sequence number " + sequenceNumber);
         // set the last checkpoint
         this.getMessageLog().setLastCheckpoint(sequenceNumber);
 
@@ -1914,6 +1876,7 @@ public class ZyzzyvaReplica extends LeaderBasedProtocolReplica {
         );
         cm.sign(this.getId());
         this.broadcastMessage(cm);
+        log.info("Replica " + this.getId() + " sent a checkpoint message for sequence number " + sequenceNumber);
         this.handleCheckpointMessage(this.getId(), cm);
     }
 }
