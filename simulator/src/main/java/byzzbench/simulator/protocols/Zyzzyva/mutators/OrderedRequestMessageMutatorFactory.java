@@ -123,27 +123,6 @@ public class OrderedRequestMessageMutatorFactory extends MessageMutatorFactory {
                         OrderedRequestMessageWrapper mutatedMessage = message.withOrderedRequest(mutatedOrm);
                         messageEvent.setPayload(mutatedMessage);
                     }
-                }, new MessageMutationFault("zyzzyva-ordered-request-history-dec", "Decrement History", List.of(OrderedRequestMessageWrapper.class)) {
-                    // Increment the history field of the OrderedRequestMessage, not the next history :(
-                    @Override
-                    public void accept(FaultContext serializable) {
-                        Optional<Event> event = serializable.getEvent();
-                        if (event.isEmpty()) {
-                            throw invalidMessageTypeException;
-                        }
-                        if (!(event.get() instanceof MessageEvent messageEvent)) {
-                            throw invalidMessageTypeException;
-                        }
-                        if (!(messageEvent.getPayload() instanceof OrderedRequestMessageWrapper message)) {
-                            throw invalidMessageTypeException;
-                        }
-
-                        OrderedRequestMessage orm = message.getOrderedRequest();
-                        OrderedRequestMessage mutatedOrm = orm.withHistory(orm.getHistory() - 1);
-                        mutatedOrm.sign(orm.getSignedBy());
-                        OrderedRequestMessageWrapper mutatedMessage = message.withOrderedRequest(mutatedOrm);
-                        messageEvent.setPayload(mutatedMessage);
-                    }
                 }, new MessageMutationFault("zyzzyva-ordered-request-digest-random", "Digest random", List.of(OrderedRequestMessageWrapper.class)) {
                     // Increment the history field of the OrderedRequestMessage, not the next history :(
                     @Override
@@ -165,6 +144,27 @@ public class OrderedRequestMessageMutatorFactory extends MessageMutatorFactory {
                         Random random = new Random();
                         random.nextBytes(mutatedDigest);
                         OrderedRequestMessage mutatedOrm = orm.withDigest(mutatedDigest);
+                        mutatedOrm.sign(orm.getSignedBy());
+                        OrderedRequestMessageWrapper mutatedMessage = message.withOrderedRequest(mutatedOrm);
+                        messageEvent.setPayload(mutatedMessage);
+                    }
+                }, new MessageMutationFault("zyzzyva-ordered-request-first-history", "First History", List.of(OrderedRequestMessageWrapper.class)) {
+                    // Make this request the first one. Necessary for Abraham
+                    @Override
+                    public void accept(FaultContext serializable) {
+                        Optional<Event> event = serializable.getEvent();
+                        if (event.isEmpty()) {
+                            throw invalidMessageTypeException;
+                        }
+                        if (!(event.get() instanceof MessageEvent messageEvent)) {
+                            throw invalidMessageTypeException;
+                        }
+                        if (!(messageEvent.getPayload() instanceof OrderedRequestMessageWrapper message)) {
+                            throw invalidMessageTypeException;
+                        }
+
+                        OrderedRequestMessage orm = message.getOrderedRequest();
+                        OrderedRequestMessage mutatedOrm = orm.withHistory(Arrays.hashCode(orm.getDigest()));
                         mutatedOrm.sign(orm.getSignedBy());
                         OrderedRequestMessageWrapper mutatedMessage = message.withOrderedRequest(mutatedOrm);
                         messageEvent.setPayload(mutatedMessage);

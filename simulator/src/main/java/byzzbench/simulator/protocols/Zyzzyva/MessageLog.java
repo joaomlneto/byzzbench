@@ -161,7 +161,7 @@ public class MessageLog implements Serializable {
         }
     }
 
-    public void putRequestCache(String clientId, RequestMessage rm, SpeculativeResponseWrapper srw) {
+    public void putResponseCache(String clientId, RequestMessage rm, SpeculativeResponseWrapper srw) {
         if (this.highestTimestampInCacheForClient(clientId) > rm.getTimestamp()) {
             if (clientId.equals("Noop")) {
                 return;
@@ -171,6 +171,10 @@ public class MessageLog implements Serializable {
             return;
         }
         this.getResponseCache().put(clientId, new ImmutablePair<>(rm, srw));
+    }
+
+    public void putRequestCache(String clientId, RequestMessage rm) {
+        this.getRequestCache().put(clientId, rm);
     }
 
     public void putOrderedRequestMessageWrapper(OrderedRequestMessageWrapper ormw) {

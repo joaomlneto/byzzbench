@@ -199,7 +199,6 @@ public class ZyzzyvaClient extends Client {
         // create the commit message
         CommitMessage commitMessage = getCommitMessage(specResponse, signedBy);
         commitMessage.sign(this.getId());
-        log.info("Sending commit message until response for " + this.getLastRequest().getOperation());
         sendCommitUntilResponse(commitMessage);
     }
 
@@ -227,7 +226,7 @@ public class ZyzzyvaClient extends Client {
     private void sendCommitUntilResponse(CommitMessage commitMessage) {
         SortedSet<String> recipientIds = (SortedSet<String>) this.getScenario().getReplicas().keySet();
         this.getScenario().getTransport().multicast(this, recipientIds, commitMessage);
-        log.info("Sending commit message to all replicas for " + this.getLastRequest().getOperation());
+        log.info("Sending commit message until response for " + this.getLastRequest().getOperation());
         // Sets the timeout, clears the local commits if the number of local commits is greater than 2f
         this.setTimeout("commitTimeout", () -> {
             if (this.getLocalCommits().getOrDefault(this.getLastDigest(), new TreeSet<>()).size() >= 2 * this.getNumFaults() + 1) {

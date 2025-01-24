@@ -275,8 +275,9 @@ public class ZyzzyvaReplica extends LeaderBasedProtocolReplica {
             log.info("Replica " + this.getId() + " ordering request with sequence number " + orm.getSequenceNumber());
             orm.sign(this.getId());
             OrderedRequestMessageWrapper ormw = new OrderedRequestMessageWrapper(orm, requestMessage);
-            this.broadcastMessageIncludingSelf(ormw);
-//            this.handleOrderedRequestMessageWrapper(this.getId(), ormw);
+            this.broadcastMessage(ormw);
+//            this.broadcastMessageIncludingSelf(ormw);
+            this.handleOrderedRequestMessageWrapper(this.getId(), ormw);
         } else if (this.getId().equals(this.getLeaderId())) {
             log.warning("Retrieving cache as primary");
             SpeculativeResponseWrapper srw = this.getMessageLog().getResponseCache().get(clientId).getRight();
@@ -323,7 +324,10 @@ public class ZyzzyvaReplica extends LeaderBasedProtocolReplica {
             return;
         }
         try {
-            this.clearTimeout(this.getRequestTimeoutId());
+            if (this.getMessageLog().getRequestCache().containsKey(ormw.getRequestMessage().getClientId()) && this.getMessageLog().getRequestCache().get(ormw.getRequestMessage().getClientId()).equals(ormw.getRequestMessage())) {
+                log.info("Cleared forward to primary timeout");
+                this.clearTimeout(this.getForwardToPrimaryTimeoutId());
+            }
         } catch (IllegalArgumentException e) {
             log.warning("Failed to clear request timeout, possibly because it's been triggered");
         }
@@ -348,7 +352,8 @@ public class ZyzzyvaReplica extends LeaderBasedProtocolReplica {
 
         // check if the ordered request message is valid
         // IMPORTANT: as the primary, we don't check if it's valid because it won't allow for byzantine behavior
-        if (!this.getId().equals(this.getLeaderId()) && !this.isValidOrderedRequestMessage(ormw.getOrderedRequest(), ormw.getRequestMessage())) {
+        // !this.getId().equals(this.getLeaderId()) &&
+        if (!this.isValidOrderedRequestMessage(ormw.getOrderedRequest(), ormw.getRequestMessage())) {
             return;
         }
 
@@ -387,7 +392,7 @@ public class ZyzzyvaReplica extends LeaderBasedProtocolReplica {
         // updates the ordered messages
         this.getMessageLog().getOrderedMessages().put(ormw.getOrderedRequest().getSequenceNumber(), ormw);
         // updates the request cache
-        this.getMessageLog().putRequestCache(clientId, ormw.getRequestMessage(), srw);
+        this.getMessageLog().putResponseCache(clientId, ormw.getRequestMessage(), srw);
 
         // checkpointing
         if (ormw.getOrderedRequest().getSequenceNumber() % this.getCP_INTERVAL() == 0) {
@@ -894,12 +899,14 @@ public class ZyzzyvaReplica extends LeaderBasedProtocolReplica {
             this.sendMessage(crm, this.getLeaderId());
             log.info("Replica " + this.getId() + " sent a confirm request message to " + this.getLeaderId());
 
+            this.getMessageLog().putRequestCache(clientId, rm);
+
             /// TODO: would be nice to include the ADP here but not necessary
             this.setForwardToPrimaryTimeoutId(this.setTimeout(
                     "forwardToPrimary",
                     () -> {
                         // we don't check if we've received here because in most cases, we get more recent requests
-                        // and we don't know if we've received it. So we check the property in the ordered request message
+                        // and we don't know if we've received it. So we check the property in the handleOrderedRequestMessage()
                         log.warning("Failed to forward to primary, init view change");
                         IHateThePrimaryMessage ihtpm = new IHateThePrimaryMessage(this.getViewNumber());
                         ihtpm.sign(this.getId());
@@ -1590,6 +1597,9 @@ public class ZyzzyvaReplica extends LeaderBasedProtocolReplica {
         // executes the requests in the calculatedHistory
         for (OrderedRequestMessageWrapper ormw : calculatedHistory.sequencedValues()) {
             this.executeOrderedRequest(ormw);
+        }
+        if (maxCC.getSequenceNumber() > this.getHighestSequenceNumber()) {
+            log.warning("MaxCC sequence number is greater than the highest sequence number");
         }
         // handles the commit certificate
         this.handleCommitCertificate(maxCC);
