@@ -219,7 +219,7 @@ public class MessageLog implements Serializable {
             int matching = 0;
 
             for (CheckpointMessage proof : checkpointProofs.values()) {
-                if (proof.equals(checkpoint)) {
+                if (proof.equals(checkpoint) /* Arrays.equals(proof.getDigest(), checkpoint.getDigest()) */) {
                     matching++;
 
                     if (matching == stableCount) {
@@ -240,7 +240,7 @@ public class MessageLog implements Serializable {
         int matching = 0;
 
         for (CheckpointMessage proof : checkpointProofs.values()) {
-            if (proof.equals(checkpoint)) {
+            if (proof.equals(checkpoint) /* Arrays.equals(proof.getDigest(), checkpoint.getDigest()) */) {
                 matching++;
             }
         }
@@ -257,7 +257,7 @@ public class MessageLog implements Serializable {
         int matching = 0;
 
         for (CheckpointMessage proof : checkpointProofs.values()) {
-            if (proof.equals(checkpoint)) {
+            if (proof.equals(checkpoint) /* Arrays.equals(proof.getDigest(), checkpoint.getDigest()) */) {
                 matching++;
             }
         }
