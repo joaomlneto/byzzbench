@@ -938,7 +938,7 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
         //this.seqCounter.set(history.getGreatestSeqNumber());
 
         CheckpointMessage checkpoint = new CheckpointIMessage(
-            this.seqCounter.get(),
+            history.getGreatestSeqNumber(),
             this.digest(history),
             this.getLeaderId(),
             history);
