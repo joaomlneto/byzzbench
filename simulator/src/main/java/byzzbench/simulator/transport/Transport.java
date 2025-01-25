@@ -364,7 +364,8 @@ public class Transport {
         }
 
         if (e.getStatus() != Event.Status.QUEUED) {
-            throw new IllegalArgumentException("Event not found or not in QUEUED state");
+            return;
+            //throw new IllegalArgumentException("Event not found or not in QUEUED state");
         }
 
         e.setStatus(Event.Status.DROPPED);
@@ -403,7 +404,8 @@ public class Transport {
 
         // check if event is not in QUEUED state
         if (e.getStatus() != Event.Status.QUEUED) {
-            throw new IllegalArgumentException("Message not found or not in QUEUED state");
+            return;
+            //throw new IllegalArgumentException("Event not found or not in QUEUED state");
         }
 
         // check it is a message event!
