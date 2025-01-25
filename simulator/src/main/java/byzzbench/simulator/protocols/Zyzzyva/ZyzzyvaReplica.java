@@ -378,18 +378,6 @@ public class ZyzzyvaReplica extends LeaderBasedProtocolReplica {
             this.broadcastMessage(srw.getSpecResponse());
             this.handleSpeculativeResponse(this.getId(), srw.getSpecResponse());
         }
-//
-//        this.setRequestTimeoutId(this.setTimeout(
-//                "request",
-//                () -> {
-//                    log.warning("Request timeout triggered");
-//                    IHateThePrimaryMessage ihtpm = new IHateThePrimaryMessage(this.getViewNumber());
-//                    ihtpm.sign(this.getId());
-//                    this.broadcastMessage(ihtpm);
-//                    this.handleIHateThePrimaryMessage(this.getId(), ihtpm);
-//                },
-//                Duration.ofMillis(30000)
-//        ));
     }
 
     /**
@@ -1032,6 +1020,7 @@ public class ZyzzyvaReplica extends LeaderBasedProtocolReplica {
                 this.getId()
         );
         vcm.sign(this.getId());
+
         ViewChangeMessageWrapper vcmw = new ViewChangeMessageWrapper(iHateThePrimaryMessages, vcm);
 
         if (!this.disgruntled) {

@@ -7,16 +7,15 @@ import lombok.With;
 
 @Data
 @With
-public class OrderedRequestMessageWrapper extends MessagePayload implements Comparable<OrderedRequestMessageWrapper>
-        , MessageWithRound {
-//{
+public class OrderedRequestMessageWrapper extends MessagePayload implements Comparable<OrderedRequestMessageWrapper>, MessageWithRound {
+
     private final OrderedRequestMessage orderedRequest;
     private final RequestMessage requestMessage;
 
     @Override
     public long getRound() {
-        // there are two messages sent per round, the ORMW and the SRW
-        return orderedRequest.getSequenceNumber() * 2 - 1;
+        // there are ten messages sent per round of rounds.
+        return (orderedRequest.getSequenceNumber() - 1) * 10 + 1;
     }
     @Override
     public int compareTo(OrderedRequestMessageWrapper o) {

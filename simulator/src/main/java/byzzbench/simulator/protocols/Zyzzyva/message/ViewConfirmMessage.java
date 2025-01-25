@@ -2,12 +2,13 @@ package byzzbench.simulator.protocols.Zyzzyva.message;
 
 import byzzbench.simulator.transport.MessagePayload;
 
+import byzzbench.simulator.transport.messages.MessageWithRound;
 import lombok.Data;
 import lombok.With;
 
 @Data
 @With
-public class ViewConfirmMessage extends MessagePayload implements Comparable<ViewConfirmMessage> {
+public class ViewConfirmMessage extends MessagePayload implements Comparable<ViewConfirmMessage>, MessageWithRound {
     public final long futureViewNumber;
     public final long lastKnownSequenceNumber;
     public final long history;
@@ -30,6 +31,11 @@ public class ViewConfirmMessage extends MessagePayload implements Comparable<Vie
                 Long.hashCode(lastKnownSequenceNumber) ^
                 Long.hashCode(history) ^
                 replicaId.hashCode();
+    }
+
+    @Override
+    public long getRound() {
+        return (lastKnownSequenceNumber - 1) * 10 + 10;
     }
 
     @Override
