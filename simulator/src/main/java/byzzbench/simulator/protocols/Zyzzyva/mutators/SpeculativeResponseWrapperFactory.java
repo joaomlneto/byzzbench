@@ -22,6 +22,7 @@ public class SpeculativeResponseWrapperFactory extends MessageMutatorFactory {
     @Override
     public List<MessageMutationFault> mutators() {
         return List.of(
+                // Small-scope mutations
                 new MessageMutationFault("zyzzyva-speculative-response-request-seq-inc", "Increment Sequence Number", List.of(SpeculativeResponseWrapper.class)) {
                     @Override
                     public void accept(FaultContext serializable) {
@@ -102,29 +103,6 @@ public class SpeculativeResponseWrapperFactory extends MessageMutatorFactory {
                         SpeculativeResponseWrapper mutatedMessage = message.withSpecResponse(mutatedSr);
                         messageEvent.setPayload(mutatedMessage);
                     }
-                }, new MessageMutationFault("zyzzyva-speculative-response-request-replica-id", "Change Replica ID", List.of(SpeculativeResponseWrapper.class)) {
-                    @Override
-                    public void accept(FaultContext serializable) {
-                        Optional<Event> event = serializable.getEvent();
-                        if (event.isEmpty()) {
-                            throw invalidMessageTypeException;
-                        }
-                        if (!(event.get() instanceof MessageEvent messageEvent)) {
-                            throw invalidMessageTypeException;
-                        }
-                        if (!(messageEvent.getPayload() instanceof SpeculativeResponseWrapper message)) {
-                            throw invalidMessageTypeException;
-                        }
-
-                        Random random = new Random();
-                        // randomly generate a new replica id between A and D
-                        String newReplicaId = Character.valueOf((char) ('A' + random.nextInt(4))).toString();
-                        while (newReplicaId.equals(message.getReplicaId())) {
-                            newReplicaId = Character.valueOf((char) ('A' + random.nextInt(4))).toString();
-                        }
-                        SpeculativeResponseWrapper mutatedMessage = message.withReplicaId(newReplicaId);
-                        messageEvent.setPayload(mutatedMessage);
-                    }
                 }, new MessageMutationFault("zyzzyva-speculative-response-prev-ordered-history", "Previous Ordered request history", List.of(SpeculativeResponseWrapper.class)) {
                     @Override
                     public void accept(FaultContext serializable) {
@@ -166,6 +144,94 @@ public class SpeculativeResponseWrapperFactory extends MessageMutatorFactory {
                         messageEvent.setPayload(mutatedMessage);
                     }
                 }
+
+//                // Any-scope mutations
+//                , new MessageMutationFault("zyzzyva-speculative-response-request-seq-inc", "Increment Sequence Number", List.of(SpeculativeResponseWrapper.class)) {
+//                    @Override
+//                    public void accept(FaultContext serializable) {
+//                        Optional<Event> event = serializable.getEvent();
+//                        if (event.isEmpty()) {
+//                            throw invalidMessageTypeException;
+//                        }
+//                        if (!(event.get() instanceof MessageEvent messageEvent)) {
+//                            throw invalidMessageTypeException;
+//                        }
+//                        if (!(messageEvent.getPayload() instanceof SpeculativeResponseWrapper message)) {
+//                            throw invalidMessageTypeException;
+//                        }
+//                        Random random = new Random();
+//                        long randomSeq = random.nextLong(1, Long.MAX_VALUE);
+//                        SpeculativeResponse sr = message.getSpecResponse();
+//                        SpeculativeResponse mutatedSr = sr.withSequenceNumber(sr.getSequenceNumber() + randomSeq);
+//                        mutatedSr.sign(sr.getSignedBy());
+//                        SpeculativeResponseWrapper mutatedMessage = message.withSpecResponse(mutatedSr);
+//                        messageEvent.setPayload(mutatedMessage);
+//                    }
+//                }, new MessageMutationFault("zyzzyva-speculative-response-request-seq-dec", "Decrement Sequence Number", List.of(SpeculativeResponseWrapper.class)) {
+//                    @Override
+//                    public void accept(FaultContext serializable) {
+//                        Optional<Event> event = serializable.getEvent();
+//                        if (event.isEmpty()) {
+//                            throw invalidMessageTypeException;
+//                        }
+//                        if (!(event.get() instanceof MessageEvent messageEvent)) {
+//                            throw invalidMessageTypeException;
+//                        }
+//                        if (!(messageEvent.getPayload() instanceof SpeculativeResponseWrapper message)) {
+//                            throw invalidMessageTypeException;
+//                        }
+//
+//                        Random random = new Random();
+//                        long randomSeq = random.nextLong(1, Long.MAX_VALUE);
+//                        SpeculativeResponse sr = message.getSpecResponse();
+//                        SpeculativeResponse mutatedSr = sr.withSequenceNumber(sr.getSequenceNumber() - randomSeq);
+//                        mutatedSr.sign(sr.getSignedBy());
+//                        SpeculativeResponseWrapper mutatedMessage = message.withSpecResponse(mutatedSr);
+//                        messageEvent.setPayload(mutatedMessage);
+//                    }
+//                }, new MessageMutationFault("zyzzyva-speculative-response-request-view-inc", "Increment View Number", List.of(SpeculativeResponseWrapper.class)) {
+//                    @Override
+//                    public void accept(FaultContext serializable) {
+//                        Optional<Event> event = serializable.getEvent();
+//                        if (event.isEmpty()) {
+//                            throw invalidMessageTypeException;
+//                        }
+//                        if (!(event.get() instanceof MessageEvent messageEvent)) {
+//                            throw invalidMessageTypeException;
+//                        }
+//                        if (!(messageEvent.getPayload() instanceof SpeculativeResponseWrapper message)) {
+//                            throw invalidMessageTypeException;
+//                        }
+//                        Random random = new Random();
+//                        long randomSeq = random.nextLong(1, Long.MAX_VALUE);
+//                        SpeculativeResponse sr = message.getSpecResponse();
+//                        SpeculativeResponse mutatedSr = sr.withViewNumber(sr.getViewNumber() + randomSeq);
+//                        mutatedSr.sign(sr.getSignedBy());
+//                        SpeculativeResponseWrapper mutatedMessage = message.withSpecResponse(mutatedSr);
+//                        messageEvent.setPayload(mutatedMessage);
+//                    }
+//                }, new MessageMutationFault("zyzzyva-speculative-response-request-view-dec", "Decrement View Number", List.of(SpeculativeResponseWrapper.class)) {
+//                    @Override
+//                    public void accept(FaultContext serializable) {
+//                        Optional<Event> event = serializable.getEvent();
+//                        if (event.isEmpty()) {
+//                            throw invalidMessageTypeException;
+//                        }
+//                        if (!(event.get() instanceof MessageEvent messageEvent)) {
+//                            throw invalidMessageTypeException;
+//                        }
+//                        if (!(messageEvent.getPayload() instanceof SpeculativeResponseWrapper message)) {
+//                            throw invalidMessageTypeException;
+//                        }
+//                        Random random = new Random();
+//                        long randomSeq = random.nextLong(1, Long.MAX_VALUE);
+//                        SpeculativeResponse sr = message.getSpecResponse();
+//                        SpeculativeResponse mutatedSr = sr.withViewNumber(sr.getViewNumber() - randomSeq);
+//                        mutatedSr.sign(sr.getSignedBy());
+//                        SpeculativeResponseWrapper mutatedMessage = message.withSpecResponse(mutatedSr);
+//                        messageEvent.setPayload(mutatedMessage);
+//                    }
+//                }
         );
     }
 }

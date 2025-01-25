@@ -8,6 +8,7 @@ import byzzbench.simulator.transport.MessagePayload;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.java.Log;
+import org.apache.commons.lang3.tuple.ImmutablePair;
 
 import java.time.Duration;
 import java.util.*;
@@ -76,9 +77,6 @@ public class ZyzzyvaClient extends Client {
         String operation = String.format("%s/%d", this.getId(), this.getRequestSequenceNumber().getAndIncrement());
         /// TODO: look into using this.getCurrentTime()
         this.setHighestTimestamp(this.getHighestTimestamp() + 1);
-        if (this.getNumRequests() == this.MAX_REQUESTS) {
-            log.info("Client " + this.getId() + " has reached the maximum number of requests");
-        }
 
         RequestMessage requestMessage = new RequestMessage(operation, this.getHighestTimestamp(), this.getId());
         // this.getScenario().getTransport().sendMessage(this, requestMessage, recipientId);
@@ -124,7 +122,26 @@ public class ZyzzyvaClient extends Client {
             this.getSpecResponses().putIfAbsent(lastDigestHash, new TreeSet<>());
             this.getSpecResponses().get(lastDigestHash).add(srw);
 
-            // early termination condition
+            if (this.getSpecResponses().get(lastDigestHash).size() > 1) {
+                SortedMap<Long, SpeculativeResponseWrapper> historiesToSpecResponses = new TreeMap<>();
+                for (SpeculativeResponseWrapper speculativeResponseWrapper : this.getSpecResponses().get(lastDigestHash)) {
+                    historiesToSpecResponses.put(speculativeResponseWrapper.getSpecResponse().getHistory(), speculativeResponseWrapper);
+                }
+                if (historiesToSpecResponses.size() > 1) {
+                    OrderedRequestMessage orm1 = historiesToSpecResponses.get(historiesToSpecResponses.firstKey()).getOrderedRequest();
+                    OrderedRequestMessage orm2 = historiesToSpecResponses.get(historiesToSpecResponses.lastKey()).getOrderedRequest();
+                    if (orm1.getHistory() == orm2.getHistory()) {
+                        log.warning("Received two speculative responses with the same history");
+                    }
+                    ProofOfMisbehaviorMessage pomm = new ProofOfMisbehaviorMessage(this.viewNumber, new ImmutablePair<>(orm1, orm2));
+                    pomm.sign(this.getId());
+                    SortedSet<String> recipientIds = (SortedSet<String>) this.getScenario().getReplicas().keySet();
+                    this.getScenario().getTransport().multicast(this, recipientIds, pomm);
+                }
+
+            }
+
+            // early check condition
             if (this.numMatchingSpecResponses(this.getSpecResponses().get(lastDigestHash)) >= 3 * this.getNumFaults() + 1) {
                 try {
                     this.clearTimeout(this.getLapsedRequestTimeoutId());

@@ -44,6 +44,9 @@ public class MessageLog implements Serializable {
     private final SortedMap<String, RequestMessage> requestCache = new TreeMap<>();
     // SequenceNumber, Map(ReplicaId -> CheckpointMessage)
     private final SortedMap<Long, SortedMap<String, CheckpointMessage>> checkpointMessages = new TreeMap<>();
+    // SequenceNumber, CommitMessage
+    // used in an edge case where we receive a commit message during a fill hole
+    private final SortedMap<Long, CommitMessage> commitMessages = new TreeMap<>();
 
     @Setter
     // view number of the last POM
@@ -199,4 +202,7 @@ public class MessageLog implements Serializable {
         this.getRequestCache().put(clientId, rm);
     }
 
+    public void putCommitMessage(CommitMessage commitMessage) {
+        this.getCommitMessages().put(commitMessage.getCommitCertificate().getSequenceNumber(), commitMessage);
+    }
 }

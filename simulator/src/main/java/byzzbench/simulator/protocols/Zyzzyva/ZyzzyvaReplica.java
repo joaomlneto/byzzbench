@@ -274,11 +274,11 @@ public class ZyzzyvaReplica extends LeaderBasedProtocolReplica {
             log.info("Replica " + this.getId() + " ordering request with sequence number " + orm.getSequenceNumber() + " and operation " + requestMessage.getOperation());
             orm.sign(this.getId());
             OrderedRequestMessageWrapper ormw = new OrderedRequestMessageWrapper(orm, requestMessage);
-            this.broadcastMessage(ormw);
-//            this.broadcastMessageIncludingSelf(ormw);
-            this.handleOrderedRequestMessageWrapper(this.getId(), ormw);
+//            this.broadcastMessage(ormw);
+            this.broadcastMessageIncludingSelf(ormw);
+//            this.handleOrderedRequestMessageWrapper(this.getId(), ormw);
         } else if (this.getId().equals(this.getLeaderId())) {
-            log.warning("Retrieving cache as primary");
+            log.info("Retrieving cache as primary");
             SpeculativeResponseWrapper srw = this.getMessageLog().getResponseCache().get(clientId).getRight();
             this.sendMessage(srw, clientId);
         } else {
@@ -322,8 +322,10 @@ public class ZyzzyvaReplica extends LeaderBasedProtocolReplica {
             log.warning("Received an ordered request message from a non-primary replica, expected: " + this.getLeaderId() + " received: " + ormw.getOrderedRequest().getSignedBy());
             return;
         }
+        // clear the forward to primary time out
         try {
-            if (this.getMessageLog().getRequestCache().containsKey(ormw.getRequestMessage().getClientId()) && this.getMessageLog().getRequestCache().get(ormw.getRequestMessage().getClientId()).equals(ormw.getRequestMessage())) {
+            if (this.getMessageLog().getRequestCache().containsKey(ormw.getRequestMessage().getClientId()) &&
+                    this.getMessageLog().getRequestCache().get(ormw.getRequestMessage().getClientId()).equals(ormw.getRequestMessage())) {
                 log.info("Cleared forward to primary timeout");
                 this.clearTimeout(this.getForwardToPrimaryTimeoutId());
             }
@@ -349,7 +351,7 @@ public class ZyzzyvaReplica extends LeaderBasedProtocolReplica {
         } catch (IllegalArgumentException e) {
             log.warning("Failed to clear request timeout, possibly because it's been triggered");
         }
-        if (this.isFillHoleActive()) {
+        if (this.isFillHoleActive() && ormw.getOrderedRequest().getSequenceNumber() > this.getFillHoleMax()) {
             this.getMessageLog().putOrderedRequestMessageWrapper(ormw);
             return;
         }
@@ -378,6 +380,20 @@ public class ZyzzyvaReplica extends LeaderBasedProtocolReplica {
             this.broadcastMessage(srw.getSpecResponse());
             this.handleSpeculativeResponse(this.getId(), srw.getSpecResponse());
         }
+
+        this.setRequestTimeoutId(
+                this.setTimeout(
+                        "request",
+                        () -> {
+                            log.warning("Request timeout triggered, init view change");
+                            IHateThePrimaryMessage ihtpm = new IHateThePrimaryMessage(this.getViewNumber());
+                            ihtpm.sign(this.getId());
+                            this.broadcastMessage(ihtpm);
+                            this.handleIHateThePrimaryMessage(this.getId(), ihtpm);
+                        },
+                        Duration.ofMillis(30000)
+                )
+        );
     }
 
     /**
@@ -575,7 +591,7 @@ public class ZyzzyvaReplica extends LeaderBasedProtocolReplica {
                 return;
             }
             // handles the ordered request message
-            this.executeOrderedRequest(ormw);
+            this.handleOrderedRequestMessageWrapper(this.getId(), ormw);
         }
     }
 
@@ -677,6 +693,11 @@ public class ZyzzyvaReplica extends LeaderBasedProtocolReplica {
         }
         // executes the received fill hole messages
         this.executeFillHoleReplies(this.getFillHoleMin(), this.getFillHoleMax());
+//        // handle any commit messages
+//        if (!this.getMessageLog().getCommitMessages().isEmpty()) {
+//            CommitMessage cm = this.getMessageLog().getCommitMessages().lastEntry().getValue();
+//            this.handleCommitMessage(cm.getClientId(), cm);
+//        }
         SequencedSet<Long> orderedRequestKeySet = this.getMessageLog().getOrderedMessages().sequencedKeySet();
         SortedSet<Long> missingOrderedRequests = new TreeSet<>();
         // check if we have any missing ordered requests after the fill_hole_max + 1
@@ -743,7 +764,7 @@ public class ZyzzyvaReplica extends LeaderBasedProtocolReplica {
     private void handleCommitMessage(String sender, CommitMessage commitMessage) {
         // check if the commit message is valid
         CommitCertificate cc = commitMessage.getCommitCertificate();
-
+        // if we have a higher committed number, we send the local commit
         if (cc.getSequenceNumber() <= this.getMessageLog().getMaxCC().getSequenceNumber()) {
             LocalCommitMessage lcm = new LocalCommitMessage(
                     cc.getViewNumber(),
@@ -756,12 +777,17 @@ public class ZyzzyvaReplica extends LeaderBasedProtocolReplica {
             this.sendMessage(lcm, sender);
             return;
         }
+        // if we're filling holes, we ignore the commit message, the client'll resend it
+        if (this.fillHoleActive) {
+            return;
+        }
 
         // check validity
         if (!this.isValidCommitCertificate(cc)) {
             log.warning("Received invalid commit certificate from " + sender);
             return;
         }
+        this.getMessageLog().putCommitMessage(commitMessage);
         log.info("Received a commit certificate from " + sender + " with sequence number " + cc.getSequenceNumber());
         // commit the operations
         this.handleCommitCertificate(cc);
@@ -806,7 +832,9 @@ public class ZyzzyvaReplica extends LeaderBasedProtocolReplica {
             }
         }
         log.info("Replica " + this.getId() + " committed up to sequence number " + cc.getSequenceNumber());
-        this.getMessageLog().setMaxCC(cc);
+        if (currentCC != null && currentCC.getSequenceNumber() < cc.getSequenceNumber()) {
+            this.getMessageLog().setMaxCC(cc);
+        }
         if (this.getCommitLog().getHighestSequenceNumber() > this.getMessageLog().getMaxCC().getSequenceNumber()) {
             log.warning("Replica " + this.getId() + " has a higher sequence number in the commit log than the maxCC");
             throw new IllegalStateException("Replica " + this.getId() + " has a higher sequence number in the commit log than the maxCC");
@@ -1119,6 +1147,13 @@ public class ZyzzyvaReplica extends LeaderBasedProtocolReplica {
                 replicaIds.add(cm.getReplicaId());
             }
         }
+        CommitCertificate cc = vcm.getCommitCertificate();
+        if (cc.getSequenceNumber() != vcm.getStableCheckpoint()) {
+            if (vcm.getOrderedRequestHistory().get(cc.getSequenceNumber()).getOrderedRequest().getHistory() != cc.getHistory()) {
+                log.warning("Received a view change message with an incorrect commit certificate");
+                return false;
+            }
+        }
         return replicaIds.size() >= 2 * this.faultsTolerated + 1;
     }
 
@@ -1254,6 +1289,11 @@ public class ZyzzyvaReplica extends LeaderBasedProtocolReplica {
             HashMap<OrderedRequestMessageWrapper, Integer> frequencies = new HashMap<>();
             // gets the list of ordered request messages for the current sequence number that we're checking
             List<OrderedRequestMessageWrapper> ormwList = orderedRequests.get(currSeqNum);
+            if (ormwList == null) {
+                log.warning("Null ordered request message wrapper list while computing ordered request history");
+                currSeqNum++;
+                continue;
+            }
             // add to frequencies
             for (OrderedRequestMessageWrapper ormw : ormwList) {
                 frequencies.put(ormw, frequencies.getOrDefault(ormw, 0) + 1);

@@ -123,31 +123,6 @@ public class OrderedRequestMessageMutatorFactory extends MessageMutatorFactory {
                         OrderedRequestMessageWrapper mutatedMessage = message.withOrderedRequest(mutatedOrm);
                         messageEvent.setPayload(mutatedMessage);
                     }
-                }, new MessageMutationFault("zyzzyva-ordered-request-digest-random", "Digest random", List.of(OrderedRequestMessageWrapper.class)) {
-                    // Increment the history field of the OrderedRequestMessage, not the next history :(
-                    @Override
-                    public void accept(FaultContext serializable) {
-
-                        Optional<Event> event = serializable.getEvent();
-                        if (event.isEmpty()) {
-                            throw invalidMessageTypeException;
-                        }
-                        if (!(event.get() instanceof MessageEvent messageEvent)) {
-                            throw invalidMessageTypeException;
-                        }
-                        if (!(messageEvent.getPayload() instanceof OrderedRequestMessageWrapper message)) {
-                            throw invalidMessageTypeException;
-                        }
-
-                        OrderedRequestMessage orm = message.getOrderedRequest();
-                        byte[] mutatedDigest = new byte[orm.getDigest().length];
-                        Random random = new Random();
-                        random.nextBytes(mutatedDigest);
-                        OrderedRequestMessage mutatedOrm = orm.withDigest(mutatedDigest);
-                        mutatedOrm.sign(orm.getSignedBy());
-                        OrderedRequestMessageWrapper mutatedMessage = message.withOrderedRequest(mutatedOrm);
-                        messageEvent.setPayload(mutatedMessage);
-                    }
                 }, new MessageMutationFault("zyzzyva-ordered-request-first-history", "First History", List.of(OrderedRequestMessageWrapper.class)) {
                     // Make this request the first one. Necessary for Abraham
                     @Override
@@ -170,6 +145,92 @@ public class OrderedRequestMessageMutatorFactory extends MessageMutatorFactory {
                         messageEvent.setPayload(mutatedMessage);
                     }
                 }
+//                // Any-scope mutations
+//                , new MessageMutationFault("zyzzyva-ordered-request-seq-inc-any", "Increment Sequence Number Any", List.of(OrderedRequestMessageWrapper.class)) {
+//                    @Override
+//                    public void accept(FaultContext serializable) {
+//                        Optional<Event> event = serializable.getEvent();
+//                        if (event.isEmpty()) {
+//                            throw invalidMessageTypeException;
+//                        }
+//                        if (!(event.get() instanceof MessageEvent messageEvent)) {
+//                            throw invalidMessageTypeException;
+//                        }
+//                        if (!(messageEvent.getPayload() instanceof OrderedRequestMessageWrapper message)) {
+//                            throw invalidMessageTypeException;
+//                        }
+//                        Random random = new Random();
+//                        long randomSeq = random.nextLong(1, Long.MAX_VALUE);
+//                        OrderedRequestMessage orm = message.getOrderedRequest();
+//                        OrderedRequestMessage mutatedOrm = orm.withSequenceNumber(orm.getSequenceNumber() + randomSeq);
+//                        mutatedOrm.sign(orm.getSignedBy());
+//                        OrderedRequestMessageWrapper mutatedMessage = message.withOrderedRequest(mutatedOrm);
+//                        messageEvent.setPayload(mutatedMessage);
+//                    }
+//                }, new MessageMutationFault("zyzzyva-ordered-request-seq-dec-any", "Decrement Sequence Number Any", List.of(OrderedRequestMessageWrapper.class)) {
+//                    @Override
+//                    public void accept(FaultContext serializable) {
+//                        Optional<Event> event = serializable.getEvent();
+//                        if (event.isEmpty()) {
+//                            throw invalidMessageTypeException;
+//                        }
+//                        if (!(event.get() instanceof MessageEvent messageEvent)) {
+//                            throw invalidMessageTypeException;
+//                        }
+//                        if (!(messageEvent.getPayload() instanceof OrderedRequestMessageWrapper message)) {
+//                            throw invalidMessageTypeException;
+//                        }
+//                        Random random = new Random();
+//                        long randomSeq = random.nextLong(1, Long.MAX_VALUE);
+//                        OrderedRequestMessage orm = message.getOrderedRequest();
+//                        OrderedRequestMessage mutatedOrm = orm.withSequenceNumber(orm.getSequenceNumber() - randomSeq);
+//                        mutatedOrm.sign(orm.getSignedBy());
+//                        OrderedRequestMessageWrapper mutatedMessage = message.withOrderedRequest(mutatedOrm);
+//                        messageEvent.setPayload(mutatedMessage);
+//                    }
+//                }, new MessageMutationFault("zyzzyva-ordered-request-view-inc-any", "Increment View Number Any", List.of(OrderedRequestMessageWrapper.class)) {
+//                    @Override
+//                    public void accept(FaultContext serializable) {
+//                        Optional<Event> event = serializable.getEvent();
+//                        if (event.isEmpty()) {
+//                            throw invalidMessageTypeException;
+//                        }
+//                        if (!(event.get() instanceof MessageEvent messageEvent)) {
+//                            throw invalidMessageTypeException;
+//                        }
+//                        if (!(messageEvent.getPayload() instanceof OrderedRequestMessageWrapper message)) {
+//                            throw invalidMessageTypeException;
+//                        }
+//                        Random random = new Random();
+//                        long randomSeq = random.nextLong(1, Long.MAX_VALUE);
+//                        OrderedRequestMessage orm = message.getOrderedRequest();
+//                        OrderedRequestMessage mutatedOrm = orm.withViewNumber(orm.getViewNumber() + randomSeq);
+//                        mutatedOrm.sign(orm.getSignedBy());
+//                        OrderedRequestMessageWrapper mutatedMessage = message.withOrderedRequest(mutatedOrm);
+//                        messageEvent.setPayload(mutatedMessage);
+//                    }
+//                }, new MessageMutationFault("zyzzyva-ordered-request-view-dec-any", "Decrement View Number Any", List.of(OrderedRequestMessageWrapper.class)) {
+//                    @Override
+//                    public void accept(FaultContext serializable) {
+//                    Optional<Event> event = serializable.getEvent();
+//                    if (event.isEmpty()) {
+//                        throw invalidMessageTypeException;
+//                    }
+//                    if (!(event.get() instanceof MessageEvent messageEvent)) {
+//                        throw invalidMessageTypeException;
+//                    }
+//                    if (!(messageEvent.getPayload() instanceof OrderedRequestMessageWrapper message)) {
+//                        throw invalidMessageTypeException;
+//                    }
+//                    Random random = new Random();
+//                    long randomSeq = random.nextLong(1, Long.MAX_VALUE);
+//                    OrderedRequestMessage orm = message.getOrderedRequest();
+//                    OrderedRequestMessage mutatedOrm = orm.withViewNumber(orm.getViewNumber() - randomSeq);
+//                    mutatedOrm.sign(orm.getSignedBy());
+//                    OrderedRequestMessageWrapper mutatedMessage = message.withOrderedRequest(mutatedOrm);
+//                    messageEvent.setPayload(mutatedMessage);
+//                }
+//            }
         );
     }
 }

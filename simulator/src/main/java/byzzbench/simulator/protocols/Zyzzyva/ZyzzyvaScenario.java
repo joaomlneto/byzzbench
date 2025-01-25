@@ -34,7 +34,7 @@ public class ZyzzyvaScenario extends BaseScenario {
         }
 
         for (int i = 0; i < numClients; i++) {
-            ZyzzyvaClient client = new ZyzzyvaClient(this, String.valueOf(i));
+            ZyzzyvaClient client = new ZyzzyvaClient(this, "C" + i);
             this.addClient(client);
         }
 
