@@ -44,6 +44,6 @@ public class ProposeMessage extends IPhaseMessage implements MessageWithRound {
 
     @Override
     public long getRound() {
-        return getSequenceNumber();
+        return 5 * (getSequenceNumber() - 1) + 1;
     }
 }

@@ -39,6 +39,6 @@ public class LearnMessage extends IPhaseMessage implements MessageWithRound {
 
     @Override
     public long getRound() {
-        return 3 * getSequenceNumber();
+        return 5 * (getSequenceNumber() - 1) + 3;
     }
 }

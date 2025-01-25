@@ -40,6 +40,6 @@ public class PullMessage extends IPhaseMessage implements MessageWithRound {
 
     @Override
     public long getRound() {
-        return 4 * getSequenceNumber();
+        return 5 * getSequenceNumber() + 4;
     }
 }

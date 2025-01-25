@@ -37,6 +37,6 @@ public class SatisfiedMessage extends IPhaseMessage implements MessageWithRound 
 
     @Override
     public long getRound() {
-        return 5 * getSequenceNumber() + 1;
+        return 5 * getSequenceNumber() + 5;
     }
 }

@@ -66,6 +66,8 @@ public class MutateMessageBehavior implements FaultBehavior {
 
         // apply the random mutator
         MessageMutationFault mutator = mutators.get(rand.nextInt(mutators.size()));
-        context.getScenario().getTransport().applyMutation(e.getEventId(), mutator);
+        if (e.getStatus() == Event.Status.QUEUED) {
+            context.getScenario().getTransport().applyMutation(e.getEventId(), mutator);
+        }
     }
 }

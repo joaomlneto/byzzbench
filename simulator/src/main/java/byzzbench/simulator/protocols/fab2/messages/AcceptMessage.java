@@ -41,6 +41,6 @@ public class AcceptMessage extends IPhaseMessage implements MessageWithRound {
 
     @Override
     public long getRound() {
-        return 2 * getSequenceNumber();
+        return 5 * (getSequenceNumber() - 1) + 2;
     }
 }

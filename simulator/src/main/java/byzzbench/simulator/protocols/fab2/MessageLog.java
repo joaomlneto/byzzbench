@@ -185,9 +185,9 @@ public class MessageLog {
         });
 
         // Log the values in the acceptorsWithAcceptedProposals
-        acceptorsWithAcceptedProposal.forEach((k, v) -> {
-            log.info("Acceptor " + k + " accepted value " + Arrays.toString(v.getValue()) + " with proposal number " + v.getProposalNumber());
-        });
+//        acceptorsWithAcceptedProposal.forEach((k, v) -> {
+//            log.info("Acceptor " + k + " accepted value " + Arrays.toString(v.getValue()) + " with proposal number " + v.getProposalNumber());
+//        });
 
         log.info("The number of accepted values for the same proposal value is " + currentAccepted.get());
         if (currentAccepted.get() >= threshold) {
@@ -266,6 +266,11 @@ public class MessageLog {
         }
 
         proposersWithLearnedValue.put(senderId, learnValue);
+
+        // log the learned values
+        proposersWithLearnedValue.forEach((k, v) -> {
+            log.info("Proposer " + k + " learned value " + Arrays.toString(v.getValue()) + " with proposal number " + v.getProposalNumber());
+        });
 
         return proposersWithLearnedValue.size() >= quorum;
     }
