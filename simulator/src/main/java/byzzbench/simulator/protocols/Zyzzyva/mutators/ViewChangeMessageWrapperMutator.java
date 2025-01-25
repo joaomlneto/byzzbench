@@ -24,8 +24,10 @@ public class ViewChangeMessageWrapperMutator extends MessageMutatorFactory {
         OrderedRequestMessage first = firstOrmw.getOrderedRequest();
         OrderedRequestMessage last = lastOrmw.getOrderedRequest();
         OrderedRequestMessageWrapper firstMutatedOrmw =  lastOrmw.withOrderedRequest(last.withHistory(Arrays.hashCode(last.getDigest())));
+        firstMutatedOrmw = firstMutatedOrmw.withOrderedRequest(firstMutatedOrmw.getOrderedRequest().withSequenceNumber(first.getSequenceNumber()));
         long calculatedLastHistory = Arrays.hashCode(last.getDigest()) ^ Arrays.hashCode(first.getDigest());
         OrderedRequestMessageWrapper lastMutatedOrmw = firstOrmw.withOrderedRequest(first.withHistory(calculatedLastHistory));
+        lastMutatedOrmw = lastMutatedOrmw.withOrderedRequest(lastMutatedOrmw.getOrderedRequest().withSequenceNumber(last.getSequenceNumber()));
         mutatedOrderedRequestHistory.put(orderedRequestHistory.firstKey(), firstMutatedOrmw);
         mutatedOrderedRequestHistory.put(orderedRequestHistory.lastKey(), lastMutatedOrmw);
         return mutatedOrderedRequestHistory;

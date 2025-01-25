@@ -27,8 +27,8 @@ public class MessageLog implements Serializable {
     // SequenceNumber, Map(ReplicaId -> FillHoleMessage) received
     private final SortedMap<Long, SortedMap<String, FillHoleReply>> fillHoleMessages = new TreeMap<>();
 
-    // ViewNumber, ViewConfirmMessage
-    private final SortedMap<Long, SortedSet<ViewConfirmMessage>> viewConfirmMessages = new TreeMap<>();
+    // ViewNumber, Map(ReplicaId -> ViewChangeMessage)
+    private final SortedMap<Long, SortedMap<String, ViewConfirmMessage>> viewConfirmMessages = new TreeMap<>();
 
     // ViewNumber, ViewChangeMessage
     private final SortedMap<Long, SortedMap<String, ViewChangeMessage>> viewChangeMessages = new TreeMap<>();
@@ -102,8 +102,8 @@ public class MessageLog implements Serializable {
     }
 
     public void putViewConfirmMessage(ViewConfirmMessage vcm) {
-        this.getViewConfirmMessages().putIfAbsent(vcm.getFutureViewNumber(), new TreeSet<>());
-        this.getViewConfirmMessages().get(vcm.getFutureViewNumber()).add(vcm);
+        this.getViewConfirmMessages().putIfAbsent(vcm.getFutureViewNumber(), new TreeMap<>());
+        this.getViewConfirmMessages().get(vcm.getFutureViewNumber()).put(vcm.getSignedBy(), vcm);
     }
 
     public void putNewViewMessage(NewViewMessage nvm) {
@@ -146,6 +146,17 @@ public class MessageLog implements Serializable {
 
         for (long seqNum : keys) {
             if (seqNum < sequenceNumber) {
+                this.getOrderedMessages().remove(seqNum);
+            }
+        }
+    }
+
+    public void rollbackOrderedRequestMessages(long sequenceNumber) {
+        if (this.getOrderedMessages().isEmpty()) return;
+        Set<Long> keys = new HashSet<>(this.getOrderedMessages().keySet());
+
+        for (long seqNum : keys) {
+            if (seqNum > sequenceNumber) {
                 this.getOrderedMessages().remove(seqNum);
             }
         }

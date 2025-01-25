@@ -122,7 +122,7 @@ public class ZyzzyvaClient extends Client {
             this.getSpecResponses().putIfAbsent(lastDigestHash, new TreeSet<>());
             this.getSpecResponses().get(lastDigestHash).add(srw);
 
-            if (this.getSpecResponses().get(lastDigestHash).size() > 1) {
+            if (new HashSet<>(this.getSpecResponses().get(lastDigestHash)).size() > 1) {
                 SortedMap<Long, SpeculativeResponseWrapper> historiesToSpecResponses = new TreeMap<>();
                 for (SpeculativeResponseWrapper speculativeResponseWrapper : this.getSpecResponses().get(lastDigestHash)) {
                     historiesToSpecResponses.put(speculativeResponseWrapper.getSpecResponse().getHistory(), speculativeResponseWrapper);

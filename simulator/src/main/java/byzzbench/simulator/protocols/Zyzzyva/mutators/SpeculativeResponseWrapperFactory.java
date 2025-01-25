@@ -39,8 +39,11 @@ public class SpeculativeResponseWrapperFactory extends MessageMutatorFactory {
 
                         SpeculativeResponse sr = message.getSpecResponse();
                         SpeculativeResponse mutatedSr = sr.withSequenceNumber(sr.getSequenceNumber() + 1);
+                        OrderedRequestMessage orm = message.getOrderedRequest();
+                        OrderedRequestMessage mutatedOrm = orm.withSequenceNumber(orm.getSequenceNumber() + 1);
                         mutatedSr.sign(sr.getSignedBy());
                         SpeculativeResponseWrapper mutatedMessage = message.withSpecResponse(mutatedSr);
+                        mutatedMessage = mutatedMessage.withOrderedRequest(mutatedOrm);
                         messageEvent.setPayload(mutatedMessage);
                     }
                 }, new MessageMutationFault("zyzzyva-speculative-response-request-seq-dec", "Decrement Sequence Number", List.of(SpeculativeResponseWrapper.class)) {
@@ -59,8 +62,11 @@ public class SpeculativeResponseWrapperFactory extends MessageMutatorFactory {
 
                         SpeculativeResponse sr = message.getSpecResponse();
                         SpeculativeResponse mutatedSr = sr.withSequenceNumber(sr.getSequenceNumber() - 1);
+                        OrderedRequestMessage orm = message.getOrderedRequest();
+                        OrderedRequestMessage mutatedOrm = orm.withSequenceNumber(orm.getSequenceNumber() - 1);
                         mutatedSr.sign(sr.getSignedBy());
                         SpeculativeResponseWrapper mutatedMessage = message.withSpecResponse(mutatedSr);
+                        mutatedMessage = mutatedMessage.withOrderedRequest(mutatedOrm);
                         messageEvent.setPayload(mutatedMessage);
                     }
                 }, new MessageMutationFault("zyzzyva-speculative-response-request-view-inc", "Increment View Number", List.of(SpeculativeResponseWrapper.class)) {
@@ -79,8 +85,11 @@ public class SpeculativeResponseWrapperFactory extends MessageMutatorFactory {
 
                         SpeculativeResponse sr = message.getSpecResponse();
                         SpeculativeResponse mutatedSr = sr.withViewNumber(sr.getViewNumber() + 1);
+                        OrderedRequestMessage orm = message.getOrderedRequest();
+                        OrderedRequestMessage mutatedOrm = orm.withViewNumber(orm.getViewNumber() + 1);
                         mutatedSr.sign(sr.getSignedBy());
                         SpeculativeResponseWrapper mutatedMessage = message.withSpecResponse(mutatedSr);
+                        mutatedMessage = mutatedMessage.withOrderedRequest(mutatedOrm);
                         messageEvent.setPayload(mutatedMessage);
                     }
                 }, new MessageMutationFault("zyzzyva-speculative-response-request-view-dec", "Decrement View Number", List.of(SpeculativeResponseWrapper.class)) {
@@ -99,8 +108,11 @@ public class SpeculativeResponseWrapperFactory extends MessageMutatorFactory {
 
                         SpeculativeResponse sr = message.getSpecResponse();
                         SpeculativeResponse mutatedSr = sr.withViewNumber(sr.getViewNumber() - 1);
+                        OrderedRequestMessage orm = message.getOrderedRequest();
+                        OrderedRequestMessage mutatedOrm = orm.withViewNumber(orm.getViewNumber() - 1);
                         mutatedSr.sign(sr.getSignedBy());
                         SpeculativeResponseWrapper mutatedMessage = message.withSpecResponse(mutatedSr);
+                        mutatedMessage = mutatedMessage.withOrderedRequest(mutatedOrm);
                         messageEvent.setPayload(mutatedMessage);
                     }
                 }, new MessageMutationFault("zyzzyva-speculative-response-prev-ordered-history", "Previous Ordered request history", List.of(SpeculativeResponseWrapper.class)) {
@@ -141,6 +153,30 @@ public class SpeculativeResponseWrapperFactory extends MessageMutatorFactory {
                         String response = message.getReply().toString();
                         String mutatedResponse = response + "1";
                         SpeculativeResponseWrapper mutatedMessage = message.withReply(mutatedResponse);
+                        messageEvent.setPayload(mutatedMessage);
+                    }
+                }, new MessageMutationFault("zyzzyva-speculative-response-first-ordered-history", "First Ordered request history", List.of(SpeculativeResponseWrapper.class)) {
+                    @Override
+                    public void accept(FaultContext serializable) {
+                        Optional<Event> event = serializable.getEvent();
+                        if (event.isEmpty()) {
+                            throw invalidMessageTypeException;
+                        }
+                        if (!(event.get() instanceof MessageEvent messageEvent)) {
+                            throw invalidMessageTypeException;
+                        }
+                        if (!(messageEvent.getPayload() instanceof SpeculativeResponseWrapper message)) {
+                            throw invalidMessageTypeException;
+                        }
+
+                        OrderedRequestMessage orm = message.getOrderedRequest();
+                        long history = Arrays.hashCode(orm.getDigest());
+                        // previous history
+                        OrderedRequestMessage mutatedOrm = orm.withHistory(Arrays.hashCode(orm.getDigest()));
+                        SpeculativeResponse mutatedSr = message.getSpecResponse().withHistory(history);
+                        mutatedOrm.sign(orm.getSignedBy());
+                        SpeculativeResponseWrapper mutatedMessage = message.withOrderedRequest(mutatedOrm);
+                        mutatedMessage = mutatedMessage.withSpecResponse(mutatedSr);
                         messageEvent.setPayload(mutatedMessage);
                     }
                 }

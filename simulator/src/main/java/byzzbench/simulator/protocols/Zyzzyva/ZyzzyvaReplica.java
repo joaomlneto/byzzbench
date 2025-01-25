@@ -421,8 +421,9 @@ public class ZyzzyvaReplica extends LeaderBasedProtocolReplica {
             log.info("Received a noop");
             return srw;
         }
-        this.sendReplyToClient(ormw.getRequestMessage().getClientId(), srw);
-
+        // we don't use this since we can't mutate the message
+//        this.sendReplyToClient(ormw.getRequestMessage().getClientId(), srw);
+        this.sendMessage(srw, clientId);
         return srw;
     }
 
@@ -1464,7 +1465,7 @@ public class ZyzzyvaReplica extends LeaderBasedProtocolReplica {
                     " got " +
                     vcm.getFutureViewNumber() +
                     ". Got " +
-                    this.getMessageLog().getViewConfirmMessages().getOrDefault(vcm.getFutureViewNumber(), new TreeSet<>()).size() +
+                    this.getMessageLog().getViewConfirmMessages().getOrDefault(vcm.getFutureViewNumber(), new TreeMap<>()).size() +
                     " for that view."
         );
             return;
@@ -1558,9 +1559,8 @@ public class ZyzzyvaReplica extends LeaderBasedProtocolReplica {
             // histories diverge and we roll back
             else {
                 if (this.getMessageLog().getMaxCC().getSequenceNumber() > maxCC.getSequenceNumber()) {
-                    log.info("Diverging histories, rolling back to checkpoint");
-                    this.getMessageLog().getOrderedMessages().clear();
-                    this.getHistory().clear();
+                    this.getMessageLog().rollbackOrderedRequestMessages(this.getMessageLog().getMaxCC().getSequenceNumber());
+                    this.getHistory().rollback(this.getMessageLog().getMaxCC().getSequenceNumber());
                     this.getMessageLog().getRequestCache().clear();
                     for (OrderedRequestMessageWrapper ormw : calculatedHistory.sequencedValues()) {
                         if (ormw.getOrderedRequest().getSequenceNumber() <= this.getMessageLog().getMaxCC().getSequenceNumber()) {
@@ -1568,7 +1568,6 @@ public class ZyzzyvaReplica extends LeaderBasedProtocolReplica {
                         }
                         this.executeOrderedRequest(ormw);
                     }
-
                 } else {
                     this.rollbackToCheckpoint(latestStableCheckpoint, calculatedHistory, maxCC);
                 }
@@ -1643,7 +1642,7 @@ public class ZyzzyvaReplica extends LeaderBasedProtocolReplica {
         // calculate the frequencies of the view confirm messages
         HashMap<ViewConfirmMessage, Integer> frequencies = new HashMap<>();
         // count the number of view confirm messages for each view number
-        for (ViewConfirmMessage viewConfirmMessage : this.getMessageLog().getViewConfirmMessages().get(futureViewNumber)) {
+        for (ViewConfirmMessage viewConfirmMessage : this.getMessageLog().getViewConfirmMessages().get(futureViewNumber).values()) {
             frequencies.put(viewConfirmMessage, frequencies.getOrDefault(viewConfirmMessage, 0) + 1);
         }
 
@@ -1727,9 +1726,6 @@ public class ZyzzyvaReplica extends LeaderBasedProtocolReplica {
         this.broadcastMessage(vcm);
         // puts it into the view confirm messages
         this.handleViewConfirmMessage(this.getId(), vcm);
-        // checks if the criteria for the view confirm messages are met
-        // if so, then we begin the new view
-        this.checkViewConfirmMessages(nvm.getFutureViewNumber());
     }
 
     /**

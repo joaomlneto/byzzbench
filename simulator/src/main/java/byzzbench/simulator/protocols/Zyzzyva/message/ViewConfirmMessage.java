@@ -19,8 +19,7 @@ public class ViewConfirmMessage extends MessagePayload implements Comparable<Vie
         if (obj instanceof ViewConfirmMessage other) {
             return this.futureViewNumber == other.futureViewNumber &&
                     this.lastKnownSequenceNumber == other.lastKnownSequenceNumber &&
-                    this.history == other.history &&
-                    this.replicaId.equals(other.replicaId);
+                    this.history == other.history;
         }
         return false;
     }
@@ -29,8 +28,7 @@ public class ViewConfirmMessage extends MessagePayload implements Comparable<Vie
     public int hashCode() {
         return Long.hashCode(futureViewNumber) ^
                 Long.hashCode(lastKnownSequenceNumber) ^
-                Long.hashCode(history) ^
-                replicaId.hashCode();
+                Long.hashCode(history);
     }
 
     @Override
