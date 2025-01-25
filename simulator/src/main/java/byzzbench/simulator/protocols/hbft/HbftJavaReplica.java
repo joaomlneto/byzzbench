@@ -339,7 +339,7 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
         this.messageLog.appendPanic(panic, panic.getClientId());
         if (/* signedBy.equals(panic.getClientId()) ||   this.messageLog.checkPanics(this.tolerance) && */ this.getId().equals(this.getPrimaryId())) {
             CheckpointMessage checkpoint = new CheckpointIMessage(
-                this.seqCounter.get(),
+                this.speculativeHistory.getGreatestSeqNumber(),
                 this.digest(this.speculativeHistory),
                 this.getId(),
                 this.speculativeHistory);
@@ -761,7 +761,7 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
         if (checkpoint instanceof CheckpointIMessage
          && (!primaryId.equals(checkpoint.getReplicaId())
          || !Arrays.equals(checkpoint.getDigest(), this.digest(this.speculativeHistory))
-         || checkpoint.getLastSeqNumber() != this.seqCounter.get())) {
+         || checkpoint.getLastSeqNumber() != this.speculativeHistory.getGreatestSeqNumber())) {
             //System.out.println(checkpoint + " Replica: " + this.seqCounter.get() + " " + Arrays.equals(checkpoint.getDigest(), this.digest(this.speculativeHistory)));
             /* 
              * If the it is a CHECKPOINT-I message and not correct

@@ -216,6 +216,31 @@
 //     }
 
 //     @Test
+// 	void testRecvIncorrectCommits() {
+//         HbftJavaReplica spyReplica = Mockito.spy(replicaA);
+//         long viewNumber = 1;
+//         long seqNumber = 1;
+//         RequestMessage request = new RequestMessage("123", 0, "C0");
+//         RequestMessage request2 = new RequestMessage("321", 0, "C1");
+//         byte[] digest = replicaA.digest(request);
+//         byte[] digest2 = replicaA.digest(request2);
+//         //PrepareMessage prepare = new PrepareMessage(viewNumber, seqNumber, digest, request);
+//         CommitMessage commit = new CommitMessage(viewNumber, seqNumber, digest, request, "B", this.replicaA.getSpeculativeHistory());
+//         CommitMessage commit2 = new CommitMessage(viewNumber, seqNumber, digest2, request2, "C", this.replicaA.getSpeculativeHistory());
+
+//         spyReplica.recvCommit(commit);
+
+//         // Commit message should be accepted
+//         Assert.isTrue(replicaA.getMessageLog().getTicket(viewNumber, seqNumber).getMessages().contains(commit), "Commit message with correct seqNum and viewNum should be accepted!");
+//         Assert.isTrue(!replicaA.getMessageLog().getTicket(viewNumber, seqNumber).isCommittedLocal(tolerance), "This commit should not accept local commit!");
+//         Assert.isTrue(replicaA.getMessageLog().getTicket(viewNumber, seqNumber).getPhase() == ReplicaTicketPhase.PREPARE, "replicaA should still be in prepare phase!");
+
+//         spyReplica.recvCommit(commit2);
+
+//         verify(spyReplica, times(0)).broadcastMessage(Mockito.any(CommitMessage.class));
+//     }
+
+//     @Test
 // 	void testRecvCommitAfterPrepare() {
 //         long viewNumber = 1;
 //         long seqNumber = 1;
