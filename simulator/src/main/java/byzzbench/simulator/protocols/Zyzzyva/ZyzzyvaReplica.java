@@ -19,7 +19,6 @@ import java.time.Duration;
 import java.util.*;
 import java.util.stream.Collectors;
 
-/// TODO: Check all view change logic
 @Getter
 @Log
 @ToString(callSuper = true)
@@ -88,6 +87,18 @@ public class ZyzzyvaReplica extends LeaderBasedProtocolReplica {
         );
         // we set this as a null commit certificate for view changes etc. this is the first instance the system is stable
         this.getMessageLog().setMaxCC(startCC);
+
+//        this.setRequestTimeoutId(this.setTimeout(
+//                "request",
+//                () -> {
+//                    log.warning("Request timeout triggered");
+//                    IHateThePrimaryMessage ihtpm = new IHateThePrimaryMessage(this.getViewNumber());
+//                    ihtpm.sign(this.getId());
+//                    this.broadcastMessage(ihtpm);
+//                    this.handleIHateThePrimaryMessage(this.getId(), ihtpm);
+//                },
+//                Duration.ofMillis(30000)
+//        ));
     }
 
     @Override
@@ -319,6 +330,7 @@ public class ZyzzyvaReplica extends LeaderBasedProtocolReplica {
         } catch (IllegalArgumentException e) {
             log.warning("Failed to clear request timeout, possibly because it's been triggered");
         }
+
         // reject the message if it's too far ahead
         long lastCheckpoint = this.getMessageLog().getLastCheckpoint();
         if (lastCheckpoint + (2L * this.CP_INTERVAL) + 1 < ormw.getOrderedRequest().getSequenceNumber()) {
@@ -332,7 +344,11 @@ public class ZyzzyvaReplica extends LeaderBasedProtocolReplica {
             this.broadcastMessage(cm);
             return;
         }
-
+        try {
+            this.clearTimeout(this.getRequestTimeoutId());
+        } catch (IllegalArgumentException e) {
+            log.warning("Failed to clear request timeout, possibly because it's been triggered");
+        }
         if (this.isFillHoleActive()) {
             this.getMessageLog().putOrderedRequestMessageWrapper(ormw);
             return;
@@ -355,11 +371,6 @@ public class ZyzzyvaReplica extends LeaderBasedProtocolReplica {
         } catch (NullPointerException ignored) {
         }
         SpeculativeResponseWrapper srw = this.executeOrderedRequest(ormw);
-        if (ormw.getRequestMessage().getClientId().equals("Noop")) {
-            log.info("Received a noop");
-            return;
-        }
-        this.sendReplyToClient(ormw.getRequestMessage().getClientId(), srw);
 
         // checkpointing
         if (ormw.getOrderedRequest().getSequenceNumber() % this.getCP_INTERVAL() == 0) {
@@ -367,6 +378,18 @@ public class ZyzzyvaReplica extends LeaderBasedProtocolReplica {
             this.broadcastMessage(srw.getSpecResponse());
             this.handleSpeculativeResponse(this.getId(), srw.getSpecResponse());
         }
+//
+//        this.setRequestTimeoutId(this.setTimeout(
+//                "request",
+//                () -> {
+//                    log.warning("Request timeout triggered");
+//                    IHateThePrimaryMessage ihtpm = new IHateThePrimaryMessage(this.getViewNumber());
+//                    ihtpm.sign(this.getId());
+//                    this.broadcastMessage(ihtpm);
+//                    this.handleIHateThePrimaryMessage(this.getId(), ihtpm);
+//                },
+//                Duration.ofMillis(30000)
+//        ));
     }
 
     /**
@@ -388,6 +411,13 @@ public class ZyzzyvaReplica extends LeaderBasedProtocolReplica {
         this.getMessageLog().getOrderedMessages().put(ormw.getOrderedRequest().getSequenceNumber(), ormw);
         // updates the request cache
         this.getMessageLog().putResponseCache(clientId, ormw.getRequestMessage(), srw);
+
+        // noop message
+        if (ormw.getRequestMessage().getClientId().equals("Noop")) {
+            log.info("Received a noop");
+            return srw;
+        }
+        this.sendReplyToClient(ormw.getRequestMessage().getClientId(), srw);
 
         return srw;
     }
@@ -802,10 +832,10 @@ public class ZyzzyvaReplica extends LeaderBasedProtocolReplica {
      * @return - true if the commit certificate is valid, false otherwise
      */
     private boolean isValidCommitCertificate(CommitCertificate cc) {
-        if (cc.getViewNumber() != this.getViewNumber()) {
-            log.warning("Received a commit certificate with an incorrect view number");
-            return false;
-        }
+//        if (cc.getViewNumber() != this.getViewNumber()) {
+//            log.warning("Received a commit certificate with an incorrect view number");
+//            return false;
+//        }
         // 2f + 1 property
         if (new HashSet<>(cc.getSignedBy()).size() < 2 * this.faultsTolerated + 1) {
             log.warning("Received a commit certificate with an insufficient number of replicas");
@@ -1427,6 +1457,15 @@ public class ZyzzyvaReplica extends LeaderBasedProtocolReplica {
         long latestStableCheckpoint = viewChangeMessages.stream().map(ViewChangeMessage::getStableCheckpoint).max(Long::compareTo).orElse(-1L);
         CommitCertificate maxCC = viewChangeMessages.stream().map(ViewChangeMessage::getCommitCertificate).max(Comparator.comparingLong(CommitCertificate::getSequenceNumber)).get();
         log.info("Replica " + this.getId() + " reconciling local history with maxCC " + maxCC.getSequenceNumber() + ", latest stable checkpoint " + latestStableCheckpoint + " and highest sequence number " + this.getHighestSequenceNumber());
+
+        if (this.getMessageLog().getLastCheckpoint() > latestStableCheckpoint) {
+            log.warning("Received a view change message with a lower than expected latest stable checkpoint");
+            this.getMessageLog().getOrderedMessages().clear();
+            this.getMessageLog().getSpeculativeResponsesCheckpoint().clear();
+            this.getHistory().rollback(this.getMessageLog().getLastCheckpoint());
+            return;
+        }
+
         if (calculatedHistory.isEmpty()) {
             // nothing to reconcile
             if (latestStableCheckpoint == this.getHighestSequenceNumber()) return;

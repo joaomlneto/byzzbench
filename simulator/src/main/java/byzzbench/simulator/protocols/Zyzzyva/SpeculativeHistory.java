@@ -1,6 +1,6 @@
 package byzzbench.simulator.protocols.Zyzzyva;
 
-import java.util.LinkedHashMap;
+import java.util.*;
 
 import lombok.extern.java.Log;
 
@@ -82,5 +82,18 @@ public class SpeculativeHistory {
 
     public long getLastKey() {
         return this.speculativeHistory.sequencedKeySet().getLast();
+    }
+
+    public void rollback(long sequenceNumber) {
+        List<Long> keys = new ArrayList<>(this.speculativeHistory.keySet());
+        ListIterator<Long> iterator = keys.listIterator((int) this.getLastKey());
+
+        while (iterator.hasPrevious()) {
+            long key = iterator.previous();
+            if (key <= sequenceNumber) {
+                break;
+            }
+            this.speculativeHistory.remove(key);
+        }
     }
 }

@@ -24,18 +24,18 @@ byzzbench:
   scheduler:
     id: "byzzfuzz" # The ID of the scheduler to use
     executionMode: sync # async (default, any message delivered) or sync (communication-closure hypothesis, FIFO)
-    maxDropMessages: 0 # Maximum number of messages to drop per scenario
-    maxMutateMessages: 0 # Maximum number of messages to mutate per scenario
+    maxDropMessages: 10 # Maximum number of messages to drop per scenario
+    maxMutateMessages: 10 # Maximum number of messages to mutate per scenario
     deliverTimeoutWeight: 1 # The weight for scheduler to trigger a timeout
     deliverMessageWeight: 99 # The weight for scheduler to deliver a message
     deliverClientRequestWeight: 99 # The weight for scheduler to deliver a client request to a replica
-    dropMessageWeight: 0 # The weight for scheduler to drop a message
-    mutateMessageWeight: 0 # The weight for scheduler to mutate a message
+    dropMessageWeight: 5 # The weight for scheduler to drop a message
+    mutateMessageWeight: 5 # The weight for scheduler to mutate a message
     params: # additional parameters for the scheduler
       # ByzzFuzz
-      numRoundsWithProcessFaults: 4
-      numRoundsWithNetworkFaults: 1
-      numRoundsWithFaults: 5
+      numRoundsWithProcessFaults: 8
+      numRoundsWithNetworkFaults: 2
+      numRoundsWithFaults: 10
       # Twins
       numReplicas: 2
       numTwinsPerReplica: 2

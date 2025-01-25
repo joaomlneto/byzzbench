@@ -79,8 +79,10 @@ public class MessageLog implements Serializable {
      */
     public SortedMap<Long, OrderedRequestMessageWrapper> getOrderedRequestHistory(long sequenceNumber) {
         SortedMap<Long, OrderedRequestMessageWrapper> orderedRequestHistory = new TreeMap<>();
-        long maxSeqNum = this.getOrderedMessages().isEmpty() ? 0 : this.getOrderedMessages().lastKey();
-        for (long i = sequenceNumber + 1; i <= maxSeqNum; i++) {
+        for (long i : this.getOrderedMessages().sequencedKeySet()) {
+            if (i < sequenceNumber) {
+                continue;
+            }
             orderedRequestHistory.put(i, this.orderedMessages.get(i));
         }
         return orderedRequestHistory;
