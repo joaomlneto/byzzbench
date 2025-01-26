@@ -62,7 +62,10 @@ public class ByzzFuzzScenarioFaultFactory implements FaultFactory {
         // Faults
         if(input.getScenario() instanceof EDHotStuffScenario edHotStuffScenario) {
             edHotStuffScenario.log("ByzzFuzzFaults:");
-            faults.forEach(fault -> edHotStuffScenario.log(fault.getId()));
+            faults.forEach(fault -> {
+                edHotStuffScenario.log(fault.getId());
+                edHotStuffScenario.getState().addFault(fault.getId());
+            });
         }
         else {
             System.out.println("ByzzFuzzFaults:");

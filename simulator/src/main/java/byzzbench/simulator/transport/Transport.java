@@ -316,6 +316,8 @@ public class Transport {
         e.setStatus(Event.Status.DROPPED);
         this.observers.forEach(o -> o.onEventDropped(e));
         log.info("Dropped: " + e);
+        if(scenario instanceof EDHotStuffScenario edHotStuffScenario)
+            edHotStuffScenario.log("DROPPED MESSAGE: " + e);
     }
 
     /**
@@ -346,6 +348,8 @@ public class Transport {
         if (fault == null) {
             throw new IllegalArgumentException("Mutator not found");
         }
+
+        if(e.getStatus() == Event.Status.DROPPED) return;
 
         // check if event is not in QUEUED state
         if (e.getStatus() != Event.Status.QUEUED) {

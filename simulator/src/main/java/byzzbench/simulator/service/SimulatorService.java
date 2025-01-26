@@ -267,6 +267,7 @@ public class SimulatorService {
                 System.out.println("failedScenarios: " + String.join(", ", failedScenarios));
                 System.out.println("errorScenarios: " + String.join(", ", errorScenarios));
                 try {
+                    scenarioStates.removeFirst();
                     long validCount =  scenarioStates.stream().filter(s -> s.isValidAssumptions()).count();
                     long validA = scenarioStates.stream().filter(s -> s.isValidAssumptions() && s.isAgreementViolation()).count();
                     long validT = scenarioStates.stream().filter(s -> s.isValidAssumptions() && s.isLivenessViolation()).count();
@@ -301,8 +302,10 @@ public class SimulatorService {
                     System.out.println(summary);
 
                     String results = Files.readString(resultsPath);
-                    results += byzzBenchConfig.getRunName().replaceAll("-", " & ") + " & " ;
-                    results += validCount + " & " + validA  + " & " + validT  + " & " + (validA + validT)  + " & " + invalidCount  + " & " + invalidA  + " & " + invalidT  + " & " + (invalidA + invalidT) + " & " + (validA + validT + invalidA + invalidT) + " \\\\\n";
+                    results += (byzzBenchConfig.getRunName().replaceAll("-", " & ") + " & ").replaceAll(" {3}", " - ") ;
+                    results += validCount > 0 ? validCount + " & " + validA  + " & " + validT  + " & " + (validA + validT)  + " & " : "- & - & - & - & ";
+                    results += invalidCount > 0 ? invalidCount  + " & " + invalidA  + " & " + invalidT  + " & " + (invalidA + invalidT) + " & " : "- & - & - & - & ";
+                    results += (validA + validT + invalidA + invalidT) + " \\\\\n";
                     Files.writeString(resultsPath, results);
                 } catch (IOException e) {
                     throw new RuntimeException(e);

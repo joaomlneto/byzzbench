@@ -52,7 +52,7 @@ public class ByzzBenchConfig {
      * @return The output path for this run.
      */
     public Path getOutputPathForThisRun() {
-        return this.outputPath.resolve(getRunName() + "-T" + String.valueOf(SimulatorApplication.getStartTime().getEpochSecond()));
+        return this.outputPath.resolve((getRunName() + "-T").replaceAll("- -", "-") + String.valueOf(SimulatorApplication.getStartTime().getEpochSecond()));
     }
 
     public String getRunName() {
