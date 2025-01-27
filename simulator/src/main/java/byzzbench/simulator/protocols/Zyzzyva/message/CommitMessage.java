@@ -13,9 +13,12 @@ import lombok.With;
 public class CommitMessage extends MessagePayload implements MessageWithRound {
     private final String clientId;
     private final CommitCertificate commitCertificate;
+
     @Override public long getRound() {
         return (commitCertificate.getSequenceNumber() - 1) * 10 + 3;
+//        return commitCertificate.getViewNumber();
     }
+
     @Override
     public String getType() {
         return "COMMIT_MESSAGE";

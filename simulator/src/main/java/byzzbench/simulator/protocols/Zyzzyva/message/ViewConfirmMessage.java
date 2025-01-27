@@ -33,7 +33,8 @@ public class ViewConfirmMessage extends MessagePayload implements Comparable<Vie
 
     @Override
     public long getRound() {
-        return (lastKnownSequenceNumber - 1) * 10 + 10;
+        return futureViewNumber - 1;
+//        return (lastKnownSequenceNumber - 1) * 10 + 10;
     }
 
     @Override

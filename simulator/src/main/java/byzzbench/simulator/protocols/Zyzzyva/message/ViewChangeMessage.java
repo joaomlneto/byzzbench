@@ -2,6 +2,7 @@ package byzzbench.simulator.protocols.Zyzzyva.message;
 
 import byzzbench.simulator.protocols.Zyzzyva.CommitCertificate;
 import byzzbench.simulator.transport.MessagePayload;
+import byzzbench.simulator.transport.messages.MessageWithRound;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.With;
@@ -12,7 +13,7 @@ import java.util.SortedMap;
 @Data
 @EqualsAndHashCode(callSuper = true)
 @With
-public class ViewChangeMessage extends MessagePayload {
+public class ViewChangeMessage extends MessagePayload implements MessageWithRound {
     private final long futureViewNumber;
     private final long stableCheckpoint;
     private final List<CheckpointMessage> checkpoints;
@@ -23,6 +24,11 @@ public class ViewChangeMessage extends MessagePayload {
     // O is i’s ordered request history since the commit certificate indicated by CC
     private final SortedMap<Long, OrderedRequestMessageWrapper> orderedRequestHistory;
     private final String replicaId;
+
+    @Override
+    public long getRound() {
+        return futureViewNumber - 1;
+    }
 
     @Override
     public String getType() {

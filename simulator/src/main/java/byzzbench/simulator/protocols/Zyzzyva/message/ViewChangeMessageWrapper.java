@@ -18,7 +18,7 @@ public class ViewChangeMessageWrapper extends MessagePayload implements MessageW
 
     @Override
     public long getRound() {
-        return (viewChangeMessage.getFutureViewNumber());
+        return (viewChangeMessage.getFutureViewNumber() - 1);
     }
 
     @Override

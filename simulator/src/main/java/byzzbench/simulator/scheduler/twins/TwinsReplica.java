@@ -9,6 +9,7 @@ import lombok.Getter;
 import lombok.extern.java.Log;
 
 import java.io.Serializable;
+import java.util.Collections;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
@@ -66,6 +67,8 @@ public class TwinsReplica extends Replica {
         // Create some round partitions. TODO: parameterize!
         List<String> nodeIds = new ArrayList<>(replica.getNodeIds().stream().filter(id -> !id.equals(this.getId())).toList());
         nodeIds.addAll(getInternalIds());
+//        nodeIds.add("C0");
+//        nodeIds.add("C1");
         List<List<List<String>>> options = StirlingNumberSecondKind.getPartitions(nodeIds, 1);
         options.addAll(StirlingNumberSecondKind.getPartitions(nodeIds, 2));
         options.addAll(StirlingNumberSecondKind.getPartitions(nodeIds, 3));
@@ -144,8 +147,16 @@ public class TwinsReplica extends Replica {
     public List<Replica> getInternalReplicasHandlingMessage(String sender, MessagePayload message) {
         List<String> partition;
         if (message instanceof MessageWithRound messageWithRound) {
-            // If the message has a round number, use the partition for that round
-            partition = this.twinsTransport.getReplicaRoundPartition(sender, messageWithRound.getRound());
+            if (sender.equals("C0") || sender.equals("C1")) {
+                // If the sender is a client, make it a random choice
+                Random rand = new Random();
+                ArrayList<String> internalIds = new ArrayList<>(this.getInternalIds());
+                Collections.shuffle(internalIds);
+                partition = internalIds.subList(0, rand.nextInt(internalIds.size()));
+            } else {
+                // If the message has a round number, use the partition for that round
+                partition = this.twinsTransport.getReplicaRoundPartition(sender, messageWithRound.getRound());
+            }
         } else {
             // Default to the default partition
             // If the sender is not in *any* partition, default to delivering to all internal replicas

@@ -89,43 +89,10 @@ public class ViewConfirmMessageMutatorFactory extends MessageMutatorFactory {
                         ViewConfirmMessage mutatedMessage = message.withLastKnownSequenceNumber(message.getLastKnownSequenceNumber() - 1);
                         mutatedMessage.sign(message.getSignedBy());
                     }
-                }, new MessageMutationFault("zyzzyva-view-confirm-message-history-inc", "Increment History", List.of(ViewConfirmMessage.class)) {
-                    @Override
-                    public void accept(FaultContext serializable) {
-                        Optional<Event> event = serializable.getEvent();
-                        if (event.isEmpty()) {
-                            throw invalidMessageTypeException;
-                        }
-                        if (!(event.get() instanceof MessageEvent messageEvent)) {
-                            throw invalidMessageTypeException;
-                        }
-                        if (!(messageEvent.getPayload() instanceof ViewConfirmMessage message)) {
-                            throw invalidMessageTypeException;
-                        }
-
-                        ViewConfirmMessage mutatedMessage = message.withHistory(message.getHistory() + 1);
-                        mutatedMessage.sign(message.getSignedBy());
-                    }
-                }, new MessageMutationFault("zyzzyva-view-confirm-message-history-dec", "Decrement History", List.of(ViewConfirmMessage.class)) {
-                    @Override
-                    public void accept(FaultContext serializable) {
-                        Optional<Event> event = serializable.getEvent();
-                        if (event.isEmpty()) {
-                            throw invalidMessageTypeException;
-                        }
-                        if (!(event.get() instanceof MessageEvent messageEvent)) {
-                            throw invalidMessageTypeException;
-                        }
-                        if (!(messageEvent.getPayload() instanceof ViewConfirmMessage message)) {
-                            throw invalidMessageTypeException;
-                        }
-
-                        ViewConfirmMessage mutatedMessage = message.withHistory(message.getHistory() - 1);
-                        mutatedMessage.sign(message.getSignedBy());
-                    }
                 }
-//                // Any-scope mutations
-//                , new MessageMutationFault("zyzzyva-view-confirm-message-view-inc-any", "Increment View Number Any", List.of(ViewConfirmMessage.class)) {
+                // Any-scope mutations
+//                ,
+//                new MessageMutationFault("zyzzyva-view-confirm-message-view-inc-any", "Increment View Number Any", List.of(ViewConfirmMessage.class)) {
 //                    @Override
 //                    public void accept(FaultContext serializable) {
 //                        Optional<Event> event = serializable.getEvent();
@@ -157,8 +124,8 @@ public class ViewConfirmMessageMutatorFactory extends MessageMutatorFactory {
 //                            throw invalidMessageTypeException;
 //                        }
 //                        Random random = new Random();
-//                        long randomView = -1 * random.nextLong(0, Long.MAX_VALUE);
-//                        ViewConfirmMessage mutatedMessage = message.withFutureViewNumber(message.getFutureViewNumber() + randomView);
+//                        long randomView = random.nextLong(1, Long.MAX_VALUE);
+//                        ViewConfirmMessage mutatedMessage = message.withFutureViewNumber(message.getFutureViewNumber() - randomView);
 //                        mutatedMessage.sign(message.getSignedBy());
 //                    }
 //                }, new MessageMutationFault("zyzzyva-view-confirm-message-sequence-inc-any", "Increment Sequence Number Any", List.of(ViewConfirmMessage.class)) {
@@ -197,43 +164,7 @@ public class ViewConfirmMessageMutatorFactory extends MessageMutatorFactory {
 //                        ViewConfirmMessage mutatedMessage = message.withLastKnownSequenceNumber(message.getLastKnownSequenceNumber() + randomSequence);
 //                        mutatedMessage.sign(message.getSignedBy());
 //                    }
-//                }, new MessageMutationFault("zyzzyva-view-confirm-message-history-inc-any", "Increment History Any", List.of(ViewConfirmMessage.class)) {
-//                    @Override
-//                    public void accept(FaultContext serializable) {
-//                        Optional<Event> event = serializable.getEvent();
-//                        if (event.isEmpty()) {
-//                            throw invalidMessageTypeException;
-//                        }
-//                        if (!(event.get() instanceof MessageEvent messageEvent)) {
-//                            throw invalidMessageTypeException;
-//                        }
-//                        if (!(messageEvent.getPayload() instanceof ViewConfirmMessage message)) {
-//                            throw invalidMessageTypeException;
-//                        }
-//                        Random random = new Random();
-//                        long randomHistory = random.nextLong(1, Long.MAX_VALUE);
-//                        ViewConfirmMessage mutatedMessage = message.withHistory(message.getHistory() + randomHistory);
-//                        mutatedMessage.sign(message.getSignedBy());
-//                    }
-//                }, new MessageMutationFault("zyzzyva-view-confirm-message-history-dec-any", "Decrement History Any", List.of(ViewConfirmMessage.class)) {
-//                    @Override
-//                    public void accept(FaultContext serializable) {
-//                        Optional<Event> event = serializable.getEvent();
-//                        if (event.isEmpty()) {
-//                            throw invalidMessageTypeException;
-//                        }
-//                        if (!(event.get() instanceof MessageEvent messageEvent)) {
-//                            throw invalidMessageTypeException;
-//                        }
-//                        if (!(messageEvent.getPayload() instanceof ViewConfirmMessage message)) {
-//                            throw invalidMessageTypeException;
-//                        }
-//                        Random random = new Random();
-//                        long randomHistory = -1 * random.nextLong(0, Long.MAX_VALUE);
-//                        ViewConfirmMessage mutatedMessage = message.withHistory(message.getHistory() + randomHistory);
-//                        mutatedMessage.sign(message.getSignedBy());
-//                    }
 //                }
-                );
+        );
     }
 }

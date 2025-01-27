@@ -77,6 +77,9 @@ public class ZyzzyvaClient extends Client {
         String operation = String.format("%s/%d", this.getId(), this.getRequestSequenceNumber().getAndIncrement());
         /// TODO: look into using this.getCurrentTime()
         this.setHighestTimestamp(this.getHighestTimestamp() + 1);
+        if (this.getNumRequests() == this.MAX_REQUESTS) {
+            log.info("Client " + this.getId() + " reached the maximum number of requests");
+        }
 
         RequestMessage requestMessage = new RequestMessage(operation, this.getHighestTimestamp(), this.getId());
         // this.getScenario().getTransport().sendMessage(this, requestMessage, recipientId);
@@ -125,7 +128,7 @@ public class ZyzzyvaClient extends Client {
             if (new HashSet<>(this.getSpecResponses().get(lastDigestHash)).size() > 1) {
                 SortedMap<Long, SpeculativeResponseWrapper> historiesToSpecResponses = new TreeMap<>();
                 for (SpeculativeResponseWrapper speculativeResponseWrapper : this.getSpecResponses().get(lastDigestHash)) {
-                    historiesToSpecResponses.put(speculativeResponseWrapper.getSpecResponse().getHistory(), speculativeResponseWrapper);
+                    historiesToSpecResponses.put(speculativeResponseWrapper.getOrderedRequest().getHistory(), speculativeResponseWrapper);
                 }
                 if (historiesToSpecResponses.size() > 1) {
                     OrderedRequestMessage orm1 = historiesToSpecResponses.get(historiesToSpecResponses.firstKey()).getOrderedRequest();

@@ -16,7 +16,9 @@ public class OrderedRequestMessageWrapper extends MessagePayload implements Comp
     public long getRound() {
         // there are ten messages sent per round of rounds.
         return (orderedRequest.getSequenceNumber() - 1) * 10 + 1;
+//        return orderedRequest.getViewNumber();
     }
+
     @Override
     public int compareTo(OrderedRequestMessageWrapper o) {
         return orderedRequest.compareTo(o.getOrderedRequest());

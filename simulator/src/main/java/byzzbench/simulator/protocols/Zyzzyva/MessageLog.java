@@ -39,6 +39,8 @@ public class MessageLog implements Serializable {
     // ClientId, -> (Timestamp, SpeculativeResponseWrapper)
     private final SortedMap<String, ImmutablePair<RequestMessage, SpeculativeResponseWrapper>> responseCache = new TreeMap<>();
 
+    private final SortedMap<Long, CommitCertificate> commitCertificates = new TreeMap<>();
+
     // ClientId, RequestMessage
     // Used to store the latest request from a client for the forward to primary
     private final SortedMap<String, RequestMessage> requestCache = new TreeMap<>();
@@ -55,7 +57,6 @@ public class MessageLog implements Serializable {
     @Setter
     private long lastCheckpoint;
 
-    @Setter
     private CommitCertificate maxCC;
 
     public MessageLog() {
@@ -89,6 +90,11 @@ public class MessageLog implements Serializable {
             orderedRequestHistory.put(i, this.orderedMessages.get(i));
         }
         return orderedRequestHistory;
+    }
+
+    public void setMaxCC(CommitCertificate cc) {
+        this.getCommitCertificates().put(cc.getSequenceNumber(), cc);
+        this.maxCC = cc;
     }
 
     public void putIHateThePrimaryMessage(IHateThePrimaryMessage ihtpm) {

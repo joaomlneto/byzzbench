@@ -45,7 +45,7 @@ public class AgreementPredicate implements ScenarioPredicate {
                 System.out.println("REPLICAS:");
                 for (Replica replica : replicas) {
                     try {
-                        System.out.println(replica.getCommitLog().get(index));
+                        System.out.println("Replica " + replica.getId() + " " + replica.getCommitLog().get(index));
                     } catch (Exception e) {
                         //e.printStackTrace();
                     }

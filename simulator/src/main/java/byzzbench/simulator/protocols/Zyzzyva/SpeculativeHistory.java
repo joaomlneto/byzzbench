@@ -84,9 +84,15 @@ public class SpeculativeHistory {
         return this.speculativeHistory.sequencedKeySet().getLast();
     }
 
+    /**
+     * Delete the history keys until we get to a given sequenceNumber
+     * @param sequenceNumber - the sequence number we remove to
+     */
     public void rollback(long sequenceNumber) {
         List<Long> keys = new ArrayList<>(this.speculativeHistory.keySet());
-        ListIterator<Long> iterator = keys.listIterator((int) this.getLastKey());
+        if (this.speculativeHistory.isEmpty()) return;
+        ListIterator<Long> iterator;
+        iterator = keys.reversed().listIterator();
 
         while (iterator.hasPrevious()) {
             long key = iterator.previous();
