@@ -3,7 +3,6 @@ package byzzbench.simulator.protocols.Zyzzyva.mutators;
 import byzzbench.simulator.faults.FaultContext;
 import byzzbench.simulator.faults.factories.MessageMutatorFactory;
 import byzzbench.simulator.faults.faults.MessageMutationFault;
-import byzzbench.simulator.protocols.Zyzzyva.message.NewViewMessage;
 import byzzbench.simulator.protocols.Zyzzyva.message.ViewConfirmMessage;
 import byzzbench.simulator.transport.Event;
 import byzzbench.simulator.transport.MessageEvent;
