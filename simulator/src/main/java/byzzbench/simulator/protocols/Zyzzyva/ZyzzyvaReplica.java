@@ -88,6 +88,8 @@ public class ZyzzyvaReplica extends LeaderBasedProtocolReplica {
         );
         // we set this as a null commit certificate for view changes etc. this is the first instance the system is stable
         this.getMessageLog().setMaxCC(startCC);
+
+        this.setRequestTimeoutId(this.setTimeout("Request timeout", this::requestTimeout, Duration.ofMillis(30000)));
     }
 
     @Override
@@ -258,7 +260,6 @@ public class ZyzzyvaReplica extends LeaderBasedProtocolReplica {
             orm.sign(this.getId());
             OrderedRequestMessageWrapper ormw = new OrderedRequestMessageWrapper(orm, requestMessage);
             this.broadcastMessage(ormw);
-//            this.broadcastMessageIncludingSelf(ormw);
             this.handleOrderedRequestMessageWrapper(this.getId(), ormw);
         } else if (this.getId().equals(this.getLeaderId())) {
             log.info("Retrieving cache as primary");
@@ -354,7 +355,7 @@ public class ZyzzyvaReplica extends LeaderBasedProtocolReplica {
         } catch (NullPointerException ignored) {
         }
         SpeculativeResponseWrapper srw = this.executeOrderedRequest(ormw);
-
+        this.setRequestTimeoutId(this.setTimeout("Request timeout", this::requestTimeout, Duration.ofMillis(30000)));
         // checkpointing
         if (ormw.getOrderedRequest().getSequenceNumber() % this.getCP_INTERVAL() == 0) {
             log.info("Replica " + this.getId() + " going to checkpoint");
@@ -1036,10 +1037,10 @@ public class ZyzzyvaReplica extends LeaderBasedProtocolReplica {
 
         ViewChangeMessageWrapper vcmw = new ViewChangeMessageWrapper(iHateThePrimaryMessages, vcm);
 
-        if (!this.notParticipating) {
+//        if (!this.notParticipating) {
             this.broadcastMessage(vcmw);
             this.handleViewChangeMessageWrapper(this.getId(), vcmw);
-        }
+//        }
 
         this.setFillHoleActive(false);
         this.setFillHoleMin(-1);
@@ -1058,7 +1059,7 @@ public class ZyzzyvaReplica extends LeaderBasedProtocolReplica {
         List<String> operations = this.getMessageLog().getOrderedRequestHistory(this.getMessageLog().getLastCheckpoint()).values().stream().map(ormw -> (String) ormw.getRequestMessage().getOperation()).toList();
         log.info("Replica " + this.getId() + " committed to a view change with maxCC " + cc.getSequenceNumber() + ", last checkpoint " + this.getMessageLog().getLastCheckpoint() + " and highest sequence number " + this.getHighestSequenceNumber());
         log.info("Replica " + this.getId() + " sending the following operations in the view change " + operations);
-        this.setNotParticipating(true);
+//        this.setNotParticipating(true);
     }
 
     /**
@@ -1809,7 +1810,8 @@ public class ZyzzyvaReplica extends LeaderBasedProtocolReplica {
         }
         this.setView(vcm.getFutureViewNumber());
         this.clearAllTimeouts();
-        this.setNotParticipating(false);
+        this.setRequestTimeoutId(this.setTimeout("Request timeout", this::requestTimeout, Duration.ofMillis(30000)));
+//        this.setNotParticipating(false);
     }
 
     private void requestTimeout() {

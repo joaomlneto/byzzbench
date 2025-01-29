@@ -207,7 +207,7 @@ public class SpeculativeResponseWrapperFactory extends MessageMutatorFactory {
 
 //                // Any-scope mutations
                 ,
-                new MessageMutationFault("zyzzyva-speculative-response-request-seq-inc", "Increment Sequence Number", List.of(SpeculativeResponseWrapper.class)) {
+                new MessageMutationFault("zyzzyva-speculative-response-request-seq-inc-any", "Increment Sequence Number Any", List.of(SpeculativeResponseWrapper.class)) {
                     @Override
                     public void accept(FaultContext serializable) {
                         Optional<Event> event = serializable.getEvent();
@@ -228,7 +228,7 @@ public class SpeculativeResponseWrapperFactory extends MessageMutatorFactory {
                         SpeculativeResponseWrapper mutatedMessage = message.withSpecResponse(mutatedSr);
                         messageEvent.setPayload(mutatedMessage);
                     }
-                }, new MessageMutationFault("zyzzyva-speculative-response-request-seq-dec", "Decrement Sequence Number", List.of(SpeculativeResponseWrapper.class)) {
+                }, new MessageMutationFault("zyzzyva-speculative-response-request-seq-dec-any", "Decrement Sequence Number Any", List.of(SpeculativeResponseWrapper.class)) {
                     @Override
                     public void accept(FaultContext serializable) {
                         Optional<Event> event = serializable.getEvent();
@@ -250,7 +250,7 @@ public class SpeculativeResponseWrapperFactory extends MessageMutatorFactory {
                         SpeculativeResponseWrapper mutatedMessage = message.withSpecResponse(mutatedSr);
                         messageEvent.setPayload(mutatedMessage);
                     }
-                }, new MessageMutationFault("zyzzyva-speculative-response-request-view-inc", "Increment View Number", List.of(SpeculativeResponseWrapper.class)) {
+                }, new MessageMutationFault("zyzzyva-speculative-response-request-view-inc-any", "Increment View Number Any", List.of(SpeculativeResponseWrapper.class)) {
                     @Override
                     public void accept(FaultContext serializable) {
                         Optional<Event> event = serializable.getEvent();
@@ -271,7 +271,7 @@ public class SpeculativeResponseWrapperFactory extends MessageMutatorFactory {
                         SpeculativeResponseWrapper mutatedMessage = message.withSpecResponse(mutatedSr);
                         messageEvent.setPayload(mutatedMessage);
                     }
-                }, new MessageMutationFault("zyzzyva-speculative-response-request-view-dec", "Decrement View Number", List.of(SpeculativeResponseWrapper.class)) {
+                }, new MessageMutationFault("zyzzyva-speculative-response-request-view-dec-any", "Decrement View Number Any", List.of(SpeculativeResponseWrapper.class)) {
                     @Override
                     public void accept(FaultContext serializable) {
                         Optional<Event> event = serializable.getEvent();
