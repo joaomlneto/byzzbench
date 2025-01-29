@@ -35,7 +35,7 @@ public class ZyzzyvaReplica extends LeaderBasedProtocolReplica {
 
     @Setter
     // used to block requests during the view change
-    private boolean disgruntled = false;
+    private boolean notParticipating = false;
 
     private final SortedSet<String> nodeIds;
 
@@ -99,7 +99,7 @@ public class ZyzzyvaReplica extends LeaderBasedProtocolReplica {
     public void handleMessage(String sender, MessagePayload m) {
         switch (m) {
             case DefaultClientRequestPayload defaultClientRequestPayload -> {
-                if (this.disgruntled) return;
+                if (this.notParticipating) return;
 
                 RequestMessage requestMessage = new RequestMessage(
                         defaultClientRequestPayload.getOperation(),
@@ -109,32 +109,32 @@ public class ZyzzyvaReplica extends LeaderBasedProtocolReplica {
             }
 
             case RequestMessage requestMessage -> {
-                if (this.disgruntled) return;
+                if (this.notParticipating) return;
                 handleClientRequest(sender, requestMessage);
             }
 
             case OrderedRequestMessageWrapper orderedRequestMessage -> {
-                if (this.disgruntled) return;
+                if (this.notParticipating) return;
                 handleOrderedRequestMessageWrapper(sender, orderedRequestMessage);
             }
 
             case FillHoleMessage fillHoleMessage -> {
-                if (this.disgruntled) return;
+                if (this.notParticipating) return;
                 handleFillHoleMessageRequest(sender, fillHoleMessage);
             }
 
             case FillHoleReply fillHoleReply -> {
-                if (this.disgruntled) return;
+                if (this.notParticipating) return;
                 handleFillHoleReply(sender, fillHoleReply);
             }
 
             case CommitMessage commitmessage -> {
-                if (this.disgruntled) return;
+                if (this.notParticipating) return;
                 handleCommitMessage(sender, commitmessage);
             }
 
             case IHateThePrimaryMessage iHateThePrimaryMessage -> {
-                if (this.disgruntled) return;
+                if (this.notParticipating) return;
                 handleIHateThePrimaryMessage(sender, iHateThePrimaryMessage);
             }
 
@@ -142,12 +142,12 @@ public class ZyzzyvaReplica extends LeaderBasedProtocolReplica {
                     handleViewChangeMessageWrapper(sender, viewChangeMessageWrapper);
 
             case ProofOfMisbehaviorMessage proofOfMisbehaviorMessage -> {
-                    if (this.disgruntled) return;
+                    if (this.notParticipating) return;
                     handleProofOfMisbehaviourMessage(sender, proofOfMisbehaviorMessage);
             }
 
             case ConfirmRequestMessage confirmRequestMessage -> {
-                if (this.disgruntled) return;
+                if (this.notParticipating) return;
                 handleConfirmRequestMessage(sender, confirmRequestMessage);
             }
 
@@ -158,12 +158,12 @@ public class ZyzzyvaReplica extends LeaderBasedProtocolReplica {
             case CheckpointMessage checkpointMessage -> handleCheckpointMessage(sender, checkpointMessage);
 
             case SpeculativeResponse speculativeResponse -> {
-                if (this.disgruntled) return;
+                if (this.notParticipating) return;
                 handleSpeculativeResponse(sender, speculativeResponse);
             }
 
             case FillHoleMap fillHoleMap -> {
-                if (this.disgruntled) return;
+                if (this.notParticipating) return;
                 handleFillHoleMap(sender, fillHoleMap);
             }
             default -> log.warning("Unknown message type: " + m.getType() + " from " + sender);
@@ -361,14 +361,6 @@ public class ZyzzyvaReplica extends LeaderBasedProtocolReplica {
             this.broadcastMessage(srw.getSpecResponse());
             this.handleSpeculativeResponse(this.getId(), srw.getSpecResponse());
         }
-
-//        this.setRequestTimeoutId(
-//                this.setTimeout(
-//                        "request",
-//                        this::requestTimeout,
-//                        Duration.ofMillis(30000)
-//                )
-//        );
     }
 
     /**
@@ -927,7 +919,6 @@ public class ZyzzyvaReplica extends LeaderBasedProtocolReplica {
 
             this.getMessageLog().putRequestCache(clientId, rm);
 
-            /// TODO: would be nice to include the ADP here but not necessary
             this.setForwardToPrimaryTimeoutId(this.setTimeout(
                     "forwardToPrimary",
                     () -> {
@@ -1044,14 +1035,29 @@ public class ZyzzyvaReplica extends LeaderBasedProtocolReplica {
 
         ViewChangeMessageWrapper vcmw = new ViewChangeMessageWrapper(iHateThePrimaryMessages, vcm);
 
-        if (!this.disgruntled) {
+        if (!this.notParticipating) {
             this.broadcastMessage(vcmw);
             this.handleViewChangeMessageWrapper(this.getId(), vcmw);
         }
+
+        this.setFillHoleActive(false);
+        this.setFillHoleMin(-1);
+        this.setFillHoleMax(-1);
+        try{
+            this.clearTimeout(this.getFillHoleTimeoutId());
+        } catch (IllegalArgumentException e) {
+
+        }
+        try {
+            this.clearTimeout(this.getFillHoleTimeoutAllId());
+        } catch (IllegalArgumentException e) {
+
+        }
+
         List<String> operations = this.getMessageLog().getOrderedRequestHistory(this.getMessageLog().getLastCheckpoint()).values().stream().map(ormw -> (String) ormw.getRequestMessage().getOperation()).toList();
         log.info("Replica " + this.getId() + " committed to a view change with maxCC " + cc.getSequenceNumber() + ", last checkpoint " + this.getMessageLog().getLastCheckpoint() + " and highest sequence number " + this.getHighestSequenceNumber());
         log.info("Replica " + this.getId() + " sending the following operations in the view change " + operations);
-        this.setDisgruntled(true);
+        this.setNotParticipating(true);
     }
 
     /**
@@ -1210,7 +1216,6 @@ public class ZyzzyvaReplica extends LeaderBasedProtocolReplica {
         this.handleNewViewMessage(this.getId(), nvm);
     }
 
-    /// TODO: check everything's signed and the view numbers are correct
     /**
      * Calculates the ordered request history as a primary for a view change
      * This method is way too big I hate it
@@ -1586,7 +1591,9 @@ public class ZyzzyvaReplica extends LeaderBasedProtocolReplica {
                 if (this.getMessageLog().getMaxCC().getSequenceNumber() >= maxCC.getSequenceNumber()) {
                     log.warning("Replica " + this.getId() + " histories diverge, rolling back to our maxCC");
                     this.getMessageLog().rollbackOrderedRequestMessages(this.getMessageLog().getMaxCC().getSequenceNumber());
+                    log.info("Replica " + this.getId() + " has last ord-req " + this.getMessageLog().getOrderedMessages().sequencedKeySet().getLast());
                     this.getHistory().rollback(this.getMessageLog().getMaxCC().getSequenceNumber());
+                    log.info("Replica " + this.getId() + " has last ord-req " + this.getHistory().getLastKey());
                     if (this.getHistory().getSize() != 0) log.info("Replica " + this.getId() + " has last history " + this.getHistory().getLast());
                     this.getMessageLog().getRequestCache().clear();
                     for (OrderedRequestMessageWrapper ormw : calculatedHistory.sequencedValues()) {
@@ -1801,12 +1808,7 @@ public class ZyzzyvaReplica extends LeaderBasedProtocolReplica {
         }
         this.setView(vcm.getFutureViewNumber());
         this.clearAllTimeouts();
-        this.setDisgruntled(false);
-//        this.setRequestTimeoutId(this.setTimeout(
-//                "requestTimeout",
-//                this::requestTimeout,
-//                Duration.ofMillis(30000)
-//        ));
+        this.setNotParticipating(false);
     }
 
     private void requestTimeout() {

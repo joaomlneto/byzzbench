@@ -39,7 +39,7 @@ public class ViewChangeMessageWrapperMutator extends MessageMutatorFactory {
     @Override
     public List<MessageMutationFault> mutators() {
         return List.of(
-                // small-scope mutations
+//                 small-scope mutations
                 new MessageMutationFault("zyzzyva-view-change-message-view-number-inc", "View change message increment view number", List.of(ViewChangeMessageWrapper.class)) {
                     @Override
                     public void accept(FaultContext serializable) {
@@ -136,84 +136,84 @@ public class ViewChangeMessageWrapperMutator extends MessageMutatorFactory {
                         messageEvent.setPayload(mutatedMessage);
                     }
                 }
-// Any-scope mutations
-//                ,
-//                new MessageMutationFault("zyzzyva-view-change-message-random-commit-certificate", "View Change Message Random Commit Certificate", List.of(ViewChangeMessageWrapper.class)) {
-//                    @Override
-//                    public void accept(FaultContext serializable) {
-//                        Optional<Event> event = serializable.getEvent();
-//                        if (event.isEmpty()) {
-//                            throw invalidMessageTypeException;
-//                        }
-//                        if (!(event.get() instanceof MessageEvent messageEvent)) {
-//                            throw invalidMessageTypeException;
-//                        }
-//                        if (!(messageEvent.getPayload() instanceof ViewChangeMessageWrapper message)) {
-//                            throw invalidMessageTypeException;
-//                        }
-//
-//                        Node sender = serializable.getScenario().getNode(messageEvent.getSenderId());
-//                        if (!(sender instanceof ZyzzyvaReplica zyzzyvaReplica)) {
-//                            throw invalidMessageTypeException;
-//                        }
-//                        List<Long> keySet = new ArrayList<>(zyzzyvaReplica.getMessageLog().getCommitCertificates().sequencedKeySet().reversed().stream().toList());
-//                        if (keySet.isEmpty() || keySet.size() == 1) {
-//                            return;
-//                        }
-//                        Collections.shuffle(keySet);
-//                        long prevKey = keySet.getFirst();
-//                        CommitCertificate prev = zyzzyvaReplica.getMessageLog().getCommitCertificates().get(prevKey);
-//                        ViewChangeMessage vcm = message.getViewChangeMessage();
-//                        ViewChangeMessage mutatedVcm = vcm.withCommitCertificate(prev);
-//                        mutatedVcm.sign(vcm.getSignedBy());
-//                        ViewChangeMessageWrapper mutatedMessage = message.withViewChangeMessage(mutatedVcm);
-//                        messageEvent.setPayload(mutatedMessage);
-//                    }
-//                }
-//
-//                , new MessageMutationFault("zyzzyva-view-change-message-view-number-dec-any", "View change message decrement view number Any", List.of(ViewChangeMessageWrapper.class)) {
-//                    @Override
-//                    public void accept(FaultContext serializable) {
-//                        Optional<Event> event = serializable.getEvent();
-//                        if (event.isEmpty()) {
-//                            throw invalidMessageTypeException;
-//                        }
-//                        if (!(event.get() instanceof MessageEvent messageEvent)) {
-//                            throw invalidMessageTypeException;
-//                        }
-//                        if (!(messageEvent.getPayload() instanceof ViewChangeMessageWrapper message)) {
-//                            throw invalidMessageTypeException;
-//                        }
-//                        Random random = new Random();
-//                        long randomView = random.nextLong(0, Long.MAX_VALUE);
-//                        ViewChangeMessage vcm = message.getViewChangeMessage();
-//                        ViewChangeMessage mutatedVcm = vcm.withFutureViewNumber(vcm.getFutureViewNumber() - randomView);
-//                        mutatedVcm.sign(vcm.getSignedBy());
-//                        ViewChangeMessageWrapper mutatedMessage = message.withViewChangeMessage(mutatedVcm);
-//                        messageEvent.setPayload(mutatedMessage);
-//                    }
-//                }, new MessageMutationFault("zyzzyva-view-change-message-view-number-inc-any", "View change message increment view number any", List.of(ViewChangeMessageWrapper.class)) {
-//                    @Override
-//                    public void accept(FaultContext serializable) {
-//                        Optional<Event> event = serializable.getEvent();
-//                        if (event.isEmpty()) {
-//                            throw invalidMessageTypeException;
-//                        }
-//                        if (!(event.get() instanceof MessageEvent messageEvent)) {
-//                            throw invalidMessageTypeException;
-//                        }
-//                        if (!(messageEvent.getPayload() instanceof ViewChangeMessageWrapper message)) {
-//                            throw invalidMessageTypeException;
-//                        }
-//                        Random random = new Random();
-//                        long randomView = random.nextLong(0, Long.MAX_VALUE);
-//                        ViewChangeMessage vcm = message.getViewChangeMessage();
-//                        ViewChangeMessage mutatedVcm = vcm.withFutureViewNumber(vcm.getFutureViewNumber() + randomView);
-//                        mutatedVcm.sign(vcm.getSignedBy());
-//                        ViewChangeMessageWrapper mutatedMessage = message.withViewChangeMessage(mutatedVcm);
-//                        messageEvent.setPayload(mutatedMessage);
-//                    }
-//                }
+//// Any-scope mutations
+                ,
+                new MessageMutationFault("zyzzyva-view-change-message-random-commit-certificate", "View Change Message Random Commit Certificate", List.of(ViewChangeMessageWrapper.class)) {
+                    @Override
+                    public void accept(FaultContext serializable) {
+                        Optional<Event> event = serializable.getEvent();
+                        if (event.isEmpty()) {
+                            throw invalidMessageTypeException;
+                        }
+                        if (!(event.get() instanceof MessageEvent messageEvent)) {
+                            throw invalidMessageTypeException;
+                        }
+                        if (!(messageEvent.getPayload() instanceof ViewChangeMessageWrapper message)) {
+                            throw invalidMessageTypeException;
+                        }
+
+                        Node sender = serializable.getScenario().getNode(messageEvent.getSenderId());
+                        if (!(sender instanceof ZyzzyvaReplica zyzzyvaReplica)) {
+                            throw invalidMessageTypeException;
+                        }
+                        List<Long> keySet = new ArrayList<>(zyzzyvaReplica.getMessageLog().getCommitCertificates().sequencedKeySet().reversed().stream().toList());
+                        if (keySet.isEmpty() || keySet.size() == 1) {
+                            return;
+                        }
+                        Collections.shuffle(keySet);
+                        long prevKey = keySet.getFirst();
+                        CommitCertificate prev = zyzzyvaReplica.getMessageLog().getCommitCertificates().get(prevKey);
+                        ViewChangeMessage vcm = message.getViewChangeMessage();
+                        ViewChangeMessage mutatedVcm = vcm.withCommitCertificate(prev);
+                        mutatedVcm.sign(vcm.getSignedBy());
+                        ViewChangeMessageWrapper mutatedMessage = message.withViewChangeMessage(mutatedVcm);
+                        messageEvent.setPayload(mutatedMessage);
+                    }
+                }
+
+                , new MessageMutationFault("zyzzyva-view-change-message-view-number-dec-any", "View change message decrement view number Any", List.of(ViewChangeMessageWrapper.class)) {
+                    @Override
+                    public void accept(FaultContext serializable) {
+                        Optional<Event> event = serializable.getEvent();
+                        if (event.isEmpty()) {
+                            throw invalidMessageTypeException;
+                        }
+                        if (!(event.get() instanceof MessageEvent messageEvent)) {
+                            throw invalidMessageTypeException;
+                        }
+                        if (!(messageEvent.getPayload() instanceof ViewChangeMessageWrapper message)) {
+                            throw invalidMessageTypeException;
+                        }
+                        Random random = new Random();
+                        long randomView = random.nextLong(1, Long.MAX_VALUE);
+                        ViewChangeMessage vcm = message.getViewChangeMessage();
+                        ViewChangeMessage mutatedVcm = vcm.withFutureViewNumber(vcm.getFutureViewNumber() - randomView);
+                        mutatedVcm.sign(vcm.getSignedBy());
+                        ViewChangeMessageWrapper mutatedMessage = message.withViewChangeMessage(mutatedVcm);
+                        messageEvent.setPayload(mutatedMessage);
+                    }
+                }, new MessageMutationFault("zyzzyva-view-change-message-view-number-inc-any", "View change message increment view number any", List.of(ViewChangeMessageWrapper.class)) {
+                    @Override
+                    public void accept(FaultContext serializable) {
+                        Optional<Event> event = serializable.getEvent();
+                        if (event.isEmpty()) {
+                            throw invalidMessageTypeException;
+                        }
+                        if (!(event.get() instanceof MessageEvent messageEvent)) {
+                            throw invalidMessageTypeException;
+                        }
+                        if (!(messageEvent.getPayload() instanceof ViewChangeMessageWrapper message)) {
+                            throw invalidMessageTypeException;
+                        }
+                        Random random = new Random();
+                        long randomView = random.nextLong(1, Long.MAX_VALUE);
+                        ViewChangeMessage vcm = message.getViewChangeMessage();
+                        ViewChangeMessage mutatedVcm = vcm.withFutureViewNumber(vcm.getFutureViewNumber() + randomView);
+                        mutatedVcm.sign(vcm.getSignedBy());
+                        ViewChangeMessageWrapper mutatedMessage = message.withViewChangeMessage(mutatedVcm);
+                        messageEvent.setPayload(mutatedMessage);
+                    }
+                }
         );
     }
 }
