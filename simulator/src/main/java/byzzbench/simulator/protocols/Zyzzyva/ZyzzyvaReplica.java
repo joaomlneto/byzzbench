@@ -808,6 +808,7 @@ public class ZyzzyvaReplica extends LeaderBasedProtocolReplica {
                 log.warning("Sequence numbers in the log: " + this.getMessageLog().getOrderedMessages().keySet());
                 throw e;
             } catch (IllegalArgumentException exception) {
+                // was used for debugging
                 throw exception;
             }
         }
