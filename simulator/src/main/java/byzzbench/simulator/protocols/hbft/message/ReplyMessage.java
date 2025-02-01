@@ -8,10 +8,12 @@ import lombok.With;
 
 import java.io.Serializable;
 
+import byzzbench.simulator.transport.messages.MessageWithRound;
+
 @Data
 @EqualsAndHashCode(callSuper = true)
 @With
-public class ReplyMessage extends MessagePayload {
+public class ReplyMessage extends MessagePayload implements MessageWithRound{
     private final long viewNumber;
     private final long timestamp;
     private final long sequenceNumber;
@@ -24,5 +26,10 @@ public class ReplyMessage extends MessagePayload {
     @Override
     public String getType() {
         return "REPLY";
+    }
+
+    @Override
+    public long getRound() {
+        return this.sequenceNumber * 3;
     }
 }

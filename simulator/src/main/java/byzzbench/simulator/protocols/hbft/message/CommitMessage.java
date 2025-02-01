@@ -61,6 +61,6 @@ public class CommitMessage extends IPhaseMessage {
 
     @Override
     public long getRound() {
-        return this.sequenceNumber * 2;
+        return this.sequenceNumber * 3 - 1;
     }
 }
