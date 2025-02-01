@@ -9,6 +9,7 @@ import byzzbench.simulator.faults.faults.IsolateProcessNetworkFault;
 import byzzbench.simulator.schedule.Schedule;
 import byzzbench.simulator.scheduler.Scheduler;
 import byzzbench.simulator.state.AgreementPredicate;
+import byzzbench.simulator.state.IntegrityPredicate;
 import byzzbench.simulator.state.LivenessPredicate;
 import byzzbench.simulator.state.adob.AdobDistributedState;
 import byzzbench.simulator.transport.Transport;
@@ -55,7 +56,7 @@ public abstract class BaseScenario implements Scenario {
     /**
      * The invariants that must be satisfied by the scenario at all times.
      */
-    private final List<ScenarioPredicate> invariants = List.of(new AgreementPredicate(), new LivenessPredicate());
+    private final List<ScenarioPredicate> invariants = List.of(new AgreementPredicate(), new IntegrityPredicate(), new LivenessPredicate());
     /**
      * The schedule of events in order of delivery.
      */
