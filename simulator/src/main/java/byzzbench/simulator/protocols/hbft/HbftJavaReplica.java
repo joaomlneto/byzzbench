@@ -339,7 +339,7 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
         this.messageLog.appendPanic(panic, panic.getClientId());
         if (/* signedBy.equals(panic.getClientId()) ||   this.messageLog.checkPanics(this.tolerance) && */ this.getId().equals(this.getPrimaryId())) {
             CheckpointMessage checkpoint = new CheckpointIMessage(
-                this.seqCounter.get(),
+                this.speculativeHistory.getGreatestSeqNumber(),
                 this.digest(this.speculativeHistory),
                 this.getId(),
                 this.speculativeHistory);
@@ -471,11 +471,13 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
          * received OR that the new PREPARE matches the digest of the one
          * that was already received.
          */
+        logger.writeLog(String.format("Checking prepare message")); 
         Ticket<O, R> ticket = messageLog.getTicket(currentViewNumber, seqNumber);
         if (ticket != null) {
             // PREPARE has previously been inserted into the log for this
             // sequence number - verify the digests match per hBFT 4.1
             for (Object message : ticket.getMessages()) {
+                logger.writeLog(String.format("Ticket messages: " + message)); 
                 if (!(message instanceof PrepareMessage prevPrepare)) {
                     continue;
                 }
@@ -632,12 +634,15 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
              * if it gets f + 1 conflicting COMMIT messages with its PREPARE
              * then it sends a view change message
              */
+            logger.writeLog("Ticket " + ticket.getMessages().toString());
             if (ticket.isCommittedLocal(this.tolerance)) {
                 RequestMessage request = ticket.getRequest();
+                logger.writeLog("Request " + request.toString());
                 if (request != null && !request.equals(this.speculativeHistory.getHistory().get(seqNumber))) {
                     String clientId = request.getClientId();
                     long timestamp = request.getTimestamp();
 
+                    //System.out.println("Called from tryAdvanceState()");
                     // Add operation to commitLog
                     Serializable operation = request.getOperation();
                     this.compute(seqNumber, new SerializableLogEntry(operation));
@@ -660,7 +665,7 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
                  * use the same as for PBFT, where the sequence number mod 
                  * the interval reaches 0.
                  */
-                if (seqNumber % 20 == 0 && this.getId().equals(this.getPrimaryId())) {
+                if (seqNumber % 2 == 0 && this.getId().equals(this.getPrimaryId())) {
                     CheckpointMessage checkpoint = new CheckpointIMessage(
                         seqNumber,
                         this.digest(this.speculativeHistory),
@@ -672,7 +677,7 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
 
                     // Log own checkpoint in accordance to hBFT 4.2
                     //messageLog.appendCheckpoint(checkpoint, this.tolerance, this.speculativeHistory, this.getViewNumber());
-                } else if (seqNumber % 20 == 0) {
+                } else if (seqNumber % 2 == 0) {
                     this.setTimeout(this::sendViewChangeOnTimeout, this.CHECKPOINT_TIMEOUT, "CHECKPOINT");
                 }
             } else if (ticket.isCommittedConflicting(this.tolerance)) {
@@ -756,7 +761,7 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
         if (checkpoint instanceof CheckpointIMessage
          && (!primaryId.equals(checkpoint.getReplicaId())
          || !Arrays.equals(checkpoint.getDigest(), this.digest(this.speculativeHistory))
-         || checkpoint.getLastSeqNumber() != this.seqCounter.get())) {
+         || checkpoint.getLastSeqNumber() != this.speculativeHistory.getGreatestSeqNumber())) {
             //System.out.println(checkpoint + " Replica: " + this.seqCounter.get() + " " + Arrays.equals(checkpoint.getDigest(), this.digest(this.speculativeHistory)));
             /* 
              * If the it is a CHECKPOINT-I message and not correct
@@ -863,9 +868,10 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
 
             // All these requests need to be speculatively executed
             this.speculativeRequests.put(seqNumber, requests.get(seqNumber));
-            if (!requests.get(seqNumber).equals(this.speculativeHistory.getHistory().get(seqNumber))) {
+            if (!this.speculativeHistory.getHistory().containsKey(seqNumber)) {
                 // Add operation to commitLog
                 Serializable operation = requests.get(seqNumber).getOperation();
+                //System.out.println("Called from adjustHistory()");
                 Serializable result = this.compute(seqNumber, new SerializableLogEntry(operation));
 
                 long timestamp = requests.get(seqNumber).getTimestamp();
@@ -932,7 +938,7 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
         //this.seqCounter.set(history.getGreatestSeqNumber());
 
         CheckpointMessage checkpoint = new CheckpointIMessage(
-            this.seqCounter.get(),
+            history.getGreatestSeqNumber(),
             this.digest(history),
             this.getLeaderId(),
             history);
@@ -1055,11 +1061,12 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
 
                 if (maxL < seqNumOfHistory && seqNumOfHistory <= minS 
                     && request != null && !request.equals(this.speculativeHistory.getHistory().get(seqNumOfHistory))) {
-                    this.speculativeHistory.addEntry(seqNumOfHistory, request);
-
                     // Given that these replicas have not commited the request yet
                     Serializable operation = request.getOperation();
+                    //System.out.println("Called from recvNewView()");
                     this.compute(seqNumOfHistory, new SerializableLogEntry(operation));
+
+                    this.speculativeHistory.addEntry(seqNumOfHistory, request);
                 }
             }
             nextSeq = minS;
@@ -1128,6 +1135,7 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
             return;
         }
 
+        //System.out.println("Called from executeRequestFromViewChange()");
         Serializable operation = request.getOperation();
         Serializable result = this.compute(seqNumber, new SerializableLogEntry(operation));
     
@@ -1185,6 +1193,8 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
 
     public Serializable compute(long sequenceNumber, LogEntry operation) {
         if (!this.speculativeHistory.getRequests().keySet().contains(sequenceNumber)) {
+            // System.out.println("Speuclative History: " + this.speculativeHistory.getRequests().keySet());
+            // System.out.println(sequenceNumber);
             logger.writeLog(String.format("COMMITED %s at %d at replica %s", operation.toString(), sequenceNumber, this.getId())); 
             this.commitOperation(sequenceNumber, operation);
         }

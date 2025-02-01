@@ -77,6 +77,8 @@ public class Transport {
      */
     @JsonIgnore
     private final List<TransportObserver> observers = new ArrayList<>();
+    @Getter
+    private boolean isGlobalStabilizationTime = false;
 
     /**
      * Adds an observer to the transport layer.
@@ -265,12 +267,12 @@ public class Transport {
         // add the event to the map
         this.events.put(event.getEventId(), event);
 
+        // notify observers
+        this.observers.forEach(o -> o.onEventAdded(event));
+
         // apply automatic faults
         this.automaticFaults.values()
                 .forEach(f -> f.testAndAccept(new FaultContext(this.scenario, event)));
-
-        // notify observers
-        this.observers.forEach(o -> o.onEventAdded(event));
     }
 
     /**
@@ -350,6 +352,11 @@ public class Transport {
      * @param eventId The ID of the message to drop.
      */
     public synchronized void dropEvent(long eventId) {
+        // Check if it is GST - no more dropping
+        if (this.isGlobalStabilizationTime) {
+            throw new IllegalStateException("Cannot drop events during GST");
+        }
+
         // check if event is a message
         Event e = events.get(eventId);
         if (e instanceof TimeoutEvent) {
@@ -357,8 +364,10 @@ public class Transport {
         }
 
         if (e.getStatus() != Event.Status.QUEUED) {
-            throw new IllegalArgumentException("Event not found or not in QUEUED state");
+            return;
+            //throw new IllegalArgumentException("Event not found or not in QUEUED state");
         }
+
         e.setStatus(Event.Status.DROPPED);
         this.observers.forEach(o -> o.onEventDropped(e));
         //log.info("Dropped: " + e);
@@ -395,13 +404,26 @@ public class Transport {
 
         // check if event is not in QUEUED state
         if (e.getStatus() != Event.Status.QUEUED) {
-            throw new IllegalArgumentException("Message not found or not in QUEUED state");
+            return;
+            //throw new IllegalArgumentException("Message not found or not in QUEUED state");
         }
 
         // check it is a message event!
         if (!(e instanceof MessageEvent m)) {
             throw new IllegalArgumentException(String.format(
                     "Event %d is not a message - cannot mutate it.", eventId));
+        }
+
+        // check if sender is faulty
+        if (!this.scenario.isFaultyReplica(m.getSenderId())) {
+            // throw new IllegalArgumentException(
+            //         String.format("Cannot mutate message: sender %s is not marked as faulty", m.getSenderId())
+            // );
+            // append the event to the schedule
+            // e.setStatus(Event.Status.DELIVERED);
+            // this.scenario.getSchedule().appendEvent(e);
+            // this.observers.forEach(o -> o.onEventDelivered(e));
+            return;
         }
 
         // create input for the fault
@@ -646,5 +668,33 @@ public class Transport {
 
     public synchronized Fault getNetworkFault(String faultId) {
         return this.networkFaults.get(faultId);
+    }
+
+    /**
+     * Simulates GST event, according to the partial-synchrony model:
+     * <ul>
+     *   <li>All dropped messages are re-queued</li>
+     *   <li>Prevents further dropping of messages</li>
+     *   <li>All network partitions are healed</li>
+     *   <li>Prevents further network partitions</li>
+     * </ul>
+     */
+    public void globalStabilizationTime() {
+        this.isGlobalStabilizationTime = true;
+
+        // re-queue all dropped messages
+        this.events.values().stream()
+                .filter(e -> e.getStatus() == Event.Status.DROPPED)
+                .forEach(e -> {
+                    e.setStatus(Event.Status.QUEUED);
+                    this.observers.forEach(o -> o.onEventRequeued(e));
+                });
+
+        // clear all network faults
+        // XXX: Is this the right thing to do?
+        this.networkFaults.clear();
+
+        // heal all partitions
+        this.router.resetPartitions();
     }
 }
