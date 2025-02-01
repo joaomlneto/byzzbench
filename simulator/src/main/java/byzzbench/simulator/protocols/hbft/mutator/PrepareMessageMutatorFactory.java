@@ -192,7 +192,8 @@ public class PrepareMessageMutatorFactory extends MessageMutatorFactory {
                 //         mutatedMessage.sign(message.getSignedBy());
                 //         messageEvent.setPayload(mutatedMessage);
                 //     }
-                // },
+                // }
+                //,
                 // new MessageMutationFault("hbft-prepare-different-digest", "Change digest", List.of(PrepareMessage.class)) {
                 //     @Override
                 //     public void accept(FaultContext serializable) {

@@ -24,6 +24,6 @@ public class PrepareMessage extends IPhaseMessage {
 
     @Override
     public long getRound() {
-        return this.sequenceNumber * 2 - 1;
+        return this.sequenceNumber * 3 - 2;
     }
 }
