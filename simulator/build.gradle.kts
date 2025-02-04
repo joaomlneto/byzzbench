@@ -25,7 +25,7 @@ repositories {
     mavenCentral()
 }
 
-extra["vaadinVersion"] = "24.6.4"
+//extra["vaadinVersion"] = "24.6.4"
 
 dependencies {
     implementation("org.springframework.boot:spring-boot-starter-web")
@@ -51,11 +51,11 @@ dependencies {
     implementation("com.fasterxml.jackson.datatype:jackson-datatype-jdk8:2.18.2")
 }
 
-dependencyManagement {
+/*dependencyManagement {
     imports {
         mavenBom("com.vaadin:vaadin-bom:${property("vaadinVersion")}")
     }
-}
+}*/
 
 tasks.withType<Test> {
     useJUnitPlatform()
