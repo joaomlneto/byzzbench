@@ -6,6 +6,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+import lombok.experimental.SuperBuilder;
 
 import java.io.Serializable;
 import java.time.Duration;
@@ -19,7 +20,7 @@ import java.util.concurrent.atomic.AtomicLong;
  * The client is responsible for sending requests to the replicas in the system.
  */
 @Getter
-@Builder
+@SuperBuilder
 @RequiredArgsConstructor
 public class Client implements Serializable, Node {
     /**
@@ -27,23 +28,23 @@ public class Client implements Serializable, Node {
      */
     @JsonIgnore
     @NonNull
-    private final transient Scenario scenario;
+    protected final transient Scenario scenario;
 
     /**
      * The unique ID of the client.
      */
     @NonNull
-    private final String id;
+    protected final String id;
 
     /**
      * The sequence number of the next request to be sent by the client.
      */
-    private final AtomicLong requestSequenceNumber = new AtomicLong(0);
+    protected final AtomicLong requestSequenceNumber = new AtomicLong(0);
 
     /**
      * The maximum number of requests that can be sent by the client.
      */
-    private final long maxRequests = 3;
+    protected final long maxRequests = 100;
 
     /**
      * The replies received by the client.

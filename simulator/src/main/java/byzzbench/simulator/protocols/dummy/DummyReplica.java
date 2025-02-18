@@ -1,5 +1,7 @@
 package byzzbench.simulator.protocols.dummy;
 
+import java.io.Serializable;
+
 import byzzbench.simulator.Replica;
 import byzzbench.simulator.Scenario;
 import byzzbench.simulator.state.SerializableLogEntry;
@@ -8,8 +10,6 @@ import byzzbench.simulator.transport.DefaultClientRequestPayload;
 import byzzbench.simulator.transport.MessagePayload;
 import lombok.ToString;
 import lombok.extern.java.Log;
-
-import java.io.Serializable;
 
 @Log
 @ToString(callSuper = true)
@@ -24,7 +24,7 @@ public class DummyReplica extends Replica {
     }
 
     @Override
-    public void handleClientRequest(String clientId, Serializable request) {
+    public void handleClientRequest(String clientId, long timestamp, Serializable request) {
         throw new UnsupportedOperationException("Unsupported operation: handleClientRequest");
     }
 

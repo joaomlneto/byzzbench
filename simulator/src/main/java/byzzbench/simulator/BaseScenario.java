@@ -128,6 +128,19 @@ public abstract class BaseScenario implements Scenario {
     }
 
     /**
+     * Sets the number of hBFT clients in the scenario.
+     *
+     * @param numClients The number of clients to set.
+     */
+    protected void setNumHbftClients(int numClients) {
+        for (int i = 0; i < numClients; i++) {
+            String clientId = String.format("C%d", i);
+            Client client = HbftClient.builder().id(clientId).scenario(this).build();
+            this.addClient(client);
+        }
+    }
+
+    /**
      * Adds a client to the scenario.
      *
      * @param client The client to add.
@@ -175,7 +188,7 @@ public abstract class BaseScenario implements Scenario {
             this.markReplicaFaulty(replicaIds.get(i));
         }
 
-        this.getClients().values().forEach(Client::initialize);
+        //this.getClients().values().forEach(Client::initialize);
         this.getNodes().values().forEach(Node::initialize);
         this.scheduler.initializeScenario(this);
     }

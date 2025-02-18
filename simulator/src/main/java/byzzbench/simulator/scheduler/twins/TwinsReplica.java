@@ -130,7 +130,7 @@ public class TwinsReplica extends Replica {
     }
 
     @Override
-    public void handleClientRequest(String clientId, Serializable request) {
+    public void handleClientRequest(String clientId, long timestamp, Serializable request) {
         throw new UnsupportedOperationException("Not implemented");
     }
 
