@@ -164,8 +164,8 @@ public abstract class Replica implements Node {
     /**
      * Handle a request received from a client.
      *
-     * @param clientId the ID of the client
-     * @param request  the request payload
+     * @param clientId  the ID of the client
+     * @param request   the request payload
      * @param timestamp the time the request was created/sent
      * @throws Exception if an error occurs while handling the request
      */
@@ -179,16 +179,6 @@ public abstract class Replica implements Node {
      */
     public void sendReplyToClient(String clientId, Serializable reply) {
         this.transport.sendClientResponse(this, new DefaultClientReplyPayload(reply), clientId);
-    }
-
-    /**
-     * Send a reply to a client.
-     * @param clientId the ID of the client
-     * @param reply the reply payload
-     * @param tolerance the tolerance of the protocol (used for hbft)
-     */
-    public void sendReplyToClient(String clientId, MessagePayload reply, long tolerance, long seqNumber) {
-        this.scenario.getTransport().sendClientResponse(this.id, reply, clientId, tolerance, seqNumber);
     }
 
     /**
@@ -252,8 +242,8 @@ public abstract class Replica implements Node {
     /**
      * Set a timeout for this replica.
      *
-     * @param r       the runnable to execute when the timeout occurs
-     * @param timeout the timeout in milliseconds
+     * @param r           the runnable to execute when the timeout occurs
+     * @param timeout     the timeout in milliseconds
      * @param description the type of timeout
      * @return the timeout ID
      */
