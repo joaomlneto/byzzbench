@@ -10,7 +10,6 @@ import byzzbench.simulator.protocols.hbft.utils.ScheduleLogger;
 import byzzbench.simulator.state.LogEntry;
 import byzzbench.simulator.state.SerializableLogEntry;
 import byzzbench.simulator.state.TotalOrderCommitLog;
-import byzzbench.simulator.transport.DefaultClientRequestPayload;
 import byzzbench.simulator.transport.MessagePayload;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Getter;
@@ -43,32 +42,12 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
      * The current sequence number for the replica.
      */
     private final AtomicLong seqCounter = new AtomicLong(0);
-
-    /* 
-     * Needed for the view-change timeout
-     */
-    private long largestViewNumber = 0;
-
     /**
      * The log of received messages for the replica.
      */
     @Getter
     @JsonIgnore
     private final MessageLog messageLog;
-
-    /**
-     * The speculative execution history for the replica.
-     * Sometimes called the commit certificate.
-     * It includes requests that are considered committed,
-     * in other words the replica got 2f + 1 COMMIT messages
-     * for the request.
-     */
-    @Getter
-    //@JsonIgnore
-    private SpeculativeHistory speculativeHistory;
-
-    private ScheduleLogger logger = new ScheduleLogger();
-
     /**
      * The speculatively executed requests.
      * This is not the same as speuclative history.
@@ -78,18 +57,30 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
     @Getter
     //@JsonIgnore
     private final SortedMap<Long, RequestMessage> speculativeRequests;
-
-    @Getter
-    @Setter
-    private volatile boolean disgruntled = false;
-
-    @Getter
-    @Setter
-    private volatile boolean checkpointForNewView = false;
-
     // The received requests stored as <timestamp, clientId>
     @Getter
     private final SortedMap<ReplicaRequestKey, String> receivedRequests = new TreeMap<>();
+    /**
+     * The speculative execution history for the replica.
+     * Sometimes called the commit certificate.
+     * It includes requests that are considered committed,
+     * in other words the replica got 2f + 1 COMMIT messages
+     * for the request.
+     */
+    @Getter
+    //@JsonIgnore
+    private final SpeculativeHistory speculativeHistory;
+    private final ScheduleLogger logger = new ScheduleLogger();
+    /*
+     * Needed for the view-change timeout
+     */
+    private long largestViewNumber = 0;
+    @Getter
+    @Setter
+    private volatile boolean disgruntled = false;
+    @Getter
+    @Setter
+    private volatile boolean checkpointForNewView = false;
 
     public HbftJavaReplica(String replicaId,
                            SortedSet<String> nodeIds,
@@ -224,10 +215,10 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
         ticket.append(request);
 
         PrepareMessage prepare = new PrepareMessage(
-            currentViewNumber,
-            seqNumber,
-            this.digest(request),
-            request);
+                currentViewNumber,
+                seqNumber,
+                this.digest(request),
+                request);
 
         this.broadcastMessage(prepare);
 
@@ -235,25 +226,25 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
         Serializable result = new SerializableLogEntry(operation);
 
         ReplyMessage reply = new ReplyMessage(
-            currentViewNumber,
-            timestamp,
-            seqNumber,
-            clientId,
-            this.getId(),
-            result,
-            this.speculativeHistory);
-        
+                currentViewNumber,
+                timestamp,
+                seqNumber,
+                clientId,
+                this.getId(),
+                result,
+                this.speculativeHistory);
+
         this.sendReply(clientId, reply);
         this.speculativeRequests.put(seqNumber, request);
 
         // hBFT 4.1 - Multicast COMMIT to other replicas
         CommitMessage commit = new CommitMessage(
-            currentViewNumber,
-            seqNumber,
-            this.digest(request),
-            request,
-            this.getId(),
-            this.speculativeHistory);
+                currentViewNumber,
+                seqNumber,
+                this.digest(request),
+                request,
+                this.getId(),
+                this.speculativeHistory);
 
         this.broadcastMessage(commit);
 
@@ -278,7 +269,7 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
         this.recvRequest(request, false);
     }
 
-    /* 
+    /*
      * Sends the request to a replica
      * Used for forwarding the request to the client
      */
@@ -286,7 +277,7 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
         this.sendMessage(request, replicaId);
     }
 
-    /* 
+    /*
      * Checks if the request is in the speculativeRequests
      * in other words, was the request speculatiely executed
      */
@@ -301,21 +292,21 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
     }
 
     // FIXME: For testing it is treated as all PANICs are from the client and correct
-    /* 
+    /*
      * Handles PANIC message reception
-     * 
+     *
      * PANIC is only accepted if the request included in the
      * message was executed by the replica.
-     * 
-     * If PANIC is received, the replica broadcasts it to 
+     *
+     * If PANIC is received, the replica broadcasts it to
      * all other replicas.
-     * 
+     *
      * If this replica is the primary and receives the PANIC
      * from the client, it calls the CHECKPOINT protocol.
-     * 
+     *
      * If it receives 2f + 1 from other replicas it also calls
      * the checkpoint protocol.
-     * 
+     *
      * Other replicas start a timeout upon receiving f + 1 PANICs.
      */
     // FIXME: For now, this will only be called once
@@ -339,14 +330,14 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
         this.messageLog.appendPanic(panic, panic.getClientId());
         if (/* signedBy.equals(panic.getClientId()) ||   this.messageLog.checkPanics(this.tolerance) && */ this.getId().equals(this.getPrimaryId())) {
             CheckpointMessage checkpoint = new CheckpointIMessage(
-                this.speculativeHistory.getGreatestSeqNumber(),
-                this.digest(this.speculativeHistory),
-                this.getId(),
-                this.speculativeHistory);
+                    this.speculativeHistory.getGreatestSeqNumber(),
+                    this.digest(this.speculativeHistory),
+                    this.getId(),
+                    this.speculativeHistory);
             this.recvCheckpoint(checkpoint);
             this.sendCheckpoint(checkpoint);
         } else if (!this.getId().equals(this.getPrimaryId()) /* && this.messageLog.checkPanicsForTimeout(this.tolerance) */) {
-            /* 
+            /*
              * Start the timer for this request per hBFT 4.3
              * This timeout checks whether a checkpoint is received
              * within a time after receiving f + 1 PANICs
@@ -379,16 +370,16 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
             return false;
         }
 
-        /* 
+        /*
          * This is different from PBFT where PBFT accepts
          * every sequence number that is between the lowWaterMark
          * and the highWaterMark. In hBFT as of 4.1 a prepare message
          * is only accepted if the seq number of the message equals
          * the local seq number + 1. Otherwise, if its a commit message
-         * its accepted if the seq number equals the local seq number or 
+         * its accepted if the seq number equals the local seq number or
          * the local seq number + 1. The two latter cases will be further
          * evaluated in the tryAdvanceState function.
-         * 
+         *
          * However, COMMIT messages should be accepted even if they arrive later
          * as it doesn't make sense to reject them.
          */
@@ -398,9 +389,9 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
             return this.messageLog.isBetweenWaterMarks(seqNumber);
         }
 
-        /* 
+        /*
          * This part should never trigger as the only
-         * two possible messages here are PREPARE and COMMIT 
+         * two possible messages here are PREPARE and COMMIT
          */
         return false;
     }
@@ -438,12 +429,12 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
     }
 
     public void recvPrepare(PrepareMessage prepare) {
-        logger.writeLog(String.format("PREPARE from %s to %s with (seqNum: %d, viewNum: %d, request: %s)", 
-            prepare.getSignedBy(),
-            this.getId(),
-            prepare.getSequenceNumber(),
-            prepare.getViewNumber(),
-            prepare.getRequest().getOperation()));
+        logger.writeLog(String.format("PREPARE from %s to %s with (seqNum: %d, viewNum: %d, request: %s)",
+                prepare.getSignedBy(),
+                this.getId(),
+                prepare.getSequenceNumber(),
+                prepare.getViewNumber(),
+                prepare.getRequest().getOperation()));
         if (!this.verifyPhaseMessage(prepare)) {
             return;
         }
@@ -471,13 +462,13 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
          * received OR that the new PREPARE matches the digest of the one
          * that was already received.
          */
-        logger.writeLog(String.format("Checking prepare message")); 
+        logger.writeLog("Checking prepare message");
         Ticket<O, R> ticket = messageLog.getTicket(currentViewNumber, seqNumber);
         if (ticket != null) {
             // PREPARE has previously been inserted into the log for this
             // sequence number - verify the digests match per hBFT 4.1
             for (Object message : ticket.getMessages()) {
-                logger.writeLog(String.format("Ticket messages: " + message)); 
+                logger.writeLog(String.format("Ticket messages: " + message));
                 if (!(message instanceof PrepareMessage prevPrepare)) {
                     continue;
                 }
@@ -493,14 +484,14 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
             // message log is structured this way)
             ticket = messageLog.newTicket(currentViewNumber, seqNumber);
         }
-        logger.writeLog(String.format("PREPARE accepted at %s", this.getId())); 
+        logger.writeLog(String.format("PREPARE accepted at %s", this.getId()));
 
         // hBFT 4.1 - Add PREPARE along with its REQUEST to the log
         ticket.append(prepare);
 
         Serializable operation = request.getOperation();
         Serializable result = new SerializableLogEntry(operation);
-    
+
         String clientId = request.getClientId();
         long timestamp = request.getTimestamp();
 
@@ -508,13 +499,13 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
         this.seqCounter.set(seqNumber);
 
         ReplyMessage reply = new ReplyMessage(
-            currentViewNumber,
-            timestamp,
-            seqNumber,
-            clientId,
-            this.getId(),
-            result,
-            this.speculativeHistory);
+                currentViewNumber,
+                timestamp,
+                seqNumber,
+                clientId,
+                this.getId(),
+                result,
+                this.speculativeHistory);
 
         ticket.append(reply);
         this.speculativeRequests.put(seqNumber, request);
@@ -524,12 +515,12 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
         // TODO: might need to change speculative history to
         // this.speculativeHistory.getHistoryBefore(seqNumber)
         CommitMessage commit = new CommitMessage(
-            currentViewNumber,
-            seqNumber,
-            digest,
-            request,
-            this.getId(),
-            this.speculativeHistory);
+                currentViewNumber,
+                seqNumber,
+                digest,
+                request,
+                this.getId(),
+                this.speculativeHistory);
         this.broadcastMessage(commit);
 
         // hBFT 4.1 - Add COMMIT to the log
@@ -538,27 +529,27 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
         // Move to COMMIT phase
         ReplicaTicketPhase phase = ticket.getPhase();
         ticket.casPhase(phase, ReplicaTicketPhase.COMMIT);
-        
+
         /*
          * Per hBFT 4.1, this replica stasfies the prepared predicate IF it has
-         * valid REQUEST and PREPARE messages. 
+         * valid REQUEST and PREPARE messages.
          */
         this.tryAdvanceState(ticket, commit);
     }
 
     public void recvCommit(CommitMessage commit) {
-        logger.writeLog(String.format("COMMIT from %s to %s with (seqNum: %d, viewNum: %d, request: %s)", 
-            commit.getReplicaId(),
-            this.getId(),
-            commit.getSequenceNumber(),
-            commit.getViewNumber(),
-            commit.getRequest().getOperation()));
+        logger.writeLog(String.format("COMMIT from %s to %s with (seqNum: %d, viewNum: %d, request: %s)",
+                commit.getReplicaId(),
+                this.getId(),
+                commit.getSequenceNumber(),
+                commit.getViewNumber(),
+                commit.getRequest().getOperation()));
         Ticket<O, R> ticket = this.recvPhaseMessage(commit);
 
         if (ticket != null) {
             // PBFT 4.2 - Attempt to advance the state upon reception of COMMIT
             // to perform the computation
-            logger.writeLog(String.format("COMMIT accepted at %s", this.getId())); 
+            logger.writeLog(String.format("COMMIT accepted at %s", this.getId()));
             this.tryAdvanceState(ticket, commit);
         }
     }
@@ -584,7 +575,7 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
                 if (request != null && !this.replied(request.getClientId(), request.getTimestamp(), currentViewNumber, seqNumber)) {
                     Serializable operation = request.getOperation();
                     Serializable result = new SerializableLogEntry(operation);
-                
+
                     String clientId = request.getClientId();
                     long timestamp = request.getTimestamp();
 
@@ -593,13 +584,13 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
                     }
 
                     ReplyMessage reply = new ReplyMessage(
-                        currentViewNumber,
-                        timestamp,
-                        seqNumber,
-                        clientId,
-                        this.getId(),
-                        result,
-                        this.speculativeHistory);
+                            currentViewNumber,
+                            timestamp,
+                            seqNumber,
+                            clientId,
+                            this.getId(),
+                            result,
+                            this.speculativeHistory);
 
                     //System.out.println("Replica " + this.getId() + " REPLIED");
 
@@ -609,13 +600,13 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
 
                     // After sending a reply to the client, send a COMMIT to other replicas
                     CommitMessage commit = new CommitMessage(
-                        currentViewNumber,
-                        seqNumber,
-                        digest,
-                        request,
-                        this.getId(),
-                        this.speculativeHistory);
-                    
+                            currentViewNumber,
+                            seqNumber,
+                            digest,
+                            request,
+                            this.getId(),
+                            this.speculativeHistory);
+
                     // Send to self as well in order to trigger the check for 2f + 1 COMMIT messages
                     this.broadcastMessage(commit);
 
@@ -625,7 +616,7 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
                 }
             }
         }
-    
+
         if (phase == ReplicaTicketPhase.COMMIT) {
             /*
              * Per hBFT 4.1 if the replica is in COMMIT phase
@@ -662,15 +653,15 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
                  * reached every time a number of requests have been executed
                  * by the primary or receives 2f + 1 panic messages.
                  * The number of executed requests is not defined, so I will
-                 * use the same as for PBFT, where the sequence number mod 
+                 * use the same as for PBFT, where the sequence number mod
                  * the interval reaches 0.
                  */
                 if (seqNumber % 2 == 0 && this.getId().equals(this.getPrimaryId())) {
                     CheckpointMessage checkpoint = new CheckpointIMessage(
-                        seqNumber,
-                        this.digest(this.speculativeHistory),
-                        this.getId(),
-                        this.speculativeHistory);
+                            seqNumber,
+                            this.digest(this.speculativeHistory),
+                            this.getId(),
+                            this.speculativeHistory);
                     //this.sendCheckpoint(checkpoint);
                     this.recvCheckpoint(checkpoint);
                     this.sendCheckpoint(checkpoint);
@@ -687,7 +678,7 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
         }
     }
 
-    /* 
+    /*
      * Creates a view change on timeout with view (v + 1)
      */
     public void sendViewChangeOnTimeout() {
@@ -698,10 +689,11 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
     /**
      * Checks whether the replica already sent a reply.
      * We want to avoid sending redundant duplicate replies.
-     * @param clientId The ID of the client.
-     * @param timestamp The timestamp of the request.
+     *
+     * @param clientId          The ID of the client.
+     * @param timestamp         The timestamp of the request.
      * @param currentViewNumber the current view number.
-     * @param seqNumber the sequence number of the request.
+     * @param seqNumber         the sequence number of the request.
      */
     private boolean replied(String clientId, long timestamp, long currentViewNumber, long seqNumber) {
         ReplicaRequestKey key = new ReplicaRequestKey(clientId, timestamp);
@@ -727,7 +719,8 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
 
     public void sendReply(String clientId, ReplyMessage reply) {
         //this.sendMessage(reply, clientId);
-        this.sendReplyToClient(clientId, reply, this.tolerance, reply.getSequenceNumber());
+        ClientReplyMessage clientReplyMessage = new ClientReplyMessage(reply, this.tolerance);
+        this.sendReplyToClient(clientId, clientReplyMessage);
 
         // When prior requests are fulfilled, attempt to process the buffer
         // to ensure they are dispatched in a timely manner
@@ -735,21 +728,21 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
     }
 
     public void recvCheckpoint(CheckpointMessage checkpoint) {
-        logger.writeLog(String.format("%s from %s to %s with (seqNum: %d, history: " + checkpoint.getHistory() + ")", 
-            checkpoint.getType(),
-            checkpoint.getReplicaId(),
-            this.getId(),
-            checkpoint.getLastSeqNumber()));
+        logger.writeLog(String.format("%s from %s to %s with (seqNum: %d, history: " + checkpoint.getHistory() + ")",
+                checkpoint.getType(),
+                checkpoint.getReplicaId(),
+                this.getId(),
+                checkpoint.getLastSeqNumber()));
         /*
          * Per hBFT 4.2, there is a 3 phase checkpoint subprotocol,
-         * where the protocol starts with the primary sending Checkpoint-I message, 
-         * then upon receiving this the replicas send a Checkpoint-II message, 
+         * where the protocol starts with the primary sending Checkpoint-I message,
+         * then upon receiving this the replicas send a Checkpoint-II message,
          * upon receiving 2f+1 Checkpoint-II messages it creates a CER1(M, v) and
          * replicas send Checkpoint-III messages, and upon receiving 2f+1 create CER2(M, v)
          * and perform GC if the checkpoint is stable.
-         * 
+         *
          * If the replica recieves an incorrect CHECKPOINT-I message,
-         * it sends a VIEW-CHANGE message. 
+         * it sends a VIEW-CHANGE message.
          */
         String primaryId = this.getPrimaryId();
 
@@ -759,11 +752,11 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
         }
 
         if (checkpoint instanceof CheckpointIMessage
-         && (!primaryId.equals(checkpoint.getReplicaId())
-         || !Arrays.equals(checkpoint.getDigest(), this.digest(this.speculativeHistory))
-         || checkpoint.getLastSeqNumber() != this.speculativeHistory.getGreatestSeqNumber())) {
+                && (!primaryId.equals(checkpoint.getReplicaId())
+                || !Arrays.equals(checkpoint.getDigest(), this.digest(this.speculativeHistory))
+                || checkpoint.getLastSeqNumber() != this.speculativeHistory.getGreatestSeqNumber())) {
             //System.out.println(checkpoint + " Replica: " + this.seqCounter.get() + " " + Arrays.equals(checkpoint.getDigest(), this.digest(this.speculativeHistory)));
-            /* 
+            /*
              * If the it is a CHECKPOINT-I message and not correct
              * then the replica sends a view-change.
              */
@@ -772,21 +765,21 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
             this.sendViewChange(viewChangeMessage);
         } else {
             // Clear the timeout for the checkpoint and panic
-            this.clearSpecificTimeout("CHECKPOINT"); 
+            this.clearSpecificTimeout("CHECKPOINT");
             this.clearSpecificTimeout("PANIC");
             this.messageLog.clearPanics();
 
             this.checkpointForNewView = false;
             this.messageLog.appendCheckpoint(checkpoint, this.tolerance, this.speculativeHistory, this.getViewNumber());
 
-            if (checkpoint instanceof CheckpointIMessage) {   
+            if (checkpoint instanceof CheckpointIMessage) {
                 // Upon receiving a checkpoint the replica gets out of disgruntled state
-                //this.disgruntled = false;         
+                //this.disgruntled = false;
                 CheckpointMessage checkpointII = new CheckpointIIMessage(
-                    checkpoint.getLastSeqNumber(),
-                    this.digest(this.speculativeHistory),
-                    this.getId(),
-                    this.speculativeHistory
+                        checkpoint.getLastSeqNumber(),
+                        this.digest(this.speculativeHistory),
+                        this.getId(),
+                        this.speculativeHistory
                 );
 
                 // I add it to the log as the sendCheckpoint doesnt include self
@@ -794,21 +787,21 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
                 this.sendCheckpoint(checkpointII);
             }
 
-            if (checkpoint instanceof CheckpointIIMessage) { 
+            if (checkpoint instanceof CheckpointIIMessage) {
                 // Check whether 2f + 1 Checkpoint-II messages have been seen
                 // If yes then send Checkpoint-III
                 boolean isCER1 = messageLog.isCER1(checkpoint, tolerance);
                 if (isCER1) {
                     // Upon receiving a checkpoint the replica gets out of disgruntled state
-                    //this.disgruntled = false;   
+                    //this.disgruntled = false;
                     this.adjustHistory(checkpoint.getHistory().getRequests());
                     long largestSeq = Math.max(this.seqCounter.get(), checkpoint.getLastSeqNumber());
                     this.seqCounter.set(largestSeq);
                     CheckpointMessage checkpointIII = new CheckpointIIIMessage(
-                        checkpoint.getLastSeqNumber(),
-                        this.digest(this.speculativeHistory),
-                        this.getId(),
-                        this.speculativeHistory
+                            checkpoint.getLastSeqNumber(),
+                            this.digest(this.speculativeHistory),
+                            this.getId(),
+                            this.speculativeHistory
                     );
 
                     // I add it to the log as the sendCheckpoint doesnt include self
@@ -817,11 +810,11 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
                 }
             }
 
-            if (checkpoint instanceof CheckpointIIIMessage) { 
+            if (checkpoint instanceof CheckpointIIIMessage) {
                 boolean isCER2 = messageLog.isCER2(checkpoint, tolerance);
                 if (isCER2) {
                     // Upon receiving a checkpoint the replica gets out of disgruntled state
-                    this.disgruntled = false;   
+                    this.disgruntled = false;
                     this.adjustHistory(checkpoint.getHistory().getRequests());
                     long largestSeq = Math.max(this.seqCounter.get(), checkpoint.getLastSeqNumber());
                     this.seqCounter.set(largestSeq);
@@ -841,19 +834,19 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
         }
     }
 
-    /* 
+    /*
      * Called when received 2f + 1 checkpoint-II or -III messages.
      * Fixes the speculativeHistory by adding and executing any
      * missing requests. The missing requests are also added to the commitlog.
      */
     public void adjustHistory(SortedMap<Long, RequestMessage> requests) {
-        /* 
+        /*
          * Commitlog requires the request to match,
          * so we add any missing requests.
          * Replicas also adjust their speculativeHistory as of
-         * hBFT 4.4 (2): states a correct replica that received a 
+         * hBFT 4.4 (2): states a correct replica that received a
          * bad request, learns the result and remain consistent
-         * 
+         *
          * speculativeHistory should be equal to commitlog
          */
         for (Long seqNumber : requests.keySet()) {
@@ -878,14 +871,14 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
                 String clientId = requests.get(seqNumber).getClientId();
 
                 ReplyMessage reply = new ReplyMessage(
-                    currentViewNumber,
-                    timestamp,
-                    seqNumber,
-                    clientId,
-                    this.getId(),
-                    result,
-                    this.speculativeHistory);
-                
+                        currentViewNumber,
+                        timestamp,
+                        seqNumber,
+                        clientId,
+                        this.getId(),
+                        result,
+                        this.speculativeHistory);
+
                 ticket.append(reply);
                 this.sendReply(clientId, reply);
                 this.speculativeHistory.addEntry(seqNumber, requests.get(seqNumber));
@@ -905,7 +898,7 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
     }
 
     public void enterNewView(long newViewNumber) {
-        logger.writeLog(String.format("REPLICA %s entering NEW-VIEW %d", this.getId(), newViewNumber)); 
+        logger.writeLog(String.format("REPLICA %s entering NEW-VIEW %d", this.getId(), newViewNumber));
         /*
          * Enter new view by resetting the disgruntled state, updating the
          * view number and clearing any prior timeouts that the replicas have
@@ -918,7 +911,7 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
         this.messageLog.clearPanics();
         this.largestViewNumber = newViewNumber;
 
-        /* 
+        /*
          * Idea is that if we enter a new view,
          * we need to treat the request as not seen before
          * If the request has been completed, it is reflected in the
@@ -927,30 +920,30 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
          * from the received history.
          */
         this.receivedRequests.clear();
-        this.speculativeRequests.clear(); 
+        this.speculativeRequests.clear();
     }
 
     public void recvNewViewAsCheckpoint(NewViewMessage newView) {
         SpeculativeHistory history = new SpeculativeHistory();
         history.addAll(newView.getSpeculativeHistory().getHistory());
         history.removeNullEntries();
-        
+
         //this.seqCounter.set(history.getGreatestSeqNumber());
 
         CheckpointMessage checkpoint = new CheckpointIMessage(
-            history.getGreatestSeqNumber(),
-            this.digest(history),
-            this.getLeaderId(),
-            history);
+                history.getGreatestSeqNumber(),
+                this.digest(history),
+                this.getLeaderId(),
+                history);
 
         this.recvCheckpoint(checkpoint);
     }
 
     public void recvViewChange(ViewChangeMessage viewChange) {
-        logger.writeLog(String.format("VIEW-CHANGE from %s to %s with (newView: %d, P: " + viewChange.getSpeculativeHistoryP() + ", Q: " + viewChange.getSpeculativeHistoryQ() + ", R: " + viewChange.getRequestsR() + ")", 
-            viewChange.getReplicaId(),
-            this.getId(),
-            viewChange.getNewViewNumber()));
+        logger.writeLog(String.format("VIEW-CHANGE from %s to %s with (newView: %d, P: " + viewChange.getSpeculativeHistoryP() + ", Q: " + viewChange.getSpeculativeHistoryQ() + ", R: " + viewChange.getRequestsR() + ")",
+                viewChange.getReplicaId(),
+                this.getId(),
+                viewChange.getNewViewNumber()));
         long curViewNumber = this.getViewNumber();
         long newViewNumber = viewChange.getNewViewNumber();
 
@@ -959,37 +952,37 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
         }
 
         String newPrimaryId = this.getRoundRobinPrimaryId(newViewNumber);
-    
+
         // Checkpoint Synchronization: Make sure speculative history matches
         // if (!localDigest.equals(viewChange.getCheckpointDigest())) {
         //     this.sendViewChange(new ViewChangeMessage(newViewNumber, curViewNumber, localDigest, this.getId()));
         //     return;
         // }
-    
+
         // hBFT: Process view change acceptance
         ViewChangeResult result = messageLog.acceptViewChange(viewChange, this.getId(), curViewNumber, this.tolerance);
         if (result.isShouldBandwagon()) {
             ViewChangeMessage bandwagonViewChange = messageLog.produceViewChange(
-                result.getBandwagonViewNumber(),
-                this.getViewNumber(),
-                this.getId(),
-                this.tolerance, this.speculativeRequests);
+                    result.getBandwagonViewNumber(),
+                    this.getViewNumber(),
+                    this.getId(),
+                    this.tolerance, this.speculativeRequests);
             this.sendViewChange(bandwagonViewChange);
         }
-    
+
         // If this replica is the new primary, multicast NEW-VIEW and update state
         if (newPrimaryId.equals(this.getId()) && result.isNewView()) {
             NewViewMessage newView = messageLog.produceNewView(newViewNumber, this.getId(), this.tolerance);
-    
+
             if (newView != null) {
-                /* 
+                /*
                  * First the primary needs to execute the new-view
                  * only then can it send the correct checkpoint message
                  */
                 this.broadcastMessage(newView);
                 this.recvNewView(newView);
                 this.checkpointForNewView = false;
-                
+
                 // We treat the new-view as a checkpoint might not be correct
                 // as of hBFT 4.3 checkpoint protocol is called after a new-view message
                 // CheckpointMessage checkpoint = new CheckpointIMessage(seqCounter.get(), this.digest(this.speculativeHistory), this.getId(), this.speculativeHistory);
@@ -1017,30 +1010,30 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
     }
 
     public void recvNewView(NewViewMessage newView) {
-        logger.writeLog(String.format("NEW-VIEW from %s to %s with (newView: %d, view-changes: " + newView.getViewChangeProofs() + ", Checkpoints: " + newView.getCheckpoint() + ", History: " + newView.getSpeculativeHistory() + ")", 
-            newView.getSignedBy(),
-            this.getId(),
-            newView.getNewViewNumber()));
+        logger.writeLog(String.format("NEW-VIEW from %s to %s with (newView: %d, view-changes: " + newView.getViewChangeProofs() + ", Checkpoints: " + newView.getCheckpoint() + ", History: " + newView.getSpeculativeHistory() + ")",
+                newView.getSignedBy(),
+                this.getId(),
+                newView.getNewViewNumber()));
         //System.out.println(newView);
         /*
          * Probably non standard behaviour: hBFT does not state
-         * what happens after a new view other than running a 
+         * what happens after a new view other than running a
          * checkpoint sub-protocol. The replicas somehow need to
          * catch up with the history and verify the new view.
          * So I will do a similar step as in Zyzzyva, as
          * hBFT works very similar to it.
-         * 
+         *
          * There are 3 possibilities:
          * 1. The replica is behind with its history
          * 2. The replica has different history than the other replicas
          * 3. The replica has the same history
-         * 
+         *
          * Per hBFT 4.3 after a new view message is received,
          * the new primary needs to send a Checkpoint-I message
          * if this is not achieved, we can technically do two things
          * 1. Receive no other messages and wait for a timeout from the client.
          * 2. Initiate a view-change if another message is received.
-         * 
+         *
          * For now I will choose option 1 and rely on the client.
          */
         if (this.getViewNumber() >= newView.getNewViewNumber() || !messageLog.acceptNewView(newView, this.tolerance, logger)) {
@@ -1055,12 +1048,12 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
         long nextSeq = minS;
 
         // Case 1. - behind with history
-        if (maxL < minS) { 
+        if (maxL < minS) {
             for (Long seqNumOfHistory : newView.getSpeculativeHistory().getRequests().keySet()) {
                 RequestMessage request = newView.getSpeculativeHistory().getRequests().get(seqNumOfHistory);
 
-                if (maxL < seqNumOfHistory && seqNumOfHistory <= minS 
-                    && request != null && !request.equals(this.speculativeHistory.getHistory().get(seqNumOfHistory))) {
+                if (maxL < seqNumOfHistory && seqNumOfHistory <= minS
+                        && request != null && !request.equals(this.speculativeHistory.getHistory().get(seqNumOfHistory))) {
                     // Given that these replicas have not commited the request yet
                     Serializable operation = request.getOperation();
                     //System.out.println("Called from recvNewView()");
@@ -1070,20 +1063,20 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
                 }
             }
             nextSeq = minS;
-        // Case 2. - this replicas history is more ahead (should not be possible)
-        // or it is at the same but missing requests
-        // it cannot technically differ, as that would break safety
-        } else if (maxL >= minS 
-            && this.digest(this.speculativeHistory.getHistoryBefore(maxL)) 
-            != this.digest(newView.getSpeculativeHistory().getHistoryBefore(maxL))) {
-                // Will fill the missing requests
-                this.speculativeHistory.fillMissing(newView.getSpeculativeHistory().getHistoryBefore(maxL));
-                nextSeq = minS;
-        // Case 3. - same history
-        } else if (maxL >= minS 
-            && this.digest(this.speculativeHistory.getHistoryBefore(maxL)) 
-            == this.digest(newView.getSpeculativeHistory().getHistoryBefore(maxL))) {
-                nextSeq = maxL;
+            // Case 2. - this replicas history is more ahead (should not be possible)
+            // or it is at the same but missing requests
+            // it cannot technically differ, as that would break safety
+        } else if (maxL >= minS
+                && this.digest(this.speculativeHistory.getHistoryBefore(maxL))
+                != this.digest(newView.getSpeculativeHistory().getHistoryBefore(maxL))) {
+            // Will fill the missing requests
+            this.speculativeHistory.fillMissing(newView.getSpeculativeHistory().getHistoryBefore(maxL));
+            nextSeq = minS;
+            // Case 3. - same history
+        } else if (maxL >= minS
+                && this.digest(this.speculativeHistory.getHistoryBefore(maxL))
+                == this.digest(newView.getSpeculativeHistory().getHistoryBefore(maxL))) {
+            nextSeq = maxL;
         }
         this.seqCounter.set(nextSeq);
 
@@ -1091,7 +1084,7 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
         for (Long seqNumOfHistory : newView.getSpeculativeHistory().getRequests().keySet()) {
             //System.out.println("Replica " + this.getId() + " checking request with seqNum: " + seqNumOfHistory);
 
-            if (!this.speculativeHistory.getRequests().keySet().contains(seqNumOfHistory)) {
+            if (!this.speculativeHistory.getRequests().containsKey(seqNumOfHistory)) {
                 //System.out.println("Replica " + this.getId() + " will execute with seqNum: " + seqNumOfHistory);
                 this.executeRequestFromViewChange(newView.getSpeculativeHistory().getRequests().get(seqNumOfHistory), this.getViewNumber(), seqNumOfHistory);
             }
@@ -1099,7 +1092,7 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
             // if (seqNumOfHistory <= nextSeq) {
             //     continue;
             // }
-            
+
             // if (seqNumOfHistory > this.seqCounter.get() + 1) {
             //     this.seqCounter.set(seqNumOfHistory - 1);
             // }
@@ -1120,12 +1113,12 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
         this.enterNewView(newViewNumber);
         this.recvNewViewAsCheckpoint(newView);
     }
-    
-    /* 
+
+    /*
      * This is probably not the way to handle this,
      * but for now the replica executes the request given
      * that f + 1 other replicas executed it and sent a reply.
-     * 
+     *
      * The replicas that already sent a reply make the request commited.
      */
     public void executeRequestFromViewChange(RequestMessage request, long currentViewNumber, long seqNumber) {
@@ -1138,7 +1131,7 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
         //System.out.println("Called from executeRequestFromViewChange()");
         Serializable operation = request.getOperation();
         Serializable result = this.compute(seqNumber, new SerializableLogEntry(operation));
-    
+
         String clientId = request.getClientId();
         long timestamp = request.getTimestamp();
 
@@ -1166,13 +1159,13 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
         }
 
         ReplyMessage reply = new ReplyMessage(
-            currentViewNumber,
-            timestamp,
-            seqNumber,
-            clientId,
-            this.getId(),
-            result,
-            this.speculativeHistory);
+                currentViewNumber,
+                timestamp,
+                seqNumber,
+                clientId,
+                this.getId(),
+                result,
+                this.speculativeHistory);
 
         this.sendReply(clientId, reply);
 
@@ -1192,10 +1185,10 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
     }
 
     public Serializable compute(long sequenceNumber, LogEntry operation) {
-        if (!this.speculativeHistory.getRequests().keySet().contains(sequenceNumber)) {
+        if (!this.speculativeHistory.getRequests().containsKey(sequenceNumber)) {
             // System.out.println("Speuclative History: " + this.speculativeHistory.getRequests().keySet());
             // System.out.println(sequenceNumber);
-            logger.writeLog(String.format("COMMITED %s at %d at replica %s", operation.toString(), sequenceNumber, this.getId())); 
+            logger.writeLog(String.format("COMMITED %s at %d at replica %s", operation.toString(), sequenceNumber, this.getId()));
             this.commitOperation(sequenceNumber, operation);
         }
         return operation;
@@ -1215,7 +1208,7 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
             //System.out.println(request);
             recvRequest(request);
             return;
-        } else if (m instanceof DefaultClientRequestPayload clientRequest) {
+        } else if (m instanceof ClientRequestMessage clientRequest) {
             //System.out.println(clientRequest);
             handleClientRequest(sender, clientRequest.getTimestamp(), clientRequest.getOperation());
             return;
