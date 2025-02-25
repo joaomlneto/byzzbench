@@ -1,7 +1,6 @@
 package byzzbench.simulator.transport;
 
 import byzzbench.simulator.Client;
-import byzzbench.simulator.HbftClient;
 import byzzbench.simulator.Node;
 import byzzbench.simulator.Replica;
 import byzzbench.simulator.Scenario;
@@ -13,7 +12,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.Synchronized;
 import lombok.extern.java.Log;
 
-import java.io.Serializable;
 import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicLong;
@@ -112,79 +110,6 @@ public class Transport {
     }
 
     /**
-     * Sends a request from a client to a replica.
-     * @param sender The ID of the client sending the request
-     * @param timestamp The time of the creation of the request
-     * @param operation The operation to send
-     * @param recipient The ID of the replica receiving the request
-     */
-    public synchronized void sendClientRequest(String sender, long timestamp, Serializable operation, String recipient) {
-        // assert that the sender exists
-        if (!this.scenario.getClients().containsKey(sender)) {
-            throw new IllegalArgumentException("Client not found: " + sender);
-        }
-
-        if (!this.scenario.getNodes().containsKey(recipient)) {
-            throw new IllegalArgumentException("Replica not found: " + recipient);
-        }
-
-        Event event = ClientRequestEvent.builder()
-                .timestamp(timestamp)
-                .eventId(this.eventSeqNum.getAndIncrement())
-                .senderId(sender)
-                .recipientId(recipient)
-                .payload(new DefaultClientRequestPayload(timestamp, operation))
-                .build();
-        this.appendEvent(event);
-    }
-
-    /**
-     * Sends a request from a client to a replica.
-     * @param sender The ID of the client sending the request
-     * @param operation The operation to send
-     * @param recipient The ID of the replica receiving the request
-     */
-    public synchronized void sendClientRequest(String sender, Serializable operation, String recipient) {
-        // assert that the sender exists
-        if (!this.scenario.getClients().containsKey(sender)) {
-            throw new IllegalArgumentException("Client not found: " + sender);
-        }
-
-        // assert that the recipient exists
-        if (!this.scenario.getNodes().containsKey(recipient)) {
-            throw new IllegalArgumentException("Replica not found: " + recipient);
-        }
-
-        Event event = ClientRequestEvent.builder()
-                .timestamp(System.currentTimeMillis())
-                .eventId(this.eventSeqNum.getAndIncrement())
-                .senderId(sender)
-                .recipientId(recipient)
-                .payload(new DefaultClientRequestPayload(0L, operation))
-                .build();
-        this.appendEvent(event);
-    }
-
-    /**
-     * Multicasts a message to a set of recipients.
-     * @param sender The ID of the sender
-     * @param recipients The set of recipient IDs
-     * @param payload The payload of the message
-     */
-    public synchronized void multicastClientRequest(String sender, long timestamp, Serializable operation, Set<String> recipients) {
-        for (String recipient : recipients) {
-            Event event = ClientRequestEvent.builder()
-                .timestamp(timestamp)
-                .eventId(this.eventSeqNum.getAndIncrement())
-                .senderId(sender)
-                .recipientId(recipient)
-                .payload(new DefaultClientRequestPayload(timestamp, operation))
-                .build();
-            this.appendEvent(event);
-        }
-    }
-
-    /**
      * Sends a response from a replica to a client.
      *
      * @param sender    The ID of the replica sending the response
@@ -204,33 +129,6 @@ public class Transport {
         // deliver the reply directly to the client to handle
         Client c = this.scenario.getClients().get(recipient);
         c.handleMessage(sender.getId(), response);
-    }
-
-    /**
-     * Sends a response from a replica to a client.
-     * @param sender The ID of the replica sending the response
-     * @param response The response to send
-     * @param recipient The ID of the client receiving the response
-     * @param tolerance the tolerance of the protocol (used for hbft)
-     */
-    public synchronized void sendClientResponse(String sender, MessagePayload response, String recipient, long tolerance, long seqNumber) {
-        // assert that the sender exists
-        if (!this.scenario.getNodes().containsKey(sender)) {
-            throw new IllegalArgumentException("Replica not found: " + sender);
-        }
-
-        if (!this.scenario.getClients().containsKey(recipient)) {
-            throw new IllegalArgumentException("Client not found: " + recipient);
-        }
-
-        // deliver the reply directly to the client to handle
-        Client c = this.scenario.getClients().get(recipient);
-        if (c instanceof HbftClient client) {
-            client.handleReply(sender, response, tolerance, seqNumber);
-        } else {
-            return;
-        }
-        
     }
 
     /**
@@ -511,14 +409,14 @@ public class Transport {
         return timeoutEvent.getEventId();
     }
 
-    public synchronized long setTimeout(Replica replica, Runnable runnable,
-                           Duration timeout, String description) {
+    public synchronized long setTimeout(Node node, Runnable runnable,
+                                        Duration timeout, String description) {
         TimeoutEvent timeoutEvent = TimeoutEvent.builder()
                 .eventId(this.eventSeqNum.getAndIncrement())
                 .description(description)
-                .nodeId(replica.getId())
+                .nodeId(node.getId())
                 .timeout(timeout)
-                .expiresAt(replica.getCurrentTime().plus(timeout))
+                .expiresAt(node.getCurrentTime().plus(timeout))
                 .task(runnable)
                 .build();
         this.appendEvent(timeoutEvent);
@@ -526,27 +424,7 @@ public class Transport {
 
 
         //log.info(description + " timeout set for " + replica.getId() + " in " +
-                //timeout + "ms: " + timeoutEvent);
-        return timeoutEvent.getEventId();
-    }
-
-    public synchronized long setClientTimeout(String clientId, Runnable runnable,
-                           Duration timeout) {
-        Client client = getScenario().getClients().get(clientId);
-        TimeoutEvent timeoutEvent = TimeoutEvent.builder()
-                .eventId(this.eventSeqNum.getAndIncrement())
-                .description("CLIENT TIMEOUT")
-                .nodeId(clientId)
-                .timeout(timeout)
-                .expiresAt(client.getCurrentTime().plus(timeout))
-                .task(runnable)
-                .build();
-        this.appendEvent(timeoutEvent);
-        this.observers.forEach(o -> o.onTimeout(timeoutEvent));
-
-
-        //log.info("Timeout set for " + clientId + " in " +
-                //timeout + "ms: " + timeoutEvent);
+        //timeout + "ms: " + timeoutEvent);
         return timeoutEvent.getEventId();
     }
 
@@ -580,10 +458,10 @@ public class Transport {
                 this.events.values()
                         .stream()
                         .filter(
-                            e -> e instanceof TimeoutEvent t &&
-                                t.getNodeId().equals(replica.getId()) &&
-                                t.getStatus() == Event.Status.QUEUED &&
-                                t.getDescription().equals(description))
+                                e -> e instanceof TimeoutEvent t &&
+                                        t.getNodeId().equals(replica.getId()) &&
+                                        t.getStatus() == Event.Status.QUEUED &&
+                                        t.getDescription().equals(description))
                         .map(Event::getEventId)
                         .toList();
 
@@ -593,7 +471,7 @@ public class Transport {
             this.observers.forEach(o -> o.onEventDropped(events.get(eventId)));
         }
     }
-    
+
     /**
      * Gets all queued timeouts for a given node.
      *
@@ -624,25 +502,6 @@ public class Transport {
             Event e = events.get(eventId);
             e.setStatus(Event.Status.DROPPED);
             this.observers.forEach(o -> o.onEventDropped(e));
-        }
-    }
-
-    public synchronized void clearClientTimeouts(String clientId) {
-        // get all event IDs for timeouts from this client
-        List<Long> eventIds =
-                this.events.values()
-                        .stream()
-                        .filter(
-                                e -> e instanceof TimeoutEvent t &&
-                                t.getNodeId().equals(clientId) &&
-                                t.getStatus() == Event.Status.QUEUED)
-                        .map(Event::getEventId)
-                        .toList();
-
-        // remove all event IDs
-        for (Long eventId : eventIds) {
-            events.get(eventId).setStatus(Event.Status.DROPPED);
-            this.observers.forEach(o -> o.onEventDropped(events.get(eventId)));
         }
     }
 
