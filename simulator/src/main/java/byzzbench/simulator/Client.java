@@ -1,9 +1,9 @@
 package byzzbench.simulator;
 
+import byzzbench.simulator.protocols.hbft.message.ClientRequestMessage;
 import byzzbench.simulator.transport.MessagePayload;
 import byzzbench.simulator.utils.NonNull;
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import lombok.Builder;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.SuperBuilder;
@@ -64,8 +64,8 @@ public class Client implements Serializable, Node {
      */
     public void sendRequest() {
         String recipientId = this.getScenario().getReplicas().keySet().iterator().next();
-        String requestId = String.format("%s/%d", this.id, this.requestSequenceNumber.getAndIncrement());
-        this.getScenario().getTransport().sendClientRequest(this.id, requestId, recipientId);
+        MessagePayload payload = new ClientRequestMessage(this.getCurrentTime().toEpochMilli(), recipientId);
+        this.getScenario().getTransport().sendMessage(this, payload, recipientId);
     }
 
     /**
