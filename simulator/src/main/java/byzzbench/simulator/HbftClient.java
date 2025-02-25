@@ -1,11 +1,9 @@
 package byzzbench.simulator;
 
-import byzzbench.simulator.protocols.hbft.message.PanicMessage;
-import byzzbench.simulator.protocols.hbft.message.RequestMessage;
+import byzzbench.simulator.protocols.hbft.message.*;
+import byzzbench.simulator.protocols.hbft.pojo.ClientReplyKey;
 import byzzbench.simulator.transport.MessagePayload;
-
 import com.fasterxml.jackson.annotation.JsonIgnore;
-
 import lombok.Getter;
 import lombok.experimental.SuperBuilder;
 
@@ -13,15 +11,7 @@ import java.io.Serializable;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.Duration;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.Set;
-import java.util.SortedMap;
-import java.util.TreeMap;
-
-import byzzbench.simulator.protocols.hbft.message.ReplyMessage;
-import byzzbench.simulator.protocols.hbft.pojo.ClientReplyKey;
+import java.util.*;
 
 
 /**
@@ -86,7 +76,7 @@ public class HbftClient extends Client {
         RequestMessage request = new RequestMessage(requestId, timestamp, super.id);
         this.sentRequests.put(super.requestSequenceNumber.get(), request);
         this.sentRequestsByTimestamp.put(timestamp, requestId);
-        super.getScenario().getTransport().multicastClientRequest(super.id, timestamp, requestId, super.scenario.getTransport().getNodeIds());
+        this.broadcastRequest(timestamp, requestId);
 
         // Set timeout
         Long timeoutId = this.setTimeout("REQUEST", this::retransmitOrPanic, this.timeout);
@@ -100,7 +90,7 @@ public class HbftClient extends Client {
             // Based on hBFT 4.1 it uses the identical request
             // TODO: It probably should not be the same timestamp
             long timestamp = this.sentRequests.get(super.requestSequenceNumber.get()).getTimestamp();
-            super.scenario.getTransport().multicastClientRequest(super.id, timestamp, requestId, super.scenario.getTransport().getNodeIds());
+            this.broadcastRequest(timestamp, requestId);
         } else if (this.shouldPanic(tolerance)) {
             RequestMessage message = this.sentRequests.get(super.requestSequenceNumber.get());
             PanicMessage panic = new PanicMessage(this.digest(message), System.currentTimeMillis(), super.id);
@@ -111,19 +101,26 @@ public class HbftClient extends Client {
         timeouts.put(super.requestSequenceNumber.get(), timeoutId);
     }
 
+    private void broadcastRequest(long timestamp, String requestId) {
+        MessagePayload payload = new ClientRequestMessage(timestamp, requestId);
+        SortedSet<String> replicaIds = super.scenario.getTransport().getNodeIds();
+        getScenario().getTransport().multicast(this, replicaIds, payload);
+    }
+
     /**
      * Handles a reply received by the client.
+     *
      * @param senderId The ID of the sender of the reply.
-     * @param reply The reply received by the client.
-     * @param tolerance the tolerance of the protocol (used for hbft)
+     * @param payload  The payload received by the client.
      */
-    public void handleReply(String senderId, MessagePayload reply, long tolerance, long seqNumber) {
-        if (!(reply instanceof ReplyMessage)) {
+    public void handleMessage(String senderId, MessagePayload payload) {
+        if (!(payload instanceof ClientReplyMessage clientReplyMessage)) {
             return;
         }
-        ClientReplyKey key = new ClientReplyKey(((ReplyMessage) reply).getResult().toString(), seqNumber);
+        ReplyMessage reply = clientReplyMessage.getReply();
+        ClientReplyKey key = new ClientReplyKey(reply.getResult().toString(), reply.getSequenceNumber());
         // Default is for testing only
-        String currRequest = this.sentRequestsByTimestamp.getOrDefault(((ReplyMessage) reply).getTimestamp(), "C/0");
+        String currRequest = this.sentRequestsByTimestamp.getOrDefault(reply.getTimestamp(), "C/0");
         this.hbftreplies.putIfAbsent(currRequest, new TreeMap<>());
         this.hbftreplies.get(currRequest).putIfAbsent(key, new ArrayList<>());
         this.hbftreplies.get(currRequest).get(key).add(reply);
@@ -132,28 +129,13 @@ public class HbftClient extends Client {
          * If the client received 2f + 1 correct replies,
          * and the request has not been completed yet.
          */
-        if (this.completedReplies(tolerance) 
-            && !this.completedRequests.contains(key) 
-            && super.requestSequenceNumber.get() <= this.maxRequests) {
-                this.completedRequests.add(key);
-                this.clearTimeout(this.timeouts.get(super.requestSequenceNumber.get()));
-                this.sendRequest();
+        if (this.completedReplies(clientReplyMessage.getTolerance())
+                && !this.completedRequests.contains(key)
+                && super.requestSequenceNumber.get() <= this.maxRequests) {
+            this.completedRequests.add(key);
+            this.clearTimeout(this.timeouts.get(super.requestSequenceNumber.get()));
+            this.sendRequest();
         }
-    }
-
-     /**
-     * Handles a reply received by the client.
-     *
-     * @param senderId The ID of the sender of the reply.
-     * @param reply    The reply received by the client.
-     */
-    @Override
-    public void handleMessage(String senderId, MessagePayload reply) {
-        // this.replies.putIfAbsent(super.requestSequenceNumber.get(), new ArrayList<>());
-        // this.replies.get(super.requestSequenceNumber.get()).add(reply);
-        // if (super.requestSequenceNumber.get() < this.maxRequests) {
-        //     this.sendRequest();
-        // }
     }
 
     /**
@@ -169,7 +151,7 @@ public class HbftClient extends Client {
         return super.scenario.getTransport().setTimeout(this, r, duration);
     }
 
-        /**
+    /**
      * Set a timeout for this client.
      *
      * @param r       the runnable to execute when the timeout occurs
@@ -181,7 +163,7 @@ public class HbftClient extends Client {
             r.run();
         };
         Duration duration = Duration.ofSeconds(timeout);
-        return super.scenario.getTransport().setClientTimeout(super.id, wrapper, duration);
+        return super.scenario.getTransport().setTimeout(this, wrapper, duration);
     }
 
     /**
@@ -206,8 +188,8 @@ public class HbftClient extends Client {
     public boolean shouldPanic(long tolerance) {
         String currRequest = String.format("%s/%d", super.id, super.requestSequenceNumber.get());
         for (ClientReplyKey key : hbftreplies.get(currRequest).keySet()) {
-            return this.hbftreplies.get(currRequest).get(key).size() >= tolerance + 1 
-                && this.hbftreplies.get(currRequest).get(key).size() < tolerance * 2 + 1;
+            return this.hbftreplies.get(currRequest).get(key).size() >= tolerance + 1
+                    && this.hbftreplies.get(currRequest).get(key).size() < tolerance * 2 + 1;
         }
         return false;
     }
