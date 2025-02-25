@@ -3,8 +3,10 @@ package byzzbench.simulator.transport;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import lombok.Builder;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.experimental.SuperBuilder;
 
+import java.time.Duration;
 import java.time.Instant;
 
 /**
@@ -12,59 +14,57 @@ import java.time.Instant;
  *
  * @see Event
  */
+@EqualsAndHashCode(callSuper = true)
 @Data
 @JsonTypeName("Timeout")
 @SuperBuilder
-public class TimeoutEvent implements Event {
-  /**
-   * The unique identifier of the event.
-   */
-  private final long eventId;
+public class TimeoutEvent extends BaseEvent implements MailboxEvent {
 
-  /**
-   * A human description of the event.
-   */
-  private final String description;
+    /**
+     * A human description of the event.
+     */
+    private final String description;
 
-  /**
-   * The unique identifier of the node that emitted (and shall receive) the
-   * event
-   */
-  private final String nodeId;
+    /**
+     * The unique identifier of the node that emitted (and shall receive) the
+     * event
+     */
+    private final String nodeId;
 
-  /**
-   * The timeout value in milliseconds.
-   */
-  private final long timeout; // in milliseconds
+    /**
+     * The timeout value in milliseconds.
+     */
+    private final Duration timeout; // in milliseconds
 
-  /**
-   * The physical time at which the Timeout was created.
-   */
-  private final Instant createdAt = Instant.now();
+    /**
+     * The instant at which the timeout is set to expire in the scenario.
+     * This is using scenario time, not physical time.
+     */
+    private final Instant expiresAt;
 
-  /**
-   * The task to be executed when the timeout expires.
-   */
-  private final transient Runnable task;
+    /**
+     * The physical time at which the Timeout was created.
+     */
+    private final Instant createdAt = Instant.now();
 
-  /**
-   * The status of the event.
-   */
-  @Builder.Default
-  private Status status = Status.QUEUED;
+    /**
+     * The task to be executed when the timeout expires.
+     */
+    private final transient Runnable task;
 
-  /**
-   * The physical time at which the Timeout was delivered.
-   */
-  private transient Instant deliveredAt;
+    /**
+     * The status of the event.
+     */
+    @Builder.Default
+    private Status status = Status.QUEUED;
 
-  @Override
-  public String getSenderId() {
-    return nodeId;
-  }
+    /**
+     * The physical time at which the Timeout was delivered.
+     */
+    private transient Instant deliveredAt;
 
-  @Override
-  public String getRecipientId() {
-    return nodeId;
-  }
+    @Override
+    public String getRecipientId() {
+        return nodeId;
+    }
 }

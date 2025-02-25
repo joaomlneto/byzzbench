@@ -2,6 +2,7 @@ package byzzbench.simulator.state.adob;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Getter;
+import lombok.experimental.SuperBuilder;
 
 import java.io.Serializable;
 import java.util.List;
@@ -12,6 +13,7 @@ import java.util.Optional;
  *
  * @see <a href="https://flint.cs.yale.edu/flint/publications/adob-tr.pdf">AdoB</a>
  */
+@SuperBuilder
 @Getter
 public abstract class AdobCache implements Serializable {
     private final long id;

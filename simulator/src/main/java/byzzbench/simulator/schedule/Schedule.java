@@ -1,30 +1,25 @@
 package byzzbench.simulator.schedule;
 
-import byzzbench.simulator.ScenarioExecutor;
+import byzzbench.simulator.Scenario;
+import byzzbench.simulator.ScenarioPredicate;
 import byzzbench.simulator.transport.Event;
+import byzzbench.simulator.utils.NonNull;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.ToString;
 import lombok.extern.jackson.Jacksonized;
-import org.springframework.lang.NonNull;
 
 import java.io.Serializable;
 import java.util.*;
-import java.util.function.Predicate;
 
 @Getter
 @Jacksonized
 @Builder
 @JsonIgnoreProperties(ignoreUnknown = true)
 @ToString
-public class Schedule<T extends Serializable> {
-    /**
-     * The scenario ID that this schedule belongs to.
-     */
-    @NonNull
-    private final String scenarioId;
-
+public class Schedule implements Serializable {
     /**
      * The list of events in the schedule.
      */
@@ -33,9 +28,16 @@ public class Schedule<T extends Serializable> {
     /**
      * The set of invariants that are violated by this schedule.
      */
-    private final Set<Predicate<ScenarioExecutor<T>>> brokenInvariants = new HashSet<>();
     @NonNull
-    private boolean isFinalized;
+    private final SortedSet<ScenarioPredicate> brokenInvariants = new TreeSet<>();
+
+    @NonNull
+    @JsonIgnore
+    private final Scenario scenario;
+
+    @NonNull
+    @Builder.Default
+    private boolean isFinalized = false;
 
     public void appendEvent(Event event) {
         if (isFinalized) {
@@ -46,9 +48,10 @@ public class Schedule<T extends Serializable> {
 
     /**
      * Marks the schedule as read-only, with the given broken invariants.
+     *
      * @param brokenInvariants the set of broken invariants.
      */
-    public void finalizeSchedule(Set<Predicate<ScenarioExecutor<T>>> brokenInvariants) {
+    public void finalizeSchedule(Set<ScenarioPredicate> brokenInvariants) {
         isFinalized = true;
         this.brokenInvariants.addAll(brokenInvariants);
     }
@@ -62,9 +65,20 @@ public class Schedule<T extends Serializable> {
 
     /**
      * Returns true if the schedule is buggy, i.e., it violates some invariants.
+     *
      * @return true if the schedule is buggy, false otherwise.
      */
+    @JsonIgnore
     public boolean isBuggy() {
         return !brokenInvariants.isEmpty();
+    }
+
+    /**
+     * Returns the id of the scenario that generated this schedule.
+     *
+     * @return the id of the scenario that generated this schedule.
+     */
+    public @NonNull String getScenarioId() {
+        return scenario.getId();
     }
 }

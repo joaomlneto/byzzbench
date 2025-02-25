@@ -1,17 +1,16 @@
 package byzzbench.simulator.state.adob;
 
+import byzzbench.simulator.Client;
 import byzzbench.simulator.Replica;
 import byzzbench.simulator.ReplicaObserver;
+import byzzbench.simulator.ScenarioObserver;
 import byzzbench.simulator.versioning.VectorClock;
 import lombok.Getter;
 import lombok.Synchronized;
 import lombok.extern.java.Log;
 
 import java.io.Serializable;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
@@ -22,7 +21,7 @@ import java.util.concurrent.atomic.AtomicLong;
  * paper</a>
  */
 @Log
-public class AdobDistributedState implements ReplicaObserver, Serializable {
+public class AdobDistributedState implements ScenarioObserver, ReplicaObserver, Serializable {
     /**
      * The maximum cache ID that has been created so far.
      */
@@ -30,11 +29,11 @@ public class AdobDistributedState implements ReplicaObserver, Serializable {
     /**
      * The vector clocks of each replica.
      */
-    private final Map<String, VectorClock> clocks = new HashMap<>();
+    private final SortedMap<String, VectorClock> clocks = new TreeMap<>();
     /**
      * The last cache that each replica has created/supported.
      */
-    private final Map<String, AdobCache> replicaLastCache = new HashMap<>();
+    private final SortedMap<String, AdobCache> replicaLastCache = new TreeMap<>();
     /**
      * The root cache of the distributed state.
      */
@@ -44,20 +43,14 @@ public class AdobDistributedState implements ReplicaObserver, Serializable {
      * The caches that have been created so far.
      */
     @Getter(onMethod_ = {@Synchronized})
-    private final Map<Long, AdobCache> caches = new HashMap<>(Map.of(0L, root));
-
-    public AdobDistributedState(Collection<String> replicaIds) {
-        for (String id : replicaIds) {
-            replicaLastCache.put(id, root);
-        }
-    }
+    private final SortedMap<Long, AdobCache> caches = new TreeMap<>(Map.of(0L, root));
 
     private AdobCache getReplicaLastCache(Replica r) {
-        return replicaLastCache.getOrDefault(r.getNodeId(), root);
+        return replicaLastCache.getOrDefault(r.getId(), root);
     }
 
     private VectorClock getReplicaClock(Replica r) {
-        return clocks.computeIfAbsent(r.getNodeId(), k -> new VectorClock());
+        return clocks.computeIfAbsent(r.getId(), k -> new VectorClock());
     }
 
     /**
@@ -68,7 +61,7 @@ public class AdobDistributedState implements ReplicaObserver, Serializable {
      */
     @Override
     public synchronized void onLeaderChange(Replica r, String newLeaderId) {
-        log.info(String.format("%s: leader changed to %s%n", r.getNodeId(), newLeaderId));
+        log.info(String.format("%s: leader changed to %s%n", r.getId(), newLeaderId));
 
         ElectionCache electionCache = null;
 
@@ -83,12 +76,12 @@ public class AdobDistributedState implements ReplicaObserver, Serializable {
         // create ECache if it doesn't exist
         if (electionCache == null) {
             long id = maxExistingCacheId.incrementAndGet();
-            electionCache = new ElectionCache(id, getReplicaLastCache(r), r.getNodeId(), newLeaderId);
+            electionCache = new ElectionCache(id, getReplicaLastCache(r), r.getId(), newLeaderId);
             caches.put(id, electionCache);
         }
 
-        electionCache.addVoter(r.getNodeId());
-        replicaLastCache.put(r.getNodeId(), electionCache);
+        electionCache.addVoter(r.getId());
+        replicaLastCache.put(r.getId(), electionCache);
     }
 
     /**
@@ -99,7 +92,7 @@ public class AdobDistributedState implements ReplicaObserver, Serializable {
      */
     @Override
     public synchronized void onLocalCommit(Replica r, Serializable operation) {
-        log.info(String.format("%s: local commit%n", r.getNodeId()));
+        log.info(String.format("%s: local commit%n", r.getId()));
 
         MethodCache methodCache = null;
         // search for an ECache with the same leader ID
@@ -117,12 +110,12 @@ public class AdobDistributedState implements ReplicaObserver, Serializable {
         // create MCache
         if (methodCache == null) {
             long id = maxExistingCacheId.incrementAndGet();
-            methodCache = new MethodCache(id, getReplicaLastCache(r), operation, r.getNodeId());
+            methodCache = new MethodCache(id, getReplicaLastCache(r), operation, r.getId());
             caches.put(id, methodCache);
         }
 
-        methodCache.addVoter(r.getNodeId());
-        replicaLastCache.put(r.getNodeId(), methodCache);
+        methodCache.addVoter(r.getId());
+        replicaLastCache.put(r.getId(), methodCache);
 
         // check if a majority of the replicas have committed the operation
         if (methodCache.getVoters().size() > replicaLastCache.size() / 2) {
@@ -164,11 +157,15 @@ public class AdobDistributedState implements ReplicaObserver, Serializable {
     // TODO: Whenever a replica times out and triggers an election, create a TCache
     @Override
     public synchronized void onTimeout(Replica r) {
-        log.info(String.format("%s: timeout%n", r.getNodeId()));
+        log.info(String.format("%s: timeout%n", r.getId()));
         // create TCache
         long id = maxExistingCacheId.incrementAndGet();
-        TimeoutCache tCache = new TimeoutCache(id, root, Set.of(r.getNodeId()), Set.of(r.getNodeId()));
-
+        TimeoutCache tCache = TimeoutCache
+                .builder()
+                .id(id)
+                .parent(root)
+                .voters(new TreeSet<>(Collections.singleton(r.getId())))
+                .supporters(new TreeSet<>(Collections.singleton(r.getId()))).build();
         caches.put(id, tCache);
     }
 
@@ -180,5 +177,18 @@ public class AdobDistributedState implements ReplicaObserver, Serializable {
 
         root = new RootCache(0);
         caches.put(0L, root);
+    }
+
+    @Override
+    public void onReplicaAdded(Replica r) {
+        r.addObserver(this);
+        log.info("Replica added: " + r.getId());
+        CommitCache cCache = new CommitCache(r.getScenario().getReplicas().navigableKeySet().stream().sorted().toList().indexOf(r.getId()), root);
+        caches.put(cCache.getId(), cCache);
+    }
+
+    @Override
+    public void onClientAdded(Client c) {
+        // do nothing
     }
 }

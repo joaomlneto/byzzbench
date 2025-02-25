@@ -1,33 +1,35 @@
 package byzzbench.simulator.protocols.fasthotstuff;
 
 import byzzbench.simulator.LeaderBasedProtocolReplica;
+import byzzbench.simulator.Scenario;
 import byzzbench.simulator.protocols.fasthotstuff.message.*;
 import byzzbench.simulator.state.TotalOrderCommitLog;
 import byzzbench.simulator.transport.MessagePayload;
-import byzzbench.simulator.transport.Transport;
 import lombok.Getter;
 import lombok.extern.java.Log;
 
 import java.io.Serializable;
+import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.stream.Collectors;
 
 @Log
 @Getter
-public class FastHotStuffReplica extends LeaderBasedProtocolReplica<Block> {
-    public static final int TIMEOUT_DELAY = 15000; // 15 seconds
+public class FastHotStuffReplica extends LeaderBasedProtocolReplica {
+    public static final Duration TIMEOUT_DELAY = Duration.ofSeconds(15);
 
     private final AtomicLong round = new AtomicLong(3);
     private final AtomicLong lastVotedRound = new AtomicLong(2);
     private final AtomicLong preferredRound = new AtomicLong(1);
     private final AtomicLong highestQcRound = new AtomicLong(2);
-    private final Map<String, Set<VoteMessage>> votes = new HashMap<>();
-    private final Map<Long, Set<NewViewMessage>> newViews = new HashMap<>();
-    private final Map<String, Block> knownBlocks = new HashMap<>();
+    private final SortedMap<String, SortedSet<VoteMessage>> votes = new TreeMap<>();
+    private final SortedMap<Long, SortedSet<NewViewMessage>> newViews = new TreeMap<>();
+    private final SortedMap<String, Block> knownBlocks = new TreeMap<>();
     private GenericQuorumCertificate highestQc = new QuorumCertificate(new ArrayList<>());
 
-    public FastHotStuffReplica(String nodeId, Set<String> nodeIds, Transport<Block> transport) {
-        super(nodeId, nodeIds, transport, new TotalOrderCommitLog<>());
+    public FastHotStuffReplica(String nodeId, Scenario scenario) {
+        super(nodeId, scenario, new TotalOrderCommitLog());
     }
 
     @Override
@@ -36,12 +38,12 @@ public class FastHotStuffReplica extends LeaderBasedProtocolReplica<Block> {
         createGenesisBlocks();
 
         // leader broadcasts a block
-        if (this.getNodeId().equals(this.getLeader())) {
+        if (this.getId().equals(this.getLeader())) {
             this.broadcastMessageIncludingSelf(
                     new Block(highestQc,
                             this.round.get(),
-                            this.getNodeId(),
-                            String.format("%s%d", this.getNodeId(), this.round.get())));
+                            this.getId(),
+                            String.format("%s%d", this.getId(), this.round.get())));
         }
 
         // create 15 second timeout
@@ -76,7 +78,7 @@ public class FastHotStuffReplica extends LeaderBasedProtocolReplica<Block> {
                         .toList());
 
         // if I am node 0, print the blocks and quorum certificates
-        if (this.getNodeId().equals(nodeIds.get(0))) {
+        if (this.getId().equals(nodeIds.get(0))) {
             log.severe(String.format("Block 0: %s", b0));
             log.severe(String.format("QC 0: %s", qc0));
             log.severe(String.format("Block 1: %s", b1));
@@ -112,7 +114,7 @@ public class FastHotStuffReplica extends LeaderBasedProtocolReplica<Block> {
             Optional<QuorumCertificate> qc = this.addVote(vote);
             if (qc.isPresent()) {
                 this.processBlock(this.getBlock(vote.getBlockHash()));
-                Block block = new Block(qc.get(), this.round.get(), this.getNodeId(), String.format("%s%d", this.getNodeId(), this.round.get()));
+                Block block = new Block(qc.get(), this.round.get(), this.getId(), String.format("%s%d", this.getId(), this.round.get()));
                 this.broadcastMessageIncludingSelf(block);
             }
             return;
@@ -125,7 +127,7 @@ public class FastHotStuffReplica extends LeaderBasedProtocolReplica<Block> {
                 // FIXME: THIS IS PROBABLY WRONG.
                 // see: https://github.com/asonnino/twins-simulator/blob/master/fhs/node.py#L43
                 // XXX: Now this is probably right!
-                Block block = new Block(qc.get(), this.round.get(), this.getNodeId(), String.format("%s%d", this.getNodeId(), this.round.get()));
+                Block block = new Block(qc.get(), this.round.get(), this.getId(), String.format("%s%d", this.getId(), this.round.get()));
                 this.broadcastMessageIncludingSelf(block);
             }
             return;
@@ -162,7 +164,7 @@ public class FastHotStuffReplica extends LeaderBasedProtocolReplica<Block> {
         }
 
         // update the committed sequence
-        this.commit(b0);
+        this.commit(block.getRound(), b0);
         log.info(String.format("Committing block %s", b0));
     }
 
@@ -190,7 +192,7 @@ public class FastHotStuffReplica extends LeaderBasedProtocolReplica<Block> {
         this.resetTimeout();
         this.lastVotedRound.set(block.getRound());
         this.round.set(Math.max(this.round.get(), block.getRound() + 1));
-        VoteMessage vote = new VoteMessage(this.getNodeId(), this.hash(block));
+        VoteMessage vote = new VoteMessage(this.getId(), this.hash(block));
         String nextLeaderId = this.getLeader(block.getRound() + 1);
         log.info(String.format("Sending vote %s to next leader: %s", vote, nextLeaderId));
         this.sendMessage(vote, nextLeaderId);
@@ -220,7 +222,7 @@ public class FastHotStuffReplica extends LeaderBasedProtocolReplica<Block> {
         boolean authorValid = this.getNodeIds().contains(block.getAuthor());
         boolean qcAuthorsValid = block.getQc().getVotes().stream().allMatch(vote -> this.getNodeIds().contains(vote.getAuthor()));
         boolean hasQuorum = block.getQc().getVotes().size() >= this.computeQuorumSize();
-        Set<String> committedBlocks = block.getQc().getVotes().stream().map(vote -> vote.getBlockHash()).collect(java.util.stream.Collectors.toSet());
+        SortedSet<String> committedBlocks = block.getQc().getVotes().stream().map(vote -> vote.getBlockHash()).collect(Collectors.toCollection(TreeSet::new));
         boolean allSameHash = committedBlocks.size() == 1;
         return authorValid && qcAuthorsValid && allSameHash && hasQuorum;
     }
@@ -239,7 +241,7 @@ public class FastHotStuffReplica extends LeaderBasedProtocolReplica<Block> {
         log.info("Timeout!");
         this.round.incrementAndGet();
         this.resetTimeout();
-        NewViewMessage vote = new NewViewMessage(this.highestQc, this.round.get(), this.getNodeId());
+        NewViewMessage vote = new NewViewMessage(this.highestQc, this.round.get(), this.getId());
         String nextLeader = this.getLeader();
         this.sendMessage(vote, nextLeader);
         log.info("Sending new view message to next leader: " + nextLeader);
@@ -247,7 +249,7 @@ public class FastHotStuffReplica extends LeaderBasedProtocolReplica<Block> {
 
     public void resetTimeout() {
         this.clearAllTimeouts();
-        this.setTimeout(this::handleTimeout, TIMEOUT_DELAY);
+        this.setTimeout("Timeout", this::handleTimeout, TIMEOUT_DELAY);
     }
 
 
@@ -267,7 +269,7 @@ public class FastHotStuffReplica extends LeaderBasedProtocolReplica<Block> {
     }
 
     // Commits a block
-    public void commit(Block block) {
+    public void commit(long seqNumber, Block block) {
         System.out.println("COMITTING BLOCK: " + block);
         // Check if the parent is known
         if (block.getParentHash() != null && knownBlocks.get(block.getParentHash()) == null) {
@@ -280,13 +282,13 @@ public class FastHotStuffReplica extends LeaderBasedProtocolReplica<Block> {
             throw new IllegalArgumentException("Cannot commit block: parent not committed");
         }*/
 
-        this.commitOperation(block);
+        this.commitOperation(seqNumber, block);
     }
 
     // Adds a vote to the storage
     public Optional<QuorumCertificate> addVote(VoteMessage message) {
         String digest = message.getBlockHash();
-        Optional<Set<VoteMessage>> votes = canMakeQc(this.votes, digest, message);
+        Optional<SortedSet<VoteMessage>> votes = canMakeQc(this.votes, digest, message);
         if (votes.isPresent()) {
             return Optional.of(new QuorumCertificate(votes.get()));
         } else {
@@ -296,7 +298,7 @@ public class FastHotStuffReplica extends LeaderBasedProtocolReplica<Block> {
 
     public Optional<AggregateQuorumCertificate> addVote(NewViewMessage message) {
         long round = message.getRound();
-        Optional<Set<NewViewMessage>> newViewsQc = canMakeQc(this.newViews, round, message);
+        Optional<SortedSet<NewViewMessage>> newViewsQc = canMakeQc(this.newViews, round, message);
         if (newViewsQc.isPresent()) {
             return Optional.of(new AggregateQuorumCertificate(newViewsQc.get()));
         } else {
@@ -304,9 +306,9 @@ public class FastHotStuffReplica extends LeaderBasedProtocolReplica<Block> {
         }
     }
 
-    public <K, V extends GenericVoteMessage> Optional<Set<V>> canMakeQc(Map<K, Set<V>> collection, K key, V value) {
+    public <K, V extends GenericVoteMessage> Optional<SortedSet<V>> canMakeQc(Map<K, SortedSet<V>> collection, K key, V value) {
         boolean before = collection.containsKey(key) && collection.get(key).size() >= this.computeQuorumSize();
-        collection.computeIfAbsent(key, k -> new HashSet<>()).add(value);
+        collection.computeIfAbsent(key, k -> new TreeSet<>()).add(value);
         boolean after = collection.containsKey(key) && collection.get(key).size() >= this.computeQuorumSize();
         if (after && !before) {
             return Optional.of(collection.get(key));

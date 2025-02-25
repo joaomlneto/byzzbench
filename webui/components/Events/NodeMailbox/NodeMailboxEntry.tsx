@@ -4,16 +4,20 @@ import { DeliverMessageActionIcon } from "@/components/ActionIcon";
 import { MutateMessageMenu } from "@/components/Events/MutateMessageMenu";
 import { NodeStateNavLink } from "@/components/NodeStateNavLink";
 import { useGetMessage } from "@/lib/byzzbench-client/generated";
-import { Badge, Card, Collapse, Group, Text } from "@mantine/core";
+import { Badge, Card, Collapse, Group, Loader, Text } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
 import React, { memo } from "react";
 
-export const NodeMailboxEntry = memo(({ messageId }: { messageId: number }) => {
-  const [opened, { toggle }] = useDisclosure(false);
-  const { data: message } = useGetMessage(messageId);
+export type NodeMailboxEntryProps = {
+  messageId: number;
+};
 
-  if (!message?.data) {
-    return null;
+export const NodeMailboxEntry = memo(({ messageId }: NodeMailboxEntryProps) => {
+  const [opened, { toggle }] = useDisclosure(false);
+  const { data: message, isLoading } = useGetMessage(messageId);
+
+  if (isLoading || !message) {
+    return <Loader />;
   }
 
   return (
@@ -22,6 +26,7 @@ export const NodeMailboxEntry = memo(({ messageId }: { messageId: number }) => {
         <Group
           wrap="nowrap"
           gap="xs"
+          grow
           onClick={(e) => {
             e.preventDefault();
             toggle();
@@ -30,24 +35,31 @@ export const NodeMailboxEntry = memo(({ messageId }: { messageId: number }) => {
           <Text span c="dimmed">
             {message.data.eventId}
           </Text>
-          <Badge size="sm">{message.data.senderId}</Badge>
-          <Text lineClamp={1}>
+          <Badge size="xs">
             {
-              // @ts-ignore
-              message.data.payload?.type ?? message.data.type ?? "???"
+              // @ts-expect-error: senderId is not in all subtypes of Event
+              message.data.senderId
             }
-          </Text>
+          </Badge>
+          <Group grow>
+            <Text lineClamp={1} w="200px">
+              {
+                // @ts-ignore
+                message.data.payload?.type ?? message.data.type ?? "???"
+              }
+            </Text>
+          </Group>
         </Group>
         {message.data.status == "QUEUED" && (
           <Group gap="xs" wrap="nowrap">
-            {true && <DeliverMessageActionIcon messageId={messageId} />}
-            {true && <MutateMessageMenu messageId={messageId} />}
+            <DeliverMessageActionIcon messageId={messageId} />
+            <MutateMessageMenu messageId={messageId} />
           </Group>
         )}
       </Group>
       <Collapse in={opened}>
-        {Object.entries(message.data ?? {}).map(([key, value]) => (
-          <NodeStateNavLink key={key} label={key} data={value} />
+        {Object.entries(message?.data ?? {}).map(([key, value]) => (
+          <NodeStateNavLink key={key} label={key} data={opened ? value : {}} />
         ))}
       </Collapse>
     </Card>

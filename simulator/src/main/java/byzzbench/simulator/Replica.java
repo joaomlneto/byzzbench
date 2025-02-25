@@ -1,31 +1,35 @@
 package byzzbench.simulator;
 
 import byzzbench.simulator.state.CommitLog;
+import byzzbench.simulator.state.LogEntry;
+import byzzbench.simulator.transport.DefaultClientReplyPayload;
 import byzzbench.simulator.transport.MessagePayload;
 import byzzbench.simulator.transport.Transport;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Getter;
+import lombok.Setter;
 import lombok.ToString;
 import lombok.extern.java.Log;
 
 import java.io.Serializable;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.List;
-import java.util.Set;
+import java.util.SortedSet;
+import java.util.TreeSet;
 
 /**
  * Superclass for all replicas in the system.
  * <p>
  * Each replica has a unique node ID, a set of known node IDs in the system, a
  * reference to the {@link Transport} layer, and a {@link CommitLog}.
- *
- * @param <T> The type of the entries in the commit log of each {@link Replica}.
  */
 @Log
 @Getter
 @ToString
-public abstract class Replica<T extends Serializable> implements Serializable {
+public abstract class Replica implements Node {
     /**
      * The message digest algorithm to use for hashing messages.
      */
@@ -44,45 +48,42 @@ public abstract class Replica<T extends Serializable> implements Serializable {
      * The commit log for this replica.
      */
     @Getter
-    private final transient CommitLog<T> commitLog;
+    private final transient CommitLog commitLog;
 
     /**
      * The unique ID of the replica.
      */
-    private final transient String nodeId;
+    private final transient String id;
 
     /**
-     * The set of known node IDs in the system (excludes client IDs).
+     * The Scenario object that this replica belongs to.
      */
     @JsonIgnore
-    private final transient Set<String> nodeIds;
-
-    /**
-     * The transport layer for this replica.
-     */
-    @JsonIgnore
-    private final transient Transport<T> transport;
-
+    private final transient Scenario scenario;
     /**
      * The observers of this replica.
      */
     @JsonIgnore
     private final transient List<ReplicaObserver> observers = new java.util.ArrayList<>();
+    /**
+     * The Transport object this Replica should use to send and receive messages.
+     */
+    @JsonIgnore
+    @Setter // for Twins
+    private transient Transport transport;
 
     /**
      * Create a new replica.
      *
-     * @param nodeId    the unique ID of the replica
-     * @param nodeIds   the set of known node IDs in the system (excludes client IDs)
-     * @param transport the transport layer
-     * @param commitLog the commit log
+     * @param id        the unique ID of the replica
+     * @param scenario  the Scenario object that this replica belongs to
+     * @param commitLog the commit log for this replica
      */
-    protected Replica(String nodeId, Set<String> nodeIds, Transport<T> transport,
-                      CommitLog<T> commitLog) {
-        this.nodeId = nodeId;
-        this.nodeIds = nodeIds;
-        this.transport = transport;
+    protected Replica(String id, Scenario scenario, CommitLog commitLog) {
+        this.id = id;
+        this.scenario = scenario;
         this.commitLog = commitLog;
+        this.transport = scenario.getTransport();
     }
 
     /**
@@ -91,10 +92,9 @@ public abstract class Replica<T extends Serializable> implements Serializable {
      * @param message   the message to send
      * @param recipient the recipient of the message
      */
-    protected void sendMessage(MessagePayload message, String recipient) {
-        message.sign(this.nodeId);
-        this.transport.sendMessage(this.nodeId, message, recipient);
-
+    public void sendMessage(MessagePayload message, String recipient) {
+        message.sign(this.id);
+        this.transport.sendMessage(this, message, recipient);
     }
 
     /**
@@ -103,11 +103,9 @@ public abstract class Replica<T extends Serializable> implements Serializable {
      * @param message    the message to send
      * @param recipients the recipients of the message
      */
-    protected void multicastMessage(MessagePayload message,
-                                    Set<String> recipients) {
-        message.sign(this.nodeId);
-        this.transport.multicast(this.nodeId, recipients, message);
-
+    public void multicastMessage(MessagePayload message, SortedSet<String> recipients) {
+        message.sign(this.id);
+        this.transport.multicast(this, recipients, message);
     }
 
     /**
@@ -115,13 +113,13 @@ public abstract class Replica<T extends Serializable> implements Serializable {
      *
      * @param message the message to broadcast
      */
-    protected void broadcastMessage(MessagePayload message) {
-        Set<String> otherNodes = this.nodeIds.stream()
-                .filter(otherNodeId -> !otherNodeId.equals(this.nodeId))
-                .collect(java.util.stream.Collectors.toSet());
+    public void broadcastMessage(MessagePayload message) {
+        SortedSet<String> otherNodes = this.getNodeIds().stream()
+                .filter(otherNodeId -> !otherNodeId.equals(this.id))
+                .collect(java.util.stream.Collectors.toCollection(TreeSet::new));
 
-            message.sign(this.nodeId);
-            this.transport.multicast(this.nodeId, otherNodes, message);
+        message.sign(this.id);
+        this.transport.multicast(this, otherNodes, message);
     }
 
     /**
@@ -129,9 +127,19 @@ public abstract class Replica<T extends Serializable> implements Serializable {
      *
      * @param message the message to broadcast
      */
-    protected void broadcastMessageIncludingSelf(MessagePayload message) {
-            message.sign(this.nodeId);
-            this.transport.multicast(this.nodeId, this.nodeIds, message);
+    public void broadcastMessageIncludingSelf(MessagePayload message) {
+        message.sign(this.id);
+        this.transport.multicast(this, this.getNodeIds(), message);
+    }
+
+    /**
+     * Return the set of replica IDs in the system visible to this node.
+     *
+     * @return the set of replica IDs in the system visible to this node
+     */
+    @JsonIgnore
+    public SortedSet<String> getNodeIds() {
+        return this.scenario.getReplicaIds(this);
     }
 
     /**
@@ -149,7 +157,9 @@ public abstract class Replica<T extends Serializable> implements Serializable {
      * created. Subclasses should override this method to perform any
      * initialization that is required.
      */
-    public abstract void initialize();
+    public void initialize() {
+        // do nothing by default
+    }
 
     /**
      * Handle a request received from a client.
@@ -162,29 +172,31 @@ public abstract class Replica<T extends Serializable> implements Serializable {
 
     /**
      * Send a reply to a client.
+     *
      * @param clientId the ID of the client
-     * @param reply the reply payload
+     * @param reply    the reply payload
      */
     public void sendReplyToClient(String clientId, Serializable reply) {
-        this.transport.sendClientResponse(this.nodeId, reply, clientId);
+        this.transport.sendClientResponse(this, new DefaultClientReplyPayload(reply), clientId);
     }
-
-    /**
-     * Handle a message received by this replica.
-     *
-     * @param sender  the ID of the sender
-     * @param message the message payload
-     * @throws Exception if an error occurs while handling the message
-     */
-    public abstract void handleMessage(String sender, MessagePayload message)
-            throws Exception;
 
     /**
      * Commit an operation to the commit log and notify observers.
      *
      * @param operation the operation to commit
      */
-    public void commitOperation(T operation) {
+    public void commitOperation(long sequenceNumber, LogEntry operation) {
+        this.commitLog.add(sequenceNumber, operation);
+        this.notifyObserversLocalCommit(operation);
+    }
+
+    /**
+     * Commit an operation to the commit log at the next available sequence number
+     * and notify observers.
+     *
+     * @param operation the operation to commit
+     */
+    public void commitOperation(LogEntry operation) {
         this.commitLog.add(operation);
         this.notifyObserversLocalCommit(operation);
     }
@@ -192,16 +204,26 @@ public abstract class Replica<T extends Serializable> implements Serializable {
     /**
      * Set a timeout for this replica.
      *
+     * @param name    a name for the timeout
      * @param r       the runnable to execute when the timeout occurs
-     * @param timeout the timeout in milliseconds
-     * @return the timeout ID
+     * @param timeout the timeout duration
+     * @return the timer object
      */
-    public long setTimeout(Runnable r, long timeout) {
+    public long setTimeout(String name, Runnable r, Duration timeout) {
         Runnable wrapper = () -> {
             this.notifyObserversTimeout();
             r.run();
         };
         return this.transport.setTimeout(this, wrapper, timeout);
+    }
+
+    /**
+     * Clear a timeout for this replica.
+     *
+     * @param eventId the event ID of the timeout to clear
+     */
+    public void clearTimeout(long eventId) {
+        this.transport.clearTimeout(this, eventId);
     }
 
     /**
@@ -226,8 +248,6 @@ public abstract class Replica<T extends Serializable> implements Serializable {
      * @param newLeaderId the new leader ID
      */
     public void notifyObserversLeaderChange(String newLeaderId) {
-        System.out.println("Notifying observers of leader change: " + newLeaderId);
-        System.out.println("Observers: " + this.observers);
         this.observers.forEach(observer -> observer.onLeaderChange(this, newLeaderId));
     }
 
@@ -245,6 +265,48 @@ public abstract class Replica<T extends Serializable> implements Serializable {
      */
     public void notifyObserversTimeout() {
         this.observers.forEach(observer -> observer.onTimeout(this));
+    }
+
+    @JsonIgnore
+    public Instant getCurrentTime() {
+        return this.scenario.getTimekeeper().incrementAndGetTime(this);
+    }
+
+    /**
+     * Compute the difference between two times.
+     *
+     * @param end   the end time
+     * @param start the start time
+     * @return the difference between the two times
+     */
+    public Duration diffTime(Instant end, Instant start) {
+        return Duration.between(start, end);
+    }
+
+    /**
+     * Compute the difference between the current time and a start time.
+     *
+     * @param start the start time
+     * @return the difference between the current time and the start time
+     */
+    public Duration diffNow(Instant start) {
+        return this.diffTime(this.getCurrentTime(), start);
+    }
+
+    /**
+     * Determine whether this replica is faulty.
+     *
+     * @return true if the replica is faulty, false otherwise
+     */
+    public boolean isFaulty() {
+        return this.scenario.isFaultyReplica(this.id);
+    }
+
+    /**
+     * Mark this replica as faulty.
+     */
+    public void markFaulty() {
+        this.scenario.markReplicaFaulty(this.id);
     }
 
 }

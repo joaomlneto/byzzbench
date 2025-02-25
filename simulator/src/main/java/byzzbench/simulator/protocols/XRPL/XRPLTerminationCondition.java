@@ -1,15 +1,21 @@
 package byzzbench.simulator.protocols.XRPL;
 
+import byzzbench.simulator.Scenario;
+import byzzbench.simulator.ScenarioPredicate;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import lombok.Getter;
+
 import java.util.List;
 
-import byzzbench.simulator.TerminationCondition;
-
-public class XRPLTerminationCondition extends TerminationCondition {
+@Getter
+public class XRPLTerminationCondition implements ScenarioPredicate {
     private final int DESIRED_BLOCK_COUNT = 5;
 
-    private List<XRPLReplica> replicas;
-    private int initialSeq;
-    private int networkSize;
+    @JsonIgnore
+    private final List<XRPLReplica> replicas;
+    private final int initialSeq;
+    private final int networkSize;
+
     public XRPLTerminationCondition(List<XRPLReplica> replicas_) {
         this.replicas = replicas_;
         this.initialSeq = 1;
@@ -18,7 +24,7 @@ public class XRPLTerminationCondition extends TerminationCondition {
 
 
     @Override
-    public boolean shouldTerminate() {
+    public boolean test(Scenario scenario) {
         return terminateBasedOnNumberOfBlocks();
     }
 
@@ -30,7 +36,7 @@ public class XRPLTerminationCondition extends TerminationCondition {
             if (xrplReplica.getValidLedger().getSeq() - initialSeq >= DESIRED_BLOCK_COUNT) {
                 count += 1;
             }
-        }    
+        }
         return count >= needed_count;
     }
 }

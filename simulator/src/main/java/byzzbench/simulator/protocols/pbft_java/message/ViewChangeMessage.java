@@ -6,7 +6,7 @@ import lombok.EqualsAndHashCode;
 import lombok.With;
 
 import java.util.Collection;
-import java.util.Map;
+import java.util.SortedMap;
 
 
 @Data
@@ -16,7 +16,7 @@ public class ViewChangeMessage extends MessagePayload {
     private final long newViewNumber;
     private final long lastSeqNumber;
     private final Collection<CheckpointMessage> checkpointProofs;
-    private final Map<Long, Collection<IPhaseMessage>> preparedProofs;
+    private final SortedMap<Long, Collection<IPhaseMessage>> preparedProofs;
     private final String replicaId;
 
     @Override

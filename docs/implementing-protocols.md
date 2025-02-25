@@ -45,3 +45,73 @@ Timeouts are implemented via callbacks to a `Runnable`, also handled by the `Tra
 
 Each replica has its own instance of a `CommitLog`: an immutable and total ordered sequence of records. This is used to
 check whether safety invariants of distributed consensus are broken.
+
+## Pitfalls
+
+- **Non-determinism**: For reproducibility we require the removal of any non-determinism! This can manifest itself in
+  many ways:
+    - Avoid interfaces and collections that do not guarantee order, such as `Set` or `Map`: use the `OrderedSet` or
+      `OrderedMap` interfaces instead, and `TreeSet` or `LinkedHashMap` implementations to ensure order.
+    - Avoid the use of Java's `CompletableFuture`: the implementation in Java is non-deterministic, as it uses a
+      `ForkJoinPool`
+      that can execute tasks in parallel - tasks that are submitted to the `CompletableFuture` can be executed in any
+      order, and this can lead to non-deterministic behavior. Use our own `DeterministicCompletableFuture`, which will
+      execute the tasks in the order they were submitted to it.
+
+## Components
+
+The diagram below includes the relevant ByzzBench components for implementing a new BFT protocol.
+
+```mermaid
+---
+title: Simulator Components
+---
+classDiagram
+    class Event {
+        -int eventId
+    }
+    class Transport {
+    }
+    class MessageEvent {
+        -String senderId
+        -String recipientId
+        -MessagePayload message
+        -MessageStatus status
+    }
+    class TimeoutEvent {
+    }
+    class MessageStatus {
+        <<Enumeration>>
+        QUEUED
+        DELIVERED
+        DROPPED
+    }
+    class MessagePayload {
+        <<Interface>>
+        +String getType()
+    }
+    class Replica {
+        <<Abstract>>
+        +String getType()
+    }
+    class CommitLog {
+        <<Abstract>>
+        addEntry()
+    }
+    class TotalOrderCommitLog {
+        addEntry()
+    }
+    class PartialOrderCommitLog {
+        addEntry()
+    }
+    Event <|-- MessageEvent
+    Event <|-- TimeoutEvent
+    MessageEvent -- MessageStatus
+    MessageEvent -- MessagePayload
+    CommitLog -- Replica
+    Transport o-- Event
+    Transport o-- Replica
+    Replica --> Event: emits, receives
+    CommitLog <|-- TotalOrderCommitLog
+    CommitLog <|-- PartialOrderCommitLog
+```

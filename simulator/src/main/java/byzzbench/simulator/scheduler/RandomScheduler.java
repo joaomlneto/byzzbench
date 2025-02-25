@@ -1,187 +1,140 @@
 package byzzbench.simulator.scheduler;
 
-import byzzbench.simulator.Replica;
-import byzzbench.simulator.faults.MessageMutationFault;
+import byzzbench.simulator.Scenario;
+import byzzbench.simulator.config.ByzzBenchConfig;
+import byzzbench.simulator.faults.faults.MessageMutationFault;
 import byzzbench.simulator.service.MessageMutatorService;
-import byzzbench.simulator.state.CommitLog;
-import byzzbench.simulator.transport.*;
+import byzzbench.simulator.transport.ClientRequestEvent;
+import byzzbench.simulator.transport.Event;
+import byzzbench.simulator.transport.MessageEvent;
+import byzzbench.simulator.transport.TimeoutEvent;
+import com.fasterxml.jackson.databind.JsonNode;
 import lombok.extern.java.Log;
+import org.springframework.stereotype.Component;
 
-import java.io.Serializable;
 import java.util.List;
 import java.util.Optional;
 import java.util.Random;
+import java.util.SortedSet;
 
 /**
  * A scheduler that randomly selects events to deliver, drop, mutate or timeout.
- *
- * @param <T> The type of the entries in the {@link CommitLog} of each {@link
- *            Replica}.
  */
+@Component
 @Log
-public class RandomScheduler<T extends Serializable> extends BaseScheduler<T> {
-    private double DELIVER_MESSAGE_PROBABILITY = RandomSchedulerConfig.DELIVER_MESSAGE_PROBABILITY;
-    private double DROP_MESSAGE_PROBABILITY = RandomSchedulerConfig.DROP_MESSAGE_PROBABILITY;
-    private double MUTATE_MESSAGE_PROBABILITY = RandomSchedulerConfig.MUTATE_MESSAGE_PROBABILITY;
-    Random random = new Random();
+public class RandomScheduler extends BaseScheduler {
+    private final Random random = new Random();
 
-    public RandomScheduler(MessageMutatorService messageMutatorService, Transport<T> transport) {
-        super("Random", messageMutatorService, transport);
-        assert_probabilities();
+    public RandomScheduler(ByzzBenchConfig config, MessageMutatorService messageMutatorService) {
+        super(config, messageMutatorService);
     }
 
-    private void assert_probabilities() {
-        assert DELIVER_MESSAGE_PROBABILITY >= 0 && DELIVER_MESSAGE_PROBABILITY <= 1;
-        assert DROP_MESSAGE_PROBABILITY >= 0 && DROP_MESSAGE_PROBABILITY <= 1;
-        assert MUTATE_MESSAGE_PROBABILITY >= 0 && MUTATE_MESSAGE_PROBABILITY <= 1;
-        assert DROP_MESSAGE_PROBABILITY + MUTATE_MESSAGE_PROBABILITY +
-                DELIVER_MESSAGE_PROBABILITY == 1;
+    public <T> T getRandomElement(List<T> list) {
+        return list.get(random.nextInt(list.size()));
     }
 
     @Override
-    public synchronized Optional<EventDecision> scheduleNext() throws Exception {
+    public String getId() {
+        return "Random";
+    }
+
+    @Override
+    public void initializeScenario(Scenario scenario) {
+        // no initialization needed
+    }
+
+    @Override
+    public synchronized Optional<EventDecision> scheduleNext(Scenario scenario) throws Exception {
         // Get a random event
-        List<Event> queuedEvents =
-                getTransport().getEventsInState(Event.Status.QUEUED);
+        List<Event> availableEvents = scenario.getTransport().getEventsInState(Event.Status.QUEUED);
 
         // if there are no events, return empty
-        if (queuedEvents.isEmpty()) {
-            System.out.println("No events!");
+        if (availableEvents.isEmpty()) {
+            log.warning("No actions available!");
             return Optional.empty();
         }
 
-        int eventCount = queuedEvents.size();
-        int timeoutEventCount = (int) queuedEvents.stream().filter(TimeoutEvent.class::isInstance).count();
-        int clientRequestEventCount = (int) queuedEvents.stream().filter(ClientRequestEvent.class::isInstance).count();
-        int clientReplyEventCount = (int) queuedEvents.stream().filter(ClientReplyEvent.class::isInstance).count();
-        int messageEventCount = eventCount - (timeoutEventCount + clientReplyEventCount + clientRequestEventCount);
+        List<TimeoutEvent> timeoutEvents = this.getQueuedTimeoutEvents(scenario);
+        List<Event> clientRequestEvents = availableEvents.stream().filter(ClientRequestEvent.class::isInstance).toList();
+        List<MessageEvent> messageEvents = availableEvents.stream().filter(MessageEvent.class::isInstance).map(MessageEvent.class::cast).toList();
 
-        double timeoutEventProb = (double) timeoutEventCount / eventCount;
-        double clientRequestEventProb = (double) clientRequestEventCount / eventCount;
-        double clientReplyEventProb = (double) clientReplyEventCount / eventCount;
-        double messageEventProb = (double) messageEventCount / eventCount;
+        SortedSet<String> faultyReplicaIds = scenario.getFaultyReplicaIds();
+        List<MessageEvent> mutateableMessageEvents = messageEvents.stream().filter(msg -> faultyReplicaIds.contains(msg.getSenderId())).toList();
 
-        assert timeoutEventProb + clientRequestEventProb + clientReplyEventProb + messageEventProb == 1.0;
+        int timeoutWeight = timeoutEvents.size() * this.deliverTimeoutWeight();
+        int deliverMessageWeight = messageEvents.size() * this.deliverMessageWeight();
+        int deliverClientRequestWeight = clientRequestEvents.size() * this.deliverClientRequestWeight();
+        int dropMessageWeight = (messageEvents.size() * this.dropMessageWeight(scenario));
+        int mutateMessageWeight = (mutateableMessageEvents.size() * this.mutateMessageWeight(scenario));
+        int dieRoll = random.nextInt(timeoutWeight + deliverMessageWeight
+                + deliverClientRequestWeight + dropMessageWeight + mutateMessageWeight);
 
-        double dieRoll = random.nextDouble();
-
-        // check if we should schedule a timeout
-        if (dieRoll < timeoutEventProb) {
-            // select a random event of type timeout
-            List<Event> queuedTimeouts = queuedEvents.stream()
-                    .filter(TimeoutEvent.class::isInstance)
-                    .toList();
-
-            if (queuedTimeouts.isEmpty()) {
-                return Optional.empty();
-            }
-
-            Event timeout = queuedTimeouts.get(random.nextInt(queuedTimeouts.size()));
-            getTransport().deliverEvent(timeout.getEventId());
-
+        // check if we should trigger a timeout
+        dieRoll -= timeoutWeight;
+        if (dieRoll < 0) {
+            Event timeout = getRandomElement(timeoutEvents);
+            scenario.getTransport().deliverEvent(timeout.getEventId());
             EventDecision decision = new EventDecision(EventDecision.DecisionType.DELIVERED, timeout.getEventId());
             return Optional.of(decision);
         }
 
-        // check if we should target a message
-        if (dieRoll < timeoutEventProb + messageEventProb) {
-            // select a random event of type message
-            List<Event> queuedMessages = queuedEvents.stream()
-                    .filter(MessageEvent.class::isInstance)
-                    .toList();
-
-            // if there are no messages, return an empty action
-            if (queuedMessages.isEmpty()) {
-                return Optional.empty();
-            }
-
-            Event message = queuedMessages.get(random.nextInt(queuedMessages.size()));
-
-            // check if we should drop it
-            if (random.nextDouble() < DROP_MESSAGE_PROBABILITY) {
-
-                getTransport().dropEvent(message.getEventId());
-                EventDecision decision = new EventDecision(EventDecision.DecisionType.DROPPED, message.getEventId());
-
-                return Optional.of(decision);
-            }
-
-            // check if should mutate and deliver it
-            if (random.nextDouble() < MUTATE_MESSAGE_PROBABILITY) {
-                if (!(message instanceof MessageEvent me)) {
-                    throw new IllegalArgumentException("Invalid message type");
-                }
-                List<MessageMutationFault<?>> mutators =
-                        this.getMessageMutatorService().getMutatorsForEvent(me);
-                if (mutators.isEmpty()) {
-                    // no mutators, return nothing
-                    return Optional.empty();
-                }
-                getTransport().applyMutation(
-                        message.getEventId(),
-                        mutators.get(random.nextInt(mutators.size())));
-                getTransport().deliverEvent(message.getEventId());
-
-                EventDecision decision = new EventDecision(EventDecision.DecisionType.MUTATED, message.getEventId());
-                return Optional.of(decision);
-            }
-
-            // deliver the message, without changes
-            getTransport().deliverEvent(message.getEventId());
-
+        // check if we should deliver a message (without changes)
+        dieRoll -= deliverMessageWeight;
+        if (dieRoll < 0) {
+            Event message = getNextMessageEvent(messageEvents);
+            scenario.getTransport().deliverEvent(message.getEventId());
             EventDecision decision = new EventDecision(EventDecision.DecisionType.DELIVERED, message.getEventId());
             return Optional.of(decision);
         }
 
-        if (dieRoll < timeoutEventProb + messageEventProb + clientRequestEventProb) {
-            List<Event> queuedClientRequests = queuedEvents.stream().filter(ClientRequestEvent.class::isInstance).toList();
-
-            if (queuedClientRequests.isEmpty()) {
-                return Optional.empty();
-            }
-
-            Event request = queuedClientRequests.get(random.nextInt(clientRequestEventCount));
-
-            getTransport().deliverEvent(request.getEventId());
-
+        // check if we should target delivering a request from a client to a replica
+        dieRoll -= deliverClientRequestWeight;
+        if (dieRoll < 0) {
+            Event request = getRandomElement(clientRequestEvents);
+            scenario.getTransport().deliverEvent(request.getEventId());
             EventDecision decision = new EventDecision(EventDecision.DecisionType.DELIVERED, request.getEventId());
             return Optional.of(decision);
         }
 
-        if (dieRoll < timeoutEventProb + messageEventProb + clientRequestEventProb + clientReplyEventProb) {
-            List<Event> queuedClientReplies = queuedEvents.stream().filter(ClientReplyEvent.class::isInstance).toList();
-
-            if (queuedClientReplies.isEmpty()) {
-                return Optional.empty();
-            }
-
-            Event reply = queuedClientReplies.get(random.nextInt(clientReplyEventCount));
-
-            getTransport().deliverEvent(reply.getEventId());
-
-            EventDecision decision = new EventDecision(EventDecision.DecisionType.DELIVERED, reply.getEventId());
+        // check if we should drop a message sent between nodes
+        dieRoll -= dropMessageWeight;
+        if (dieRoll < 0) {
+            Event message = getRandomElement(messageEvents);
+            scenario.getTransport().dropEvent(message.getEventId());
+            EventDecision decision = new EventDecision(EventDecision.DecisionType.DROPPED, message.getEventId());
             return Optional.of(decision);
         }
 
+        // check if we should mutate-and-deliver a message sent between nodes
+        dieRoll -= mutateMessageWeight;
+        if (dieRoll < 0) {
+            Event message = getRandomElement(mutateableMessageEvents);
+            List<MessageMutationFault> mutators = this.getMessageMutatorService().getMutatorsForEvent(message);
 
+            if (mutators.isEmpty()) {
+                // no mutators, return nothing
+                log.warning("No mutators available for message " + message.getEventId());
+                return Optional.empty();
+            }
+            scenario.getTransport().applyMutation(
+                    message.getEventId(),
+                    getRandomElement(mutators));
+            scenario.getTransport().deliverEvent(message.getEventId());
 
-        return Optional.empty();
+            EventDecision decision = new EventDecision(EventDecision.DecisionType.MUTATED_AND_DELIVERED, message.getEventId());
+            return Optional.of(decision);
+        }
+
+        throw new IllegalStateException("This should never happen!");
     }
 
     @Override
-    public void stopDropMessages() {
-        System.out.println("Will not drop messages after this point");
-        this.dropMessages = false;
-        this.DELIVER_MESSAGE_PROBABILITY += this.DROP_MESSAGE_PROBABILITY;
-        this.DROP_MESSAGE_PROBABILITY = 0;
-        assert_probabilities();
+    public void reset() {
+        // nothing to do
     }
 
     @Override
-    public void resetParameters() {
-        this.dropMessages = true;
-        DELIVER_MESSAGE_PROBABILITY = RandomSchedulerConfig.DELIVER_MESSAGE_PROBABILITY;
-        DROP_MESSAGE_PROBABILITY = RandomSchedulerConfig.DROP_MESSAGE_PROBABILITY;
-        MUTATE_MESSAGE_PROBABILITY = RandomSchedulerConfig.MUTATE_MESSAGE_PROBABILITY;
+    public void loadSchedulerParameters(JsonNode parameters) {
+        // no parameters to load
     }
 }

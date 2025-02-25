@@ -1,10 +1,10 @@
 package byzzbench.simulator.transport;
 
+import byzzbench.simulator.utils.NonNull;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import lombok.Builder;
 import lombok.Data;
 import lombok.experimental.SuperBuilder;
-import org.springframework.lang.NonNull;
 
 import java.time.Instant;
 

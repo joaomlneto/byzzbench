@@ -24,12 +24,13 @@ export const FaultsListEntry = ({ faultId }: FaultsListEntryProps) => {
     return enabledFaultsQuery.data?.data.includes(faultId);
   }, [enabledFaultsQuery.data?.data, faultId]);
   return (
-    <Card withBorder shadow="sm" padding="xs" m="xs">
-      <Group>
+    <Card withBorder shadow="sm" padding="xs" m={4}>
+      <Group gap="xs">
         <Text>{faultQuery.data?.data.name}</Text>
         {isEnabled && (
           <Tooltip label="Trigger fault">
             <ActionIcon
+              size="sm"
               onClick={async (e) => {
                 e.preventDefault();
                 await enableNetworkFault(faultId)

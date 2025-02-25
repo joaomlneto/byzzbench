@@ -1,22 +1,22 @@
 package byzzbench.simulator.state.adob;
 
 import lombok.Getter;
+import lombok.experimental.SuperBuilder;
 
-import java.util.Set;
+import java.util.SortedSet;
 
 /**
  * AdoB cache representing a timeout.
  *
  * @see <a href="https://flint.cs.yale.edu/flint/publications/adob-tr.pdf">AdoB</a>
  */
+@SuperBuilder
+@Getter
 public class TimeoutCache extends AdobCache {
-    @Getter
-    private final Set<String> voters;
+    private final SortedSet<String> voters;
+    private final SortedSet<String> supporters;
 
-    @Getter
-    private final Set<String> supporters;
-
-    public TimeoutCache(long id, AdobCache parent, Set<String> voters, Set<String> supporters) {
+    public TimeoutCache(long id, AdobCache parent, SortedSet<String> voters, SortedSet<String> supporters) {
         super(id, parent);
         this.voters = voters;
         this.supporters = supporters;

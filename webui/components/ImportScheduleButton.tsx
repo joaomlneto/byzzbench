@@ -1,8 +1,10 @@
 import { useSavedSchedulesStore } from "@/hooks/useSavedSchedules";
-import { Button, FileButton } from "@mantine/core";
+import { Button, ButtonProps, FileButton } from "@mantine/core";
 import { showNotification } from "@mantine/notifications";
 
-export const ImportScheduleButton = () => {
+export const ImportScheduleButton = (
+  props: Omit<ButtonProps, "onClick" | "children">,
+) => {
   const schedules = useSavedSchedulesStore((state) => state.schedules);
   const addSchedule = useSavedSchedulesStore((x) => x.addSchedule);
   return (
@@ -33,7 +35,11 @@ export const ImportScheduleButton = () => {
       }}
       accept="application/json,text/json"
     >
-      {(props) => <Button {...props}>Import Schedule</Button>}
+      {({ onClick }) => (
+        <Button onClick={onClick} {...props}>
+          Import Schedule
+        </Button>
+      )}
     </FileButton>
   );
 };

@@ -1,22 +1,50 @@
 "use client";
 
 import { ServerScheduleDetails } from "@/components/ServerScheduleDetails";
-import { useGetNumSavedSchedules } from "@/lib/byzzbench-client";
-import { Container, Pagination, Title } from "@mantine/core";
+import { useGetAllScheduleIds } from "@/lib/byzzbench-client";
+import { Container, Pagination, Select, Title } from "@mantine/core";
 import { usePagination } from "@mantine/hooks";
-import React, { useMemo } from "react";
+import React, { useMemo, useState } from "react";
 
 const ITEMS_PER_PAGE = 20;
 
 export default function Home() {
-  const numSavedSchedulesQuery = useGetNumSavedSchedules();
+  const [selected, setSelected] = useState<"all" | "correct" | "buggy">("all");
+  const scheduleIdsQuery = useGetAllScheduleIds({
+    query: { enabled: selected === "all" },
+  });
+
+  const allScheduleIds = useMemo(
+    () =>
+      [
+        ...(scheduleIdsQuery.data?.data.correctSchedules ?? []),
+        ...(scheduleIdsQuery.data?.data.buggySchedules ?? []),
+      ].toSorted((a, b) => a - b),
+    [
+      scheduleIdsQuery.data?.data.correctSchedules,
+      scheduleIdsQuery.data?.data.buggySchedules,
+    ],
+  );
+
+  const schedules = useMemo(() => {
+    switch (selected) {
+      case "all":
+        return allScheduleIds;
+      case "buggy":
+        return scheduleIdsQuery.data?.data.buggySchedules ?? [];
+      case "correct":
+        return scheduleIdsQuery.data?.data.correctSchedules ?? [];
+    }
+  }, [
+    selected,
+    allScheduleIds,
+    scheduleIdsQuery.data?.data.buggySchedules,
+    scheduleIdsQuery.data?.data.correctSchedules,
+  ]);
 
   const numPages = useMemo(
-    () =>
-      Math.ceil(
-        (numSavedSchedulesQuery.data?.data.length ?? 0) / ITEMS_PER_PAGE,
-      ),
-    [numSavedSchedulesQuery.data?.data.length],
+    () => Math.ceil(schedules.length) / ITEMS_PER_PAGE,
+    [schedules.length],
   );
 
   const pagination = usePagination({
@@ -27,15 +55,34 @@ export default function Home() {
   const end = start + ITEMS_PER_PAGE;
 
   return (
-    <Container fluid p="xl">
+    <Container>
       <Title order={1}>Saved Schedules on the server</Title>
+      <Select
+        size="xs"
+        value={selected}
+        onChange={(value) => setSelected(value as "all" | "correct" | "buggy")}
+        data={[
+          { value: "all", label: `All (${allScheduleIds.length})` },
+          {
+            value: "correct",
+            label: `Correct (${scheduleIdsQuery.data?.data.correctSchedules.length})`,
+          },
+          {
+            value: "buggy",
+            label: `Buggy (${scheduleIdsQuery.data?.data.buggySchedules.length})`,
+          },
+        ]}
+        label="Filter by"
+        maw={150}
+      />
       <Pagination
+        size="sm"
         total={numPages}
         onChange={pagination.setPage}
         siblings={3}
         boundaries={2}
       />
-      {numSavedSchedulesQuery.data?.data.slice(start, end).map((scheduleId) => (
+      {schedules.slice(start, end).map((scheduleId) => (
         <div key={scheduleId}>
           <ServerScheduleDetails scheduleId={scheduleId} />
         </div>

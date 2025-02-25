@@ -2,10 +2,10 @@
 
 import { MutateMessageMenuEntry } from "@/components/Events/MutateMessageMenu/MutateMessageMenuEntry";
 import {
-  useDropMessage,
+  dropMessage,
   useGetMessageMutators,
 } from "@/lib/byzzbench-client/generated";
-import { Burger, Menu, rem } from "@mantine/core";
+import { Burger, Loader, Menu, rem } from "@mantine/core";
 import { showNotification } from "@mantine/notifications";
 import { IconBugFilled, IconTrash } from "@tabler/icons-react";
 import { useQueryClient } from "@tanstack/react-query";
@@ -18,11 +18,10 @@ type MutateMessageMenuProps = {
 export const MutateMessageMenu = memo(
   ({ messageId }: MutateMessageMenuProps) => {
     const queryClient = useQueryClient();
-    const { data } = useGetMessageMutators(messageId);
-    const { mutate: dropMessage } = useDropMessage(messageId);
+    const { data, isLoading } = useGetMessageMutators(messageId);
 
-    if (!data) {
-      return null;
+    if (isLoading || !data) {
+      return <Loader />;
     }
 
     return (
@@ -65,22 +64,21 @@ export const MutateMessageMenu = memo(
             }
             onClick={(e) => {
               e.preventDefault();
-              dropMessage(null as never, {
-                onSuccess: () => {
+              dropMessage(messageId)
+                .then(() => {
                   showNotification({
                     message: `Message ${messageId} dropped`,
                   });
-                },
-                onError: () => {
+                })
+                .catch(() => {
                   showNotification({
                     message: "Failed to drop message",
                     color: "red",
                   });
-                },
-                onSettled: async () => {
+                })
+                .finally(async () => {
                   await queryClient.invalidateQueries();
-                },
-              });
+                });
             }}
           >
             Drop message

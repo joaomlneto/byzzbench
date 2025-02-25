@@ -1,90 +1,75 @@
 package byzzbench.simulator.protocols.XRPL;
 
-import java.io.Serializable;
-import java.util.ArrayDeque;
-import java.util.ArrayList;
-import java.util.Deque;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Set;
-
 import byzzbench.simulator.Replica;
+import byzzbench.simulator.Scenario;
 import byzzbench.simulator.protocols.XRPL.messages.XRPLProposeMessage;
 import byzzbench.simulator.protocols.XRPL.messages.XRPLSubmitMessage;
 import byzzbench.simulator.protocols.XRPL.messages.XRPLTxMessage;
 import byzzbench.simulator.protocols.XRPL.messages.XRPLValidateMessage;
 import byzzbench.simulator.state.TotalOrderCommitLog;
+import byzzbench.simulator.transport.DefaultClientRequestPayload;
 import byzzbench.simulator.transport.MessagePayload;
-import byzzbench.simulator.transport.Transport;
 import lombok.Getter;
 
-@lombok.extern.java.Log
-public class XRPLReplica extends Replica<XRPLLedger> {
+import java.io.Serializable;
+import java.time.Duration;
+import java.util.*;
+import java.util.Map.Entry;
 
-    private @Getter List<String> ourUNL;  //The nodeIDs of nodes in our UNL, our "peers"
+@lombok.extern.java.Log
+public class XRPLReplica extends Replica {
+
+    private final @Getter List<String> ourUNL;  //The nodeIDs of nodes in our UNL, our "peers"
+    private final @Getter SortedMap<String, Deque<XRPLProposal>> recentPeerPositions; //List of recent proposals made by peers, used for playback
+    private final @Getter XRPLLedgerTreeNode tree;
     private @Getter List<String> pendingTransactions; //Our candidate set
     private @Getter XRPLReplicaState state;
-    private @Getter Map<String, XRPLProposal> currPeerProposals; 
-    private @Getter Map<String, Deque<XRPLProposal>> recentPeerPositions; //List of recent proposals made by peers, used for playback
-
+    private @Getter SortedMap<String, XRPLProposal> currPeerProposals;
     private @Getter XRPLLedger currWorkLedger;
     private @Getter XRPLLedger prevLedger; //lastClosedLedger
     private @Getter XRPLLedger validLedger; //last fully validated ledger
-
     private @Getter long openTime;
     private @Getter long prevRoundTime;
     private @Getter double converge;
-    
-    private @Getter XRPLConsensusResult result; 
+    private @Getter XRPLConsensusResult result;
+    private @Getter SortedMap<String, XRPLLedger> validations; //map of last validated ledgers indexed on nodeId
 
-    private @Getter Map<String, XRPLLedger> validations; //map of last validated ledgers indexed on nodeId
-
-    private @Getter XRPLLedgerTreeNode tree;
-
-    protected XRPLReplica(String nodeId, Set<String> nodeIds, Transport<XRPLLedger> transport, List<String> UNL, XRPLLedger prevLedger_) {
-        super(nodeId, nodeIds, transport, new TotalOrderCommitLog<>());
+    protected XRPLReplica(String nodeId, Scenario scenario, List<String> UNL, XRPLLedger prevLedger_) {
+        super(nodeId, scenario, new TotalOrderCommitLog());
         this.ourUNL = UNL;
         this.result = new XRPLConsensusResult();
         this.state = null;  //set to open with first heartbeat
-        
+
         this.prevRoundTime = 0;
         this.prevLedger = prevLedger_;
         this.pendingTransactions = new ArrayList<>();
-        this.validations = new HashMap<>();
+        this.validations = new TreeMap<>();
         this.validLedger = prevLedger_;
         this.currWorkLedger = this.validLedger;
         this.tree = new XRPLLedgerTreeNode(prevLedger_);
 
-        this.recentPeerPositions = new HashMap<>();
+        this.recentPeerPositions = new TreeMap<>();
         for (String nodeIdString : this.ourUNL) {
             this.recentPeerPositions.put(nodeIdString, new ArrayDeque<>());
         }
     }
 
     @Override
-    public void initialize() {
-        //nothing to do
+    public void handleClientRequest(String clientId, Serializable request) throws Exception {
+        String tx = request.toString();
+        XRPLTxMessage txmsg = new XRPLTxMessage(tx, clientId);
+        this.handleMessage(clientId, txmsg);
     }
 
     @Override
     public void handleMessage(String sender, MessagePayload message) throws Exception {
-        if (message instanceof XRPLProposeMessage propmsg) {
-            proposeMessageHandler(propmsg);
-            return;
-        } else if (message instanceof XRPLSubmitMessage submsg) {
-            submitMessageHandler(submsg);
-            return;
-        } else if (message instanceof XRPLValidateMessage valmsg) {
-            validateMessageHandler(valmsg);
-            return;
-        } else if (message instanceof XRPLTxMessage txmsg) {
-            recvTxHandler(txmsg);
-            return;
-        } else {
-            throw new Exception("Unknown message type");
+        switch (message) {
+            case XRPLProposeMessage propmsg -> proposeMessageHandler(propmsg);
+            case XRPLSubmitMessage submsg -> submitMessageHandler(submsg);
+            case XRPLValidateMessage valmsg -> validateMessageHandler(valmsg);
+            case XRPLTxMessage txmsg -> recvTxHandler(txmsg);
+            case DefaultClientRequestPayload request -> handleClientRequest(sender, request);
+            case null, default -> throw new IllegalArgumentException("Unknown message type: " + message);
         }
 
     }
@@ -102,7 +87,7 @@ public class XRPLReplica extends Replica<XRPLLedger> {
             String tx = msg.getTx();
             this.pendingTransactions.add(tx);
         } catch (Exception e) {
-            log.info("Couldn't handle submit message in node " + this.getNodeId() + ": " + e.getMessage());
+            log.info("Couldn't handle submit message in node " + this.getId() + ": " + e.getMessage());
         }
     }
 
@@ -147,7 +132,7 @@ public class XRPLReplica extends Replica<XRPLLedger> {
                 throw new IllegalArgumentException("message signature invalid");
             }
         } catch (Exception e) {
-            System.out.println("Couldn't handle validate message in node " + this.getNodeId() + ": " + e + ": " + e.getMessage());
+            System.out.println("Couldn't handle validate message in node " + this.getId() + ": " + e + ": " + e.getMessage());
             e.printStackTrace();
         }
     }
@@ -176,32 +161,32 @@ public class XRPLReplica extends Replica<XRPLLedger> {
                 }
             }
         } catch (Exception e) {
-            log.info("Error handling propose message in node " + this.getNodeId() + ": " + e.getMessage());
+            log.info("Error handling propose message in node " + this.getId() + ": " + e.getMessage());
         }
-        
+
     }
 
     public void onHeartbeat() {
         if (this.state == XRPLReplicaState.ACCEPT) {
             //Nothing to do if we are validating a ledger
             Runnable r = new XRPLHeartbeatRunnable(this);
-            this.setTimeout(r, 5000);
+            this.setTimeout("Heartbeat Timeout", r, Duration.ofSeconds(5));
             return;
-        } 
+        }
 
         //TODO now_ = now timestamp THINK HOW TO REPRESENT TIME CALLS
-        
+
         XRPLLedger tempL = getPreferredLedger(this.validLedger);
         if (!this.prevLedger.getId().equals(tempL.getId())) {
-            log.info("found that the node: " + this.getNodeId() + " is not on the preferred ledger");
+            log.info("found that the node: " + this.getId() + " is not on the preferred ledger");
             this.prevLedger = tempL;
             startConsensus();
         }
-        
+
         if (this.state == null) {
             startConsensus();
             Runnable r = new XRPLHeartbeatRunnable(this);
-            this.setTimeout(r, 5000);
+            this.setTimeout("Heartbeat Timeout", r, Duration.ofSeconds(5));
             return;
         }
         switch (this.state) {
@@ -223,11 +208,11 @@ public class XRPLReplica extends Replica<XRPLLedger> {
             default:
                 break;
 
-            
+
         }
         Runnable r = new XRPLHeartbeatRunnable(this);
-        this.setTimeout(r, 5000);
-        
+        this.setTimeout("Heartbeat Timeout", r, Duration.ofSeconds(5));
+
     }
 
     private void UpdateOurProposals() {
@@ -235,7 +220,7 @@ public class XRPLReplica extends Replica<XRPLLedger> {
             //TODO remove stale proposals
             if (clock.now() - this.currPeerProposals.get(nodeId).time >= 20) {
                 this.currPeerProposals.put(nodeId, null);
-            } 
+            }
         } */
         for (String nodeId : ourUNL) {
             if (this.currPeerProposals.get(nodeId) != null) {
@@ -257,9 +242,9 @@ public class XRPLReplica extends Replica<XRPLLedger> {
         }
         this.result.resetDisputes();
         if (hasResChanged) {
-            XRPLProposal prop = new XRPLProposal(this.prevLedger.getId(), this.result.getProposal().getSeq() + 1, this.result.getTxList(), this.getNodeId(), 1 /*TODO this should be now (or prev prop time) */);
+            XRPLProposal prop = new XRPLProposal(this.prevLedger.getId(), this.result.getProposal().getSeq() + 1, this.result.getTxList(), this.getId(), 1 /*TODO this should be now (or prev prop time) */);
             this.result.setProposal(prop);
-            XRPLProposeMessage propmsg = new XRPLProposeMessage(prop, this.getNodeId());
+            XRPLProposeMessage propmsg = new XRPLProposeMessage(prop, this.getId());
             this.broadcastMessage(propmsg);
             this.currWorkLedger = new XRPLLedger(this.currWorkLedger.getParentId(), this.currWorkLedger.getSeq(), this.result.getTxList());
             for (String nodeId : this.ourUNL) {
@@ -297,11 +282,11 @@ public class XRPLReplica extends Replica<XRPLLedger> {
     private void handleAccept() {
         XRPLLedger tmpL = new XRPLLedger(this.prevLedger.getId(), this.prevLedger.getSeq() + 1, this.result.getTxList());
         if (this.validations == null) {
-            this.validations = new HashMap<>();
+            this.validations = new TreeMap<>();
         }
-        tmpL.signLedger(this.getNodeId());
-        this.validations.put(this.getNodeId(), tmpL);
-        XRPLValidateMessage val = new XRPLValidateMessage(this.getNodeId(), tmpL);
+        tmpL.signLedger(this.getId());
+        this.validations.put(this.getId(), tmpL);
+        XRPLValidateMessage val = new XRPLValidateMessage(this.getId(), tmpL);
         this.prevLedger = tmpL;
         this.broadcastMessage(val);
         this.prevRoundTime = this.result.getRoundTime();
@@ -316,14 +301,14 @@ public class XRPLReplica extends Replica<XRPLLedger> {
         int agree = 0;
         int total = this.ourUNL.size();
 
-        if (!this.ourUNL.contains(this.getNodeId())) {
+        if (!this.ourUNL.contains(this.getId())) {
             total += 1;
         }
 
-        for ( Entry<String, XRPLProposal> entry : this.currPeerProposals.entrySet()) {
+        for (Entry<String, XRPLProposal> entry : this.currPeerProposals.entrySet()) {
             if (entry.getValue().isTxListEqual(this.result.getTxList())) {
                 agree += 1;
-            } 
+            }
         }
         return (double) (agree + 1) / total >= 0.8;
     }
@@ -334,11 +319,11 @@ public class XRPLReplica extends Replica<XRPLLedger> {
     private void closeLedger() {
         this.currWorkLedger = new XRPLLedger(this.prevLedger.getId(), this.prevLedger.getSeq() + 1, this.pendingTransactions);
         this.result = new XRPLConsensusResult(this.pendingTransactions);
-        XRPLProposal prop = new XRPLProposal(this.prevLedger.getId(), 0, this.result.getTxList(), getNodeId(), 1); // TODO get hash of prev ledger and call to clock.now for params
+        XRPLProposal prop = new XRPLProposal(this.prevLedger.getId(), 0, this.result.getTxList(), getId(), 1); // TODO get hash of prev ledger and call to clock.now for params
         // TODO this.result.setRoundTime(clock.now());
         this.result.setProposal(prop);
 
-        XRPLProposeMessage propmsg = new XRPLProposeMessage(prop, this.getNodeId());
+        XRPLProposeMessage propmsg = new XRPLProposeMessage(prop, this.getId());
         this.broadcastMessage(propmsg);
         for (String nodeId : this.ourUNL) {
             if (currPeerProposals.get(nodeId) != null) {
@@ -352,10 +337,10 @@ public class XRPLReplica extends Replica<XRPLLedger> {
      * and our peers'.
      */
     private void createDisputes(List<String> txns) {
-        Set<String> symmDiff = computeSymmetricDifference(this.result.getTxList(), txns);
+        SortedSet<String> symmDiff = computeSymmetricDifference(this.result.getTxList(), txns);
         for (String tx : symmDiff) {
             if (!this.result.disputesContain(tx)) {
-                DisputedTx dt = new DisputedTx(tx, this.result.containsTx(tx), 0, 0, new HashMap<>());
+                DisputedTx dt = new DisputedTx(tx, this.result.containsTx(tx), 0, 0, new TreeMap<>());
                 for (String nodeId : this.ourUNL) {
                     if (this.currPeerProposals.get(nodeId) != null) {
                         if (this.currPeerProposals.get(nodeId).containsTx(tx)) {
@@ -369,16 +354,16 @@ public class XRPLReplica extends Replica<XRPLLedger> {
                 }
                 this.result.addDisputed(dt);
             }
-            
+
         }
     }
 
-    private Set<String> computeSymmetricDifference(List<String> list1, List<String> list2) {
-        Set<String> set1 = new HashSet<>(list1);
-        Set<String> set2 = new HashSet<>(list2);
-        Set<String> union = new HashSet<>(set1);
+    private SortedSet<String> computeSymmetricDifference(List<String> list1, List<String> list2) {
+        SortedSet<String> set1 = new TreeSet<>(list1);
+        SortedSet<String> set2 = new TreeSet<>(list2);
+        SortedSet<String> union = new TreeSet<>(set1);
         union.addAll(set2);
-        Set<String> intersection = new HashSet<>(set1);
+        SortedSet<String> intersection = new TreeSet<>(set1);
         intersection.retainAll(set2);
         union.removeAll(intersection);
         return union;
@@ -405,14 +390,14 @@ public class XRPLReplica extends Replica<XRPLLedger> {
         } else {
             for (XRPLLedgerTreeNode tmp : n.getChildren()) {
                 XRPLLedgerTreeNode tmp2 = findInTree(ledgerHash, tmp);
-                if ( tmp2 != null) return tmp2;
+                if (tmp2 != null) return tmp2;
             }
             return null;
         }
     }
-    
+
     /*
-     * Number of nodes that have not committed their validation 
+     * Number of nodes that have not committed their validation
      * for this sequence numbered ledger.
      */
     private int uncommitted(String ledgerHash) {
@@ -453,7 +438,7 @@ public class XRPLReplica extends Replica<XRPLLedger> {
         XRPLLedgerTreeNode ret = null;
         for (XRPLLedgerTreeNode child : node.getChildren()) {
             int curr = support(child.getLedger().getId());
-            if ( curr > max) {
+            if (curr > max) {
                 ret = child;
                 max = curr;
             }
@@ -468,7 +453,7 @@ public class XRPLReplica extends Replica<XRPLLedger> {
         for (XRPLLedgerTreeNode child : node.getChildren()) {
             if (!child.getLedger().getId().equals(actualMax.getLedger().getId())) {
                 int curr = support(child.getLedger().getId());
-                if ( curr > max) {
+                if (curr > max) {
                     ret = child;
                     max = curr;
                 }
@@ -489,7 +474,7 @@ public class XRPLReplica extends Replica<XRPLLedger> {
         //             System.out.println("grandchild: " + gnode.getLedger().getId());
         //         }
         //     }
-            
+
         // }
 
         if (node.getChildren().isEmpty()) {
@@ -512,7 +497,7 @@ public class XRPLReplica extends Replica<XRPLLedger> {
         this.result.reset();
         this.converge = 0;
         //TODO this.openTime = clock.now();
-        this.currPeerProposals = new HashMap<>();
+        this.currPeerProposals = new TreeMap<>();
         this.playbackProposals();
     }
 
@@ -530,12 +515,5 @@ public class XRPLReplica extends Replica<XRPLLedger> {
                 }
             }
         }
-    }
-
-    @Override
-    public void handleClientRequest(String clientId, Serializable request) throws Exception {
-        String tx = request.toString();
-        XRPLTxMessage txmsg = new XRPLTxMessage(tx, clientId);
-        this.handleMessage(clientId, txmsg);
     }
 }

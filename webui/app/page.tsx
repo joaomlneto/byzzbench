@@ -1,17 +1,37 @@
 "use client";
 
-import AdoBStateDiagram from "@/components/adob/AdoBStateDiagram";
 import { ClientList } from "@/components/ClientList";
 import { DroppedMessagesList } from "@/components/Events";
 import { ScenarioEnabledFaultsList } from "@/components/FaultsList";
-import { ImportScheduleButton } from "@/components/ImportScheduleButton";
 import { NodeList } from "@/components/NodeList";
+import { PredicateList } from "@/components/PredicateList";
 import { RunningSimulatorStats } from "@/components/RunningSimulatorStats";
-import { ScheduleDetails, ScheduleList } from "@/components/Schedule";
+import { ScheduleDetails } from "@/components/Schedule";
+import { ScenarioScheduledFaultsList } from "@/components/ScheduledFaultsList";
 import { useGetMode, useGetSchedule } from "@/lib/byzzbench-client";
-import { Accordion, Container, ScrollArea, Stack } from "@mantine/core";
+import {
+  Accordion,
+  AppShell,
+  Container,
+  Group,
+  ScrollArea,
+  Stack,
+  Switch,
+  Title,
+} from "@mantine/core";
 import { useLocalStorage } from "@mantine/hooks";
 import React from "react";
+
+/*
+const AdoBStateDiagram = dynamic<{}>(
+    () =>
+        import("@/components/adob/AdoBStateDiagram").then(
+            (m) => m.AdoBStateDiagram,
+        ),
+    {
+        ssr: false,
+    },
+);*/
 
 export default function Home() {
   const [selectedAccordionEntries, setSelectedAccordionEntries] =
@@ -23,6 +43,11 @@ export default function Home() {
   const { data: schedule } = useGetSchedule();
 
   const mode = useGetMode();
+
+  const [showMailboxes, setShowMailboxes] = useLocalStorage<boolean>({
+    key: "byzzbench/showMailboxes",
+    defaultValue: true,
+  });
 
   if (mode.data?.data === "RUNNING") {
     return (
@@ -41,60 +66,70 @@ export default function Home() {
           value={selectedAccordionEntries}
           onChange={setSelectedAccordionEntries}
         >
+          <Group wrap="nowrap" gap="xs" align="center">
+            <Title order={3}>{schedule?.data.scenarioId}</Title>
+            <PredicateList />
+            <Switch
+              label="Show mailboxes"
+              checked={showMailboxes}
+              onChange={(event) => {
+                setShowMailboxes(event.currentTarget.checked);
+              }}
+            />
+          </Group>
           <Accordion.Item key="clients" value="clients">
             <Accordion.Control>Clients</Accordion.Control>
             <Accordion.Panel>
               <ClientList />
             </Accordion.Panel>
           </Accordion.Item>
-          <Accordion.Item key="saved_schedules" value="saved_schedules">
-            <Accordion.Control>Saved Schedules</Accordion.Control>
-            <Accordion.Panel>
-              <ImportScheduleButton />
-              <ScheduleList />
-            </Accordion.Panel>
-          </Accordion.Item>
           <Accordion.Item key="nodes" value="nodes">
             <Accordion.Control>Nodes</Accordion.Control>
             <Accordion.Panel>
-              <NodeList />
+              <NodeList showMailboxes={showMailboxes} />
             </Accordion.Panel>
           </Accordion.Item>
-          <Accordion.Item key="schedule" value="schedule">
-            <Accordion.Control>Schedule</Accordion.Control>
-            <Accordion.Panel>
-              <ScrollArea h={250} type="auto">
+          {/*<Accordion.Item key="adob" value="adob">
+                        <Accordion.Control>AdoB State</Accordion.Control>
+                        <Accordion.Panel>
+                            <AdoBStateDiagram/>
+                        </Accordion.Panel>
+                    </Accordion.Item>*/}
+        </Accordion>
+      </Stack>
+
+      <AppShell.Aside p="md" maw={400}>
+        <ScrollArea type="never" mah="100vh">
+          <Stack gap="xs">
+            <Title order={5}>Schedule</Title>
+            <ScrollArea mah={500} type="always" style={{ overflowY: "auto" }}>
+              <div style={{ maxHeight: "500px", overflowY: "auto" }}>
                 {schedule?.data && (
                   <ScheduleDetails
                     hideTitle
                     hideMaterializeButton
                     hideDownloadButton
                     hideDetailsButton
+                    hideScenario
+                    hideSaveButton
                     title="Current Schedule"
                     schedule={schedule.data}
                   />
                 )}
-              </ScrollArea>
-            </Accordion.Panel>
-          </Accordion.Item>
-          <Accordion.Item key="dropped_msgs" value="dropped_msgs">
-            <Accordion.Control>Dropped Messages</Accordion.Control>
-            <Accordion.Panel>{<DroppedMessagesList />}</Accordion.Panel>
-          </Accordion.Item>
-          <Accordion.Item key="faults" value="faults">
-            <Accordion.Control>Network Faults</Accordion.Control>
-            <Accordion.Panel>
-              <ScenarioEnabledFaultsList />
-            </Accordion.Panel>
-          </Accordion.Item>
-          <Accordion.Item key="adob" value="adob">
-            <Accordion.Control>AdoB State</Accordion.Control>
-            <Accordion.Panel>
-              <AdoBStateDiagram />
-            </Accordion.Panel>
-          </Accordion.Item>
-        </Accordion>
-      </Stack>
+              </div>
+            </ScrollArea>
+            <Title order={5}>Trigger Faulty Behaviors</Title>
+            <ScenarioEnabledFaultsList />
+            <Title order={5}>ScheduledFaults</Title>
+            <ScenarioScheduledFaultsList />
+            <Title order={5}>Discarded Events</Title>
+
+            <ScrollArea mah={500} type="always" style={{ overflowY: "auto" }}>
+              <DroppedMessagesList />
+            </ScrollArea>
+          </Stack>
+        </ScrollArea>
+      </AppShell.Aside>
     </Container>
   );
 }
