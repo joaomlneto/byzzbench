@@ -182,16 +182,6 @@ public abstract class Replica implements Node {
     }
 
     /**
-     * Handle a message received by this replica.
-     *
-     * @param sender  the ID of the sender
-     * @param message the message payload
-     * @throws Exception if an error occurs while handling the message
-     */
-    public abstract void handleMessage(String sender, MessagePayload message)
-            throws Exception;
-
-    /**
      * Commit an operation to the commit log and notify observers.
      *
      * @param operation the operation to commit
