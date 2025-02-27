@@ -16,12 +16,10 @@ import java.util.TreeSet;
 @Log
 public class HbftJavaScenario extends BaseScenario {
     private final int NUM_NODES = 4;
-    private final HbftTerminationCondition terminationCondition;
     private SortedSet<String> nodeIds;
 
     public HbftJavaScenario(Scheduler scheduler) {
         super("hbft", scheduler);
-        this.terminationCondition = new HbftTerminationCondition();
     }
 
     @Override
