@@ -11,7 +11,6 @@ import java.io.Serializable;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.Duration;
-import java.time.Instant;
 import java.util.*;
 
 
@@ -73,7 +72,7 @@ public class HbftClient extends Client {
     @Override
     public void sendRequest() {
         String requestId = String.format("%s/%d", super.id, super.requestSequenceNumber.incrementAndGet());
-        Instant timestamp = this.getCurrentTime();
+        long timestamp = this.getCurrentTime().toEpochMilli();
         RequestMessage request = new RequestMessage(requestId, timestamp, super.id);
         this.sentRequests.put(super.requestSequenceNumber.get(), request);
         this.sentRequestsByTimestamp.put(timestamp, requestId);
@@ -94,7 +93,7 @@ public class HbftClient extends Client {
             this.broadcastRequest(timestamp, requestId);
         } else if (this.shouldPanic(tolerance)) {
             RequestMessage message = this.sentRequests.get(super.requestSequenceNumber.get());
-            PanicMessage panic = new PanicMessage(this.digest(message), System.currentTimeMillis(), super.id);
+            PanicMessage panic = new PanicMessage(this.digest(message), this.getCurrentTime().toEpochMilli(), super.id);
             super.scenario.getTransport().multicast(this, super.scenario.getTransport().getNodeIds(), panic);
         }
         this.clearTimeout(timeouts.get(super.requestSequenceNumber.get()));
