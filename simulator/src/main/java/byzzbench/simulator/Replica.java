@@ -164,8 +164,8 @@ public abstract class Replica implements Node {
     /**
      * Handle a request received from a client.
      *
-     * @param clientId the ID of the client
-     * @param request  the request payload
+     * @param clientId  the ID of the client
+     * @param request   the request payload
      * @param timestamp the time the request was created/sent
      * @throws Exception if an error occurs while handling the request
      */
@@ -180,26 +180,6 @@ public abstract class Replica implements Node {
     public void sendReplyToClient(String clientId, Serializable reply) {
         this.transport.sendClientResponse(this, new DefaultClientReplyPayload(reply), clientId);
     }
-
-    /**
-     * Send a reply to a client.
-     * @param clientId the ID of the client
-     * @param reply the reply payload
-     * @param tolerance the tolerance of the protocol (used for hbft)
-     */
-    public void sendReplyToClient(String clientId, MessagePayload reply, long tolerance, long seqNumber) {
-        this.scenario.getTransport().sendClientResponse(this.id, reply, clientId, tolerance, seqNumber);
-    }
-
-    /**
-     * Handle a message received by this replica.
-     *
-     * @param sender  the ID of the sender
-     * @param message the message payload
-     * @throws Exception if an error occurs while handling the message
-     */
-    public abstract void handleMessage(String sender, MessagePayload message)
-            throws Exception;
 
     /**
      * Commit an operation to the commit log and notify observers.
@@ -237,7 +217,7 @@ public abstract class Replica implements Node {
             this.notifyObserversTimeout();
             r.run();
         };
-        return this.transport.setTimeout(this, wrapper, timeout);
+        return this.transport.setTimeout(this, wrapper, timeout, name);
     }
 
     /**
@@ -247,23 +227,6 @@ public abstract class Replica implements Node {
      */
     public void clearTimeout(long eventId) {
         this.transport.clearTimeout(this, eventId);
-    }
-
-    /**
-     * Set a timeout for this replica.
-     *
-     * @param r       the runnable to execute when the timeout occurs
-     * @param timeout the timeout in milliseconds
-     * @param description the type of timeout
-     * @return the timeout ID
-     */
-    public long setTimeout(Runnable r, long timeout, String description) {
-        Runnable wrapper = () -> {
-            this.notifyObserversTimeout();
-            r.run();
-        };
-        Duration duration = Duration.ofSeconds(timeout);
-        return this.scenario.getTransport().setTimeout(this, wrapper, duration, description);
     }
 
     /**
