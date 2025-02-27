@@ -3,6 +3,7 @@ package byzzbench.simulator.protocols.XRPL;
 import byzzbench.simulator.BaseScenario;
 import byzzbench.simulator.Client;
 import byzzbench.simulator.scheduler.Scheduler;
+import byzzbench.simulator.transport.DefaultClientRequestPayload;
 import com.fasterxml.jackson.databind.JsonNode;
 
 import java.util.ArrayList;
@@ -105,8 +106,8 @@ public class XRPLScenario extends BaseScenario {
     @SuppressWarnings("unused")
     private void runScenario1() {
         try {
-            this.transport.sendClientRequest("C0", "0000", "A");
-            this.transport.sendClientRequest("C0", "0001", "B");
+            this.sendClientRequest("C0", "0000", "A");
+            this.sendClientRequest("C0", "0001", "B");
 
             this.initializeHeartbeats();
         } catch (Exception e) {
@@ -121,7 +122,7 @@ public class XRPLScenario extends BaseScenario {
     @SuppressWarnings("unused")
     private void runScenario2() {
         try {
-            this.transport.sendClientRequest("c1", "0000", "A");
+            this.sendClientRequest("c1", "0000", "A");
 
             this.initializeHeartbeats();
         } catch (Exception e) {
@@ -141,10 +142,15 @@ public class XRPLScenario extends BaseScenario {
             this.addClient(new Client(this, "C0") {
                 @Override
                 public void initialize() {
-                    this.getScenario().getTransport().sendClientRequest(this.getId(), "tx", "D");
+                    this.getScenario().getTransport().sendMessage(
+                            this,
+                            new DefaultClientRequestPayload("tx"),
+                            "D"
+                    );
+                    //this.getScenario().getTransport().sendClientRequest(this.getId(), "tx", "D");
                 }
             });
-            this.transport.sendClientRequest("C0", "tx", "D");
+            this.sendClientRequest("C0", "tx", "D");
             this.initializeHeartbeats();
         } catch (Exception e) {
             e.printStackTrace();
@@ -166,5 +172,18 @@ public class XRPLScenario extends BaseScenario {
             throw new IllegalArgumentException("XRP requires at least 6 replicas");
         }
         return maxFaultyReplicas;
+    }
+
+    /**
+     * Sends a client request to a replica in the system.
+     *
+     * @param fromId    The ID of the client sending the request
+     * @param operation The operation to be performed
+     * @param toId      The ID of the replica receiving the request
+     */
+    private void sendClientRequest(String fromId, String operation, String toId) {
+        Client from = this.getClients().get(fromId);
+        DefaultClientRequestPayload payload = new DefaultClientRequestPayload(operation);
+        this.transport.sendMessage(from, payload, toId);
     }
 }

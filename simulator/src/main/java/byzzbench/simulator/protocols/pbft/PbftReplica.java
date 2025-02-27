@@ -440,14 +440,16 @@ public class PbftReplica extends LeaderBasedProtocolReplica {
         return (vi == v) ? this.cur_primary : replicaIds[(int) (vi % replicaIds.length)];
     }
 
+    
     @Override
-    public void handleClientRequest(String clientId, Serializable request) throws Exception {
+    public void handleClientRequest(String clientId, long timestamp, Serializable request) throws Exception {
         if (request instanceof RequestMessage) {
             this.handleMessage(clientId, (RequestMessage) request);
         } else {
             throw new UnsupportedOperationException("Unknown request type: " + request.getClass().getName());
         }
     }
+
 
     @Override
     public void handleMessage(String sender, MessagePayload message) throws Exception {

@@ -171,8 +171,8 @@ public class TwinsTransport extends Transport implements Serializable {
     }
 
     @Override
-    public synchronized long setTimeout(Node node, Runnable runnable, Duration timeout) {
-        Long eventId = this.getScenario().getTransport().setTimeout(node, runnable, timeout);
+    public synchronized long setTimeout(Node node, Runnable runnable, Duration timeout, String description) {
+        long eventId = this.getScenario().getTransport().setTimeout(node, runnable, timeout, description);
 
         this.queuedTimeouts
                 .computeIfAbsent(node.getId(), k -> new ArrayList<>())
