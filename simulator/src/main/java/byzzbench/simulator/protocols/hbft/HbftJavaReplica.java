@@ -17,6 +17,7 @@ import lombok.Setter;
 import lombok.extern.java.Log;
 
 import java.io.Serializable;
+import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -30,13 +31,13 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
     private final long timeout;
 
     @Getter
-    private final long PANIC_TIMEOUT = 3;
+    private final Duration PANIC_TIMEOUT = Duration.ofSeconds(3);
     @Getter
-    private final long CHECKPOINT_TIMEOUT = 5;
+    private final Duration CHECKPOINT_TIMEOUT = Duration.ofSeconds(5);
     @Getter
-    private final long VIEWCHANGE_TIMEOUT = 5;
+    private final Duration VIEWCHANGE_TIMEOUT = Duration.ofSeconds(5);
     @Getter
-    private final long REQUEST_TIMEOUT = 10;
+    private final Duration REQUEST_TIMEOUT = Duration.ofSeconds(10);
 
     /**
      * The current sequence number for the replica.
@@ -176,7 +177,7 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
 
         // Start the timer for this request per hBFT 4.3
         // This timeout check whether a request is completed in a given time
-        this.setTimeout(this::sendViewChangeOnTimeout, this.REQUEST_TIMEOUT, "REQUEST" + timestamp);
+        this.setTimeout("REQUEST" + timestamp, this::sendViewChangeOnTimeout, this.REQUEST_TIMEOUT);
 
         // hBFT 4.1 - If the request is received by a non-primary replica
         // send the request to the actual primary
@@ -342,7 +343,7 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
              * This timeout checks whether a checkpoint is received
              * within a time after receiving f + 1 PANICs
              */
-            this.setTimeout(this::sendViewChangeOnTimeout, this.PANIC_TIMEOUT, "PANIC");
+            this.setTimeout("PANIC", this::sendViewChangeOnTimeout, this.PANIC_TIMEOUT);
         }
     }
 
@@ -669,7 +670,7 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
                     // Log own checkpoint in accordance to hBFT 4.2
                     //messageLog.appendCheckpoint(checkpoint, this.tolerance, this.speculativeHistory, this.getViewNumber());
                 } else if (seqNumber % 2 == 0) {
-                    this.setTimeout(this::sendViewChangeOnTimeout, this.CHECKPOINT_TIMEOUT, "CHECKPOINT");
+                    this.setTimeout("CHECKPOINT", this::sendViewChangeOnTimeout, this.CHECKPOINT_TIMEOUT);
                 }
             } else if (ticket.isCommittedConflicting(this.tolerance)) {
                 ViewChangeMessage viewChangeMessage = this.messageLog.produceViewChange(this.getViewNumber() + 1, this.getViewNumber(), this.getId(), tolerance, this.speculativeRequests);
@@ -1004,7 +1005,7 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
         // Restart the timeout
         this.clearSpecificTimeout("VIEW-CHANGE");
         long multiplier = this.largestViewNumber > this.getViewNumber() ? this.largestViewNumber - this.getViewNumber() : 1;
-        this.setTimeout(this::incrementViewChangeOnTimeout, this.VIEWCHANGE_TIMEOUT * multiplier, "VIEW-CHANGE");
+        this.setTimeout("VIEW-CHANGE", this::incrementViewChangeOnTimeout, this.VIEWCHANGE_TIMEOUT.multipliedBy(multiplier));
         // hBFT 4.3 - Multicast VIEW-CHANGE vote
         this.broadcastMessage(viewChange);
     }

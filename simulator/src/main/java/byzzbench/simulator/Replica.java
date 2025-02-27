@@ -227,7 +227,7 @@ public abstract class Replica implements Node {
             this.notifyObserversTimeout();
             r.run();
         };
-        return this.transport.setTimeout(this, wrapper, timeout);
+        return this.transport.setTimeout(this, wrapper, timeout, name);
     }
 
     /**
@@ -237,23 +237,6 @@ public abstract class Replica implements Node {
      */
     public void clearTimeout(long eventId) {
         this.transport.clearTimeout(this, eventId);
-    }
-
-    /**
-     * Set a timeout for this replica.
-     *
-     * @param r           the runnable to execute when the timeout occurs
-     * @param timeout     the timeout in milliseconds
-     * @param description the type of timeout
-     * @return the timeout ID
-     */
-    public long setTimeout(Runnable r, long timeout, String description) {
-        Runnable wrapper = () -> {
-            this.notifyObserversTimeout();
-            r.run();
-        };
-        Duration duration = Duration.ofSeconds(timeout);
-        return this.scenario.getTransport().setTimeout(this, wrapper, duration, description);
     }
 
     /**
