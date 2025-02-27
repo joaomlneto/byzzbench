@@ -148,22 +148,7 @@ public class HbftClient extends Client {
      */
     public long setTimeout(String name, Runnable r, long timeout) {
         Duration duration = Duration.ofSeconds(timeout);
-        return super.scenario.getTransport().setTimeout(this, r, duration);
-    }
-
-    /**
-     * Set a timeout for this client.
-     *
-     * @param r       the runnable to execute when the timeout occurs
-     * @param timeout the timeout in milliseconds
-     * @return the timeout ID
-     */
-    public long setTimeout(Runnable r, long timeout) {
-        Runnable wrapper = () -> {
-            r.run();
-        };
-        Duration duration = Duration.ofSeconds(timeout);
-        return super.scenario.getTransport().setTimeout(this, wrapper, duration);
+        return super.scenario.getTransport().setTimeout(this, r, duration, name);
     }
 
     /**

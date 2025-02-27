@@ -95,7 +95,7 @@ public class Client implements Serializable, Node {
      * @return the timer object
      */
     public long setTimeout(String name, Runnable r, Duration timeout) {
-        return this.scenario.getTransport().setTimeout(this, r, timeout);
+        return this.scenario.getTransport().setTimeout(this, r, timeout, "REQUEST");
     }
 
     /**
