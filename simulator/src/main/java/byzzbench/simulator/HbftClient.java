@@ -11,6 +11,7 @@ import java.io.Serializable;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.*;
 
 
@@ -72,7 +73,7 @@ public class HbftClient extends Client {
     @Override
     public void sendRequest() {
         String requestId = String.format("%s/%d", super.id, super.requestSequenceNumber.incrementAndGet());
-        long timestamp = System.currentTimeMillis();
+        Instant timestamp = this.getCurrentTime();
         RequestMessage request = new RequestMessage(requestId, timestamp, super.id);
         this.sentRequests.put(super.requestSequenceNumber.get(), request);
         this.sentRequestsByTimestamp.put(timestamp, requestId);
