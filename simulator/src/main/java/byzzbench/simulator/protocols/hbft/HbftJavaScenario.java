@@ -1,15 +1,16 @@
 package byzzbench.simulator.protocols.hbft;
 
-import java.util.SortedSet;
-import java.util.TreeSet;
-
-import com.fasterxml.jackson.databind.JsonNode;
-
 import byzzbench.simulator.BaseScenario;
+import byzzbench.simulator.Client;
+import byzzbench.simulator.HbftClient;
 import byzzbench.simulator.Replica;
 import byzzbench.simulator.scheduler.Scheduler;
+import com.fasterxml.jackson.databind.JsonNode;
 import lombok.Getter;
 import lombok.extern.java.Log;
+
+import java.util.SortedSet;
+import java.util.TreeSet;
 
 @Getter
 @Log
@@ -44,6 +45,19 @@ public class HbftJavaScenario extends BaseScenario {
             this.setNumHbftClients(2);
         } catch (Exception e) {
             throw new RuntimeException(e);
+        }
+    }
+
+    /**
+     * Sets the number of hBFT clients in the scenario.
+     *
+     * @param numClients The number of clients to set.
+     */
+    protected void setNumHbftClients(int numClients) {
+        for (int i = 0; i < numClients; i++) {
+            String clientId = String.format("C%d", i);
+            Client client = HbftClient.builder().id(clientId).scenario(this).build();
+            this.addClient(client);
         }
     }
 
