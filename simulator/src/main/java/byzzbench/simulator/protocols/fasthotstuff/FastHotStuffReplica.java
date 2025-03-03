@@ -51,7 +51,7 @@ public class FastHotStuffReplica extends LeaderBasedProtocolReplica {
     }
 
     @Override
-    public void handleClientRequest(String clientId, Serializable request) throws Exception {
+    public void handleClientRequest(String clientId, long timestamp, Serializable request) throws Exception {
         throw new UnsupportedOperationException("Client requests not supported in FastHotStuff");
     }
 
