@@ -1,7 +1,5 @@
 package byzzbench.simulator.protocols.dummy;
 
-import java.io.Serializable;
-
 import byzzbench.simulator.Replica;
 import byzzbench.simulator.Scenario;
 import byzzbench.simulator.state.SerializableLogEntry;
@@ -21,11 +19,6 @@ public class DummyReplica extends Replica {
     @Override
     public void initialize() {
         // nothing to do
-    }
-
-    @Override
-    public void handleClientRequest(String clientId, long timestamp, Serializable request) {
-        throw new UnsupportedOperationException("Unsupported operation: handleClientRequest");
     }
 
     @Override
