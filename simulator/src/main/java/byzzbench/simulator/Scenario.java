@@ -5,7 +5,6 @@ import byzzbench.simulator.scheduler.Scheduler;
 import byzzbench.simulator.transport.Transport;
 import com.fasterxml.jackson.databind.JsonNode;
 
-import java.io.IOException;
 import java.io.Serializable;
 import java.util.List;
 import java.util.NavigableMap;
@@ -170,7 +169,7 @@ public interface Scenario extends Serializable {
      *
      * @return True if the invariants hold, false otherwise.
      */
-    boolean invariantsHold() throws IOException;
+    boolean invariantsHold();
 
     /**
      * Get the random number generator for the scenario.
