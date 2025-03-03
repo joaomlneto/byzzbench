@@ -14,6 +14,7 @@ import lombok.RequiredArgsConstructor;
 public abstract class BaseScenarioFactory implements ScenarioFactory {
     @Getter(AccessLevel.PROTECTED)
     private final SchedulerFactoryService schedulerFactoryService;
+    @Getter
     private final ByzzBenchConfig byzzBenchConfig;
     private final ObjectMapper mapper;
 

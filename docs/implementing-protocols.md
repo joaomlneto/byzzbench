@@ -58,3 +58,60 @@ check whether safety invariants of distributed consensus are broken.
       order, and this can lead to non-deterministic behavior. Use our own `DeterministicCompletableFuture`, which will
       execute the tasks in the order they were submitted to it.
 
+## Components
+
+The diagram below includes the relevant ByzzBench components for implementing a new BFT protocol.
+
+```mermaid
+---
+title: Simulator Components
+---
+classDiagram
+    class Event {
+        -int eventId
+    }
+    class Transport {
+    }
+    class MessageEvent {
+        -String senderId
+        -String recipientId
+        -MessagePayload message
+        -MessageStatus status
+    }
+    class TimeoutEvent {
+    }
+    class MessageStatus {
+        <<Enumeration>>
+        QUEUED
+        DELIVERED
+        DROPPED
+    }
+    class MessagePayload {
+        <<Interface>>
+        +String getType()
+    }
+    class Replica {
+        <<Abstract>>
+        +String getType()
+    }
+    class CommitLog {
+        <<Abstract>>
+        addEntry()
+    }
+    class TotalOrderCommitLog {
+        addEntry()
+    }
+    class PartialOrderCommitLog {
+        addEntry()
+    }
+    Event <|-- MessageEvent
+    Event <|-- TimeoutEvent
+    MessageEvent -- MessageStatus
+    MessageEvent -- MessagePayload
+    CommitLog -- Replica
+    Transport o-- Event
+    Transport o-- Replica
+    Replica --> Event: emits, receives
+    CommitLog <|-- TotalOrderCommitLog
+    CommitLog <|-- PartialOrderCommitLog
+```

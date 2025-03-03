@@ -11,7 +11,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.Synchronized;
 import lombok.extern.java.Log;
 
-import java.io.Serializable;
 import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicLong;
@@ -107,33 +106,6 @@ public class Transport {
         } else {
             this.networkFaults.put(fault.getId(), fault);
         }
-    }
-
-    /**
-     * Sends a request from a client to a replica.
-     *
-     * @param sender    The ID of the client sending the request
-     * @param operation The operation to send
-     * @param recipient The ID of the replica receiving the request
-     */
-    public synchronized void sendClientRequest(String sender, Serializable operation, String recipient) {
-        // assert that the sender exists
-        if (!this.scenario.getClients().containsKey(sender)) {
-            throw new IllegalArgumentException("Client not found: " + sender);
-        }
-
-        // assert that the recipient exists
-        if (!this.scenario.getNodes().containsKey(recipient)) {
-            throw new IllegalArgumentException("Replica not found: " + recipient);
-        }
-
-        Event event = ClientRequestEvent.builder()
-                .eventId(this.eventSeqNum.getAndIncrement())
-                .senderId(sender)
-                .recipientId(recipient)
-                .payload(new DefaultClientRequestPayload(operation))
-                .build();
-        this.appendEvent(event);
     }
 
     /**
@@ -236,8 +208,7 @@ public class Transport {
 
         // check if it is in QUEUED state
         if (e.getStatus() != Event.Status.QUEUED) {
-//            throw new IllegalArgumentException("Event not in QUEUED state");
-            return;
+            throw new IllegalArgumentException("Event not in QUEUED state");
         }
 
         // if it is a MessageEvent and there is no connectivity between the nodes, drop it
@@ -269,7 +240,7 @@ public class Transport {
             }
         }
 
-//        log.info("Delivered " + e);
+        log.info("Delivered " + e);
     }
 
     /**
@@ -285,10 +256,13 @@ public class Transport {
 
         // check if event is a message
         Event e = events.get(eventId);
+        if (e instanceof TimeoutEvent) {
+            throw new IllegalArgumentException("Cannot drop a timeout event");
+        }
 
         if (e.getStatus() != Event.Status.QUEUED) {
-            return;
-//            throw new IllegalArgumentException("Event not found or not in QUEUED state");
+            log.warning("Attempting to drop event not in QUEUED state");
+            throw new IllegalArgumentException("Event not found or not in QUEUED state");
         }
 
         e.setStatus(Event.Status.DROPPED);
@@ -327,8 +301,9 @@ public class Transport {
 
         // check if event is not in QUEUED state
         if (e.getStatus() != Event.Status.QUEUED) {
+            log.warning("Attempting to mutate event not in QUEUED state");
             return;
-//            throw new IllegalArgumentException("Message not found or not in QUEUED state");
+            //throw new IllegalArgumentException("Message not found or not in QUEUED state");
         }
 
         // check it is a message event!
@@ -408,16 +383,17 @@ public class Transport {
     /**
      * Creates a new timeout event
      *
-     * @param node     The node that created the timeout
-     * @param runnable The task to execute when the timeout occurs
-     * @param timeout  The timeout duration
+     * @param node        The node that created the timeout
+     * @param runnable    The task to execute when the timeout occurs
+     * @param timeout     The timeout duration
+     * @param description The description of the timeout
      * @return The ID of the newly-created timeout event
      */
     public synchronized long setTimeout(Node node, Runnable runnable,
-                                        Duration timeout) {
+                                        Duration timeout, String description) {
         TimeoutEvent timeoutEvent = TimeoutEvent.builder()
                 .eventId(this.eventSeqNum.getAndIncrement())
-                .description("TIMEOUT")
+                .description(description)
                 .nodeId(node.getId())
                 .timeout(timeout)
                 .expiresAt(node.getCurrentTime().plus(timeout))
@@ -425,7 +401,7 @@ public class Transport {
                 .build();
         this.appendEvent(timeoutEvent);
         this.observers.forEach(o -> o.onTimeout(timeoutEvent));
-        log.info("Timeout set for " + node.getId() + " in " + timeout + "ms: " + timeoutEvent);
+        log.info(description + " timeout set for " + node.getId() + " in " + timeout + "ms: " + timeoutEvent);
         return timeoutEvent.getEventId();
     }
 
@@ -451,6 +427,28 @@ public class Transport {
 
         timeoutEvent.setStatus(Event.Status.DROPPED);
         this.observers.forEach(o -> o.onEventDropped(timeoutEvent));
+    }
+
+    /**
+     * Clears a timeout with a given description
+     * @param node The node to clear the timeouts for
+     * @param description The description of the timeout
+     */
+    public synchronized void clearTimeout(Node node, String description) {
+        // get all event IDs for timeouts from this replica
+        List<Long> eventIds =
+                this.events.values()
+                        .stream()
+                        .filter(
+                                e -> e instanceof TimeoutEvent t &&
+                                        t.getNodeId().equals(node.getId()) &&
+                                        t.getStatus() == Event.Status.QUEUED &&
+                                        t.getDescription().equals(description))
+                        .map(Event::getEventId)
+                        .toList();
+
+        // clear the timeouts
+        eventIds.stream().sorted().forEachOrdered(eventId -> clearTimeout(node, eventId));
     }
 
     /**
