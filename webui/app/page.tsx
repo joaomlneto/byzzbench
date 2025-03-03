@@ -46,7 +46,7 @@ export default function Home() {
 
   const [showMailboxes, setShowMailboxes] = useLocalStorage<boolean>({
     key: "byzzbench/showMailboxes",
-    defaultValue: true,
+    defaultValue: false,
   });
 
   if (mode.data?.data === "RUNNING") {
@@ -90,14 +90,13 @@ export default function Home() {
             </Accordion.Panel>
           </Accordion.Item>
           {/*<Accordion.Item key="adob" value="adob">
-                        <Accordion.Control>AdoB State</Accordion.Control>
-                        <Accordion.Panel>
-                            <AdoBStateDiagram/>
-                        </Accordion.Panel>
-                    </Accordion.Item>*/}
+            <Accordion.Control>AdoB State</Accordion.Control>
+            <Accordion.Panel>
+              <AdoBStateDiagram />
+            </Accordion.Panel>
+          </Accordion.Item>*/}
         </Accordion>
       </Stack>
-
       <AppShell.Aside p="md" maw={400}>
         <ScrollArea type="never" mah="100vh">
           <Stack gap="xs">

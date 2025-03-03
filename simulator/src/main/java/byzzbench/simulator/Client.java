@@ -7,6 +7,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.SuperBuilder;
+import lombok.extern.java.Log;
 
 import java.io.Serializable;
 import java.time.Duration;
@@ -22,6 +23,7 @@ import java.util.concurrent.atomic.AtomicLong;
 @Getter
 @SuperBuilder
 @RequiredArgsConstructor
+@Log
 public class Client implements Serializable, Node {
     /**
      * The scenario object that this client belongs to.
