@@ -103,7 +103,6 @@ public class ByzzFuzzDropMessageBehavior implements FaultBehavior {
 
         // otherwise, drop the message: the sender and recipient are in different partitions
         if(e.getStatus() == Event.Status.QUEUED) {
-            // otherwise, drop the message: the sender and recipient are in different partitions
             context.getScenario().getTransport().dropEvent(e.getEventId());
         }
     }

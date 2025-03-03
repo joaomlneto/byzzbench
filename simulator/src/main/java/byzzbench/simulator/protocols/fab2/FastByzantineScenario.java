@@ -2,12 +2,7 @@ package byzzbench.simulator.protocols.fab2;
 
 import byzzbench.simulator.BaseScenario;
 import byzzbench.simulator.Replica;
-import byzzbench.simulator.protocols.fab2.FastByzantineClient;
-import byzzbench.simulator.protocols.fab2.FastByzantineReplica;
-import byzzbench.simulator.protocols.fab2.FastByzantineTerminationCondition;
-import byzzbench.simulator.protocols.fab2.Role;
 import byzzbench.simulator.scheduler.Scheduler;
-import byzzbench.simulator.scheduler.twins.TwinsScheduler;
 import com.fasterxml.jackson.databind.JsonNode;
 import lombok.extern.java.Log;
 
@@ -63,7 +58,7 @@ public class FastByzantineScenario extends BaseScenario {
             this.addNode(replica1);
 
             FastByzantineReplica replica2 = new FastByzantineReplica("B", nodesIds, transport, this, proposerAndAcceptor, false, timeout, p, a, l, f,
-                    new TreeSet<>(List.of("A", "B" ,"C", "D", "E", "F")),
+                    new TreeSet<>(List.of("A", "B", "C", "D", "E", "F")),
                     new TreeSet<>(List.of("C", "D", "E", "F")),
                     new TreeSet<>(List.of("A", "B", "C", "D")),
                     "A",
@@ -72,7 +67,7 @@ public class FastByzantineScenario extends BaseScenario {
 
             List<Role> proposerAndAcceptorAndLearner = List.of(Role.PROPOSER, Role.ACCEPTOR, Role.LEARNER);
 
-            FastByzantineReplica replica3 = new FastByzantineReplica("C", nodesIds, transport, this, proposerAndAcceptorAndLearner, false,2 * timeout, p, a, l, f,
+            FastByzantineReplica replica3 = new FastByzantineReplica("C", nodesIds, transport, this, proposerAndAcceptorAndLearner, false, 2 * timeout, p, a, l, f,
                     new TreeSet<>(List.of("A", "B", "C", "D", "E", "F")),
                     new TreeSet<>(List.of("C", "D", "E", "F")),
                     new TreeSet<>(List.of("A", "B", "C", "D")),
@@ -80,7 +75,7 @@ public class FastByzantineScenario extends BaseScenario {
                     "C0");
             this.addNode(replica3);
 
-            FastByzantineReplica replica4 = new FastByzantineReplica("D", nodesIds, transport, this, proposerAndAcceptorAndLearner, false,3 * timeout, p, a, l, f,
+            FastByzantineReplica replica4 = new FastByzantineReplica("D", nodesIds, transport, this, proposerAndAcceptorAndLearner, false, 3 * timeout, p, a, l, f,
                     new TreeSet<>(List.of("A", "B", "C", "D", "E", "F")),
                     new TreeSet<>(List.of("C", "D", "E", "F")),
                     new TreeSet<>(List.of("A", "B", "C", "D")),
@@ -89,7 +84,7 @@ public class FastByzantineScenario extends BaseScenario {
             this.addNode(replica4);
 
             List<Role> learnerAndAcceptor = List.of(Role.ACCEPTOR, Role.LEARNER);
-            FastByzantineReplica replica5 = new FastByzantineReplica("E", nodesIds, transport, this, learnerAndAcceptor, false,4 * timeout, p, a, l, f,
+            FastByzantineReplica replica5 = new FastByzantineReplica("E", nodesIds, transport, this, learnerAndAcceptor, false, 4 * timeout, p, a, l, f,
                     new TreeSet<>(List.of("A", "B", "C", "D", "E", "F")),
                     new TreeSet<>(List.of("C", "D", "E", "F")),
                     new TreeSet<>(List.of("A", "B", "C", "D")),
@@ -97,7 +92,7 @@ public class FastByzantineScenario extends BaseScenario {
                     "C0");
             this.addNode(replica5);
 
-            FastByzantineReplica replica6 = new FastByzantineReplica("F", nodesIds, transport, this, learnerAndAcceptor, false,5 * timeout, p, a, l, f,
+            FastByzantineReplica replica6 = new FastByzantineReplica("F", nodesIds, transport, this, learnerAndAcceptor, false, 5 * timeout, p, a, l, f,
                     new TreeSet<>(List.of("A", "B", "C", "D", "E", "F")),
                     new TreeSet<>(List.of("C", "D", "E", "F")),
                     new TreeSet<>(List.of("A", "B", "C", "D")),
@@ -236,7 +231,8 @@ public class FastByzantineScenario extends BaseScenario {
 //    @Override
 //    protected void run() {
 //        try {
-////            FastByzantineClient client = new FastByzantineClient(this, "C0", List.of("C", "D", "E", "F"), List.of("A", "B", "C", "D"));
+
+    /// /            FastByzantineClient client = new FastByzantineClient(this, "C0", List.of("C", "D", "E", "F"), List.of("A", "B", "C", "D"));
 //            FastByzantineClient client = new FastByzantineClient(
 //                    this,
 //                    "C0",
@@ -248,7 +244,6 @@ public class FastByzantineScenario extends BaseScenario {
 //            throw new RuntimeException(e);
 //        }
 //    }
-
     @Override
     protected void run() {
         try {
@@ -259,7 +254,7 @@ public class FastByzantineScenario extends BaseScenario {
 //                    List.of("C", "D", "E", "F", "G", "H", "I", "J", "K"),
 //                    List.of("A", "B", "C", "D", "E", "F", "G"));
             this.addClient(client);
-            this.transport.sendClientRequest("C0", "123", "A");
+            //this.transport.sendMessage(client, "123", "A");
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -341,7 +336,6 @@ public class FastByzantineScenario extends BaseScenario {
 //            throw new RuntimeException(e);
 //        }
 //    }
-
     @Override
     public Replica cloneReplica(Replica replica) {
         return super.cloneReplica(replica);

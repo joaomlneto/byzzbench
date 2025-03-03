@@ -23,14 +23,24 @@ import java.util.*;
 @Log
 @Getter
 public class FastByzantineReplica extends LeaderBasedProtocolReplica {
+    // The number of replicas in the system with each role.
+    private final int p, a, l, f;
+    // Timeout until the proposer replica starts suspecting the leader for the lack of progress.
+    private final long messageTimeoutDuration;
+    @JsonIgnore
+    private final Transport transport;
+    // Current client ID that the system is communicating with.
+    private final String clientId;
+    /**
+     * The log of received messages for the replica.
+     */
+    @JsonIgnore
+    private final MessageLog messageLog;
     // In the "Fast Byzantine Consensus" protocol, a replica can have one or more roles.
     // The possible roles are : PROPOSER, ACCEPTOR, LEARNER.
     // The required number of replicas with each role is:
     // p ( proposers ) = 3 * f + 1, a ( acceptors ) = 5 * f + 1, l ( learners ) = 3 * f + 1.
     private List<Role> roles = new ArrayList<>();
-
-    // The number of replicas in the system with each role.
-    private final int p, a, l, f;
     // The message round number.
     private long viewNumber;
     private long proposalNumber;
@@ -38,26 +48,16 @@ public class FastByzantineReplica extends LeaderBasedProtocolReplica {
     private byte[] proposedValue;
     // The progress certificate for the current view.
     private ProgressCertificate pc;
-    // Timeout until the proposer replica starts suspecting the leader for the lack of progress.
-    private final long messageTimeoutDuration;
     // Current leader.
     @Setter
     private String leaderId;
     @Setter
     private boolean isCurrentlyLeader;
-
     // The set of node IDs in the system for each role.
     private SortedSet<String> acceptorNodeIds = new TreeSet<>();
     private SortedSet<String> learnerNodeIds = new TreeSet<>();
-    private SortedSet<String> proposerNodeIds = new TreeSet<>();;
-    private SortedSet<String> nodeIds = new TreeSet<>();;
-
-    @JsonIgnore
-    private final Transport transport;
-
-    // Current client ID that the system is communicating with.
-    private String clientId;
-
+    private SortedSet<String> proposerNodeIds = new TreeSet<>();
+    private SortedSet<String> nodeIds = new TreeSet<>();
     private boolean isSatisfied;
     // Keep track of the timeouts set by the replica.
     private long learnerTimeoutId = -1;
@@ -67,11 +67,6 @@ public class FastByzantineReplica extends LeaderBasedProtocolReplica {
     @Setter
     private boolean isRecovered;
     private int forwards;
-    /**
-     * The log of received messages for the replica.
-     */
-    @JsonIgnore
-    private MessageLog messageLog;
     private boolean committed;
     private byte[] operation;
     private long viewChangeRequests = 0;
@@ -188,15 +183,16 @@ public class FastByzantineReplica extends LeaderBasedProtocolReplica {
     private void proposerOnStart() {
         int learnedThreshold = (int) Math.ceil((l + f + 1) / 2.0);
 
-         this.proposerTimeoutId = this.setTimeout(
-                 "proposer-timeout",
-                 () -> {
-                     if (!messageLog.proposerHasLearned(learnedThreshold)) {
-                             log.warning("Leader suspected by proposer " + getId());
-                             broadcastMessageIncludingSelf(new SuspectMessage(getId(), this.leaderId, this.viewNumber));
-                     }
-         }, Duration.ofMillis(messageTimeoutDuration));
+        this.proposerTimeoutId = this.setTimeout(
+                "proposer-timeout",
+                () -> {
+                    if (!messageLog.proposerHasLearned(learnedThreshold)) {
+                        log.warning("Leader suspected by proposer " + getId());
+                        broadcastMessageIncludingSelf(new SuspectMessage(getId(), this.leaderId, this.viewNumber));
+                    }
+                }, Duration.ofMillis(messageTimeoutDuration));
     }
+
     /**
      * Learner replica starts by awaiting to learn a value.
      * If it has not learned any value after waiting, send a PULL message to all other LEARNER replicas.
@@ -218,10 +214,10 @@ public class FastByzantineReplica extends LeaderBasedProtocolReplica {
 
     /**
      * Handle a client request received by the replica.
+     *
      * @param clientId the ID of the client
      * @param request  the request payload
      */
-    @Override
     public void handleClientRequest(String clientId, Serializable request) throws UnsupportedOperationException {
         // If the client request is not send to the leader, forward it to the leader.
         if (!isLeader()) {
@@ -302,7 +298,8 @@ public class FastByzantineReplica extends LeaderBasedProtocolReplica {
 
     /**
      * Handle a PROPOSE message send by a replica with Proposer role, who is the leader, received by all Acceptor replicas.
-     * @param sender : the nodeId of the sender (the current leader)
+     *
+     * @param sender         : the nodeId of the sender (the current leader)
      * @param proposeMessage : the PROPOSE message with the proposed value and round number
      */
     private void handleProposeMessage(String sender, ProposeMessage proposeMessage) {
@@ -320,7 +317,8 @@ public class FastByzantineReplica extends LeaderBasedProtocolReplica {
 
     /**
      * Handle an ACCEPT message sent by an Acceptor replica, received by a Learner replica.
-     * @param sender : the nodeId of the sender (an Acceptor replica)
+     *
+     * @param sender        : the nodeId of the sender (an Acceptor replica)
      * @param acceptMessage : the ACCEPT message with the value and proposal number
      */
     private void handleAcceptMessage(String sender, AcceptMessage acceptMessage) {
@@ -354,7 +352,8 @@ public class FastByzantineReplica extends LeaderBasedProtocolReplica {
 
     /**
      * Handle a LEARN message sent by a Proposer replica, received by a Proposer replica.
-     * @param sender : the nodeId of the sender (a Learner replica)
+     *
+     * @param sender       : the nodeId of the sender (a Learner replica)
      * @param learnMessage : the LEARN message with the value and proposal number
      */
     private void handleLearnMessageProposer(String sender, LearnMessage learnMessage) {
@@ -390,7 +389,8 @@ public class FastByzantineReplica extends LeaderBasedProtocolReplica {
 
     /**
      * Handle a LEARN message sent by a Learner replica, received by a Learner replica.
-     * @param sender : the nodeId of the sender (a Learner replica)
+     *
+     * @param sender       : the nodeId of the sender (a Learner replica)
      * @param learnMessage : the LEARN message with the value and proposal number
      */
     private void handleLearnMessageLearner(String sender, LearnMessage learnMessage) {
@@ -428,7 +428,8 @@ public class FastByzantineReplica extends LeaderBasedProtocolReplica {
 
     /**
      * Handle a SATISFIED message received by a Proposer replica.
-     * @param sender : the nodeId of the sender (a Proposer replica)
+     *
+     * @param sender           : the nodeId of the sender (a Proposer replica)
      * @param satisfiedMessage : the SATISFIED message with the value and proposal number
      */
     private void handleSatisfiedMessage(String sender, SatisfiedMessage satisfiedMessage) {
@@ -466,7 +467,8 @@ public class FastByzantineReplica extends LeaderBasedProtocolReplica {
     /**
      * Handle a QUERY message received by an Acceptor replica.
      * This message is sent after a new leader has been elected.
-     * @param sender : the nodeId of the sender (the new leader)
+     *
+     * @param sender       : the nodeId of the sender (the new leader)
      * @param queryMessage : the QUERY message with the view number and progress certificate
      */
     private void handleQueryMessage(String sender, QueryMessage queryMessage) {
@@ -494,7 +496,8 @@ public class FastByzantineReplica extends LeaderBasedProtocolReplica {
 
     /**
      * Handle a PULL message received by a Learner replica. Should send the learned value, if any.
-     * @param sender : the nodeId of the sender (a Learner replica)
+     *
+     * @param sender      : the nodeId of the sender (a Learner replica)
      * @param pullMessage : the PULL message
      */
     private void handlePullMessage(String sender, PullMessage pullMessage) {
@@ -515,7 +518,8 @@ public class FastByzantineReplica extends LeaderBasedProtocolReplica {
 
     /**
      * Handle a SUSPECT message received by a replica.
-     * @param sender : the nodeId of the sender (a replica that suspects the leader)
+     *
+     * @param sender         : the nodeId of the sender (a replica that suspects the leader)
      * @param suspectMessage : the SUSPECT message with the nodeId of the suspected leader
      */
     private void handleSuspectMessage(String sender, SuspectMessage suspectMessage) {
@@ -535,7 +539,8 @@ public class FastByzantineReplica extends LeaderBasedProtocolReplica {
 
     /**
      * Handle a REPLY message received by the leader replica.
-     * @param sender : the nodeId of the sender (an Acceptor replica which was queried)
+     *
+     * @param sender       : the nodeId of the sender (an Acceptor replica which was queried)
      * @param replyMessage : the REPLY message with the value and round number of the previous round
      */
     public void handleReplyMessage(String sender, ReplyMessage replyMessage) {
@@ -579,7 +584,8 @@ public class FastByzantineReplica extends LeaderBasedProtocolReplica {
      * Handle a VIEW_CHANGE message received by a replica.
      * This is used to update the view number and leader ID sent to all the other replicas
      * after a replica elected a new leader.
-     * @param sender : the nodeId of the sender (the replica that elected a new leader)
+     *
+     * @param sender            : the nodeId of the sender (the replica that elected a new leader)
      * @param viewChangeMessage : the VIEW_CHANGE message with the new view number and leader ID
      */
     private void handleViewChangeMessage(String sender, ViewChangeMessage viewChangeMessage) {
@@ -695,9 +701,10 @@ public class FastByzantineReplica extends LeaderBasedProtocolReplica {
 
     /**
      * Move replica to the next view number and reset the replica.
+     *
      * @param newViewNumber : the new view number
-     * @param sender : the nodeId of the sender that triggered the reset
-     * @param message : the message that caused the reset
+     * @param sender        : the nodeId of the sender that triggered the reset
+     * @param message       : the message that caused the reset
      */
     public void reset(long newViewNumber, String sender, MessagePayload message) {
         // Since we are resetting the replica, previous timeouts should be cleared
@@ -715,7 +722,9 @@ public class FastByzantineReplica extends LeaderBasedProtocolReplica {
         onStart();
     }
 
-    /** Methods for checking the roles of the replica. **/
+    /**
+     * Methods for checking the roles of the replica.
+     **/
     private boolean isAcceptor() {
         return this.roles.contains(Role.ACCEPTOR);
     }
