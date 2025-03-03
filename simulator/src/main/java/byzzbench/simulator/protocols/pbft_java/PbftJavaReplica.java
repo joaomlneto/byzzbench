@@ -720,8 +720,7 @@ public class PbftJavaReplica<O extends Serializable, R extends Serializable> ext
         return operation;
     }
 
-    @Override
-    public void handleClientRequest(String clientId, long timestamp, Serializable request) {
+    public void handleClientRequest(String clientId, Serializable request) {
         // FIXME: should not get timestamp from system time
         RequestMessage m = new RequestMessage(request, System.currentTimeMillis(), clientId);
         this.recvRequest(m);
@@ -730,7 +729,7 @@ public class PbftJavaReplica<O extends Serializable, R extends Serializable> ext
     @Override
     public void handleMessage(String sender, MessagePayload m) {
         switch (m) {
-            case DefaultClientRequestPayload clientRequest -> handleClientRequest(sender, 0L, clientRequest.getOperation());
+            case DefaultClientRequestPayload clientRequest -> handleClientRequest(sender, clientRequest.getOperation());
             case RequestMessage request -> recvRequest(request);
             case PrePrepareMessage prePrepare -> recvPrePrepare(prePrepare);
             case PrepareMessage prepare -> recvPrepare(prepare);

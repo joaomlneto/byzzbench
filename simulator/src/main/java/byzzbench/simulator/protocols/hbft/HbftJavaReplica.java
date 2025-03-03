@@ -1195,10 +1195,9 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
         return operation;
     }
 
-    @Override
-    public void handleClientRequest(String clientId, long timestamp, Serializable request) {
+    public void handleClientRequest(String clientId, ClientRequestMessage clientRequestMessage) {
         // timestamp should be the time of the creation of the request
-        RequestMessage m = new RequestMessage(request, timestamp, clientId);
+        RequestMessage m = new RequestMessage(clientRequestMessage.getOperation(), clientRequestMessage.getTimestamp(), clientId);
         //System.out.println(m);
         this.recvRequest(m);
     }
@@ -1206,12 +1205,10 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
     @Override
     public void handleMessage(String sender, MessagePayload m) {
         if (m instanceof RequestMessage request) {
-            //System.out.println(request);
             recvRequest(request);
             return;
         } else if (m instanceof ClientRequestMessage clientRequest) {
-            //System.out.println(clientRequest);
-            handleClientRequest(sender, clientRequest.getTimestamp(), clientRequest.getOperation());
+            handleClientRequest(sender, clientRequest);
             return;
         } else if (m instanceof PrepareMessage prepare) {
             recvPrepare(prepare);
