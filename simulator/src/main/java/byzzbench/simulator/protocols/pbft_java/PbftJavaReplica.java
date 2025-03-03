@@ -79,53 +79,53 @@ public class PbftJavaReplica<O extends Serializable, R extends Serializable> ext
      * @param key The key for the request
      * @return The remaining time for the timeout
      */
-    public long checkTimeout(ReplicaRequestKey key) {
-        LinearBackoff backoff = this.timeouts.get(key);
-        if (backoff == null) {
-            return 0L;
-        }
+    // public long checkTimeout(ReplicaRequestKey key) {
+    //     LinearBackoff backoff = this.timeouts.get(key);
+    //     if (backoff == null) {
+    //         return 0L;
+    //     }
 
-        synchronized (backoff) {
-            long elapsed = backoff.elapsed();
+    //     synchronized (backoff) {
+    //         long elapsed = backoff.elapsed();
 
-            /*
-             * This method is called in a loop to check the timers on the requests
-             * that are currently waiting to be fulfilled.
-             *
-             * Per PBFT 4.5.2, each time a timeout occurs, a VIEW-CHANGE vote will
-             * be multicasted to the current view plus the number of timeouts that
-             * have occurred and the replica waits a longer period of time until
-             * the next vote is sent. The timer then waits for the sufficient number
-             * of VIEW-CHANGE votes to be received before being allowed to expire
-             * again after the next period of time and multicast the next
-             * VIEW-CHANGE.
-             */
-            long remainingTime = backoff.getTimeout() - elapsed;
-            if (remainingTime <= 0 && !backoff.isWaitingForVotes()) {
-                this.disgruntled = true;
+    //         /*
+    //          * This method is called in a loop to check the timers on the requests
+    //          * that are currently waiting to be fulfilled.
+    //          *
+    //          * Per PBFT 4.5.2, each time a timeout occurs, a VIEW-CHANGE vote will
+    //          * be multicasted to the current view plus the number of timeouts that
+    //          * have occurred and the replica waits a longer period of time until
+    //          * the next vote is sent. The timer then waits for the sufficient number
+    //          * of VIEW-CHANGE votes to be received before being allowed to expire
+    //          * again after the next period of time and multicast the next
+    //          * VIEW-CHANGE.
+    //          */
+    //         long remainingTime = backoff.getTimeout() - elapsed;
+    //         if (remainingTime <= 0 && !backoff.isWaitingForVotes()) {
+    //             this.disgruntled = true;
 
-                long newViewNumber = backoff.getNewViewNumber();
-                backoff.expire();
+    //             long newViewNumber = backoff.getNewViewNumber();
+    //             backoff.expire();
 
-                ViewChangeMessage viewChange = messageLog.produceViewChange(
-                        newViewNumber,
-                        this.getId(),
-                        this.tolerance);
-                this.sendViewChange(viewChange);
+    //             ViewChangeMessage viewChange = messageLog.produceViewChange(
+    //                     newViewNumber,
+    //                     this.getId(),
+    //                     this.tolerance);
+    //             this.sendViewChange(viewChange);
 
-                /*
-                 * Timer expires, meaning that we will need to wait at least the
-                 * next period of time before the timer is allowed to expire again
-                 * due to having to als include the time for the votes to be
-                 * received and processed
-                 */
-                return backoff.getTimeout();
-            }
+    //             /*
+    //              * Timer expires, meaning that we will need to wait at least the
+    //              * next period of time before the timer is allowed to expire again
+    //              * due to having to als include the time for the votes to be
+    //              * received and processed
+    //              */
+    //             return backoff.getTimeout();
+    //         }
 
-            // Timer has not expired yet, so wait out the remaining we computed
-            return remainingTime;
-        }
-    }
+    //         // Timer has not expired yet, so wait out the remaining we computed
+    //         return remainingTime;
+    //     }
+    // }
 
     /**
      * Resend the reply to the client.
@@ -615,7 +615,7 @@ public class PbftJavaReplica<O extends Serializable, R extends Serializable> ext
         }
 
         // PBFT 4.5.2 - Start the timers that will vote for newViewNumber + 1.
-        if (result.isBeginNextVote()) {
+        /* if (result.isBeginNextVote()) {
             for (LinearBackoff backoff : this.timeouts.values()) {
                 synchronized (backoff) {
                     long timerViewNumber = backoff.getNewViewNumber();
@@ -624,7 +624,7 @@ public class PbftJavaReplica<O extends Serializable, R extends Serializable> ext
                     }
                 }
             }
-        }
+        } */
 
         if (newPrimaryId.equals(this.getId())) {
             /*
@@ -720,7 +720,6 @@ public class PbftJavaReplica<O extends Serializable, R extends Serializable> ext
         return operation;
     }
 
-    @Override
     public void handleClientRequest(String clientId, Serializable request) {
         // FIXME: should not get timestamp from system time
         RequestMessage m = new RequestMessage(request, System.currentTimeMillis(), clientId);

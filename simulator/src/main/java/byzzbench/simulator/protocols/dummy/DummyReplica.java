@@ -9,8 +9,6 @@ import byzzbench.simulator.transport.MessagePayload;
 import lombok.ToString;
 import lombok.extern.java.Log;
 
-import java.io.Serializable;
-
 @Log
 @ToString(callSuper = true)
 public class DummyReplica extends Replica {
@@ -21,11 +19,6 @@ public class DummyReplica extends Replica {
     @Override
     public void initialize() {
         // nothing to do
-    }
-
-    @Override
-    public void handleClientRequest(String clientId, Serializable request) {
-        throw new UnsupportedOperationException("Unsupported operation: handleClientRequest");
     }
 
     @Override

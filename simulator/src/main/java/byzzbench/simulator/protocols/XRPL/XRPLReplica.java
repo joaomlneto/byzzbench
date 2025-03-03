@@ -7,6 +7,7 @@ import byzzbench.simulator.protocols.XRPL.messages.XRPLSubmitMessage;
 import byzzbench.simulator.protocols.XRPL.messages.XRPLTxMessage;
 import byzzbench.simulator.protocols.XRPL.messages.XRPLValidateMessage;
 import byzzbench.simulator.state.TotalOrderCommitLog;
+import byzzbench.simulator.transport.DefaultClientRequestPayload;
 import byzzbench.simulator.transport.MessagePayload;
 import lombok.Getter;
 
@@ -53,18 +54,21 @@ public class XRPLReplica extends Replica {
         }
     }
 
+    public void handleClientRequest(String clientId, Serializable request) throws Exception {
+        String tx = request.toString();
+        XRPLTxMessage txmsg = new XRPLTxMessage(tx, clientId);
+        this.handleMessage(clientId, txmsg);
+    }
+
     @Override
     public void handleMessage(String sender, MessagePayload message) throws Exception {
-        if (message instanceof XRPLProposeMessage propmsg) {
-            proposeMessageHandler(propmsg);
-        } else if (message instanceof XRPLSubmitMessage submsg) {
-            submitMessageHandler(submsg);
-        } else if (message instanceof XRPLValidateMessage valmsg) {
-            validateMessageHandler(valmsg);
-        } else if (message instanceof XRPLTxMessage txmsg) {
-            recvTxHandler(txmsg);
-        } else {
-            throw new Exception("Unknown message type");
+        switch (message) {
+            case XRPLProposeMessage propmsg -> proposeMessageHandler(propmsg);
+            case XRPLSubmitMessage submsg -> submitMessageHandler(submsg);
+            case XRPLValidateMessage valmsg -> validateMessageHandler(valmsg);
+            case XRPLTxMessage txmsg -> recvTxHandler(txmsg);
+            case DefaultClientRequestPayload request -> handleClientRequest(sender, request);
+            case null, default -> throw new IllegalArgumentException("Unknown message type: " + message);
         }
 
     }
@@ -510,12 +514,5 @@ public class XRPLReplica extends Replica {
                 }
             }
         }
-    }
-
-    @Override
-    public void handleClientRequest(String clientId, Serializable request) throws Exception {
-        String tx = request.toString();
-        XRPLTxMessage txmsg = new XRPLTxMessage(tx, clientId);
-        this.handleMessage(clientId, txmsg);
     }
 }
