@@ -16,7 +16,7 @@ public class PbftClient extends Client {
      * Sends a request to a replica in the system.
      */
     @Override
-    public void sendRequest() {
+    public void sendRequest(String senderId)     {
         String recipientId = this.getScenario().getReplicas().keySet().iterator().next();
         long sequenceNumber = this.getRequestSequenceNumber().getAndIncrement();
         String command = String.format("%s/%d", this.getId(), sequenceNumber);

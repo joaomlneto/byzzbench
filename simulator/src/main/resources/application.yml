@@ -24,9 +24,9 @@ byzzbench:
   scheduler:
     id: "byzzfuzz" # The ID of the scheduler to use
     executionMode: sync # async (default, any message delivered) or sync (communication-closure hypothesis, FIFO)
-    maxDropMessages: 10 # Maximum number of messages to drop per scenario
-    maxMutateMessages: 10 # Maximum number of messages to mutate per scenario
-    deliverTimeoutWeight: 25 # The weight for scheduler to trigger a timeout
+    maxDropMessages: 0 # Maximum number of messages to drop per scenario
+    maxMutateMessages: 0 # Maximum number of messages to mutate per scenario
+    deliverTimeoutWeight: 1 # The weight for scheduler to trigger a timeout
     deliverMessageWeight: 99 # The weight for scheduler to deliver a message
     deliverClientRequestWeight: 99 # The weight for scheduler to deliver a client request to a replica
     dropMessageWeight: 0 # The weight for scheduler to drop a message
@@ -35,18 +35,18 @@ byzzbench:
       # ByzzFuzz
       numRoundsWithProcessFaults: 2
       numRoundsWithNetworkFaults: 1
-      numRoundsWithFaults: 8
+      numRoundsWithFaults: 10
       # Twins
       numReplicas: 1
       numTwinsPerReplica: 2
 
   scenario:
-    id: xrpl
+    id: pbft-java
     params:
       replicas: 4
     scheduledFaults:
       factories: [ ]
     termination: # Success condition for the scenario - terminates it when all conditions are met
-      minEvents: 400 # check if N events have been scheduled. If so, can terminate
-      minRounds: 8 # check if N rounds have elapsed. If so, can terminate
-      samplingFrequency: 30 # check if should terminate every N scheduler decisions
+      minEvents: 500 # check if N events have been scheduled. If so, can terminate
+      minRounds: 5 # check if N rounds have elapsed. If so, can terminate
+      samplingFrequency: 1 # check if should terminate every N scheduler decisions

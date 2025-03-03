@@ -171,7 +171,7 @@ public class ByzzBenchConfig {
     @Data
     public final class ScenarioConfig {
         private TerminationConfig termination = new TerminationConfig();
-        private String id = "hbft";
+        private String id = "pbft-java";
         private Map<String, String> params = new HashMap<>();
     }
 }

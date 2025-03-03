@@ -317,11 +317,6 @@ public class Transport {
             throw new IllegalArgumentException(
                     String.format("Cannot mutate message: sender %s is not marked as faulty", m.getSenderId())
             );
-            // append the event to the schedule
-            // e.setStatus(Event.Status.DELIVERED);
-            // this.scenario.getSchedule().appendEvent(e);
-            // this.observers.forEach(o -> o.onEventDelivered(e));
-            //return;
         }
 
         // create input for the fault
@@ -434,6 +429,11 @@ public class Transport {
         this.observers.forEach(o -> o.onEventDropped(timeoutEvent));
     }
 
+    /**
+     * Clears a timeout with a given description
+     * @param node The node to clear the timeouts for
+     * @param description The description of the timeout
+     */
     public synchronized void clearTimeout(Node node, String description) {
         // get all event IDs for timeouts from this replica
         List<Long> eventIds =

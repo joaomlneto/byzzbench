@@ -28,23 +28,23 @@ public class Client implements Serializable, Node {
      */
     @JsonIgnore
     @NonNull
-    protected final transient Scenario scenario;
+    private final transient Scenario scenario;
 
     /**
      * The unique ID of the client.
      */
     @NonNull
-    protected final String id;
+    private final String id;
 
     /**
      * The sequence number of the next request to be sent by the client.
      */
-    protected final AtomicLong requestSequenceNumber = new AtomicLong(0);
+    private final AtomicLong requestSequenceNumber = new AtomicLong(0);
 
     /**
      * The maximum number of requests that can be sent by the client.
      */
-    protected final long maxRequests = 100;
+    private final long maxRequests = 1000;
 
     /**
      * The replies received by the client.
@@ -60,10 +60,17 @@ public class Client implements Serializable, Node {
     }
 
     /**
-     * Sends a request to a replica in the system.
+     * Sends a request to any replica in the system.
      */
     public void sendRequest() {
         String recipientId = this.getScenario().getReplicas().keySet().iterator().next();
+        this.sendRequest(recipientId);
+    }
+
+    /**
+     * Sends a request to a given replica in the system.
+     */
+    public void sendRequest(String recipientId) {
         MessagePayload payload = new ClientRequestMessage(this.getCurrentTime().toEpochMilli(), recipientId);
         this.getScenario().getTransport().sendMessage(this, payload, recipientId);
     }
