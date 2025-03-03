@@ -71,39 +71,39 @@ public class HbftClient extends Client {
      */
     @Override
     public void sendRequest() {
-        String requestId = String.format("%s/%d", super.id, super.requestSequenceNumber.incrementAndGet());
+        String requestId = String.format("%s/%d", getId(), getRequestSequenceNumber().incrementAndGet());
         long timestamp = this.getCurrentTime().toEpochMilli();
-        RequestMessage request = new RequestMessage(requestId, timestamp, super.id);
-        this.sentRequests.put(super.requestSequenceNumber.get(), request);
+        RequestMessage request = new RequestMessage(requestId, timestamp, getId());
+        this.sentRequests.put(getRequestSequenceNumber().get(), request);
         this.sentRequestsByTimestamp.put(timestamp, requestId);
         this.broadcastRequest(timestamp, requestId);
 
         // Set timeout
         Long timeoutId = this.setTimeout("REQUEST", this::retransmitOrPanic, this.timeout);
-        timeouts.put(super.requestSequenceNumber.get(), timeoutId);
+        timeouts.put(getRequestSequenceNumber().get(), timeoutId);
     }
 
     public void retransmitOrPanic() {
-        long tolerance = (long) Math.floor((super.scenario.getTransport().getNodeIds().size() - 1) / 3);
+        long tolerance = (long) Math.floor((getScenario().getTransport().getNodeIds().size() - 1) / 3);
         if (this.shouldRetransmit(tolerance)) {
-            String requestId = String.format("%s/%d", super.id, super.requestSequenceNumber.get());
+            String requestId = String.format("%s/%d", getId(), getRequestSequenceNumber().get());
             // Based on hBFT 4.1 it uses the identical request
             // TODO: It probably should not be the same timestamp
-            long timestamp = this.sentRequests.get(super.requestSequenceNumber.get()).getTimestamp();
+            long timestamp = this.sentRequests.get(getRequestSequenceNumber().get()).getTimestamp();
             this.broadcastRequest(timestamp, requestId);
         } else if (this.shouldPanic(tolerance)) {
-            RequestMessage message = this.sentRequests.get(super.requestSequenceNumber.get());
-            PanicMessage panic = new PanicMessage(this.digest(message), this.getCurrentTime().toEpochMilli(), super.id);
-            super.scenario.getTransport().multicast(this, super.scenario.getTransport().getNodeIds(), panic);
+            RequestMessage message = this.sentRequests.get(getRequestSequenceNumber().get());
+            PanicMessage panic = new PanicMessage(this.digest(message), this.getCurrentTime().toEpochMilli(), getId());
+            getScenario().getTransport().multicast(this, getScenario().getTransport().getNodeIds(), panic);
         }
-        this.clearTimeout(timeouts.get(super.requestSequenceNumber.get()));
+        this.clearTimeout(timeouts.get(getRequestSequenceNumber().get()));
         Long timeoutId = this.setTimeout("REQUEST", this::retransmitOrPanic, this.timeout);
-        timeouts.put(super.requestSequenceNumber.get(), timeoutId);
+        timeouts.put(getRequestSequenceNumber().get(), timeoutId);
     }
 
     private void broadcastRequest(long timestamp, String requestId) {
         MessagePayload payload = new ClientRequestMessage(timestamp, requestId);
-        SortedSet<String> replicaIds = super.scenario.getTransport().getNodeIds();
+        SortedSet<String> replicaIds = getScenario().getTransport().getNodeIds();
         getScenario().getTransport().multicast(this, replicaIds, payload);
     }
 
@@ -131,9 +131,9 @@ public class HbftClient extends Client {
          */
         if (this.completedReplies(clientReplyMessage.getTolerance())
                 && !this.completedRequests.contains(key)
-                && super.requestSequenceNumber.get() <= this.maxRequests) {
+                && getRequestSequenceNumber().get() <= getMaxRequests()) {
             this.completedRequests.add(key);
-            this.clearTimeout(this.timeouts.get(super.requestSequenceNumber.get()));
+            this.clearTimeout(this.timeouts.get(getRequestSequenceNumber().get()));
             this.sendRequest();
         }
     }
@@ -148,7 +148,7 @@ public class HbftClient extends Client {
      */
     public long setTimeout(String name, Runnable r, long timeout) {
         Duration duration = Duration.ofSeconds(timeout);
-        return super.scenario.getTransport().setTimeout(this, r, duration, name);
+        return getScenario().getTransport().setTimeout(this, r, duration, name);
     }
 
     /**
@@ -156,7 +156,7 @@ public class HbftClient extends Client {
      * if #replies < f + 1
      */
     public boolean shouldRetransmit(long tolerance) {
-        String currRequest = String.format("%s/%d", super.id, super.requestSequenceNumber.get());
+        String currRequest = String.format("%s/%d", getId(), getRequestSequenceNumber().get());
         if (!hbftreplies.containsKey(currRequest)) {
             return true;
         }
@@ -171,7 +171,7 @@ public class HbftClient extends Client {
      * if f + 1 <= #replies < 2f + 1
      */
     public boolean shouldPanic(long tolerance) {
-        String currRequest = String.format("%s/%d", super.id, super.requestSequenceNumber.get());
+        String currRequest = String.format("%s/%d", getId(), getRequestSequenceNumber().get());
         for (ClientReplyKey key : hbftreplies.get(currRequest).keySet()) {
             return this.hbftreplies.get(currRequest).get(key).size() >= tolerance + 1
                     && this.hbftreplies.get(currRequest).get(key).size() < tolerance * 2 + 1;
@@ -183,7 +183,7 @@ public class HbftClient extends Client {
      * Checks whether it has received 2f + 1 replies
      */
     public boolean completedReplies(long tolerance) {
-        String currRequest = String.format("%s/%d", super.id, super.requestSequenceNumber.get());
+        String currRequest = String.format("%s/%d", getId(), getRequestSequenceNumber().get());
         if (!hbftreplies.containsKey(currRequest)) {
             return false;
         }
@@ -199,7 +199,7 @@ public class HbftClient extends Client {
      * Clear all timeouts for this client.
      */
     // public void clearAllTimeouts() {
-    //     super.scenario.getTransport().clearClientTimeouts(super.id);
+    //     getScenario.getTransport().clearClientTimeouts(getId());
     // }
 
     /**
