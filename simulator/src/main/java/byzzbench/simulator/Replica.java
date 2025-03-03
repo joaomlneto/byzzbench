@@ -164,11 +164,12 @@ public abstract class Replica implements Node {
     /**
      * Handle a request received from a client.
      *
-     * @param clientId the ID of the client
-     * @param request  the request payload
+     * @param clientId  the ID of the client
+     * @param request   the request payload
+     * @param timestamp the time the request was created/sent
      * @throws Exception if an error occurs while handling the request
      */
-    public abstract void handleClientRequest(String clientId, Serializable request) throws Exception;
+    public abstract void handleClientRequest(String clientId, long timestamp, Serializable request) throws Exception;
 
     /**
      * Send a reply to a client.
@@ -186,8 +187,10 @@ public abstract class Replica implements Node {
      * @param operation the operation to commit
      */
     public void commitOperation(long sequenceNumber, LogEntry operation) {
-        this.commitLog.add(sequenceNumber, operation);
-        this.notifyObserversLocalCommit(operation);
+        if (this.commitLog.get(sequenceNumber) == null) {
+            this.commitLog.add(sequenceNumber, operation);
+            this.notifyObserversLocalCommit(operation);
+        }
     }
 
     /**
@@ -214,7 +217,7 @@ public abstract class Replica implements Node {
             this.notifyObserversTimeout();
             r.run();
         };
-        return this.transport.setTimeout(this, wrapper, timeout);
+        return this.transport.setTimeout(this, wrapper, timeout, name);
     }
 
     /**
@@ -224,6 +227,13 @@ public abstract class Replica implements Node {
      */
     public void clearTimeout(long eventId) {
         this.transport.clearTimeout(this, eventId);
+    }
+
+    /**
+     * Clear timeout based on description.
+     */
+    public void clearTimeout(String description) {
+        this.scenario.getTransport().clearTimeout(this, description);
     }
 
     /**

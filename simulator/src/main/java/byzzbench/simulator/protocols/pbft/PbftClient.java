@@ -22,6 +22,6 @@ public class PbftClient extends Client {
         String command = String.format("%s/%d", this.getId(), sequenceNumber);
         // TODO: compute the digest
         RequestMessage request = new RequestMessage(this.getId(), sequenceNumber, "-1", command);
-        this.getScenario().getTransport().sendClientRequest(this.getId(), request, recipientId);
+        this.getScenario().getTransport().sendMessage(this, request, recipientId);
     }
 }
