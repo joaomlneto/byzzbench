@@ -1,11 +1,22 @@
-# ByzzBench
+# ByzzBench - a BFT Protocol Benchmarking Suite
 
-BFT Protocol Benchmarking Suite
+[![Build Docker Image](https://github.com/joaomlneto/byzzbench/actions/workflows/docker-build.yml/badge.svg)](https://github.com/joaomlneto/byzzbench/actions/workflows/docker-build.yml)
+
+> ByzzBench is a benchmark suite designed to evaluate the performance of testing algorithms in detecting bugs in
+> Byzantine
+> Fault Tolerance (BFT) protocols. It is designed to be modular and extensible, allowing for easy integration of new
+> protocols and scenarios.
+>
+> ByzzBench is designed for a standardized implementation of BFT protocols and their execution in a controlled testing
+> environment, controlling the nondeterminism in concurrency, network and process faults in the protocol execution,
+> enabling the functionality to enforce particular execution scenarios and thereby facilitating the implementation of
+> testing algorithm for BFT protocols.
 
 This is a Gradle monorepo that contains the following modules:
 
-- `simulator`: The core benchmarking suite. Currently also includes the protocol implementations.
-- `webui`: A web interface for the benchmarking suite.
+- `simulator`: The core benchmarking suite, written in Java/Spring Boot. It currently also includes the protocol
+  implementations.
+- `webui`: A web interface for the benchmarking suite, written in React/NextJS.
 
 ## Prerequisites
 
@@ -32,8 +43,8 @@ Installing JDK:
 
 1. Through Eclipse Adoptium:
 
-   - Download the version you need (JDK-21)
-   - When installing, select "Set or override JAVA_HOME variable"
+    - Download the version you need (JDK-21)
+    - When installing, select "Set or override JAVA_HOME variable"
 
 2. Through Windows Package Manager - "winget":
 
@@ -157,59 +168,3 @@ See additional documentation in the [docs](docs) directory.
 - [Implementing new BFT Protocols](docs/implementing-protocols.md)
 - [Reproducing Schedules](docs/reproducing-schedules.md)
 - [User Interface](docs/user-interface.md)
-
-## Simulator Structure
-
-```mermaid
----
-title: Simulator Components
----
-classDiagram
-    class Event {
-        -int eventId
-    }
-    class Transport {
-    }
-    class MessageEvent {
-        -String senderId
-        -String recipientId
-        -MessagePayload message
-        -MessageStatus status
-    }
-    class TimeoutEvent {
-    }
-    class MessageStatus {
-        <<Enumeration>>
-        QUEUED
-        DELIVERED
-        DROPPED
-    }
-    class MessagePayload {
-        <<Interface>>
-        +String getType()
-    }
-    class Replica {
-        <<Abstract>>
-        +String getType()
-    }
-    class CommitLog {
-        <<Abstract>>
-        addEntry()
-    }
-    class TotalOrderCommitLog {
-        addEntry()
-    }
-    class PartialOrderCommitLog {
-        addEntry()
-    }
-    Event <|-- MessageEvent
-    Event <|-- TimeoutEvent
-    MessageEvent -- MessageStatus
-    MessageEvent -- MessagePayload
-    CommitLog -- Replica
-    Transport o-- Event
-    Transport o-- Replica
-    Replica --> Event: emits, receives
-    CommitLog <|-- TotalOrderCommitLog
-    CommitLog <|-- PartialOrderCommitLog
-```

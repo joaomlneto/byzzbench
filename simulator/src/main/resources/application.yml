@@ -23,30 +23,30 @@ byzzbench:
 
   scheduler:
     id: "byzzfuzz" # The ID of the scheduler to use
-    executionMode: async # async (default, any message delivered) or sync (communication-closure hypothesis, FIFO)
-    maxDropMessages: 1000 # Maximum number of messages to drop per scenario
-    maxMutateMessages: 1000 # Maximum number of messages to mutate per scenario
+    executionMode: sync # async (default, any message delivered) or sync (communication-closure hypothesis, FIFO)
+    maxDropMessages: 0 # Maximum number of messages to drop per scenario
+    maxMutateMessages: 0 # Maximum number of messages to mutate per scenario
     deliverTimeoutWeight: 1 # The weight for scheduler to trigger a timeout
     deliverMessageWeight: 99 # The weight for scheduler to deliver a message
     deliverClientRequestWeight: 99 # The weight for scheduler to deliver a client request to a replica
-    dropMessageWeight: 50 # The weight for scheduler to drop a message
-    mutateMessageWeight: 50 # The weight for scheduler to mutate a message
+    dropMessageWeight: 0 # The weight for scheduler to drop a message
+    mutateMessageWeight: 0 # The weight for scheduler to mutate a message
     params: # additional parameters for the scheduler
       # ByzzFuzz
       numRoundsWithProcessFaults: 2
-      numRoundsWithNetworkFaults: 2
-      numRoundsWithFaults: 3
+      numRoundsWithNetworkFaults: 1
+      numRoundsWithFaults: 10
       # Twins
-      numReplicas: 2
-      numTwinsPerReplica: 4
+      numReplicas: 1
+      numTwinsPerReplica: 2
 
   scenario:
-    id: tendermint
+    id: pbft-java
     params:
       replicas: 4
     scheduledFaults:
       factories: [ ]
     termination: # Success condition for the scenario - terminates it when all conditions are met
-      minEvents: 1000 # check if N events have been scheduled. If so, can terminate
-      minRounds: 10 # check if N rounds have elapsed. If so, can terminate
+      minEvents: 500 # check if N events have been scheduled. If so, can terminate
+      minRounds: 5 # check if N rounds have elapsed. If so, can terminate
       samplingFrequency: 1 # check if should terminate every N scheduler decisions

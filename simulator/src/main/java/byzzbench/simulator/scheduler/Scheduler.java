@@ -1,10 +1,11 @@
 package byzzbench.simulator.scheduler;
 
-import byzzbench.simulator.Scenario;
-import com.fasterxml.jackson.databind.JsonNode;
-
 import java.io.Serializable;
 import java.util.Optional;
+
+import com.fasterxml.jackson.databind.JsonNode;
+
+import byzzbench.simulator.Scenario;
 
 public interface Scheduler extends Serializable {
     /**
