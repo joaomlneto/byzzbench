@@ -2,11 +2,11 @@ package byzzbench.simulator.protocols.pbft_java;
 
 import byzzbench.simulator.LeaderBasedProtocolReplica;
 import byzzbench.simulator.Scenario;
+import byzzbench.simulator.protocols.hbft.message.ClientRequestMessage;
 import byzzbench.simulator.protocols.pbft_java.message.*;
 import byzzbench.simulator.state.LogEntry;
 import byzzbench.simulator.state.SerializableLogEntry;
 import byzzbench.simulator.state.TotalOrderCommitLog;
-import byzzbench.simulator.transport.DefaultClientRequestPayload;
 import byzzbench.simulator.transport.MessagePayload;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Getter;
@@ -729,7 +729,7 @@ public class PbftJavaReplica<O extends Serializable, R extends Serializable> ext
     @Override
     public void handleMessage(String sender, MessagePayload m) {
         switch (m) {
-            case DefaultClientRequestPayload clientRequest -> handleClientRequest(sender, clientRequest.getOperation());
+            case ClientRequestMessage clientRequest -> handleClientRequest(sender, clientRequest.getOperation());
             case RequestMessage request -> recvRequest(request);
             case PrePrepareMessage prePrepare -> recvPrePrepare(prePrepare);
             case PrepareMessage prepare -> recvPrepare(prepare);
