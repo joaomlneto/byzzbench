@@ -113,6 +113,7 @@ public class RandomScheduler extends BaseScheduler {
 
             if (mutators.isEmpty()) {
                 // no mutators, return nothing
+                log.warning("No mutators available for message " + message.getEventId());
                 return Optional.empty();
             }
             scenario.getTransport().applyMutation(
