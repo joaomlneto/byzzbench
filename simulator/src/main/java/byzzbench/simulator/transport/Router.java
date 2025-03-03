@@ -2,8 +2,7 @@ package byzzbench.simulator.transport;
 
 import lombok.Getter;
 
-import java.util.SortedMap;
-import java.util.TreeMap;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -104,5 +103,20 @@ public class Router {
      */
     private int getUnusedPartitionId() {
         return partitionSequenceNumber.getAndIncrement();
+    }
+
+    /**
+     * Gets the reverse mapping of partition IDs to nodes.
+     *
+     * @return An array of arrays of node IDs that are in the same partition.
+     */
+    public List<List<String>> getReversePartitionsMapping() {
+        Map<Integer, List<String>> reversePartitions = new HashMap<>();
+        for (Map.Entry<String, Integer> entry : partitions.entrySet()) {
+            reversePartitions.computeIfAbsent(entry.getValue(), k -> new ArrayList<>())
+                    .add(entry.getKey());
+        }
+
+        return new ArrayList<>(reversePartitions.values());
     }
 }

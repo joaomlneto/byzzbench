@@ -47,7 +47,7 @@ public class TwinsScheduler extends RandomScheduler {
     @Override
     public void initializeScenario(Scenario scenario) {
         // Get the IDs of the replicas
-        List<String> replicaIds = scenario.getReplicas().keySet().stream().sorted().toList();
+        List<String> replicaIds = scenario.getFaultyReplicaIds().stream().toList();
 
         if (replicaIds.size() < numReplicas) {
             throw new IllegalArgumentException("Not enough replicas to create " + numReplicas + " twins");

@@ -37,6 +37,7 @@ public abstract class BaseScenario implements Scenario {
     /**
      * The timekeeper for the scenario.
      */
+    @JsonIgnore
     protected final transient Timekeeper timekeeper;
     /**
      * The scheduler for the scenario.
@@ -166,7 +167,16 @@ public abstract class BaseScenario implements Scenario {
     @Override
     public final void setupScenario() {
         this.setup();
-        this.getClients().values().forEach(Client::initialize);
+
+        // sample f replicas to be faulty at start
+        List<String> replicaIds = new ArrayList<>(this.getReplicas().keySet());
+        Collections.shuffle(replicaIds);
+        int f = this.maxFaultyReplicas();
+        for (int i = 0; i < f; i++) {
+            this.markReplicaFaulty(replicaIds.get(i));
+        }
+
+        //this.getClients().values().forEach(Client::initialize);
         this.getNodes().values().forEach(Node::initialize);
         this.scheduler.initializeScenario(this);
     }
@@ -227,6 +237,15 @@ public abstract class BaseScenario implements Scenario {
      */
     @Override
     public final boolean invariantsHold() {
+        // Write to file which invariant is violated
+//        BufferedWriter writer = new BufferedWriter(new FileWriter("", true));
+//        for (ScenarioPredicate invariant : this.invariants) {
+//            if (!invariant.test(this)) {
+//                writer.write(this.id + " " + invariant.getClass().getSimpleName() + "\n");
+//                writer.close();
+//            }
+//        }
+
         return this.invariants.stream().allMatch(invariant -> invariant.test(this));
     }
 

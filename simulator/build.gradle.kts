@@ -2,7 +2,7 @@ plugins {
     java
     id("org.springframework.boot") version "3.3.5"
     id("io.spring.dependency-management") version "1.1.7"
-    id("org.graalvm.buildtools.native") version "0.10.4"
+    id("org.graalvm.buildtools.native") version "0.10.5"
     //id("com.vaadin") version "24.4.7"
     id("com.github.psxpaul.execfork") version "0.2.2"
     id("org.springdoc.openapi-gradle-plugin") version "1.9.0"
@@ -25,16 +25,22 @@ repositories {
     mavenCentral()
 }
 
-extra["vaadinVersion"] = "24.6.0"
+//extra["vaadinVersion"] = "24.6.4"
 
 dependencies {
     implementation("org.springframework.boot:spring-boot-starter-web")
+    implementation("org.springframework.boot:spring-boot-starter-data-jpa")
     compileOnly("org.projectlombok:lombok")
     annotationProcessor("org.springframework.boot:spring-boot-configuration-processor")
     annotationProcessor("org.projectlombok:lombok")
     testImplementation("org.springframework.boot:spring-boot-starter-test")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
     implementation("org.springframework.boot:spring-boot-starter-validation")
+    runtimeOnly("com.h2database:h2")
+    implementation("org.xerial:sqlite-jdbc:3.49.1.0")
+
+    // sqlite dialect
+    //implementation("org.hibernate:hibernate-community-dialects:5.6.3.Final")
 
     //implementation("org.springdoc:springdoc-openapi-ui:1.8.0")
     // either API (just documentation) or API + UI (documentation + Swagger UI)
@@ -43,19 +49,19 @@ dependencies {
     //implementation("jakarta.xml.bind:jakarta.xml.bind-api:4.0.2") // required for webmvc-ui
     //compileOnly("javax.servlet:javax.servlet-api:4.0.1")
 
-    implementation("com.fasterxml.jackson.core:jackson-core:2.18.2")
-    implementation("com.fasterxml.jackson.core:jackson-annotations:2.18.2")
-    implementation("com.fasterxml.jackson.core:jackson-databind:2.18.2")
-    implementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.18.2")
-    implementation("com.fasterxml.jackson.module:jackson-module-parameter-names:2.18.2")
-    implementation("com.fasterxml.jackson.datatype:jackson-datatype-jdk8:2.18.2")
+    implementation("com.fasterxml.jackson.core:jackson-core:2.18.3")
+    implementation("com.fasterxml.jackson.core:jackson-annotations:2.18.3")
+    implementation("com.fasterxml.jackson.core:jackson-databind:2.18.3")
+    implementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.18.3")
+    implementation("com.fasterxml.jackson.module:jackson-module-parameter-names:2.18.3")
+    implementation("com.fasterxml.jackson.datatype:jackson-datatype-jdk8:2.18.3")
 }
 
-dependencyManagement {
+/*dependencyManagement {
     imports {
         mavenBom("com.vaadin:vaadin-bom:${property("vaadinVersion")}")
     }
-}
+}*/
 
 tasks.withType<Test> {
     useJUnitPlatform()

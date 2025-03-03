@@ -1,30 +1,21 @@
-package byzzbench.simulator.protocols.hbft;
+package byzzbench.simulator.protocols.tendermint;
 
 import byzzbench.simulator.BaseScenario;
 import byzzbench.simulator.Replica;
-import byzzbench.simulator.Scenario;
-import byzzbench.simulator.ScenarioPredicate;
 import byzzbench.simulator.scheduler.Scheduler;
 import com.fasterxml.jackson.databind.JsonNode;
-import lombok.Getter;
 import lombok.extern.java.Log;
 
 import java.util.SortedSet;
 import java.util.TreeSet;
 
-@Getter
 @Log
-public class HbftScenario extends BaseScenario {
-    private final ScenarioPredicate terminationCondition = new ScenarioPredicate() {
-        @Override
-        public boolean test(Scenario context) {
-            return false;
-        }
-    };
+public class TendermintScenarioExecutor extends BaseScenario {
+    private final int NUM_NODES = 4;
 
-    public HbftScenario(Scheduler scheduler) {
-        super("hbft", scheduler);
-        setNumClients(2);
+    public TendermintScenarioExecutor(Scheduler scheduler) {
+        super("tendermint", scheduler);
+        this.terminationCondition = new TendermintTerminationPredicate();
     }
 
     @Override
@@ -36,13 +27,15 @@ public class HbftScenario extends BaseScenario {
     protected void setup() {
         try {
             SortedSet<String> nodeIds = new TreeSet<>();
-            for (int i = 0; i < 2; i++) {
+            for (int i = 0; i < NUM_NODES; i++) {
                 nodeIds.add(Character.toString((char) ('A' + i)));
             }
+
             nodeIds.forEach(nodeId -> {
-                Replica replica = new HbftReplica(nodeId, this);
+                Replica replica = new TendermintReplica(nodeId, nodeIds, this);
                 this.addNode(replica);
             });
+
             this.setNumClients(1);
         } catch (Exception e) {
             throw new RuntimeException(e);
@@ -51,11 +44,23 @@ public class HbftScenario extends BaseScenario {
 
     @Override
     public synchronized void run() {
-        // nothing to do
+//        // send a request message to node A
+//        try {
+//            this.setNumClients(1);
+//            this.transport.sendClientRequest("C0", "123", "A");
+//        } catch (Exception e) {
+//            e.printStackTrace();
+//            throw new RuntimeException(e);
+//        }
+    }
+
+    @Override
+    public Replica cloneReplica(Replica replica) {
+        return new TendermintReplica(replica.getId(), replica.getNodeIds(), this);
     }
 
     @Override
     public int maxFaultyReplicas(int n) {
-        return (n - 1) / 3;
+        return 1;
     }
 }

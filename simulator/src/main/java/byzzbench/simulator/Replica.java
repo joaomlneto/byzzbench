@@ -177,8 +177,10 @@ public abstract class Replica implements Node {
      * @param operation the operation to commit
      */
     public void commitOperation(long sequenceNumber, LogEntry operation) {
-        this.commitLog.add(sequenceNumber, operation);
-        this.notifyObserversLocalCommit(operation);
+        if (this.commitLog.get(sequenceNumber) == null) {
+            this.commitLog.add(sequenceNumber, operation);
+            this.notifyObserversLocalCommit(operation);
+        }
     }
 
     /**
@@ -205,7 +207,7 @@ public abstract class Replica implements Node {
             this.notifyObserversTimeout();
             r.run();
         };
-        return this.transport.setTimeout(this, wrapper, timeout);
+        return this.transport.setTimeout(this, wrapper, timeout, name);
     }
 
     /**
@@ -215,6 +217,13 @@ public abstract class Replica implements Node {
      */
     public void clearTimeout(long eventId) {
         this.transport.clearTimeout(this, eventId);
+    }
+
+    /**
+     * Clear timeout based on description.
+     */
+    public void clearTimeout(String description) {
+        this.scenario.getTransport().clearTimeout(this, description);
     }
 
     /**

@@ -46,7 +46,7 @@ export default function Home() {
 
   const [showMailboxes, setShowMailboxes] = useLocalStorage<boolean>({
     key: "byzzbench/showMailboxes",
-    defaultValue: true,
+    defaultValue: false,
   });
 
   if (mode.data?.data === "RUNNING") {
@@ -90,38 +90,44 @@ export default function Home() {
             </Accordion.Panel>
           </Accordion.Item>
           {/*<Accordion.Item key="adob" value="adob">
-                        <Accordion.Control>AdoB State</Accordion.Control>
-                        <Accordion.Panel>
-                            <AdoBStateDiagram/>
-                        </Accordion.Panel>
-                    </Accordion.Item>*/}
+            <Accordion.Control>AdoB State</Accordion.Control>
+            <Accordion.Panel>
+              <AdoBStateDiagram />
+            </Accordion.Panel>
+          </Accordion.Item>*/}
         </Accordion>
       </Stack>
-
       <AppShell.Aside p="md" maw={400}>
-        <Stack gap="xs">
-          <Title order={5}>Schedule</Title>
-          <ScrollArea mah={500} type="auto">
-            {schedule?.data && (
-              <ScheduleDetails
-                hideTitle
-                hideMaterializeButton
-                hideDownloadButton
-                hideDetailsButton
-                hideScenario
-                hideSaveButton
-                title="Current Schedule"
-                schedule={schedule.data}
-              />
-            )}
-          </ScrollArea>
-          <Title order={5}>Trigger Faulty Behaviors</Title>
-          <ScenarioEnabledFaultsList />
-          <Title order={5}>Scheduled Faults</Title>
-          <ScenarioScheduledFaultsList />
-          <Title order={5}>Discarded Events</Title>
-          <DroppedMessagesList />
-        </Stack>
+        <ScrollArea type="never" mah="100vh">
+          <Stack gap="xs">
+            <Title order={5}>Schedule</Title>
+            <ScrollArea mah={500} type="always" style={{ overflowY: "auto" }}>
+              <div style={{ maxHeight: "500px", overflowY: "auto" }}>
+                {schedule?.data && (
+                  <ScheduleDetails
+                    hideTitle
+                    hideMaterializeButton
+                    hideDownloadButton
+                    hideDetailsButton
+                    hideScenario
+                    hideSaveButton
+                    title="Current Schedule"
+                    schedule={schedule.data}
+                  />
+                )}
+              </div>
+            </ScrollArea>
+            <Title order={5}>Trigger Faulty Behaviors</Title>
+            <ScenarioEnabledFaultsList />
+            <Title order={5}>ScheduledFaults</Title>
+            <ScenarioScheduledFaultsList />
+            <Title order={5}>Discarded Events</Title>
+
+            <ScrollArea mah={500} type="always" style={{ overflowY: "auto" }}>
+              <DroppedMessagesList />
+            </ScrollArea>
+          </Stack>
+        </ScrollArea>
       </AppShell.Aside>
     </Container>
   );

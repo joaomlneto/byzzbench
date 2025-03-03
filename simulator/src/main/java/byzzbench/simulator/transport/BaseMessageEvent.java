@@ -26,6 +26,12 @@ public abstract class BaseMessageEvent<T extends Serializable> extends BaseEvent
     private final String senderId;
 
     /**
+     * The time the request was created.
+     */
+    @NonNull
+    private final long timestamp;
+
+    /**
      * The payload of the message.
      */
     @NonNull

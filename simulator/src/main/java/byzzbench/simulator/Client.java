@@ -1,11 +1,13 @@
 package byzzbench.simulator;
 
+import byzzbench.simulator.protocols.hbft.message.ClientRequestMessage;
 import byzzbench.simulator.transport.MessagePayload;
 import byzzbench.simulator.utils.NonNull;
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import lombok.Builder;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+import lombok.experimental.SuperBuilder;
+import lombok.extern.java.Log;
 
 import java.io.Serializable;
 import java.time.Duration;
@@ -19,8 +21,9 @@ import java.util.concurrent.atomic.AtomicLong;
  * The client is responsible for sending requests to the replicas in the system.
  */
 @Getter
-@Builder
+@SuperBuilder
 @RequiredArgsConstructor
+@Log
 public class Client implements Serializable, Node {
     /**
      * The scenario object that this client belongs to.
@@ -43,7 +46,7 @@ public class Client implements Serializable, Node {
     /**
      * The maximum number of requests that can be sent by the client.
      */
-    private final long maxRequests = 3;
+    private final long maxRequests = 1000;
 
     /**
      * The replies received by the client.
@@ -59,12 +62,19 @@ public class Client implements Serializable, Node {
     }
 
     /**
-     * Sends a request to a replica in the system.
+     * Sends a request to any replica in the system.
      */
     public void sendRequest() {
         String recipientId = this.getScenario().getReplicas().keySet().iterator().next();
-        String requestId = String.format("%s/%d", this.id, this.requestSequenceNumber.getAndIncrement());
-        this.getScenario().getTransport().sendClientRequest(this.id, requestId, recipientId);
+        this.sendRequest(recipientId);
+    }
+
+    /**
+     * Sends a request to a given replica in the system.
+     */
+    public void sendRequest(String recipientId) {
+        MessagePayload payload = new ClientRequestMessage(this.getCurrentTime().toEpochMilli(), recipientId);
+        this.getScenario().getTransport().sendMessage(this, payload, recipientId);
     }
 
     /**
@@ -94,7 +104,7 @@ public class Client implements Serializable, Node {
      * @return the timer object
      */
     public long setTimeout(String name, Runnable r, Duration timeout) {
-        return this.scenario.getTransport().setTimeout(this, r, timeout);
+        return this.scenario.getTransport().setTimeout(this, r, timeout, "REQUEST");
     }
 
     /**
