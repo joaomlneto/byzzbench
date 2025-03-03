@@ -2,67 +2,47 @@ package byzzbench.simulator.protocols.tendermint;
 
 import byzzbench.simulator.LeaderBasedProtocolReplica;
 import byzzbench.simulator.Scenario;
-import byzzbench.simulator.protocols.tendermint.message.ReplyMessage;
-import byzzbench.simulator.protocols.tendermint.message.RequestMessage;
 import byzzbench.simulator.protocols.tendermint.message.*;
 import byzzbench.simulator.state.TotalOrderCommitLog;
 import byzzbench.simulator.transport.DefaultClientRequestPayload;
 import byzzbench.simulator.transport.MessagePayload;
-
-
-import java.io.Serializable;
-import java.time.Duration;
-import java.util.*;
-
 import lombok.Getter;
 import lombok.extern.java.Log;
 import org.apache.commons.lang3.tuple.Pair;
+
+import java.time.Duration;
+import java.util.*;
 
 @Log
 @Getter
 public class TendermintReplica extends LeaderBasedProtocolReplica {
 
-    // Blockchain height: the current index of the chain being decided
-    private long height;
-
-    // Sequence: the current sequence within the height, where multiple sequences might be needed to finalize a block
-    private long sequence;
-
-    private long totalSequences;
-
-    // Step: the current step within the sequence (PROPOSE, PREVOTE, PRECOMMIT)
-    private Step step;
-
-    // Hash of the block this replica is "locked" on (used to ensure no conflicting decisions are made)
-    private Block lockedValue;
-
-    // Sequence number of the block this replica is locked on
-    private long lockedSequence;
-
-    // Hash of the block this replica has validated
-    private Block validValue;
-
-    // Sequence number of the block this replica has validated
-    private long validSequence;
-
-    private MessageLog messageLog;
-
+    public static final Block NULL_BLOCK = new Block(Long.MIN_VALUE, "NULL VALUE", null);
+    public final int TIMEOUT = 50;
     private final long tolerance = 1;
-
     // Assigned powers of each replica in the network
     private final Map<String, Integer> votingPower = new HashMap<>();
-
+    private final MessageLog messageLog;
+    private final SortedSet<Pair<Long, Long>> hasBroadcasted = new TreeSet<>();
+    public Random rand = new Random(2137L);
+    // Blockchain height: the current index of the chain being decided
+    private long height;
+    // Sequence: the current sequence within the height, where multiple sequences might be needed to finalize a block
+    private long sequence;
+    private long totalSequences;
+    // Step: the current step within the sequence (PROPOSE, PREVOTE, PRECOMMIT)
+    private Step step;
+    // Hash of the block this replica is "locked" on (used to ensure no conflicting decisions are made)
+    private Block lockedValue;
+    // Sequence number of the block this replica is locked on
+    private long lockedSequence;
+    // Hash of the block this replica has validated
+    private Block validValue;
+    // Sequence number of the block this replica has validated
+    private long validSequence;
     private boolean precommitRule0Check;
     private boolean prevoteRule1Check;
     private boolean prevoteRule2Check;
-
-    public static final Block NULL_BLOCK = new Block(Long.MIN_VALUE, "NULL VALUE", null);
-
-    public final int TIMEOUT = 50;
-
-    public Random rand = new Random(2137L);
-
-    private SortedSet<Pair<Long, Long>> hasBroadcasted = new TreeSet<>();
 
 
     public TendermintReplica(String nodeId, SortedSet<String> nodeIds, Scenario scenario) {
@@ -316,7 +296,7 @@ public class TendermintReplica extends LeaderBasedProtocolReplica {
     }
 
     protected void broadcastProposal(long height, long sequence, Block proposal, long validSequence) {
-        if(hasBroadcasted.contains(Pair.of(height, sequence))) {
+        if (hasBroadcasted.contains(Pair.of(height, sequence))) {
             return;
         }
         ProposalMessage proposalMessage = new ProposalMessage(getId(), height, sequence, totalSequences, validSequence, proposal);
@@ -621,8 +601,7 @@ public class TendermintReplica extends LeaderBasedProtocolReplica {
         if (this.height == height
                 && this.sequence == sequence) {
             startRound(this.sequence + 1);
-        }
-        else
+        } else
             log.info("Timeout Precommit called but height and round do not match");
     }
 
@@ -666,9 +645,9 @@ public class TendermintReplica extends LeaderBasedProtocolReplica {
 
     @Override
     public void handleMessage(String sender, MessagePayload message) throws Exception {
-        if (message instanceof DefaultClientRequestPayload) {
-            String clientId = ((DefaultClientRequestPayload) message).getOperation().toString().split("/")[0];
-            receiveRequest(sender, new RequestMessage(((DefaultClientRequestPayload) message).getOperation(), System.currentTimeMillis(), clientId));
+        if (message instanceof DefaultClientRequestPayload clientRequest) {
+            String clientId = clientRequest.getOperation().toString().split("/")[0];
+            receiveRequest(sender, new RequestMessage(clientRequest.getOperation(), System.currentTimeMillis(), clientId));
             return;
         } else if (message instanceof GossipRequest) {
             handleGossipRequest((GossipRequest) message);
@@ -717,11 +696,6 @@ public class TendermintReplica extends LeaderBasedProtocolReplica {
             case PrecommitMessage precommitMessage -> handlePrecommit(precommitMessage);
             case null, default -> log.warning("Unhandled message type: " + message.getGossipMessage().getType());
         }
-    }
-
-    @Override
-    public void handleClientRequest(String clientId, Serializable request) {
-        startRound(0);
     }
 
     private void receiveRequest(String sender, RequestMessage m) {
@@ -803,7 +777,7 @@ public class TendermintReplica extends LeaderBasedProtocolReplica {
         // Calculate the index based on the height and round
         // Using both height and round ensures determinism across rounds and heights
         int index = (int) ((height + sequence) % proposerList.size());
-        if(index < 0) {
+        if (index < 0) {
             index = 0;
         }
         return proposerList.get(index);
@@ -832,7 +806,7 @@ public class TendermintReplica extends LeaderBasedProtocolReplica {
         log.info("Locked Value: " + this.lockedValue);
         log.info("Locked Seq: " + this.lockedSequence);
         log.info("Valid Value: " + this.validValue);
-        log.info("Valid Seq: " + this.validSequence);;
+        log.info("Valid Seq: " + this.validSequence);
         log.info("Tolerance: " + this.tolerance);
 
     }
