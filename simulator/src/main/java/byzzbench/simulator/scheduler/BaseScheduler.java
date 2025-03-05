@@ -183,6 +183,11 @@ public abstract class BaseScheduler implements Scheduler {
      * @return The weight of delivering a request from a client
      */
     public int dropMessageWeight(Scenario scenario) {
+        // Check if GST
+        if (scenario.getTransport().isGlobalStabilizationTime()) {
+            return 0;
+        }
+        
         int remaining = remainingDropMessages.computeIfAbsent(scenario, s -> config.getScheduler().getMaxDropMessages());
         return remaining > 0 ? config.getScheduler().getDropMessageWeight() : 0;
     }

@@ -42,6 +42,7 @@ public class Router {
      * @param nodeIds The IDs of the nodes to isolate.
      */
     public void isolateNodes(String[] nodeIds) {
+        System.out.println("Isolating nodes: " + String.join(", ", nodeIds));
         int newPartition = getUnusedPartitionId();
         for (String nodeId : nodeIds) {
             this.partitions.put(nodeId, newPartition);

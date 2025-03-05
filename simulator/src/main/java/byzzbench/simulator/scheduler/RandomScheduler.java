@@ -50,7 +50,7 @@ public class RandomScheduler extends BaseScheduler {
 
         // if there are no events, return empty
         if (availableEvents.isEmpty()) {
-            log.warning("No actions available!");
+            log.warning("No queued events (messages, timeouts)!");
             return Optional.empty();
         }
 

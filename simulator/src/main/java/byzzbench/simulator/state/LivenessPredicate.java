@@ -15,10 +15,15 @@ public class LivenessPredicate implements ScenarioPredicate {
 
     @Override
     public boolean test(Scenario scenarioExecutor) {
-        boolean hasNoQueuedEvents = scenarioExecutor.getTransport().getEventsInState(Event.Status.QUEUED).isEmpty();
-        if (hasNoQueuedEvents) {
+        // If we are before GST, the scenario is considered live
+        if (!scenarioExecutor.getTransport().isGlobalStabilizationTime()) {
+            return true;
+        }
+
+        boolean hasQueuedEvents = !(scenarioExecutor.getTransport().getEventsInState(Event.Status.QUEUED).isEmpty());
+        if (!hasQueuedEvents) {
             System.out.println("LivenessPredicate: No events in the QUEUED state");
         }
-        return !hasNoQueuedEvents;
+        return hasQueuedEvents;
     }
 }
