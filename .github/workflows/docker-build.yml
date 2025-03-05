@@ -39,9 +39,9 @@ jobs:
       #    username: ${{ github.actor }}
       #    password: ${{ secrets.GITHUB_TOKEN }}
 
-      #- name: Test gradle
-      #  run: |
-      #    ./gradlew
+      - name: Test gradle
+        run: |
+          ./gradlew
 
       - name: Build container image with gradle, and push to registry
         run: |
