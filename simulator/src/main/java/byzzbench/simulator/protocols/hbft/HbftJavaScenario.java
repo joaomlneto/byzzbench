@@ -2,7 +2,6 @@ package byzzbench.simulator.protocols.hbft;
 
 import byzzbench.simulator.BaseScenario;
 import byzzbench.simulator.Client;
-import byzzbench.simulator.HbftClient;
 import byzzbench.simulator.Replica;
 import byzzbench.simulator.scheduler.Scheduler;
 import com.fasterxml.jackson.databind.JsonNode;
