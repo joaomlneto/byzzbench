@@ -162,7 +162,7 @@ public class SimulatorService {
                                 long currentRound = minQueuedRound.orElse(maxDeliveredRound.orElse(0));
 
                                 if (numEvents >= byzzBenchConfig.getScenario().getTermination().getMinEvents()
-                                        || currentRound >= byzzBenchConfig.getScenario().getTermination().getMinRounds()) {
+                                        && currentRound >= byzzBenchConfig.getScenario().getTermination().getMinRounds()) {
                                     log.info("Reached min # of events or rounds for this run, terminating. . .");
                                     numMaxedOut++;
                                     scenario.getSchedule().finalizeSchedule();
