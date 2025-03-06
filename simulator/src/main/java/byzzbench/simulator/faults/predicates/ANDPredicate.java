@@ -1,7 +1,7 @@
 package byzzbench.simulator.faults.predicates;
 
-import byzzbench.simulator.faults.FaultContext;
 import byzzbench.simulator.faults.FaultPredicate;
+import byzzbench.simulator.faults.ScenarioContext;
 
 import java.util.List;
 
@@ -14,7 +14,7 @@ public class ANDPredicate implements FaultPredicate {
 
     @Override
     public String getId() {
-        return "AND(%s)".formatted(predicates.stream()
+        return "(%s)".formatted(predicates.stream()
                 .map(FaultPredicate::getId)
                 .reduce("", (a, b) -> a + "," + b));
     }
@@ -27,7 +27,7 @@ public class ANDPredicate implements FaultPredicate {
     }
 
     @Override
-    public boolean test(FaultContext faultContext) {
-        return predicates.stream().allMatch(p -> p.test(faultContext));
+    public boolean test(ScenarioContext scenarioContext) {
+        return predicates.stream().allMatch(p -> p.test(scenarioContext));
     }
 }

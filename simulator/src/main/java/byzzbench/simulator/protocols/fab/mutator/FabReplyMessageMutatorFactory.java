@@ -1,6 +1,6 @@
 package byzzbench.simulator.protocols.fab.mutator;
 
-import byzzbench.simulator.faults.FaultContext;
+import byzzbench.simulator.faults.ScenarioContext;
 import byzzbench.simulator.faults.factories.MessageMutatorFactory;
 import byzzbench.simulator.faults.faults.MessageMutationFault;
 import byzzbench.simulator.protocols.fab.Pair;
@@ -25,7 +25,7 @@ public class FabReplyMessageMutatorFactory extends MessageMutatorFactory {
                         List.of(ReplyMessage.class)
                 ) {
                     @Override
-                    public void accept(FaultContext serializable) {
+                    public void accept(ScenarioContext serializable) {
                         Optional<Event> event = serializable.getEvent();
 
                         if (event.isEmpty()) {
@@ -54,7 +54,7 @@ public class FabReplyMessageMutatorFactory extends MessageMutatorFactory {
                         List.of(ReplyMessage.class)
                 ) {
                     @Override
-                    public void accept(FaultContext serializable) {
+                    public void accept(ScenarioContext serializable) {
                         Optional<Event> event = serializable.getEvent();
 
                         if (event.isEmpty()) {

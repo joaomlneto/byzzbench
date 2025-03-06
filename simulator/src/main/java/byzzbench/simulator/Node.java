@@ -27,8 +27,8 @@ public interface Node extends Serializable {
      * @param message the message payload
      * @throws Exception if an error occurs while handling the message
      */
-    void handleMessage(String sender, MessagePayload message) throws Exception;
-    
+    void handleMessage(String sender, MessagePayload message);
+
     /**
      * Get the current time from the timekeeper.
      */

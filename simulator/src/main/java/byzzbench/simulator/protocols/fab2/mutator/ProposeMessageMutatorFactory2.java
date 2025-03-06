@@ -1,6 +1,6 @@
 package byzzbench.simulator.protocols.fab2.mutator;
 
-import byzzbench.simulator.faults.FaultContext;
+import byzzbench.simulator.faults.ScenarioContext;
 import byzzbench.simulator.faults.factories.MessageMutatorFactory;
 import byzzbench.simulator.faults.faults.MessageMutationFault;
 import byzzbench.simulator.protocols.fab2.Pair;
@@ -27,7 +27,7 @@ public class ProposeMessageMutatorFactory2 extends MessageMutatorFactory {
                         List.of(ProposeMessage.class)
                 ) {
                     @Override
-                    public void accept(FaultContext serializable) {
+                    public void accept(ScenarioContext serializable) {
                         Optional<Event> event = serializable.getEvent();
 
                         if (event.isEmpty()) {
@@ -60,7 +60,7 @@ public class ProposeMessageMutatorFactory2 extends MessageMutatorFactory {
                         List.of(ProposeMessage.class)
                 ) {
                     @Override
-                    public void accept(FaultContext serializable) {
+                    public void accept(ScenarioContext serializable) {
                         Optional<Event> event = serializable.getEvent();
 
                         if (event.isEmpty()) {
@@ -128,7 +128,7 @@ public class ProposeMessageMutatorFactory2 extends MessageMutatorFactory {
                         List.of(ProposeMessage.class)
                 ) {
                     @Override
-                    public void accept(FaultContext serializable) {
+                    public void accept(ScenarioContext serializable) {
                         Optional<Event> event = serializable.getEvent();
                         Random random = new Random();
                         int mutation = random.nextInt(2, 100);

@@ -1,6 +1,6 @@
 package byzzbench.simulator.protocols.XRPL.mutators;
 
-import byzzbench.simulator.faults.FaultContext;
+import byzzbench.simulator.faults.ScenarioContext;
 import byzzbench.simulator.faults.factories.MessageMutatorFactory;
 import byzzbench.simulator.faults.faults.MessageMutationFault;
 import byzzbench.simulator.protocols.XRPL.XRPLLedger;
@@ -22,7 +22,7 @@ public class XRPLValidateMessageMutatorFactory extends MessageMutatorFactory {
         return List.of(
                 new MessageMutationFault("change tx", "Change TX", List.of(XRPLValidateMessage.class)) {
                     @Override
-                    public void accept(FaultContext serializable) {
+                    public void accept(ScenarioContext serializable) {
                         Optional<Event> event = serializable.getEvent();
                         if (event.isEmpty()) {
                             throw invalidMessageTypeException;

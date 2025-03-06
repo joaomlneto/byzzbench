@@ -1,7 +1,7 @@
 package byzzbench.simulator.faults.faults;
 
 import byzzbench.simulator.faults.Fault;
-import byzzbench.simulator.faults.FaultContext;
+import byzzbench.simulator.faults.ScenarioContext;
 import byzzbench.simulator.transport.Event;
 import byzzbench.simulator.transport.MessageEvent;
 import byzzbench.simulator.utils.NonNull;
@@ -52,7 +52,7 @@ public abstract class MessageMutationFault implements Fault, Comparable<MessageM
      * @return True if the message can be mutated by this mutator, false otherwise
      */
     @Override
-    public final boolean test(FaultContext ctx) {
+    public final boolean test(ScenarioContext ctx) {
         Optional<Event> event = ctx.getEvent();
         return event.isPresent()
                 && event.get() instanceof MessageEvent messageEvent

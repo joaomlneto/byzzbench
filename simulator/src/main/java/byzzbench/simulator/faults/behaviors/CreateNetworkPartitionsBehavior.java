@@ -1,7 +1,7 @@
 package byzzbench.simulator.faults.behaviors;
 
 import byzzbench.simulator.faults.FaultBehavior;
-import byzzbench.simulator.faults.FaultContext;
+import byzzbench.simulator.faults.ScenarioContext;
 import byzzbench.simulator.transport.Router;
 
 import java.util.Arrays;
@@ -62,7 +62,7 @@ public class CreateNetworkPartitionsBehavior implements FaultBehavior {
     }
 
     @Override
-    public void accept(FaultContext context) {
+    public void accept(ScenarioContext context) {
         Router router = context.getScenario().getTransport().getRouter();
         for (String[] partition : partitions) {
             router.isolateNodes(partition);

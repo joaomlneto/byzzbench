@@ -19,12 +19,12 @@ public class BaseFault implements Fault {
     }
 
     @Override
-    public boolean test(FaultContext state) {
+    public boolean test(ScenarioContext state) {
         return predicate.test(state);
     }
 
     @Override
-    public void accept(FaultContext state) {
+    public void accept(ScenarioContext state) {
         behavior.accept(state);
     }
 }

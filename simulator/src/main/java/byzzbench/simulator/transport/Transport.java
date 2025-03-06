@@ -4,7 +4,7 @@ import byzzbench.simulator.Client;
 import byzzbench.simulator.Node;
 import byzzbench.simulator.Scenario;
 import byzzbench.simulator.faults.Fault;
-import byzzbench.simulator.faults.FaultContext;
+import byzzbench.simulator.faults.ScenarioContext;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -171,7 +171,7 @@ public class Transport {
 
         // apply automatic faults
         this.automaticFaults.values()
-                .forEach(f -> f.testAndAccept(new FaultContext(this.scenario, event)));
+                .forEach(f -> f.testAndAccept(new ScenarioContext(this.scenario, event)));
 
         // notify observers
         this.getObservers().forEach(o -> o.onEventAdded(event));
@@ -203,7 +203,7 @@ public class Transport {
         }
     }
 
-    public synchronized void deliverEvent(long eventId) throws Exception {
+    public synchronized void deliverEvent(long eventId) {
         Event e = this.getEvents().get(eventId);
 
         // check if null
@@ -326,7 +326,7 @@ public class Transport {
         }
 
         // create input for the fault
-        FaultContext input = new FaultContext(this.scenario, e);
+        ScenarioContext input = new ScenarioContext(this.scenario, e);
 
         // check if mutator can be applied to the event
         if (!fault.test(input)) {
@@ -366,7 +366,7 @@ public class Transport {
 
     public synchronized void applyFault(Fault fault) {
         // create input for the fault
-        FaultContext input = new FaultContext(this.scenario);
+        ScenarioContext input = new ScenarioContext(this.scenario);
 
         // check if fault can be applied
         if (!fault.test(input)) {
@@ -437,7 +437,8 @@ public class Transport {
 
     /**
      * Clears a timeout with a given description
-     * @param node The node to clear the timeouts for
+     *
+     * @param node        The node to clear the timeouts for
      * @param description The description of the timeout
      */
     public synchronized void clearTimeout(Node node, String description) {
@@ -504,7 +505,7 @@ public class Transport {
 
     @JsonIgnore
     public synchronized List<Fault> getEnabledNetworkFaults() {
-        FaultContext input = new FaultContext(this.scenario);
+        ScenarioContext input = new ScenarioContext(this.scenario);
         return this.networkFaults.values().stream()
                 .filter(f -> f.test(input))
                 .toList();
@@ -526,7 +527,7 @@ public class Transport {
     public void globalStabilizationTime() {
         // clear all network faults
         // XXX: Is this the right thing to do?
-        this.networkFaults.clear();
+        //this.networkFaults.clear();
 
         // heal all partitions
         this.router.resetPartitions();

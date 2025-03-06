@@ -2,6 +2,8 @@ package byzzbench.simulator.faults.faults;
 
 import byzzbench.simulator.faults.BaseFault;
 import byzzbench.simulator.faults.behaviors.IsolateNodeBehavior;
+import byzzbench.simulator.faults.predicates.ANDPredicate;
+import byzzbench.simulator.faults.predicates.IsBeforeGST;
 import byzzbench.simulator.faults.predicates.NodeInPartitionPredicate;
 import byzzbench.simulator.transport.Router;
 
@@ -15,7 +17,7 @@ import byzzbench.simulator.transport.Router;
 public class IsolateProcessNetworkFault extends BaseFault {
     public IsolateProcessNetworkFault(String nodeId) {
         super("IsolateProcessNetworkFault-%s".formatted(nodeId),
-                new NodeInPartitionPredicate(nodeId, Router.DEFAULT_PARTITION),
+                new ANDPredicate(new IsBeforeGST(), new NodeInPartitionPredicate(nodeId, Router.DEFAULT_PARTITION)),
                 new IsolateNodeBehavior(nodeId));
     }
 }

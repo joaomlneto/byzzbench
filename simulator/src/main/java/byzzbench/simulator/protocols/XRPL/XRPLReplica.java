@@ -54,14 +54,14 @@ public class XRPLReplica extends Replica {
         }
     }
 
-    public void handleClientRequest(String clientId, Serializable request) throws Exception {
+    public void handleClientRequest(String clientId, Serializable request) {
         String tx = request.toString();
         XRPLTxMessage txmsg = new XRPLTxMessage(tx, clientId);
         this.handleMessage(clientId, txmsg);
     }
 
     @Override
-    public void handleMessage(String sender, MessagePayload message) throws Exception {
+    public void handleMessage(String sender, MessagePayload message) {
         switch (message) {
             case XRPLProposeMessage propmsg -> proposeMessageHandler(propmsg);
             case XRPLSubmitMessage submsg -> submitMessageHandler(submsg);

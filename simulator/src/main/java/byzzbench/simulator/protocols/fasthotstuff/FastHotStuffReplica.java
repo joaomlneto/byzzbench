@@ -93,7 +93,7 @@ public class FastHotStuffReplica extends LeaderBasedProtocolReplica {
     }
 
     @Override
-    public void handleMessage(String sender, MessagePayload message) throws Exception {
+    public void handleMessage(String sender, MessagePayload message) {
         log.info(String.format("Received message from %s: %s", sender, message));
 
         // handle incoming blocks

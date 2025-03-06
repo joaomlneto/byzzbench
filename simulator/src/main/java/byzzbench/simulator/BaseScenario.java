@@ -2,7 +2,7 @@ package byzzbench.simulator;
 
 import byzzbench.simulator.config.ByzzBenchConfig;
 import byzzbench.simulator.faults.Fault;
-import byzzbench.simulator.faults.FaultContext;
+import byzzbench.simulator.faults.ScenarioContext;
 import byzzbench.simulator.faults.factories.ByzzFuzzScenarioFaultFactory;
 import byzzbench.simulator.faults.faults.GlobalStabilizationTimeFault;
 import byzzbench.simulator.faults.faults.HealNodeNetworkFault;
@@ -198,7 +198,7 @@ public abstract class BaseScenario implements Scenario {
         if (parameters.has("faults")) {
             System.out.println("Faults: " + parameters.get("faults").toPrettyString());
             ByzzFuzzScenarioFaultFactory faultFactory = new ByzzFuzzScenarioFaultFactory();
-            List<Fault> faults = faultFactory.generateFaults(new FaultContext(this));
+            List<Fault> faults = faultFactory.generateFaults(new ScenarioContext(this));
             faults.forEach(fault -> this.transport.addFault(fault, true));
         }
 

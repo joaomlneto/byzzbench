@@ -7,5 +7,5 @@ public interface FaultFactory {
         return this.getClass().getSimpleName();
     }
 
-    List<Fault> generateFaults(FaultContext input);
+    List<Fault> generateFaults(ScenarioContext input);
 }

@@ -1,7 +1,7 @@
 package byzzbench.simulator.faults.predicates;
 
-import byzzbench.simulator.faults.FaultContext;
 import byzzbench.simulator.faults.FaultPredicate;
+import byzzbench.simulator.faults.ScenarioContext;
 
 public class IsBeforeGST implements FaultPredicate {
     @Override
@@ -15,7 +15,7 @@ public class IsBeforeGST implements FaultPredicate {
     }
 
     @Override
-    public boolean test(FaultContext faultContext) {
-        return !faultContext.getScenario().getTransport().isGlobalStabilizationTime();
+    public boolean test(ScenarioContext scenarioContext) {
+        return !scenarioContext.getScenario().getTransport().isGlobalStabilizationTime();
     }
 }

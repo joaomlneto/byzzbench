@@ -1,7 +1,7 @@
 package byzzbench.simulator.faults.behaviors;
 
 import byzzbench.simulator.faults.FaultBehavior;
-import byzzbench.simulator.faults.FaultContext;
+import byzzbench.simulator.faults.ScenarioContext;
 
 public class GlobalStabilizationTimeBehavior implements FaultBehavior {
     @Override
@@ -15,7 +15,7 @@ public class GlobalStabilizationTimeBehavior implements FaultBehavior {
     }
 
     @Override
-    public void accept(FaultContext ctx) {
+    public void accept(ScenarioContext ctx) {
         ctx.getScenario().getTransport().globalStabilizationTime();
     }
 }

@@ -1,6 +1,6 @@
 package byzzbench.simulator.protocols.pbft_java.mutator;
 
-import byzzbench.simulator.faults.FaultContext;
+import byzzbench.simulator.faults.ScenarioContext;
 import byzzbench.simulator.faults.factories.MessageMutatorFactory;
 import byzzbench.simulator.faults.faults.MessageMutationFault;
 import byzzbench.simulator.protocols.pbft_java.message.PrePrepareMessage;
@@ -25,7 +25,7 @@ public class PrePrepareMessageMutatorFactory extends MessageMutatorFactory {
                         "Increment View Number",
                         List.of(PrePrepareMessage.class)) {
                     @Override
-                    public void accept(FaultContext serializable) {
+                    public void accept(ScenarioContext serializable) {
                         Optional<Event> event = serializable.getEvent();
                         if (event.isEmpty()) {
                             throw invalidMessageTypeException;
@@ -43,7 +43,7 @@ public class PrePrepareMessageMutatorFactory extends MessageMutatorFactory {
                 },
                 new MessageMutationFault("pbft-preprepare-view-dec", "Decrement View Number", List.of(PrePrepareMessage.class)) {
                     @Override
-                    public void accept(FaultContext serializable) {
+                    public void accept(ScenarioContext serializable) {
                         Optional<Event> event = serializable.getEvent();
                         if (event.isEmpty()) {
                             throw invalidMessageTypeException;
@@ -61,7 +61,7 @@ public class PrePrepareMessageMutatorFactory extends MessageMutatorFactory {
                 },
                 new MessageMutationFault("pbft-preprepare-seq-inc", "Increment Sequence Number", List.of(PrePrepareMessage.class)) {
                     @Override
-                    public void accept(FaultContext serializable) {
+                    public void accept(ScenarioContext serializable) {
                         Optional<Event> event = serializable.getEvent();
                         if (event.isEmpty()) {
                             throw invalidMessageTypeException;
@@ -80,7 +80,7 @@ public class PrePrepareMessageMutatorFactory extends MessageMutatorFactory {
                 },
                 new MessageMutationFault("pbft-preprepare-sec-dec", "Decrement Sequence Number", List.of(PrePrepareMessage.class)) {
                     @Override
-                    public void accept(FaultContext serializable) {
+                    public void accept(ScenarioContext serializable) {
                         Optional<Event> event = serializable.getEvent();
                         if (event.isEmpty()) {
                             throw invalidMessageTypeException;

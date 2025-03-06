@@ -1,7 +1,7 @@
 package byzzbench.simulator.faults.faults;
 
 import byzzbench.simulator.faults.Fault;
-import byzzbench.simulator.faults.FaultContext;
+import byzzbench.simulator.faults.ScenarioContext;
 import byzzbench.simulator.transport.Router;
 import byzzbench.simulator.utils.NonNull;
 import lombok.Getter;
@@ -33,7 +33,7 @@ public class HealNodeNetworkFault implements Fault {
      * @return True if the specific node is not in the default partition, false otherwise
      */
     @Override
-    public final boolean test(FaultContext ctx) {
+    public final boolean test(ScenarioContext ctx) {
         Router router = ctx.getScenario().getTransport().getRouter();
         return router.getNodePartition(nodeId) != Router.DEFAULT_PARTITION;
     }
@@ -44,7 +44,7 @@ public class HealNodeNetworkFault implements Fault {
      * @param state the input argument
      */
     @Override
-    public void accept(FaultContext state) {
+    public void accept(ScenarioContext state) {
         Router router = state.getScenario().getTransport().getRouter();
         router.healNode(nodeId);
     }

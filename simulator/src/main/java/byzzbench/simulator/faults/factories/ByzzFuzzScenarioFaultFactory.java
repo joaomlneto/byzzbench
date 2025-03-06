@@ -2,8 +2,8 @@ package byzzbench.simulator.faults.factories;
 
 import byzzbench.simulator.Scenario;
 import byzzbench.simulator.faults.Fault;
-import byzzbench.simulator.faults.FaultContext;
 import byzzbench.simulator.faults.FaultFactory;
+import byzzbench.simulator.faults.ScenarioContext;
 import byzzbench.simulator.faults.faults.ByzzFuzzNetworkFault;
 import byzzbench.simulator.faults.faults.ByzzFuzzProcessFault;
 import byzzbench.simulator.scheduler.ByzzFuzzScheduler;
@@ -25,7 +25,7 @@ public class ByzzFuzzScenarioFaultFactory implements FaultFactory {
     private final Random rand = new Random();
 
     @Override
-    public List<Fault> generateFaults(FaultContext input) {
+    public List<Fault> generateFaults(ScenarioContext input) {
         List<Fault> faults = new ArrayList<>();
         Scenario scenario = input.getScenario();
 

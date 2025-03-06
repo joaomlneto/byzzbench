@@ -2,7 +2,7 @@ package byzzbench.simulator.faults.behaviors;
 
 import byzzbench.simulator.ApplicationContextUtils;
 import byzzbench.simulator.faults.FaultBehavior;
-import byzzbench.simulator.faults.FaultContext;
+import byzzbench.simulator.faults.ScenarioContext;
 import byzzbench.simulator.faults.faults.MessageMutationFault;
 import byzzbench.simulator.service.MessageMutatorService;
 import byzzbench.simulator.transport.Event;
@@ -37,7 +37,7 @@ public class MutateMessageBehavior implements FaultBehavior {
     }
 
     @Override
-    public void accept(FaultContext context) {
+    public void accept(ScenarioContext context) {
         Optional<Event> event = context.getEvent();
 
         if (event.isEmpty()) {

@@ -1,6 +1,6 @@
 package byzzbench.simulator.protocols.fab2.mutator;
 
-import byzzbench.simulator.faults.FaultContext;
+import byzzbench.simulator.faults.ScenarioContext;
 import byzzbench.simulator.faults.factories.MessageMutatorFactory;
 import byzzbench.simulator.faults.faults.MessageMutationFault;
 import byzzbench.simulator.protocols.fab.Pair;
@@ -12,11 +12,10 @@ import org.springframework.stereotype.Component;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.Random;
 
 @Component
 @ToString
-public class SatisfiedMessageMutatorFactory2 extends MessageMutatorFactory{
+public class SatisfiedMessageMutatorFactory2 extends MessageMutatorFactory {
     @Override
     public List<MessageMutationFault> mutators() {
         return List.of(
@@ -26,7 +25,7 @@ public class SatisfiedMessageMutatorFactory2 extends MessageMutatorFactory{
                         List.of(SatisfiedMessage.class)
                 ) {
                     @Override
-                    public void accept(FaultContext serializable) {
+                    public void accept(ScenarioContext serializable) {
                         Optional<Event> event = serializable.getEvent();
 
                         if (event.isEmpty()) {
@@ -56,7 +55,7 @@ public class SatisfiedMessageMutatorFactory2 extends MessageMutatorFactory{
                         List.of(SatisfiedMessage.class)
                 ) {
                     @Override
-                    public void accept(FaultContext serializable) {
+                    public void accept(ScenarioContext serializable) {
                         Optional<Event> event = serializable.getEvent();
 
                         if (event.isEmpty()) {

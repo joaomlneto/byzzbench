@@ -1,7 +1,7 @@
 package byzzbench.simulator.faults.faults;
 
 import byzzbench.simulator.faults.Fault;
-import byzzbench.simulator.faults.FaultContext;
+import byzzbench.simulator.faults.ScenarioContext;
 import byzzbench.simulator.transport.Router;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -29,7 +29,7 @@ public class HealNetworkFault implements Fault {
      * @return True if the network is not already healed, false otherwise
      */
     @Override
-    public final boolean test(FaultContext ctx) {
+    public final boolean test(ScenarioContext ctx) {
         Router router = ctx.getScenario().getTransport().getRouter();
         return router.hasActivePartitions();
     }
@@ -40,7 +40,7 @@ public class HealNetworkFault implements Fault {
      * @param state the input argument
      */
     @Override
-    public void accept(FaultContext state) {
+    public void accept(ScenarioContext state) {
         Router router = state.getScenario().getTransport().getRouter();
         router.resetPartitions();
     }

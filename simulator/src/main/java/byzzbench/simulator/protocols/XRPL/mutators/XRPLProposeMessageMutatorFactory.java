@@ -1,6 +1,6 @@
 package byzzbench.simulator.protocols.XRPL.mutators;
 
-import byzzbench.simulator.faults.FaultContext;
+import byzzbench.simulator.faults.ScenarioContext;
 import byzzbench.simulator.faults.factories.MessageMutatorFactory;
 import byzzbench.simulator.faults.faults.MessageMutationFault;
 import byzzbench.simulator.protocols.XRPL.messages.XRPLProposeMessage;
@@ -21,7 +21,7 @@ public class XRPLProposeMessageMutatorFactory extends MessageMutatorFactory {
         return List.of(
                 new MessageMutationFault("xrpl-propose-proposal-inc", "Increment Proposal Seq", List.of(XRPLProposeMessage.class)) {
                     @Override
-                    public void accept(FaultContext serializable) {
+                    public void accept(ScenarioContext serializable) {
                         Optional<Event> event = serializable.getEvent();
                         if (event.isEmpty()) {
                             throw invalidMessageTypeException;
@@ -39,7 +39,7 @@ public class XRPLProposeMessageMutatorFactory extends MessageMutatorFactory {
                 },
                 new MessageMutationFault("xrpl-propose-proposal-dec", "Decrement Proposal Seq", List.of(XRPLProposeMessage.class)) {
                     @Override
-                    public void accept(FaultContext serializable) {
+                    public void accept(ScenarioContext serializable) {
                         Optional<Event> event = serializable.getEvent();
                         if (event.isEmpty()) {
                             throw invalidMessageTypeException;
@@ -57,7 +57,7 @@ public class XRPLProposeMessageMutatorFactory extends MessageMutatorFactory {
                 },
                 new MessageMutationFault("xrpl-propose-mutate-tx", "Mutate Tx", List.of(XRPLProposeMessage.class)) {
                     @Override
-                    public void accept(FaultContext serializable) {
+                    public void accept(ScenarioContext serializable) {
                         Optional<Event> event = serializable.getEvent();
                         if (event.isEmpty()) {
                             throw invalidMessageTypeException;

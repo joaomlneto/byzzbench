@@ -1,7 +1,7 @@
 package byzzbench.simulator.faults.predicates;
 
-import byzzbench.simulator.faults.FaultContext;
 import byzzbench.simulator.faults.FaultPredicate;
+import byzzbench.simulator.faults.ScenarioContext;
 import byzzbench.simulator.transport.Router;
 import lombok.RequiredArgsConstructor;
 
@@ -21,7 +21,7 @@ public class NodeInPartitionPredicate implements FaultPredicate {
     }
 
     @Override
-    public boolean test(FaultContext ctx) {
+    public boolean test(ScenarioContext ctx) {
         Router router = ctx.getScenario().getTransport().getRouter();
         return router.getNodePartition(nodeId) == partitionId;
     }
