@@ -12,7 +12,7 @@ import java.util.Optional;
  * This is useful for example for fault injection, where the fault context can be used to determine
  * if a fault should be injected or not and to offer a mechanism to apply its behavior.
  */
-public class FaultContext {
+public class ScenarioContext {
     /**
      * The scenario that is being processed.
      */
@@ -31,7 +31,7 @@ public class FaultContext {
      * @param scenario The scenario that is being processed.
      * @param event    The event that is being processed.
      */
-    public FaultContext(@NonNull Scenario scenario, Event event) {
+    public ScenarioContext(@NonNull Scenario scenario, Event event) {
         this.scenario = scenario;
         this.eventOptional = event;
     }
@@ -41,7 +41,7 @@ public class FaultContext {
      *
      * @param scenario The scenario that is being processed.
      */
-    public FaultContext(@NonNull Scenario scenario) {
+    public ScenarioContext(@NonNull Scenario scenario) {
         this(scenario, null);
     }
 

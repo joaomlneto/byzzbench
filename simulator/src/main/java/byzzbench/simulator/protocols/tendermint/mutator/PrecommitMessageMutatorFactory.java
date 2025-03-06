@@ -1,6 +1,6 @@
 package byzzbench.simulator.protocols.tendermint.mutator;
 
-import byzzbench.simulator.faults.FaultContext;
+import byzzbench.simulator.faults.ScenarioContext;
 import byzzbench.simulator.faults.factories.MessageMutatorFactory;
 import byzzbench.simulator.faults.faults.MessageMutationFault;
 import byzzbench.simulator.protocols.tendermint.message.PrecommitMessage;
@@ -16,9 +16,8 @@ import java.util.Random;
 @Component
 @ToString
 public class PrecommitMessageMutatorFactory extends MessageMutatorFactory {
-    RuntimeException invalidMessageTypeException = new IllegalArgumentException("Invalid message type");
     private final Random random = new Random();
-
+    RuntimeException invalidMessageTypeException = new IllegalArgumentException("Invalid message type");
 
     @Override
     public List<MessageMutationFault> mutators() {
@@ -28,7 +27,7 @@ public class PrecommitMessageMutatorFactory extends MessageMutatorFactory {
                         "Increment Height Number",
                         List.of(PrecommitMessage.class)) {
                     @Override
-                    public void accept(FaultContext serializable) {
+                    public void accept(ScenarioContext serializable) {
                         Optional<Event> event = serializable.getEvent();
                         if (event.isEmpty()) {
                             throw invalidMessageTypeException;
@@ -46,7 +45,7 @@ public class PrecommitMessageMutatorFactory extends MessageMutatorFactory {
                 },
                 new MessageMutationFault("tendermint-precommit-height-dec", "Decrement Height Number", List.of(PrecommitMessage.class)) {
                     @Override
-                    public void accept(FaultContext serializable) {
+                    public void accept(ScenarioContext serializable) {
                         Optional<Event> event = serializable.getEvent();
                         if (event.isEmpty()) {
                             throw invalidMessageTypeException;
@@ -64,7 +63,7 @@ public class PrecommitMessageMutatorFactory extends MessageMutatorFactory {
                 },
                 new MessageMutationFault("tendermint-precommit-sequence-inc", "Increment sequence Number", List.of(PrecommitMessage.class)) {
                     @Override
-                    public void accept(FaultContext serializable) {
+                    public void accept(ScenarioContext serializable) {
                         Optional<Event> event = serializable.getEvent();
                         if (event.isEmpty()) {
                             throw invalidMessageTypeException;
@@ -82,7 +81,7 @@ public class PrecommitMessageMutatorFactory extends MessageMutatorFactory {
                 },
                 new MessageMutationFault("tendermint-precommit-sequence-dec", "Decrement Sequence Number", List.of(PrecommitMessage.class)) {
                     @Override
-                    public void accept(FaultContext serializable) {
+                    public void accept(ScenarioContext serializable) {
                         Optional<Event> event = serializable.getEvent();
                         if (event.isEmpty()) {
                             throw invalidMessageTypeException;

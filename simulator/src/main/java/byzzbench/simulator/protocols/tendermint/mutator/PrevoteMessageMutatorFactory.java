@@ -1,9 +1,9 @@
 package byzzbench.simulator.protocols.tendermint.mutator;
 
-import byzzbench.simulator.faults.FaultContext;
+import byzzbench.simulator.faults.ScenarioContext;
 import byzzbench.simulator.faults.factories.MessageMutatorFactory;
 import byzzbench.simulator.faults.faults.MessageMutationFault;
-import byzzbench.simulator.protocols.tendermint.message.*;
+import byzzbench.simulator.protocols.tendermint.message.PrevoteMessage;
 import byzzbench.simulator.transport.Event;
 import byzzbench.simulator.transport.MessageEvent;
 import lombok.ToString;
@@ -16,8 +16,9 @@ import java.util.Random;
 @Component
 @ToString
 public class PrevoteMessageMutatorFactory extends MessageMutatorFactory {
-    RuntimeException invalidMessageTypeException = new IllegalArgumentException("Invalid message type");
     private final Random random = new Random();
+    RuntimeException invalidMessageTypeException = new IllegalArgumentException("Invalid message type");
+
     @Override
     public List<MessageMutationFault> mutators() {
         return List.of(
@@ -26,7 +27,7 @@ public class PrevoteMessageMutatorFactory extends MessageMutatorFactory {
                         "Increment Height Number",
                         List.of(PrevoteMessage.class)) {
                     @Override
-                    public void accept(FaultContext serializable) {
+                    public void accept(ScenarioContext serializable) {
                         Optional<Event> event = serializable.getEvent();
                         if (event.isEmpty()) {
                             throw invalidMessageTypeException;
@@ -44,7 +45,7 @@ public class PrevoteMessageMutatorFactory extends MessageMutatorFactory {
                 },
                 new MessageMutationFault("tendermint-prevote-height-dec", "Decrement Height Number", List.of(PrevoteMessage.class)) {
                     @Override
-                    public void accept(FaultContext serializable) {
+                    public void accept(ScenarioContext serializable) {
                         Optional<Event> event = serializable.getEvent();
                         if (event.isEmpty()) {
                             throw invalidMessageTypeException;
@@ -62,7 +63,7 @@ public class PrevoteMessageMutatorFactory extends MessageMutatorFactory {
                 },
                 new MessageMutationFault("tendermint-prevote-sequence-inc", "Increment sequence Number", List.of(PrevoteMessage.class)) {
                     @Override
-                    public void accept(FaultContext serializable) {
+                    public void accept(ScenarioContext serializable) {
                         Optional<Event> event = serializable.getEvent();
                         if (event.isEmpty()) {
                             throw invalidMessageTypeException;
@@ -80,7 +81,7 @@ public class PrevoteMessageMutatorFactory extends MessageMutatorFactory {
                 },
                 new MessageMutationFault("tendermint-prevote-sequence-dec", "Decrement sequence Number", List.of(PrevoteMessage.class)) {
                     @Override
-                    public void accept(FaultContext serializable) {
+                    public void accept(ScenarioContext serializable) {
                         Optional<Event> event = serializable.getEvent();
                         if (event.isEmpty()) {
                             throw invalidMessageTypeException;

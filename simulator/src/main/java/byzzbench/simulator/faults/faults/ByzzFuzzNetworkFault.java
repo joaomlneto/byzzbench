@@ -2,6 +2,8 @@ package byzzbench.simulator.faults.faults;
 
 import byzzbench.simulator.faults.BaseFault;
 import byzzbench.simulator.faults.behaviors.ByzzFuzzDropMessageBehavior;
+import byzzbench.simulator.faults.predicates.ANDPredicate;
+import byzzbench.simulator.faults.predicates.IsBeforeGST;
 import byzzbench.simulator.faults.predicates.MessageRoundPredicate;
 
 import java.util.Set;
@@ -22,7 +24,7 @@ public class ByzzFuzzNetworkFault extends BaseFault {
     public ByzzFuzzNetworkFault(Set<String> partition, int round) {
         super(
                 "byzzfuzznetworkfault-%d-%s".formatted(round, String.join("-", partition)),
-                new MessageRoundPredicate(round),
+                new ANDPredicate(new IsBeforeGST(), new MessageRoundPredicate(round)),
                 new ByzzFuzzDropMessageBehavior(partition)
         );
     }

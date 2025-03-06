@@ -1,15 +1,7 @@
 package byzzbench.simulator.protocols.hbft.mutator;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map.Entry;
-import java.util.Optional;
-import java.util.Random;
-
-import org.springframework.stereotype.Component;
-
 import byzzbench.simulator.Node;
-import byzzbench.simulator.faults.FaultContext;
+import byzzbench.simulator.faults.ScenarioContext;
 import byzzbench.simulator.faults.factories.MessageMutatorFactory;
 import byzzbench.simulator.faults.faults.MessageMutationFault;
 import byzzbench.simulator.protocols.hbft.HbftJavaReplica;
@@ -19,6 +11,12 @@ import byzzbench.simulator.protocols.hbft.message.RequestMessage;
 import byzzbench.simulator.transport.Event;
 import byzzbench.simulator.transport.MessageEvent;
 import lombok.ToString;
+import org.springframework.stereotype.Component;
+
+import java.util.List;
+import java.util.Map.Entry;
+import java.util.Optional;
+import java.util.Random;
 
 @Component
 @ToString
@@ -32,7 +30,7 @@ public class CheckpointIIIMessageMutatorFactory extends MessageMutatorFactory {
         return List.of(
                 new MessageMutationFault("hbft-checkpointIII-seq-inc", "Increment Sequence Number", List.of(CheckpointIIIMessage.class)) {
                     @Override
-                    public void accept(FaultContext serializable) {
+                    public void accept(ScenarioContext serializable) {
                         Optional<Event> event = serializable.getEvent();
                         if (event.isEmpty()) {
                             throw invalidMessageTypeException;
@@ -51,7 +49,7 @@ public class CheckpointIIIMessageMutatorFactory extends MessageMutatorFactory {
                 },
                 new MessageMutationFault("hbft-checkpointIII-seq-dec", "Decrement Sequence Number", List.of(CheckpointIIIMessage.class)) {
                     @Override
-                    public void accept(FaultContext serializable) {
+                    public void accept(ScenarioContext serializable) {
                         Optional<Event> event = serializable.getEvent();
                         if (event.isEmpty()) {
                             throw invalidMessageTypeException;
@@ -69,7 +67,7 @@ public class CheckpointIIIMessageMutatorFactory extends MessageMutatorFactory {
                 },
                 new MessageMutationFault("hbft-checkpointIII-remove-last-request", "Remove last request from history", List.of(CheckpointIIIMessage.class)) {
                     @Override
-                    public void accept(FaultContext serializable) {
+                    public void accept(ScenarioContext serializable) {
                         Optional<Event> event = serializable.getEvent();
                         if (event.isEmpty()) {
                             throw invalidMessageTypeException;
@@ -97,7 +95,7 @@ public class CheckpointIIIMessageMutatorFactory extends MessageMutatorFactory {
                 },
                 new MessageMutationFault("hbft-checkpointIII-remove-first-request", "Remove first request from history", List.of(CheckpointIIIMessage.class)) {
                     @Override
-                    public void accept(FaultContext serializable) {
+                    public void accept(ScenarioContext serializable) {
                         Optional<Event> event = serializable.getEvent();
                         if (event.isEmpty()) {
                             throw invalidMessageTypeException;
@@ -126,7 +124,7 @@ public class CheckpointIIIMessageMutatorFactory extends MessageMutatorFactory {
                 ,
                 new MessageMutationFault("hbft-checkpointIII-decrement-last-request-seq", "Decrement last request's seq num from history", List.of(CheckpointIIIMessage.class)) {
                     @Override
-                    public void accept(FaultContext serializable) {
+                    public void accept(ScenarioContext serializable) {
                         Optional<Event> event = serializable.getEvent();
                         if (event.isEmpty()) {
                             throw invalidMessageTypeException;
@@ -155,7 +153,7 @@ public class CheckpointIIIMessageMutatorFactory extends MessageMutatorFactory {
                 },
                 new MessageMutationFault("hbft-checkpointIII-increment-last-request-seq", "Increment last request's seq num from history", List.of(CheckpointIIIMessage.class)) {
                     @Override
-                    public void accept(FaultContext serializable) {
+                    public void accept(ScenarioContext serializable) {
                         Optional<Event> event = serializable.getEvent();
                         if (event.isEmpty()) {
                             throw invalidMessageTypeException;
@@ -184,7 +182,7 @@ public class CheckpointIIIMessageMutatorFactory extends MessageMutatorFactory {
                 },
                 new MessageMutationFault("hbft-checkpointIII-decrement-first-request-seq", "Decrement first request's seq num from history", List.of(CheckpointIIIMessage.class)) {
                     @Override
-                    public void accept(FaultContext serializable) {
+                    public void accept(ScenarioContext serializable) {
                         Optional<Event> event = serializable.getEvent();
                         if (event.isEmpty()) {
                             throw invalidMessageTypeException;
@@ -213,7 +211,7 @@ public class CheckpointIIIMessageMutatorFactory extends MessageMutatorFactory {
                 },
                 new MessageMutationFault("hbft-checkpointIII-increment-first-request-seq", "Increment first request's seq num from history", List.of(CheckpointIIIMessage.class)) {
                     @Override
-                    public void accept(FaultContext serializable) {
+                    public void accept(ScenarioContext serializable) {
                         Optional<Event> event = serializable.getEvent();
                         if (event.isEmpty()) {
                             throw invalidMessageTypeException;

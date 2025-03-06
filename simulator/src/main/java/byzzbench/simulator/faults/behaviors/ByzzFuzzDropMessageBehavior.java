@@ -1,7 +1,7 @@
 package byzzbench.simulator.faults.behaviors;
 
 import byzzbench.simulator.faults.FaultBehavior;
-import byzzbench.simulator.faults.FaultContext;
+import byzzbench.simulator.faults.ScenarioContext;
 import byzzbench.simulator.transport.Event;
 import byzzbench.simulator.transport.MessageEvent;
 import byzzbench.simulator.transport.Router;
@@ -78,7 +78,7 @@ public class ByzzFuzzDropMessageBehavior implements FaultBehavior {
     }
 
     @Override
-    public void accept(FaultContext context) {
+    public void accept(ScenarioContext context) {
         Optional<Event> event = context.getEvent();
 
         if (event.isEmpty()) {
@@ -102,7 +102,7 @@ public class ByzzFuzzDropMessageBehavior implements FaultBehavior {
         }
 
         // otherwise, drop the message: the sender and recipient are in different partitions
-        if(e.getStatus() == Event.Status.QUEUED) {
+        if (e.getStatus() == Event.Status.QUEUED) {
             context.getScenario().getTransport().dropEvent(e.getEventId());
         }
     }

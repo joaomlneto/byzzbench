@@ -2,8 +2,9 @@ package byzzbench.simulator;
 
 import byzzbench.simulator.config.ByzzBenchConfig;
 import byzzbench.simulator.faults.Fault;
-import byzzbench.simulator.faults.FaultContext;
+import byzzbench.simulator.faults.ScenarioContext;
 import byzzbench.simulator.faults.factories.ByzzFuzzScenarioFaultFactory;
+import byzzbench.simulator.faults.faults.GlobalStabilizationTimeFault;
 import byzzbench.simulator.faults.faults.HealNodeNetworkFault;
 import byzzbench.simulator.faults.faults.IsolateProcessNetworkFault;
 import byzzbench.simulator.schedule.Schedule;
@@ -179,6 +180,7 @@ public abstract class BaseScenario implements Scenario {
         //this.getClients().values().forEach(Client::initialize);
         this.getNodes().values().forEach(Node::initialize);
         this.scheduler.initializeScenario(this);
+        this.transport.addFault(new GlobalStabilizationTimeFault(), false);
     }
 
     public final void loadParameters(JsonNode parameters) {
@@ -196,7 +198,7 @@ public abstract class BaseScenario implements Scenario {
         if (parameters.has("faults")) {
             System.out.println("Faults: " + parameters.get("faults").toPrettyString());
             ByzzFuzzScenarioFaultFactory faultFactory = new ByzzFuzzScenarioFaultFactory();
-            List<Fault> faults = faultFactory.generateFaults(new FaultContext(this));
+            List<Fault> faults = faultFactory.generateFaults(new ScenarioContext(this));
             faults.forEach(fault -> this.transport.addFault(fault, true));
         }
 

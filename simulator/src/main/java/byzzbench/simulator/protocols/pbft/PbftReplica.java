@@ -440,7 +440,7 @@ public class PbftReplica extends LeaderBasedProtocolReplica {
     }
 
     @Override
-    public void handleMessage(String sender, MessagePayload message) throws Exception {
+    public void handleMessage(String sender, MessagePayload message) {
         // for some reason the original code does this before receiving a message.
         // not sure why, but it's here now. might remove it later.
         if (this.state.in_check_state()) {

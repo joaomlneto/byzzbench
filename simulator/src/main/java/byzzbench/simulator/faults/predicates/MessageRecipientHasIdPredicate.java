@@ -1,7 +1,7 @@
 package byzzbench.simulator.faults.predicates;
 
-import byzzbench.simulator.faults.FaultContext;
 import byzzbench.simulator.faults.FaultPredicate;
+import byzzbench.simulator.faults.ScenarioContext;
 import byzzbench.simulator.transport.Event;
 import byzzbench.simulator.transport.MessageEvent;
 
@@ -43,7 +43,7 @@ public class MessageRecipientHasIdPredicate implements FaultPredicate {
     }
 
     @Override
-    public boolean test(FaultContext ctx) {
+    public boolean test(ScenarioContext ctx) {
         Optional<Event> event = ctx.getEvent();
 
         if (event.isEmpty()) {

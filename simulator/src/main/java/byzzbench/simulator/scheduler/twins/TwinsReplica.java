@@ -161,7 +161,7 @@ public class TwinsReplica extends Replica {
     }
 
     @Override
-    public void handleMessage(String sender, MessagePayload message) throws Exception {
+    public void handleMessage(String sender, MessagePayload message) {
         List<Replica> internalReplicas = this.getInternalReplicasHandlingMessage(sender, message);
 
         // deliver to all sub-replicas

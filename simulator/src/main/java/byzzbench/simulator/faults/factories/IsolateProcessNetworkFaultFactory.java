@@ -2,8 +2,8 @@ package byzzbench.simulator.faults.factories;
 
 import byzzbench.simulator.Replica;
 import byzzbench.simulator.faults.Fault;
-import byzzbench.simulator.faults.FaultContext;
 import byzzbench.simulator.faults.FaultFactory;
+import byzzbench.simulator.faults.ScenarioContext;
 import byzzbench.simulator.faults.faults.HealNetworkFault;
 import byzzbench.simulator.faults.faults.HealNodeNetworkFault;
 import byzzbench.simulator.faults.faults.IsolateProcessNetworkFault;
@@ -19,7 +19,7 @@ import java.util.List;
 @Component
 public class IsolateProcessNetworkFaultFactory implements FaultFactory {
     @Override
-    public List<Fault> generateFaults(FaultContext input) {
+    public List<Fault> generateFaults(ScenarioContext input) {
         List<Fault> networkFaults = new ArrayList<>();
 
         // create a IsolateProcessNetworkFault for each replica in the network

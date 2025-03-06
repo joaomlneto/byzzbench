@@ -1,7 +1,7 @@
 package byzzbench.simulator.faults.behaviors;
 
 import byzzbench.simulator.faults.FaultBehavior;
-import byzzbench.simulator.faults.FaultContext;
+import byzzbench.simulator.faults.ScenarioContext;
 import byzzbench.simulator.transport.Router;
 import lombok.RequiredArgsConstructor;
 
@@ -20,7 +20,7 @@ public class IsolateNodeBehavior implements FaultBehavior {
     }
 
     @Override
-    public void accept(FaultContext context) {
+    public void accept(ScenarioContext context) {
         Router router = context.getScenario().getTransport().getRouter();
         router.isolateNode(nodeId);
     }

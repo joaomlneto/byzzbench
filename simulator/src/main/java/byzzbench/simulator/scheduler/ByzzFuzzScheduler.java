@@ -3,8 +3,8 @@ package byzzbench.simulator.scheduler;
 import byzzbench.simulator.Scenario;
 import byzzbench.simulator.config.ByzzBenchConfig;
 import byzzbench.simulator.faults.Fault;
-import byzzbench.simulator.faults.FaultContext;
 import byzzbench.simulator.faults.FaultFactory;
+import byzzbench.simulator.faults.ScenarioContext;
 import byzzbench.simulator.faults.factories.ByzzFuzzScenarioFaultFactory;
 import byzzbench.simulator.service.MessageMutatorService;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -84,7 +84,7 @@ public class ByzzFuzzScheduler extends RandomScheduler {
 
         // Generate round-aware small-scope mutations for the scenario
         FaultFactory faultFactory = new ByzzFuzzScenarioFaultFactory();
-        FaultContext context = new FaultContext(scenario);
+        ScenarioContext context = new ScenarioContext(scenario);
         List<Fault> faults = faultFactory.generateFaults(context);
         faults.forEach(fault -> scenario.getTransport().addFault(fault, true));
     }

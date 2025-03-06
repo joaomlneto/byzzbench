@@ -644,7 +644,7 @@ public class TendermintReplica extends LeaderBasedProtocolReplica {
      */
 
     @Override
-    public void handleMessage(String sender, MessagePayload message) throws Exception {
+    public void handleMessage(String sender, MessagePayload message) {
         if (message instanceof DefaultClientRequestPayload clientRequest) {
             String clientId = clientRequest.getOperation().toString().split("/")[0];
             receiveRequest(sender, new RequestMessage(clientRequest.getOperation(), System.currentTimeMillis(), clientId));

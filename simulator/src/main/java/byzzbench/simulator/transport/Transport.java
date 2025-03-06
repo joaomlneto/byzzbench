@@ -4,7 +4,7 @@ import byzzbench.simulator.Client;
 import byzzbench.simulator.Node;
 import byzzbench.simulator.Scenario;
 import byzzbench.simulator.faults.Fault;
-import byzzbench.simulator.faults.FaultContext;
+import byzzbench.simulator.faults.ScenarioContext;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -15,6 +15,7 @@ import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * Transport layer for the simulator.
@@ -73,6 +74,7 @@ public class Transport {
      * List of observers for the transport layer.
      */
     @JsonIgnore
+    @Getter(onMethod_ = {@Synchronized})
     private final List<TransportObserver> observers = new ArrayList<>();
     @Getter
     private boolean isGlobalStabilizationTime = false;
@@ -83,7 +85,7 @@ public class Transport {
      * @param observer The observer to add.
      */
     public synchronized void addObserver(TransportObserver observer) {
-        this.observers.add(observer);
+        getObservers().add(observer);
     }
 
     /**
@@ -92,7 +94,7 @@ public class Transport {
      * @param observer The observer to remove.
      */
     public synchronized void removeObserver(TransportObserver observer) {
-        this.observers.remove(observer);
+        getObservers().remove(observer);
     }
 
     /**
@@ -149,7 +151,7 @@ public class Transport {
      * @return A list of events in the given state
      */
     public synchronized List<Event> getEventsInState(Event.Status status) {
-        return this.events.values()
+        return this.getEvents().values()
                 .stream()
                 .filter(m -> m.getStatus() == status)
                 .toList();
@@ -162,14 +164,17 @@ public class Transport {
      */
     private synchronized void appendEvent(Event event) {
         // add the event to the map
-        this.events.put(event.getEventId(), event);
+        this.getEvents().put(event.getEventId(), event);
 
         // notify observers
         this.observers.forEach(o -> o.onEventAdded(event));
 
         // apply automatic faults
         this.automaticFaults.values()
-                .forEach(f -> f.testAndAccept(new FaultContext(this.scenario, event)));
+                .forEach(f -> f.testAndAccept(new ScenarioContext(this.scenario, event)));
+
+        // notify observers
+        this.getObservers().forEach(o -> o.onEventAdded(event));
     }
 
     /**
@@ -198,8 +203,8 @@ public class Transport {
         }
     }
 
-    public synchronized void deliverEvent(long eventId) throws Exception {
-        Event e = events.get(eventId);
+    public synchronized void deliverEvent(long eventId) {
+        Event e = this.getEvents().get(eventId);
 
         // check if null
         if (e == null) {
@@ -223,7 +228,7 @@ public class Transport {
         e.setStatus(Event.Status.DELIVERED);
 
         // For timeouts, this should be called before, so the Replica time is updated
-        this.observers.forEach(o -> o.onEventDelivered(e));
+        this.getObservers().forEach(o -> o.onEventDelivered(e));
 
         switch (e) {
             case ClientRequestEvent c -> {
@@ -255,7 +260,8 @@ public class Transport {
         }
 
         // check if event is a message
-        Event e = events.get(eventId);
+        Event e = this.getEvents().get(eventId);
+
         if (e instanceof TimeoutEvent) {
             throw new IllegalArgumentException("Cannot drop a timeout event");
         }
@@ -266,7 +272,7 @@ public class Transport {
         }
 
         e.setStatus(Event.Status.DROPPED);
-        this.observers.forEach(o -> o.onEventDropped(e));
+        this.getObservers().forEach(o -> o.onEventDropped(e));
         log.info("Dropped: " + e);
     }
 
@@ -277,7 +283,7 @@ public class Transport {
      * @return The event with the given ID.
      */
     public synchronized Event getEvent(long eventId) {
-        return events.get(eventId);
+        return this.getEvents().get(eventId);
     }
 
     /**
@@ -287,7 +293,7 @@ public class Transport {
      * @param fault   The fault to apply.
      */
     public synchronized void applyMutation(long eventId, Fault fault) {
-        Event e = events.get(eventId);
+        Event e = this.getEvents().get(eventId);
 
         // check if event does not exist
         if (e == null) {
@@ -320,7 +326,7 @@ public class Transport {
         }
 
         // create input for the fault
-        FaultContext input = new FaultContext(this.scenario, e);
+        ScenarioContext input = new ScenarioContext(this.scenario, e);
 
         // check if mutator can be applied to the event
         if (!fault.test(input)) {
@@ -345,7 +351,7 @@ public class Transport {
         // append the event to the schedule
         mutateMessageEvent.setStatus(Event.Status.DELIVERED);
         this.scenario.getSchedule().appendEvent(mutateMessageEvent);
-        this.observers.forEach(o -> o.onMessageMutation(mutateMessageEvent.getPayload()));
+        this.getObservers().forEach(o -> o.onMessageMutation(mutateMessageEvent.getPayload()));
 
         log.info("Mutated: " + m);
     }
@@ -360,7 +366,7 @@ public class Transport {
 
     public synchronized void applyFault(Fault fault) {
         // create input for the fault
-        FaultContext input = new FaultContext(this.scenario);
+        ScenarioContext input = new ScenarioContext(this.scenario);
 
         // check if fault can be applied
         if (!fault.test(input)) {
@@ -377,7 +383,7 @@ public class Transport {
                 .build();
         faultEvent.setStatus(Event.Status.DELIVERED);
         this.scenario.getSchedule().appendEvent(faultEvent);
-        this.observers.forEach(o -> o.onFault(fault));
+        this.getObservers().forEach(o -> o.onFault(fault));
     }
 
     /**
@@ -411,7 +417,7 @@ public class Transport {
      * @param eventId The ID of the event to clear.
      */
     public synchronized void clearTimeout(Node node, long eventId) {
-        Event e = events.get(eventId);
+        Event e = this.getEvents().get(eventId);
 
         if (e == null) {
             throw new IllegalArgumentException("Event not found: " + eventId);
@@ -426,12 +432,13 @@ public class Transport {
         }
 
         timeoutEvent.setStatus(Event.Status.DROPPED);
-        this.observers.forEach(o -> o.onEventDropped(timeoutEvent));
+        this.getObservers().forEach(o -> o.onEventDropped(timeoutEvent));
     }
 
     /**
      * Clears a timeout with a given description
-     * @param node The node to clear the timeouts for
+     *
+     * @param node        The node to clear the timeouts for
      * @param description The description of the timeout
      */
     public synchronized void clearTimeout(Node node, String description) {
@@ -458,7 +465,7 @@ public class Transport {
      * @return A list of event IDs of queued timeouts.
      */
     public synchronized List<Long> getQueuedTimeouts(Node node) {
-        return this.events.values()
+        return this.getEvents().values()
                 .stream()
                 .filter(e -> e instanceof TimeoutEvent t &&
                         t.getNodeId().equals(node.getId()) &&
@@ -478,9 +485,9 @@ public class Transport {
 
         // remove all event IDs
         for (Long eventId : eventIds) {
-            Event e = events.get(eventId);
+            Event e = this.getEvents().get(eventId);
             e.setStatus(Event.Status.DROPPED);
-            this.observers.forEach(o -> o.onEventDropped(e));
+            this.getObservers().forEach(o -> o.onEventDropped(e));
         }
     }
 
@@ -498,7 +505,7 @@ public class Transport {
 
     @JsonIgnore
     public synchronized List<Fault> getEnabledNetworkFaults() {
-        FaultContext input = new FaultContext(this.scenario);
+        ScenarioContext input = new ScenarioContext(this.scenario);
         return this.networkFaults.values().stream()
                 .filter(f -> f.test(input))
                 .toList();
@@ -518,21 +525,26 @@ public class Transport {
      * </ul>
      */
     public void globalStabilizationTime() {
-        this.isGlobalStabilizationTime = true;
-
-        // re-queue all dropped messages
-        this.events.values().stream()
-                .filter(e -> e.getStatus() == Event.Status.DROPPED)
-                .forEach(e -> {
-                    e.setStatus(Event.Status.QUEUED);
-                    this.observers.forEach(o -> o.onEventRequeued(e));
-                });
-
         // clear all network faults
         // XXX: Is this the right thing to do?
-        this.networkFaults.clear();
+        //this.networkFaults.clear();
 
         // heal all partitions
         this.router.resetPartitions();
+
+        // re-queue all dropped messages
+        Stream<Event> droppedEvents = this.getEvents().values().stream()
+                .filter(e -> e.getStatus() == Event.Status.DROPPED);
+
+        long numDroppedEvents = droppedEvents.count();
+        System.out.println("Events dropped that will be requeued: " + numDroppedEvents);
+        this.getEvents().values().stream()
+                .filter(e -> e.getStatus() == Event.Status.DROPPED)
+                .forEach(e -> {
+                    e.setStatus(Event.Status.QUEUED);
+                    this.getObservers().forEach(o -> o.onEventRequeued(e));
+                });
+
+        this.isGlobalStabilizationTime = true;
     }
 }

@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonTypeName;
 import lombok.Builder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import lombok.ToString;
 import lombok.experimental.SuperBuilder;
 
 import java.time.Duration;
@@ -18,6 +19,7 @@ import java.time.Instant;
 @Data
 @JsonTypeName("Timeout")
 @SuperBuilder
+@ToString(callSuper = true)
 public class TimeoutEvent extends BaseEvent implements MailboxEvent {
 
     /**

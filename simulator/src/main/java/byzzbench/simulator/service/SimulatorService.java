@@ -2,6 +2,7 @@ package byzzbench.simulator.service;
 
 import byzzbench.simulator.Scenario;
 import byzzbench.simulator.config.ByzzBenchConfig;
+import byzzbench.simulator.scheduler.EventDecision;
 import byzzbench.simulator.state.ErroredPredicate;
 import byzzbench.simulator.transport.Event;
 import byzzbench.simulator.transport.messages.MessageWithRound;
@@ -19,6 +20,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
+import java.util.Optional;
 import java.util.OptionalLong;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
@@ -128,7 +130,30 @@ public class SimulatorService {
 
                     try {
                         while (true) {
-                            this.scenario.getScheduler().scheduleNext(this.scenario);
+                            Optional<EventDecision> decision = this.scenario.getScheduler().scheduleNext(this.scenario);
+                            System.out.println("Decision: " + decision);
+
+                            // if the scheduler did not make a decision, and we're before GST, set GST!
+                            if (decision.isEmpty() && !this.scenario.getTransport().isGlobalStabilizationTime()) {
+                                this.scenario.getTransport().globalStabilizationTime();
+                                continue;
+                            }
+
+                            if (decision.isEmpty()) {
+                                System.out.println("We're after GST and still no events!!");
+                                // print num of events in the scenario
+                                System.out.println("Number of events in the scenario: " + this.scenario.getSchedule().getEvents().size());
+                                // print number of delivered events
+                                System.out.println("Number of delivered events: " + this.scenario.getTransport().getEventsInState(Event.Status.DELIVERED).size());
+                                // print ALL events in the scenario, independent of their status
+                                System.out.println("All events in the scenario:");
+                                this.scenario.getTransport().getEvents().values().forEach(System.out::println);
+                                // print the event IDs in the schedule
+                                System.out.println("Event IDs in the schedule:");
+                                this.scenario.getSchedule().getEvents().forEach(e -> System.out.println(e.getEventId()));
+                                this.shouldStop = true;
+                                break;
+                            }
 
                             long numEvents = this.scenario.getSchedule().getEvents().size();
                             long terminationSamplingFreq = this.byzzBenchConfig.getScenario().getTermination().getSamplingFrequency();

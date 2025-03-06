@@ -5,7 +5,7 @@ import jakarta.validation.constraints.NotNull;
 import java.io.Serializable;
 import java.util.function.Predicate;
 
-public interface FaultPredicate extends Predicate<FaultContext>, Serializable {
+public interface FaultPredicate extends Predicate<ScenarioContext>, Serializable {
     String getId();
 
     String getName();
@@ -29,7 +29,7 @@ public interface FaultPredicate extends Predicate<FaultContext>, Serializable {
             }
 
             @Override
-            public boolean test(FaultContext ctx) {
+            public boolean test(ScenarioContext ctx) {
                 return FaultPredicate.this.test(ctx) && other.test(ctx);
             }
         };
@@ -54,7 +54,7 @@ public interface FaultPredicate extends Predicate<FaultContext>, Serializable {
             }
 
             @Override
-            public boolean test(FaultContext ctx) {
+            public boolean test(ScenarioContext ctx) {
                 return FaultPredicate.this.test(ctx) || other.test(ctx);
             }
         };
@@ -79,7 +79,7 @@ public interface FaultPredicate extends Predicate<FaultContext>, Serializable {
             }
 
             @Override
-            public boolean test(FaultContext ctx) {
+            public boolean test(ScenarioContext ctx) {
                 return !FaultPredicate.this.test(ctx);
             }
         };

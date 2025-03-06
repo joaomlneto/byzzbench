@@ -1,6 +1,6 @@
 package byzzbench.simulator.protocols.tendermint.mutator;
 
-import byzzbench.simulator.faults.FaultContext;
+import byzzbench.simulator.faults.ScenarioContext;
 import byzzbench.simulator.faults.factories.MessageMutatorFactory;
 import byzzbench.simulator.faults.faults.MessageMutationFault;
 import byzzbench.simulator.protocols.tendermint.message.ProposalMessage;
@@ -16,8 +16,9 @@ import java.util.Random;
 @Component
 @ToString
 public class ProposalMessageMutatorFactory extends MessageMutatorFactory {
-    RuntimeException invalidMessageTypeException = new IllegalArgumentException("Invalid message type");
     private final Random random = new Random();
+    RuntimeException invalidMessageTypeException = new IllegalArgumentException("Invalid message type");
+
     @Override
     public List<MessageMutationFault> mutators() {
 
@@ -27,7 +28,7 @@ public class ProposalMessageMutatorFactory extends MessageMutatorFactory {
                         "Increment Height Number",
                         List.of(ProposalMessage.class)) {
                     @Override
-                    public void accept(FaultContext serializable) {
+                    public void accept(ScenarioContext serializable) {
                         Optional<Event> event = serializable.getEvent();
                         if (event.isEmpty()) {
                             throw invalidMessageTypeException;
@@ -45,7 +46,7 @@ public class ProposalMessageMutatorFactory extends MessageMutatorFactory {
                 },
                 new MessageMutationFault("tendermint-proposal-height-dec", "Decrement Height Number", List.of(ProposalMessage.class)) {
                     @Override
-                    public void accept(FaultContext serializable) {
+                    public void accept(ScenarioContext serializable) {
                         Optional<Event> event = serializable.getEvent();
                         if (event.isEmpty()) {
                             throw invalidMessageTypeException;
@@ -63,7 +64,7 @@ public class ProposalMessageMutatorFactory extends MessageMutatorFactory {
                 },
                 new MessageMutationFault("tendermint-proposal-sequence-inc", "Increment sequence Number", List.of(ProposalMessage.class)) {
                     @Override
-                    public void accept(FaultContext serializable) {
+                    public void accept(ScenarioContext serializable) {
                         Optional<Event> event = serializable.getEvent();
                         if (event.isEmpty()) {
                             throw invalidMessageTypeException;
@@ -81,7 +82,7 @@ public class ProposalMessageMutatorFactory extends MessageMutatorFactory {
                 },
                 new MessageMutationFault("tendermint-proposal-sequence-dec", "Decrement sequence Number", List.of(ProposalMessage.class)) {
                     @Override
-                    public void accept(FaultContext serializable) {
+                    public void accept(ScenarioContext serializable) {
                         Optional<Event> event = serializable.getEvent();
                         if (event.isEmpty()) {
                             throw invalidMessageTypeException;
