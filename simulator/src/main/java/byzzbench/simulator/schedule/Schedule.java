@@ -2,7 +2,7 @@ package byzzbench.simulator.schedule;
 
 import byzzbench.simulator.Scenario;
 import byzzbench.simulator.ScenarioPredicate;
-import byzzbench.simulator.transport.Event;
+import byzzbench.simulator.transport.Action;
 import byzzbench.simulator.utils.NonNull;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
@@ -24,7 +24,7 @@ public class Schedule implements Serializable {
      * The list of events in the schedule.
      */
     @NonNull
-    private final List<Event> events = Collections.synchronizedList(new ArrayList<>());
+    private final List<Action> actions = Collections.synchronizedList(new ArrayList<>());
     /**
      * The set of invariants that are violated by this schedule.
      */
@@ -39,11 +39,11 @@ public class Schedule implements Serializable {
     @Builder.Default
     private boolean isFinalized = false;
 
-    public void appendEvent(Event event) {
+    public void appendEvent(Action action) {
         if (isFinalized) {
             throw new IllegalStateException("Cannot append event to a schedule with broken invariants");
         }
-        events.add(event);
+        actions.add(action);
     }
 
     /**

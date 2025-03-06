@@ -3,8 +3,8 @@ package byzzbench.simulator.scheduler;
 import byzzbench.simulator.Scenario;
 import byzzbench.simulator.config.ByzzBenchConfig;
 import byzzbench.simulator.service.MessageMutatorService;
-import byzzbench.simulator.transport.Event;
-import byzzbench.simulator.transport.MessageEvent;
+import byzzbench.simulator.transport.Action;
+import byzzbench.simulator.transport.MessageAction;
 import com.fasterxml.jackson.databind.JsonNode;
 import org.springframework.stereotype.Component;
 
@@ -33,12 +33,12 @@ public class FifoScheduler extends BaseScheduler {
     @Override
     public Optional<EventDecision> scheduleNext(Scenario scenario) throws Exception {
         // Get the next event
-        Optional<Event> event =
+        Optional<Action> event =
                 scenario.getTransport()
-                        .getEventsInState(Event.Status.QUEUED)
+                        .getEventsInState(Action.Status.QUEUED)
                         .stream()
-                        .filter(MessageEvent.class::isInstance)
-                        .min(Comparator.comparingLong(Event::getEventId));
+                        .filter(MessageAction.class::isInstance)
+                        .min(Comparator.comparingLong(Action::getEventId));
 
         if (event.isPresent()) {
             scenario.getTransport().deliverEvent(event.get().getEventId());

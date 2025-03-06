@@ -5,7 +5,7 @@ import lombok.Getter;
 import java.io.Serializable;
 
 /**
- * Interface for the payload of a {@link MessageEvent}.
+ * Interface for the payload of a {@link MessageAction}.
  */
 @Getter
 public abstract class MessagePayload implements Serializable {

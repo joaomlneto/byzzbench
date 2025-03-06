@@ -12,13 +12,13 @@ import java.time.Instant;
 /**
  * Event that represents a message mutation.
  *
- * @see Event
+ * @see Action
  */
 @Data
 @JsonTypeName("MutateMessage")
 @SuperBuilder
 @ToString(callSuper = true)
-public class MutateMessageEvent implements Event {
+public class MutateMessageAction implements Action {
     /**
      * The unique identifier of the event.
      */

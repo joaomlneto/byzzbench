@@ -41,11 +41,11 @@ public class Transport {
     private final AtomicLong eventSeqNum = new AtomicLong(1);
 
     /**
-     * Map of event ID to the {@link Event} object.
+     * Map of event ID to the {@link Action} object.
      */
     @Getter(onMethod_ = {@Synchronized})
     @JsonIgnore
-    private final SortedMap<Long, Event> events = new TreeMap<>();
+    private final SortedMap<Long, Action> events = new TreeMap<>();
 
     /**
      * Map of automatic fault id to the {@link Fault} object. This is used to
@@ -150,7 +150,7 @@ public class Transport {
      * @param status The state to filter by
      * @return A list of events in the given state
      */
-    public synchronized List<Event> getEventsInState(Event.Status status) {
+    public synchronized List<Action> getEventsInState(Action.Status status) {
         return this.getEvents().values()
                 .stream()
                 .filter(m -> m.getStatus() == status)
@@ -160,21 +160,21 @@ public class Transport {
     /**
      * Append an event to the transport layer.
      *
-     * @param event The event to append
+     * @param action The event to append
      */
-    private synchronized void appendEvent(Event event) {
+    private synchronized void appendEvent(Action action) {
         // add the event to the map
-        this.getEvents().put(event.getEventId(), event);
+        this.getEvents().put(action.getEventId(), action);
 
         // notify observers
-        this.observers.forEach(o -> o.onEventAdded(event));
+        this.observers.forEach(o -> o.onEventAdded(action));
 
         // apply automatic faults
         this.automaticFaults.values()
-                .forEach(f -> f.testAndAccept(new ScenarioContext(this.scenario, event)));
+                .forEach(f -> f.testAndAccept(new ScenarioContext(this.scenario, action)));
 
         // notify observers
-        this.getObservers().forEach(o -> o.onEventAdded(event));
+        this.getObservers().forEach(o -> o.onEventAdded(action));
     }
 
     /**
@@ -188,7 +188,7 @@ public class Transport {
                                        MessagePayload payload) {
         for (String recipient : recipients) {
             long messageId = this.eventSeqNum.getAndIncrement();
-            MessageEvent messageEvent = MessageEvent.builder()
+            MessageAction messageEvent = MessageAction.builder()
                     .eventId(messageId)
                     .senderId(sender.getId())
                     .recipientId(recipient)
@@ -204,7 +204,7 @@ public class Transport {
     }
 
     public synchronized void deliverEvent(long eventId) {
-        Event e = this.getEvents().get(eventId);
+        Action e = this.getEvents().get(eventId);
 
         // check if null
         if (e == null) {
@@ -212,32 +212,32 @@ public class Transport {
         }
 
         // check if it is in QUEUED state
-        if (e.getStatus() != Event.Status.QUEUED) {
+        if (e.getStatus() != Action.Status.QUEUED) {
             throw new IllegalArgumentException("Event not in QUEUED state");
         }
 
         // if it is a MessageEvent and there is no connectivity between the nodes, drop it
-        if (e instanceof MessageEvent m && !router.haveConnectivity(m.getSenderId(), m.getRecipientId())) {
+        if (e instanceof MessageAction m && !router.haveConnectivity(m.getSenderId(), m.getRecipientId())) {
             log.info("Dropped: " + m.getSenderId() + "->" + m.getRecipientId() + ": " + m.getPayload());
-            m.setStatus(Event.Status.DROPPED);
+            m.setStatus(Action.Status.DROPPED);
             return;
         }
 
         // deliver the event
         this.scenario.getSchedule().appendEvent(e);
-        e.setStatus(Event.Status.DELIVERED);
+        e.setStatus(Action.Status.DELIVERED);
 
         // For timeouts, this should be called before, so the Replica time is updated
         this.getObservers().forEach(o -> o.onEventDelivered(e));
 
         switch (e) {
-            case ClientRequestEvent c -> {
+            case ClientRequestAction c -> {
                 this.scenario.getNodes().get(c.getRecipientId()).handleMessage(c.getSenderId(), c.getPayload());
             }
-            case MessageEvent m -> {
+            case MessageAction m -> {
                 this.scenario.getNodes().get(m.getRecipientId()).handleMessage(m.getSenderId(), m.getPayload());
             }
-            case TimeoutEvent t -> {
+            case TimeoutAction t -> {
                 t.getTask().run();
             }
             default -> {
@@ -260,18 +260,18 @@ public class Transport {
         }
 
         // check if event is a message
-        Event e = this.getEvents().get(eventId);
+        Action e = this.getEvents().get(eventId);
 
-        if (e instanceof TimeoutEvent) {
+        if (e instanceof TimeoutAction) {
             throw new IllegalArgumentException("Cannot drop a timeout event");
         }
 
-        if (e.getStatus() != Event.Status.QUEUED) {
+        if (e.getStatus() != Action.Status.QUEUED) {
             log.warning("Attempting to drop event not in QUEUED state");
             throw new IllegalArgumentException("Event not found or not in QUEUED state");
         }
 
-        e.setStatus(Event.Status.DROPPED);
+        e.setStatus(Action.Status.DROPPED);
         this.getObservers().forEach(o -> o.onEventDropped(e));
         log.info("Dropped: " + e);
     }
@@ -282,7 +282,7 @@ public class Transport {
      * @param eventId The ID of the event to get.
      * @return The event with the given ID.
      */
-    public synchronized Event getEvent(long eventId) {
+    public synchronized Action getEvent(long eventId) {
         return this.getEvents().get(eventId);
     }
 
@@ -293,7 +293,7 @@ public class Transport {
      * @param fault   The fault to apply.
      */
     public synchronized void applyMutation(long eventId, Fault fault) {
-        Event e = this.getEvents().get(eventId);
+        Action e = this.getEvents().get(eventId);
 
         // check if event does not exist
         if (e == null) {
@@ -306,14 +306,14 @@ public class Transport {
         }
 
         // check if event is not in QUEUED state
-        if (e.getStatus() != Event.Status.QUEUED) {
+        if (e.getStatus() != Action.Status.QUEUED) {
             log.warning("Attempting to mutate event not in QUEUED state");
             return;
             //throw new IllegalArgumentException("Message not found or not in QUEUED state");
         }
 
         // check it is a message event!
-        if (!(e instanceof MessageEvent m)) {
+        if (!(e instanceof MessageAction m)) {
             throw new IllegalArgumentException(String.format(
                     "Event %d is not a message - cannot mutate it.", eventId));
         }
@@ -340,7 +340,7 @@ public class Transport {
         scenario.markReplicaFaulty(m.getSenderId());
 
         // create a new event for the mutation
-        MutateMessageEvent mutateMessageEvent = MutateMessageEvent.builder()
+        MutateMessageAction mutateMessageEvent = MutateMessageAction.builder()
                 .eventId(this.eventSeqNum.getAndIncrement())
                 .senderId(m.getSenderId())
                 .recipientId(m.getRecipientId())
@@ -349,7 +349,7 @@ public class Transport {
         this.appendEvent(mutateMessageEvent);
 
         // append the event to the schedule
-        mutateMessageEvent.setStatus(Event.Status.DELIVERED);
+        mutateMessageEvent.setStatus(Action.Status.DELIVERED);
         this.scenario.getSchedule().appendEvent(mutateMessageEvent);
         this.getObservers().forEach(o -> o.onMessageMutation(mutateMessageEvent.getPayload()));
 
@@ -377,11 +377,11 @@ public class Transport {
         fault.accept(input);
 
         // create a new event for the fault and append it to the schedule
-        GenericFaultEvent faultEvent = GenericFaultEvent.builder()
+        GenericFaultAction faultEvent = GenericFaultAction.builder()
                 .eventId(this.eventSeqNum.getAndIncrement())
                 .payload(fault)
                 .build();
-        faultEvent.setStatus(Event.Status.DELIVERED);
+        faultEvent.setStatus(Action.Status.DELIVERED);
         this.scenario.getSchedule().appendEvent(faultEvent);
         this.getObservers().forEach(o -> o.onFault(fault));
     }
@@ -397,7 +397,7 @@ public class Transport {
      */
     public synchronized long setTimeout(Node node, Runnable runnable,
                                         Duration timeout, String description) {
-        TimeoutEvent timeoutEvent = TimeoutEvent.builder()
+        TimeoutAction timeoutEvent = TimeoutAction.builder()
                 .eventId(this.eventSeqNum.getAndIncrement())
                 .description(description)
                 .nodeId(node.getId())
@@ -417,13 +417,13 @@ public class Transport {
      * @param eventId The ID of the event to clear.
      */
     public synchronized void clearTimeout(Node node, long eventId) {
-        Event e = this.getEvents().get(eventId);
+        Action e = this.getEvents().get(eventId);
 
         if (e == null) {
             throw new IllegalArgumentException("Event not found: " + eventId);
         }
 
-        if (!(e instanceof TimeoutEvent timeoutEvent)) {
+        if (!(e instanceof TimeoutAction timeoutEvent)) {
             throw new IllegalArgumentException("Event is not a timeout: " + eventId);
         }
 
@@ -431,7 +431,7 @@ public class Transport {
             throw new IllegalArgumentException("Timeout does not belong to this node!");
         }
 
-        timeoutEvent.setStatus(Event.Status.DROPPED);
+        timeoutEvent.setStatus(Action.Status.DROPPED);
         this.getObservers().forEach(o -> o.onEventDropped(timeoutEvent));
     }
 
@@ -447,11 +447,11 @@ public class Transport {
                 this.events.values()
                         .stream()
                         .filter(
-                                e -> e instanceof TimeoutEvent t &&
+                                e -> e instanceof TimeoutAction t &&
                                         t.getNodeId().equals(node.getId()) &&
-                                        t.getStatus() == Event.Status.QUEUED &&
+                                        t.getStatus() == Action.Status.QUEUED &&
                                         t.getDescription().equals(description))
-                        .map(Event::getEventId)
+                        .map(Action::getEventId)
                         .toList();
 
         // clear the timeouts
@@ -467,10 +467,10 @@ public class Transport {
     public synchronized List<Long> getQueuedTimeouts(Node node) {
         return this.getEvents().values()
                 .stream()
-                .filter(e -> e instanceof TimeoutEvent t &&
+                .filter(e -> e instanceof TimeoutAction t &&
                         t.getNodeId().equals(node.getId()) &&
-                        t.getStatus() == Event.Status.QUEUED)
-                .map(Event::getEventId)
+                        t.getStatus() == Action.Status.QUEUED)
+                .map(Action::getEventId)
                 .toList();
     }
 
@@ -485,8 +485,8 @@ public class Transport {
 
         // remove all event IDs
         for (Long eventId : eventIds) {
-            Event e = this.getEvents().get(eventId);
-            e.setStatus(Event.Status.DROPPED);
+            Action e = this.getEvents().get(eventId);
+            e.setStatus(Action.Status.DROPPED);
             this.getObservers().forEach(o -> o.onEventDropped(e));
         }
     }
@@ -533,15 +533,15 @@ public class Transport {
         this.router.resetPartitions();
 
         // re-queue all dropped messages
-        Stream<Event> droppedEvents = this.getEvents().values().stream()
-                .filter(e -> e.getStatus() == Event.Status.DROPPED);
+        Stream<Action> droppedEvents = this.getEvents().values().stream()
+                .filter(e -> e.getStatus() == Action.Status.DROPPED);
 
         long numDroppedEvents = droppedEvents.count();
         System.out.println("Events dropped that will be requeued: " + numDroppedEvents);
         this.getEvents().values().stream()
-                .filter(e -> e.getStatus() == Event.Status.DROPPED)
+                .filter(e -> e.getStatus() == Action.Status.DROPPED)
                 .forEach(e -> {
-                    e.setStatus(Event.Status.QUEUED);
+                    e.setStatus(Action.Status.QUEUED);
                     this.getObservers().forEach(o -> o.onEventRequeued(e));
                 });
 

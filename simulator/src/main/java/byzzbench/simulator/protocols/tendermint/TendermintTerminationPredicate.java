@@ -6,6 +6,6 @@ import byzzbench.simulator.ScenarioPredicate;
 public class TendermintTerminationPredicate implements ScenarioPredicate {
     @Override
     public boolean test(Scenario scenario) {
-        return scenario.getSchedule().getEvents().size() > 100;
+        return scenario.getSchedule().getActions().size() > 100;
     }
 }

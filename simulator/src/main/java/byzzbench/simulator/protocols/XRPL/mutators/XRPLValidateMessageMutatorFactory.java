@@ -5,8 +5,8 @@ import byzzbench.simulator.faults.factories.MessageMutatorFactory;
 import byzzbench.simulator.faults.faults.MessageMutationFault;
 import byzzbench.simulator.protocols.XRPL.XRPLLedger;
 import byzzbench.simulator.protocols.XRPL.messages.XRPLValidateMessage;
-import byzzbench.simulator.transport.Event;
-import byzzbench.simulator.transport.MessageEvent;
+import byzzbench.simulator.transport.Action;
+import byzzbench.simulator.transport.MessageAction;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
@@ -23,11 +23,11 @@ public class XRPLValidateMessageMutatorFactory extends MessageMutatorFactory {
                 new MessageMutationFault("change tx", "Change TX", List.of(XRPLValidateMessage.class)) {
                     @Override
                     public void accept(ScenarioContext serializable) {
-                        Optional<Event> event = serializable.getEvent();
+                        Optional<Action> event = serializable.getEvent();
                         if (event.isEmpty()) {
                             throw invalidMessageTypeException;
                         }
-                        if (!(event.get() instanceof MessageEvent messageEvent)) {
+                        if (!(event.get() instanceof MessageAction messageEvent)) {
                             throw invalidMessageTypeException;
                         }
                         if (!(messageEvent.getPayload() instanceof XRPLValidateMessage message)) {

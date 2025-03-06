@@ -6,8 +6,8 @@ import byzzbench.simulator.faults.faults.MessageMutationFault;
 import byzzbench.simulator.protocols.fab2.Pair;
 import byzzbench.simulator.protocols.fab2.ProposalNumber;
 import byzzbench.simulator.protocols.fab2.messages.ProposeMessage;
-import byzzbench.simulator.transport.Event;
-import byzzbench.simulator.transport.MessageEvent;
+import byzzbench.simulator.transport.Action;
+import byzzbench.simulator.transport.MessageAction;
 import lombok.ToString;
 import org.springframework.stereotype.Component;
 
@@ -28,13 +28,13 @@ public class ProposeMessageMutatorFactory2 extends MessageMutatorFactory {
                 ) {
                     @Override
                     public void accept(ScenarioContext serializable) {
-                        Optional<Event> event = serializable.getEvent();
+                        Optional<Action> event = serializable.getEvent();
 
                         if (event.isEmpty()) {
                             throw new IllegalArgumentException("Invalid message type");
                         }
 
-                        if (!(event.get() instanceof MessageEvent messageEvent)) {
+                        if (!(event.get() instanceof MessageAction messageEvent)) {
                             throw new IllegalArgumentException("Invalid message type");
                         }
 
@@ -61,13 +61,13 @@ public class ProposeMessageMutatorFactory2 extends MessageMutatorFactory {
                 ) {
                     @Override
                     public void accept(ScenarioContext serializable) {
-                        Optional<Event> event = serializable.getEvent();
+                        Optional<Action> event = serializable.getEvent();
 
                         if (event.isEmpty()) {
                             throw new IllegalArgumentException("Invalid message type");
                         }
 
-                        if (!(event.get() instanceof MessageEvent messageEvent)) {
+                        if (!(event.get() instanceof MessageAction messageEvent)) {
                             throw new IllegalArgumentException("Invalid message type");
                         }
 
@@ -129,7 +129,7 @@ public class ProposeMessageMutatorFactory2 extends MessageMutatorFactory {
                 ) {
                     @Override
                     public void accept(ScenarioContext serializable) {
-                        Optional<Event> event = serializable.getEvent();
+                        Optional<Action> event = serializable.getEvent();
                         Random random = new Random();
                         int mutation = random.nextInt(2, 100);
 
@@ -137,7 +137,7 @@ public class ProposeMessageMutatorFactory2 extends MessageMutatorFactory {
                             throw new IllegalArgumentException("Invalid message type");
                         }
 
-                        if (!(event.get() instanceof MessageEvent messageEvent)) {
+                        if (!(event.get() instanceof MessageAction messageEvent)) {
                             throw new IllegalArgumentException("Invalid message type");
                         }
 

@@ -1,6 +1,5 @@
 package byzzbench.simulator.transport;
 
-import byzzbench.simulator.faults.Fault;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -8,18 +7,14 @@ import lombok.ToString;
 import lombok.experimental.SuperBuilder;
 
 /**
- * Event that represents a message mutation.
+ * Event that represents a request from a client to a node.
  *
- * @see Event
+ * @see Action
  */
 @EqualsAndHashCode(callSuper = true)
 @Data
-@JsonTypeName("GenericFault")
+@JsonTypeName("ClientRequest")
 @SuperBuilder
 @ToString(callSuper = true)
-public class GenericFaultEvent extends BaseEvent {
-    /**
-     * The payload of the request.
-     */
-    private final Fault payload;
+public class ClientRequestAction extends BaseMessageAction<MessagePayload> {
 }

@@ -15,7 +15,7 @@ import byzzbench.simulator.service.SchedulerFactoryService;
 import byzzbench.simulator.service.SimulatorService;
 import byzzbench.simulator.state.adob.AdobCache;
 import byzzbench.simulator.state.adob.AdobDistributedState;
-import byzzbench.simulator.transport.Event;
+import byzzbench.simulator.transport.Action;
 import byzzbench.simulator.transport.MailboxEvent;
 import byzzbench.simulator.utils.NonNull;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -123,11 +123,11 @@ public class SimulatorController {
                                      @RequestParam(required = false) String type) {
         return simulatorService.getScenario()
                 .getTransport()
-                .getEventsInState(Event.Status.QUEUED)
+                .getEventsInState(Action.Status.QUEUED)
                 .stream()
                 .filter(e -> type == null || e.getClass().getSimpleName().equals(type))
                 .filter(e -> e instanceof MailboxEvent me && me.getRecipientId().equals(nodeId))
-                .map(Event::getEventId)
+                .map(Action::getEventId)
                 .toList();
     }
 
@@ -153,7 +153,7 @@ public class SimulatorController {
      * @return The event with the given ID.
      */
     @GetMapping("/events/{eventId}")
-    public Event getEvent(@PathVariable Long eventId) {
+    public Action getEvent(@PathVariable Long eventId) {
         return simulatorService.getScenario()
                 .getTransport()
                 .getEvents()
@@ -169,9 +169,9 @@ public class SimulatorController {
     public List<Long> getQueuedMessages() {
         return simulatorService.getScenario()
                 .getTransport()
-                .getEventsInState(Event.Status.QUEUED)
+                .getEventsInState(Action.Status.QUEUED)
                 .stream()
-                .map(Event::getEventId)
+                .map(Action::getEventId)
                 .toList();
     }
 
@@ -184,9 +184,9 @@ public class SimulatorController {
     public List<Long> getDroppedMessages() {
         return simulatorService.getScenario()
                 .getTransport()
-                .getEventsInState(Event.Status.DROPPED)
+                .getEventsInState(Action.Status.DROPPED)
                 .stream()
-                .map(Event::getEventId)
+                .map(Action::getEventId)
                 .toList();
     }
 
@@ -199,9 +199,9 @@ public class SimulatorController {
     public List<Long> getDeliveredMessages() {
         return simulatorService.getScenario()
                 .getTransport()
-                .getEventsInState(Event.Status.DELIVERED)
+                .getEventsInState(Action.Status.DELIVERED)
                 .stream()
-                .map(Event::getEventId)
+                .map(Action::getEventId)
                 .toList();
     }
 
@@ -254,7 +254,7 @@ public class SimulatorController {
      * @return The event with the given ID.
      */
     @GetMapping("/event/{eventId}")
-    public Event getMessage(@PathVariable Long eventId) {
+    public Action getMessage(@PathVariable Long eventId) {
         return simulatorService.getScenario()
                 .getTransport()
                 .getEvents()
@@ -269,7 +269,7 @@ public class SimulatorController {
      */
     @GetMapping("/event/{eventId}/mutators")
     public List<String> getMessageMutators(@PathVariable Long eventId) {
-        Event e = simulatorService.getScenario()
+        Action e = simulatorService.getScenario()
                 .getTransport()
                 .getEvents()
                 .get(eventId);

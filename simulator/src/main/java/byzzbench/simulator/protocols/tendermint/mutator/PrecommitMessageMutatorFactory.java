@@ -4,8 +4,8 @@ import byzzbench.simulator.faults.ScenarioContext;
 import byzzbench.simulator.faults.factories.MessageMutatorFactory;
 import byzzbench.simulator.faults.faults.MessageMutationFault;
 import byzzbench.simulator.protocols.tendermint.message.PrecommitMessage;
-import byzzbench.simulator.transport.Event;
-import byzzbench.simulator.transport.MessageEvent;
+import byzzbench.simulator.transport.Action;
+import byzzbench.simulator.transport.MessageAction;
 import lombok.ToString;
 import org.springframework.stereotype.Component;
 
@@ -28,11 +28,11 @@ public class PrecommitMessageMutatorFactory extends MessageMutatorFactory {
                         List.of(PrecommitMessage.class)) {
                     @Override
                     public void accept(ScenarioContext serializable) {
-                        Optional<Event> event = serializable.getEvent();
+                        Optional<Action> event = serializable.getEvent();
                         if (event.isEmpty()) {
                             throw invalidMessageTypeException;
                         }
-                        if (!(event.get() instanceof MessageEvent messageEvent)) {
+                        if (!(event.get() instanceof MessageAction messageEvent)) {
                             throw invalidMessageTypeException;
                         }
                         if (!(messageEvent.getPayload() instanceof PrecommitMessage message)) {
@@ -46,11 +46,11 @@ public class PrecommitMessageMutatorFactory extends MessageMutatorFactory {
                 new MessageMutationFault("tendermint-precommit-height-dec", "Decrement Height Number", List.of(PrecommitMessage.class)) {
                     @Override
                     public void accept(ScenarioContext serializable) {
-                        Optional<Event> event = serializable.getEvent();
+                        Optional<Action> event = serializable.getEvent();
                         if (event.isEmpty()) {
                             throw invalidMessageTypeException;
                         }
-                        if (!(event.get() instanceof MessageEvent messageEvent)) {
+                        if (!(event.get() instanceof MessageAction messageEvent)) {
                             throw invalidMessageTypeException;
                         }
                         if (!(messageEvent.getPayload() instanceof PrecommitMessage message)) {
@@ -64,11 +64,11 @@ public class PrecommitMessageMutatorFactory extends MessageMutatorFactory {
                 new MessageMutationFault("tendermint-precommit-sequence-inc", "Increment sequence Number", List.of(PrecommitMessage.class)) {
                     @Override
                     public void accept(ScenarioContext serializable) {
-                        Optional<Event> event = serializable.getEvent();
+                        Optional<Action> event = serializable.getEvent();
                         if (event.isEmpty()) {
                             throw invalidMessageTypeException;
                         }
-                        if (!(event.get() instanceof MessageEvent messageEvent)) {
+                        if (!(event.get() instanceof MessageAction messageEvent)) {
                             throw invalidMessageTypeException;
                         }
                         if (!(messageEvent.getPayload() instanceof PrecommitMessage message)) {
@@ -82,11 +82,11 @@ public class PrecommitMessageMutatorFactory extends MessageMutatorFactory {
                 new MessageMutationFault("tendermint-precommit-sequence-dec", "Decrement Sequence Number", List.of(PrecommitMessage.class)) {
                     @Override
                     public void accept(ScenarioContext serializable) {
-                        Optional<Event> event = serializable.getEvent();
+                        Optional<Action> event = serializable.getEvent();
                         if (event.isEmpty()) {
                             throw invalidMessageTypeException;
                         }
-                        if (!(event.get() instanceof MessageEvent messageEvent)) {
+                        if (!(event.get() instanceof MessageAction messageEvent)) {
                             throw invalidMessageTypeException;
                         }
                         if (!(messageEvent.getPayload() instanceof PrecommitMessage message)) {

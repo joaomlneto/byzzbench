@@ -9,8 +9,8 @@ import byzzbench.simulator.protocols.hbft.SpeculativeHistory;
 import byzzbench.simulator.protocols.hbft.message.RequestMessage;
 import byzzbench.simulator.protocols.hbft.message.ViewChangeMessage;
 import byzzbench.simulator.protocols.hbft.utils.Checkpoint;
-import byzzbench.simulator.transport.Event;
-import byzzbench.simulator.transport.MessageEvent;
+import byzzbench.simulator.transport.Action;
+import byzzbench.simulator.transport.MessageAction;
 import lombok.ToString;
 import org.springframework.stereotype.Component;
 
@@ -33,11 +33,11 @@ public class ViewChangeMessageFactory extends MessageMutatorFactory {
                 new MessageMutationFault("hbft-view-change-view-inc", "Increment View Number", List.of(ViewChangeMessage.class)) {
                     @Override
                     public void accept(ScenarioContext serializable) {
-                        Optional<Event> event = serializable.getEvent();
+                        Optional<Action> event = serializable.getEvent();
                         if (event.isEmpty()) {
                             throw invalidMessageTypeException;
                         }
-                        if (!(event.get() instanceof MessageEvent messageEvent)) {
+                        if (!(event.get() instanceof MessageAction messageEvent)) {
                             throw invalidMessageTypeException;
                         }
                         if (!(messageEvent.getPayload() instanceof ViewChangeMessage message)) {
@@ -51,11 +51,11 @@ public class ViewChangeMessageFactory extends MessageMutatorFactory {
                 new MessageMutationFault("hbft-view-change-view-dec", "Decrement View Number", List.of(ViewChangeMessage.class)) {
                     @Override
                     public void accept(ScenarioContext serializable) {
-                        Optional<Event> event = serializable.getEvent();
+                        Optional<Action> event = serializable.getEvent();
                         if (event.isEmpty()) {
                             throw invalidMessageTypeException;
                         }
-                        if (!(event.get() instanceof MessageEvent messageEvent)) {
+                        if (!(event.get() instanceof MessageAction messageEvent)) {
                             throw invalidMessageTypeException;
                         }
                         if (!(messageEvent.getPayload() instanceof ViewChangeMessage message)) {
@@ -69,11 +69,11 @@ public class ViewChangeMessageFactory extends MessageMutatorFactory {
                 new MessageMutationFault("hbft-view-change-remove-last-req-checkpoint", "Remove last request from checkpoint", List.of(ViewChangeMessage.class)) {
                     @Override
                     public void accept(ScenarioContext serializable) {
-                        Optional<Event> event = serializable.getEvent();
+                        Optional<Action> event = serializable.getEvent();
                         if (event.isEmpty()) {
                             throw invalidMessageTypeException;
                         }
-                        if (!(event.get() instanceof MessageEvent messageEvent)) {
+                        if (!(event.get() instanceof MessageAction messageEvent)) {
                             throw invalidMessageTypeException;
                         }
                         if (!(messageEvent.getPayload() instanceof ViewChangeMessage message)) {
@@ -95,11 +95,11 @@ public class ViewChangeMessageFactory extends MessageMutatorFactory {
                 new MessageMutationFault("hbft-view-change-remove-first-req-checkpoint", "Remove first request from checkpoint", List.of(ViewChangeMessage.class)) {
                     @Override
                     public void accept(ScenarioContext serializable) {
-                        Optional<Event> event = serializable.getEvent();
+                        Optional<Action> event = serializable.getEvent();
                         if (event.isEmpty()) {
                             throw invalidMessageTypeException;
                         }
-                        if (!(event.get() instanceof MessageEvent messageEvent)) {
+                        if (!(event.get() instanceof MessageAction messageEvent)) {
                             throw invalidMessageTypeException;
                         }
                         if (!(messageEvent.getPayload() instanceof ViewChangeMessage message)) {
@@ -121,11 +121,11 @@ public class ViewChangeMessageFactory extends MessageMutatorFactory {
                 new MessageMutationFault("hbft-view-change-remove-last-req-p", "Remove last request from P", List.of(ViewChangeMessage.class)) {
                     @Override
                     public void accept(ScenarioContext serializable) {
-                        Optional<Event> event = serializable.getEvent();
+                        Optional<Action> event = serializable.getEvent();
                         if (event.isEmpty()) {
                             throw invalidMessageTypeException;
                         }
-                        if (!(event.get() instanceof MessageEvent messageEvent)) {
+                        if (!(event.get() instanceof MessageAction messageEvent)) {
                             throw invalidMessageTypeException;
                         }
                         if (!(messageEvent.getPayload() instanceof ViewChangeMessage message)) {
@@ -144,11 +144,11 @@ public class ViewChangeMessageFactory extends MessageMutatorFactory {
                 new MessageMutationFault("hbft-view-change-remove-first-req-p", "Remove first request from P", List.of(ViewChangeMessage.class)) {
                     @Override
                     public void accept(ScenarioContext serializable) {
-                        Optional<Event> event = serializable.getEvent();
+                        Optional<Action> event = serializable.getEvent();
                         if (event.isEmpty()) {
                             throw invalidMessageTypeException;
                         }
-                        if (!(event.get() instanceof MessageEvent messageEvent)) {
+                        if (!(event.get() instanceof MessageAction messageEvent)) {
                             throw invalidMessageTypeException;
                         }
                         if (!(messageEvent.getPayload() instanceof ViewChangeMessage message)) {
@@ -167,11 +167,11 @@ public class ViewChangeMessageFactory extends MessageMutatorFactory {
                 new MessageMutationFault("hbft-view-change-decrement-last-req-p", "Decrement seq num of last request in P", List.of(ViewChangeMessage.class)) {
                     @Override
                     public void accept(ScenarioContext serializable) {
-                        Optional<Event> event = serializable.getEvent();
+                        Optional<Action> event = serializable.getEvent();
                         if (event.isEmpty()) {
                             throw invalidMessageTypeException;
                         }
-                        if (!(event.get() instanceof MessageEvent messageEvent)) {
+                        if (!(event.get() instanceof MessageAction messageEvent)) {
                             throw invalidMessageTypeException;
                         }
                         if (!(messageEvent.getPayload() instanceof ViewChangeMessage message)) {
@@ -191,11 +191,11 @@ public class ViewChangeMessageFactory extends MessageMutatorFactory {
                 new MessageMutationFault("hbft-view-change-increment-last-req-p", "Increment seq num of last request in P", List.of(ViewChangeMessage.class)) {
                     @Override
                     public void accept(ScenarioContext serializable) {
-                        Optional<Event> event = serializable.getEvent();
+                        Optional<Action> event = serializable.getEvent();
                         if (event.isEmpty()) {
                             throw invalidMessageTypeException;
                         }
-                        if (!(event.get() instanceof MessageEvent messageEvent)) {
+                        if (!(event.get() instanceof MessageAction messageEvent)) {
                             throw invalidMessageTypeException;
                         }
                         if (!(messageEvent.getPayload() instanceof ViewChangeMessage message)) {
@@ -215,11 +215,11 @@ public class ViewChangeMessageFactory extends MessageMutatorFactory {
                 new MessageMutationFault("hbft-view-change-decrement-first-req-p", "Decrement seq num of first request in P", List.of(ViewChangeMessage.class)) {
                     @Override
                     public void accept(ScenarioContext serializable) {
-                        Optional<Event> event = serializable.getEvent();
+                        Optional<Action> event = serializable.getEvent();
                         if (event.isEmpty()) {
                             throw invalidMessageTypeException;
                         }
-                        if (!(event.get() instanceof MessageEvent messageEvent)) {
+                        if (!(event.get() instanceof MessageAction messageEvent)) {
                             throw invalidMessageTypeException;
                         }
                         if (!(messageEvent.getPayload() instanceof ViewChangeMessage message)) {
@@ -240,11 +240,11 @@ public class ViewChangeMessageFactory extends MessageMutatorFactory {
                 new MessageMutationFault("hbft-view-change-increment-first-req-p", "Increment seq num of first request in P", List.of(ViewChangeMessage.class)) {
                     @Override
                     public void accept(ScenarioContext serializable) {
-                        Optional<Event> event = serializable.getEvent();
+                        Optional<Action> event = serializable.getEvent();
                         if (event.isEmpty()) {
                             throw invalidMessageTypeException;
                         }
-                        if (!(event.get() instanceof MessageEvent messageEvent)) {
+                        if (!(event.get() instanceof MessageAction messageEvent)) {
                             throw invalidMessageTypeException;
                         }
                         if (!(messageEvent.getPayload() instanceof ViewChangeMessage message)) {
@@ -265,11 +265,11 @@ public class ViewChangeMessageFactory extends MessageMutatorFactory {
                 new MessageMutationFault("hbft-view-change-checkpoint-decrement-seqNum", "Decrement checkpoint seqNum", List.of(ViewChangeMessage.class)) {
                     @Override
                     public void accept(ScenarioContext serializable) {
-                        Optional<Event> event = serializable.getEvent();
+                        Optional<Action> event = serializable.getEvent();
                         if (event.isEmpty()) {
                             throw invalidMessageTypeException;
                         }
-                        if (!(event.get() instanceof MessageEvent messageEvent)) {
+                        if (!(event.get() instanceof MessageAction messageEvent)) {
                             throw invalidMessageTypeException;
                         }
                         if (!(messageEvent.getPayload() instanceof ViewChangeMessage message)) {
@@ -287,11 +287,11 @@ public class ViewChangeMessageFactory extends MessageMutatorFactory {
                 new MessageMutationFault("hbft-view-change-checkpoint-increment-seqNum", "Increment checkpoint seqNum", List.of(ViewChangeMessage.class)) {
                     @Override
                     public void accept(ScenarioContext serializable) {
-                        Optional<Event> event = serializable.getEvent();
+                        Optional<Action> event = serializable.getEvent();
                         if (event.isEmpty()) {
                             throw invalidMessageTypeException;
                         }
-                        if (!(event.get() instanceof MessageEvent messageEvent)) {
+                        if (!(event.get() instanceof MessageAction messageEvent)) {
                             throw invalidMessageTypeException;
                         }
                         if (!(messageEvent.getPayload() instanceof ViewChangeMessage message)) {
@@ -309,11 +309,11 @@ public class ViewChangeMessageFactory extends MessageMutatorFactory {
                 new MessageMutationFault("hbft-view-change-remove-last-request", "Remove last request", List.of(ViewChangeMessage.class)) {
                     @Override
                     public void accept(ScenarioContext serializable) {
-                        Optional<Event> event = serializable.getEvent();
+                        Optional<Action> event = serializable.getEvent();
                         if (event.isEmpty()) {
                             throw invalidMessageTypeException;
                         }
-                        if (!(event.get() instanceof MessageEvent messageEvent)) {
+                        if (!(event.get() instanceof MessageAction messageEvent)) {
                             throw invalidMessageTypeException;
                         }
                         if (!(messageEvent.getPayload() instanceof ViewChangeMessage message)) {
@@ -332,11 +332,11 @@ public class ViewChangeMessageFactory extends MessageMutatorFactory {
                 new MessageMutationFault("hbft-view-change-remove-first-request", "Remove first request", List.of(ViewChangeMessage.class)) {
                     @Override
                     public void accept(ScenarioContext serializable) {
-                        Optional<Event> event = serializable.getEvent();
+                        Optional<Action> event = serializable.getEvent();
                         if (event.isEmpty()) {
                             throw invalidMessageTypeException;
                         }
-                        if (!(event.get() instanceof MessageEvent messageEvent)) {
+                        if (!(event.get() instanceof MessageAction messageEvent)) {
                             throw invalidMessageTypeException;
                         }
                         if (!(messageEvent.getPayload() instanceof ViewChangeMessage message)) {
@@ -355,11 +355,11 @@ public class ViewChangeMessageFactory extends MessageMutatorFactory {
                 new MessageMutationFault("hbft-view-change-decrement-last-request-seqNum", "Decrement last request seqNum", List.of(ViewChangeMessage.class)) {
                     @Override
                     public void accept(ScenarioContext serializable) {
-                        Optional<Event> event = serializable.getEvent();
+                        Optional<Action> event = serializable.getEvent();
                         if (event.isEmpty()) {
                             throw invalidMessageTypeException;
                         }
-                        if (!(event.get() instanceof MessageEvent messageEvent)) {
+                        if (!(event.get() instanceof MessageAction messageEvent)) {
                             throw invalidMessageTypeException;
                         }
                         if (!(messageEvent.getPayload() instanceof ViewChangeMessage message)) {
@@ -379,11 +379,11 @@ public class ViewChangeMessageFactory extends MessageMutatorFactory {
                 new MessageMutationFault("hbft-view-change-increment-last-request-seqNum", "Increment last request seqNum", List.of(ViewChangeMessage.class)) {
                     @Override
                     public void accept(ScenarioContext serializable) {
-                        Optional<Event> event = serializable.getEvent();
+                        Optional<Action> event = serializable.getEvent();
                         if (event.isEmpty()) {
                             throw invalidMessageTypeException;
                         }
-                        if (!(event.get() instanceof MessageEvent messageEvent)) {
+                        if (!(event.get() instanceof MessageAction messageEvent)) {
                             throw invalidMessageTypeException;
                         }
                         if (!(messageEvent.getPayload() instanceof ViewChangeMessage message)) {
@@ -403,11 +403,11 @@ public class ViewChangeMessageFactory extends MessageMutatorFactory {
                 new MessageMutationFault("hbft-view-change-decrement-first-request-seqNum", "Decrement first request seqNum", List.of(ViewChangeMessage.class)) {
                     @Override
                     public void accept(ScenarioContext serializable) {
-                        Optional<Event> event = serializable.getEvent();
+                        Optional<Action> event = serializable.getEvent();
                         if (event.isEmpty()) {
                             throw invalidMessageTypeException;
                         }
-                        if (!(event.get() instanceof MessageEvent messageEvent)) {
+                        if (!(event.get() instanceof MessageAction messageEvent)) {
                             throw invalidMessageTypeException;
                         }
                         if (!(messageEvent.getPayload() instanceof ViewChangeMessage message)) {
@@ -427,11 +427,11 @@ public class ViewChangeMessageFactory extends MessageMutatorFactory {
                 new MessageMutationFault("hbft-view-change-increment-first-request-seqNum", "Increment first request seqNum", List.of(ViewChangeMessage.class)) {
                     @Override
                     public void accept(ScenarioContext serializable) {
-                        Optional<Event> event = serializable.getEvent();
+                        Optional<Action> event = serializable.getEvent();
                         if (event.isEmpty()) {
                             throw invalidMessageTypeException;
                         }
-                        if (!(event.get() instanceof MessageEvent messageEvent)) {
+                        if (!(event.get() instanceof MessageAction messageEvent)) {
                             throw invalidMessageTypeException;
                         }
                         if (!(messageEvent.getPayload() instanceof ViewChangeMessage message)) {
@@ -453,11 +453,11 @@ public class ViewChangeMessageFactory extends MessageMutatorFactory {
                 new MessageMutationFault("hbft-view-change-last-req-in-R", "Change last request in R", List.of(ViewChangeMessage.class)) {
                     @Override
                     public void accept(ScenarioContext serializable) {
-                        Optional<Event> event = serializable.getEvent();
+                        Optional<Action> event = serializable.getEvent();
                         if (event.isEmpty()) {
                             throw invalidMessageTypeException;
                         }
-                        if (!(event.get() instanceof MessageEvent messageEvent)) {
+                        if (!(event.get() instanceof MessageAction messageEvent)) {
                             throw invalidMessageTypeException;
                         }
                         if (!(messageEvent.getPayload() instanceof ViewChangeMessage message)) {
@@ -488,11 +488,11 @@ public class ViewChangeMessageFactory extends MessageMutatorFactory {
                 new MessageMutationFault("hbft-view-change-first-req-in-R", "Change first request in R", List.of(ViewChangeMessage.class)) {
                     @Override
                     public void accept(ScenarioContext serializable) {
-                        Optional<Event> event = serializable.getEvent();
+                        Optional<Action> event = serializable.getEvent();
                         if (event.isEmpty()) {
                             throw invalidMessageTypeException;
                         }
-                        if (!(event.get() instanceof MessageEvent messageEvent)) {
+                        if (!(event.get() instanceof MessageAction messageEvent)) {
                             throw invalidMessageTypeException;
                         }
                         if (!(messageEvent.getPayload() instanceof ViewChangeMessage message)) {

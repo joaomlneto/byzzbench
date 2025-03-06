@@ -1,25 +1,15 @@
 package byzzbench.simulator.transport;
 
 import byzzbench.simulator.utils.NonNull;
-import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import org.springframework.validation.annotation.Validated;
 
-import javax.annotation.processing.Generated;
 import java.io.Serializable;
 import java.time.Instant;
 
 @Validated
-@Generated(value = "io.swagger.codegen.v3.generators.java.SpringCodegen", date = "2020-11-16T16:49:29.361700Z[Europe/Lisbon]")
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "type", visible = true)
-@JsonSubTypes({
-        @JsonSubTypes.Type(value = TimeoutEvent.class, name = "Timeout"),
-        @JsonSubTypes.Type(value = MessageEvent.class, name = "Message"),
-        @JsonSubTypes.Type(value = ClientRequestEvent.class, name = "ClientRequest"),
-        @JsonSubTypes.Type(value = MutateMessageEvent.class, name = "MutateMessage"),
-        @JsonSubTypes.Type(value = GenericFaultEvent.class, name = "GenericFault"),
-})
-public interface Event extends Serializable {
+public interface Action extends Serializable {
     /**
      * Get the eventId
      *

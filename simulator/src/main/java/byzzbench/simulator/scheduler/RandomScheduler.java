@@ -4,10 +4,9 @@ import byzzbench.simulator.Scenario;
 import byzzbench.simulator.config.ByzzBenchConfig;
 import byzzbench.simulator.faults.faults.MessageMutationFault;
 import byzzbench.simulator.service.MessageMutatorService;
-import byzzbench.simulator.transport.ClientRequestEvent;
-import byzzbench.simulator.transport.Event;
-import byzzbench.simulator.transport.MessageEvent;
-import byzzbench.simulator.transport.TimeoutEvent;
+import byzzbench.simulator.transport.*;
+import byzzbench.simulator.transport.Action;
+import byzzbench.simulator.transport.MessageAction;
 import com.fasterxml.jackson.databind.JsonNode;
 import lombok.extern.java.Log;
 import org.springframework.stereotype.Component;
@@ -46,24 +45,24 @@ public class RandomScheduler extends BaseScheduler {
     @Override
     public synchronized Optional<EventDecision> scheduleNext(Scenario scenario) throws Exception {
         // Get a random event
-        List<Event> availableEvents = scenario.getTransport().getEventsInState(Event.Status.QUEUED);
+        List<Action> availableActions = scenario.getTransport().getEventsInState(Action.Status.QUEUED);
 
         // if there are no events, return empty
-        if (availableEvents.isEmpty()) {
+        if (availableActions.isEmpty()) {
             log.warning("No queued events (messages, timeouts)!");
             return Optional.empty();
         }
 
-        List<TimeoutEvent> timeoutEvents = this.getQueuedTimeoutEvents(scenario);
-        List<Event> clientRequestEvents = availableEvents.stream().filter(ClientRequestEvent.class::isInstance).toList();
-        List<MessageEvent> messageEvents = availableEvents.stream().filter(MessageEvent.class::isInstance).map(MessageEvent.class::cast).toList();
+        List<TimeoutAction> timeoutEvents = this.getQueuedTimeoutEvents(scenario);
+        List<Action> clientRequestActions = availableActions.stream().filter(ClientRequestAction.class::isInstance).toList();
+        List<MessageAction> messageEvents = availableActions.stream().filter(MessageAction.class::isInstance).map(MessageAction.class::cast).toList();
 
         SortedSet<String> faultyReplicaIds = scenario.getFaultyReplicaIds();
-        List<MessageEvent> mutateableMessageEvents = messageEvents.stream().filter(msg -> faultyReplicaIds.contains(msg.getSenderId())).toList();
+        List<MessageAction> mutateableMessageEvents = messageEvents.stream().filter(msg -> faultyReplicaIds.contains(msg.getSenderId())).toList();
 
         int timeoutWeight = timeoutEvents.size() * this.deliverTimeoutWeight();
         int deliverMessageWeight = messageEvents.size() * this.deliverMessageWeight();
-        int deliverClientRequestWeight = clientRequestEvents.size() * this.deliverClientRequestWeight();
+        int deliverClientRequestWeight = clientRequestActions.size() * this.deliverClientRequestWeight();
         int dropMessageWeight = (messageEvents.size() * this.dropMessageWeight(scenario));
         int mutateMessageWeight = (mutateableMessageEvents.size() * this.mutateMessageWeight(scenario));
         int dieRoll = random.nextInt(timeoutWeight + deliverMessageWeight
@@ -72,7 +71,7 @@ public class RandomScheduler extends BaseScheduler {
         // check if we should trigger a timeout
         dieRoll -= timeoutWeight;
         if (dieRoll < 0) {
-            Event timeout = getRandomElement(timeoutEvents);
+            Action timeout = getRandomElement(timeoutEvents);
             scenario.getTransport().deliverEvent(timeout.getEventId());
             EventDecision decision = new EventDecision(EventDecision.DecisionType.DELIVERED, timeout.getEventId());
             return Optional.of(decision);
@@ -81,7 +80,7 @@ public class RandomScheduler extends BaseScheduler {
         // check if we should deliver a message (without changes)
         dieRoll -= deliverMessageWeight;
         if (dieRoll < 0) {
-            Event message = getNextMessageEvent(messageEvents);
+            Action message = getNextMessageEvent(messageEvents);
             scenario.getTransport().deliverEvent(message.getEventId());
             EventDecision decision = new EventDecision(EventDecision.DecisionType.DELIVERED, message.getEventId());
             return Optional.of(decision);
@@ -90,7 +89,7 @@ public class RandomScheduler extends BaseScheduler {
         // check if we should target delivering a request from a client to a replica
         dieRoll -= deliverClientRequestWeight;
         if (dieRoll < 0) {
-            Event request = getRandomElement(clientRequestEvents);
+            Action request = getRandomElement(clientRequestActions);
             scenario.getTransport().deliverEvent(request.getEventId());
             EventDecision decision = new EventDecision(EventDecision.DecisionType.DELIVERED, request.getEventId());
             return Optional.of(decision);
@@ -99,7 +98,7 @@ public class RandomScheduler extends BaseScheduler {
         // check if we should drop a message sent between nodes
         dieRoll -= dropMessageWeight;
         if (dieRoll < 0) {
-            Event message = getRandomElement(messageEvents);
+            Action message = getRandomElement(messageEvents);
             scenario.getTransport().dropEvent(message.getEventId());
             EventDecision decision = new EventDecision(EventDecision.DecisionType.DROPPED, message.getEventId());
             return Optional.of(decision);
@@ -108,7 +107,7 @@ public class RandomScheduler extends BaseScheduler {
         // check if we should mutate-and-deliver a message sent between nodes
         dieRoll -= mutateMessageWeight;
         if (dieRoll < 0) {
-            Event message = getRandomElement(mutateableMessageEvents);
+            Action message = getRandomElement(mutateableMessageEvents);
             List<MessageMutationFault> mutators = this.getMessageMutatorService().getMutatorsForEvent(message);
 
             if (mutators.isEmpty()) {

@@ -13,14 +13,14 @@ import java.time.Instant;
 /**
  * Event that represents a timeout.
  *
- * @see Event
+ * @see Action
  */
 @EqualsAndHashCode(callSuper = true)
 @Data
 @JsonTypeName("Timeout")
 @SuperBuilder
 @ToString(callSuper = true)
-public class TimeoutEvent extends BaseEvent implements MailboxEvent {
+public class TimeoutAction extends BaseAction implements MailboxEvent {
 
     /**
      * A human description of the event.

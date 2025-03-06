@@ -9,7 +9,7 @@ import java.time.Instant;
 
 @Data
 @SuperBuilder
-public abstract class BaseEvent implements Event {
+public abstract class BaseAction implements Action {
     /**
      * The unique identifier of the event.
      */

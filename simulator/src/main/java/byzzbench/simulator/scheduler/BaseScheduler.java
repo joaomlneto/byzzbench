@@ -3,10 +3,9 @@ package byzzbench.simulator.scheduler;
 import byzzbench.simulator.Scenario;
 import byzzbench.simulator.config.ByzzBenchConfig;
 import byzzbench.simulator.service.MessageMutatorService;
-import byzzbench.simulator.transport.ClientRequestEvent;
-import byzzbench.simulator.transport.Event;
-import byzzbench.simulator.transport.MessageEvent;
-import byzzbench.simulator.transport.TimeoutEvent;
+import byzzbench.simulator.transport.*;
+import byzzbench.simulator.transport.Action;
+import byzzbench.simulator.transport.TimeoutAction;
 import byzzbench.simulator.utils.NonNull;
 import com.fasterxml.jackson.databind.JsonNode;
 import lombok.AccessLevel;
@@ -60,8 +59,8 @@ public abstract class BaseScheduler implements Scheduler {
      * @param scenario The scenario
      * @return The list of events
      */
-    public <T extends Event> List<T> getQueuedEventsOfType(Scenario scenario, Class<T> eventClass) {
-        return scenario.getTransport().getEventsInState(Event.Status.QUEUED)
+    public <T extends Action> List<T> getQueuedEventsOfType(Scenario scenario, Class<T> eventClass) {
+        return scenario.getTransport().getEventsInState(Action.Status.QUEUED)
                 .stream()
                 .filter(eventClass::isInstance)
                 .map(eventClass::cast)
@@ -74,8 +73,8 @@ public abstract class BaseScheduler implements Scheduler {
      * @param scenario The scenario
      * @return The list of message events
      */
-    public List<MessageEvent> getQueuedMessageEvents(Scenario scenario) {
-        return getQueuedEventsOfType(scenario, MessageEvent.class);
+    public List<MessageAction> getQueuedMessageEvents(Scenario scenario) {
+        return getQueuedEventsOfType(scenario, MessageAction.class);
     }
 
     /**
@@ -84,14 +83,14 @@ public abstract class BaseScheduler implements Scheduler {
      * @param scenario The scenario
      * @return The list of timeout events
      */
-    public List<TimeoutEvent> getQueuedTimeoutEvents(Scenario scenario) {
+    public List<TimeoutAction> getQueuedTimeoutEvents(Scenario scenario) {
         // get all time out events in order of expiration (earliest first)
-        List<TimeoutEvent> events = getQueuedEventsOfType(scenario, TimeoutEvent.class).stream()
-                .sorted(Comparator.comparing(TimeoutEvent::getExpiresAt))
+        List<TimeoutAction> events = getQueuedEventsOfType(scenario, TimeoutAction.class).stream()
+                .sorted(Comparator.comparing(TimeoutAction::getExpiresAt))
                 .toList();
         // get the first (earliest-expiring) timeout event for each replica
-        Map<String, TimeoutEvent> firstTimeoutForEachReplica = new HashMap<>();
-        for (TimeoutEvent event : events) {
+        Map<String, TimeoutAction> firstTimeoutForEachReplica = new HashMap<>();
+        for (TimeoutAction event : events) {
             firstTimeoutForEachReplica.putIfAbsent(event.getRecipientId(), event);
         }
 
@@ -99,7 +98,7 @@ public abstract class BaseScheduler implements Scheduler {
             case SYNC -> {
                 // get the set of replica IDs with messages in their mailbox
                 Set<String> replicasWithQueuedMessagesInMailbox = getQueuedMessageEvents(scenario).stream()
-                        .map(MessageEvent::getRecipientId)
+                        .map(MessageAction::getRecipientId)
                         .collect(Collectors.toSet());
                 // return only timeouts for replicas without messages in their mailbox
                 return firstTimeoutForEachReplica.values().stream()
@@ -120,8 +119,8 @@ public abstract class BaseScheduler implements Scheduler {
      * @param scenario The scenario
      * @return the list of client request events
      */
-    public List<ClientRequestEvent> getQueuedClientRequestEvents(Scenario scenario) {
-        return getQueuedEventsOfType(scenario, ClientRequestEvent.class);
+    public List<ClientRequestAction> getQueuedClientRequestEvents(Scenario scenario) {
+        return getQueuedEventsOfType(scenario, ClientRequestAction.class);
     }
 
     /**
@@ -137,10 +136,10 @@ public abstract class BaseScheduler implements Scheduler {
      * @param messageEvents The list of queued message events
      * @return The next message event
      */
-    public <T extends Event> T getNextMessageEvent(List<T> messageEvents) {
+    public <T extends Action> T getNextMessageEvent(List<T> messageEvents) {
         switch (config.getScheduler().getExecutionMode()) {
             case SYNC -> {
-                return messageEvents.stream().min(Comparator.comparing(Event::getEventId)).orElseThrow();
+                return messageEvents.stream().min(Comparator.comparing(Action::getEventId)).orElseThrow();
             }
             case ASYNC -> {
                 return messageEvents.get(rand.nextInt(messageEvents.size()));
@@ -187,7 +186,7 @@ public abstract class BaseScheduler implements Scheduler {
         if (scenario.getTransport().isGlobalStabilizationTime()) {
             return 0;
         }
-        
+
         int remaining = remainingDropMessages.computeIfAbsent(scenario, s -> config.getScheduler().getMaxDropMessages());
         return remaining > 0 ? config.getScheduler().getDropMessageWeight() : 0;
     }

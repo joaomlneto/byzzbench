@@ -3,8 +3,8 @@ package byzzbench.simulator.protocols.fasthotstuff.faults;
 import byzzbench.simulator.faults.Fault;
 import byzzbench.simulator.faults.ScenarioContext;
 import byzzbench.simulator.protocols.fasthotstuff.message.Block;
-import byzzbench.simulator.transport.Event;
-import byzzbench.simulator.transport.MessageEvent;
+import byzzbench.simulator.transport.Action;
+import byzzbench.simulator.transport.MessageAction;
 
 import java.util.Optional;
 
@@ -26,13 +26,13 @@ public class OmitMessage implements Fault {
 
     @Override
     public void accept(ScenarioContext ctx) {
-        Optional<Event> e = ctx.getEvent();
+        Optional<Action> e = ctx.getEvent();
 
         if (e.isEmpty()) {
             throw new IllegalArgumentException("Event is empty");
         }
 
-        if (!(e.get() instanceof MessageEvent message)) {
+        if (!(e.get() instanceof MessageAction message)) {
             throw new IllegalArgumentException("Event is not a MessageEvent");
         }
 
@@ -45,7 +45,7 @@ public class OmitMessage implements Fault {
                 && message.getPayload() instanceof Block blockMessage &&
                 blockMessage.getRound() == round) {
             System.out.println("DROPPING MESSAGE");
-            message.setStatus(Event.Status.DROPPED);
+            message.setStatus(Action.Status.DROPPED);
         }
     }
 

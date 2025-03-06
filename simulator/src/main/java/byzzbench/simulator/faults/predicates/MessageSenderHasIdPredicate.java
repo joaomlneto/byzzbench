@@ -2,8 +2,8 @@ package byzzbench.simulator.faults.predicates;
 
 import byzzbench.simulator.faults.FaultPredicate;
 import byzzbench.simulator.faults.ScenarioContext;
-import byzzbench.simulator.transport.Event;
-import byzzbench.simulator.transport.MessageEvent;
+import byzzbench.simulator.transport.Action;
+import byzzbench.simulator.transport.MessageAction;
 import lombok.RequiredArgsConstructor;
 
 import java.util.Optional;
@@ -27,14 +27,14 @@ public class MessageSenderHasIdPredicate implements FaultPredicate {
 
     @Override
     public boolean test(ScenarioContext ctx) {
-        Optional<Event> event = ctx.getEvent();
+        Optional<Action> event = ctx.getEvent();
 
         if (event.isEmpty()) {
             return false;
         }
 
         // check if it is a message event
-        if (!(event.get() instanceof MessageEvent message)) {
+        if (!(event.get() instanceof MessageAction message)) {
             return false;
         }
 

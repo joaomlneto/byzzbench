@@ -4,8 +4,8 @@ import byzzbench.simulator.faults.ScenarioContext;
 import byzzbench.simulator.faults.factories.MessageMutatorFactory;
 import byzzbench.simulator.faults.faults.MessageMutationFault;
 import byzzbench.simulator.protocols.XRPL.messages.XRPLProposeMessage;
-import byzzbench.simulator.transport.Event;
-import byzzbench.simulator.transport.MessageEvent;
+import byzzbench.simulator.transport.Action;
+import byzzbench.simulator.transport.MessageAction;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
@@ -22,11 +22,11 @@ public class XRPLProposeMessageMutatorFactory extends MessageMutatorFactory {
                 new MessageMutationFault("xrpl-propose-proposal-inc", "Increment Proposal Seq", List.of(XRPLProposeMessage.class)) {
                     @Override
                     public void accept(ScenarioContext serializable) {
-                        Optional<Event> event = serializable.getEvent();
+                        Optional<Action> event = serializable.getEvent();
                         if (event.isEmpty()) {
                             throw invalidMessageTypeException;
                         }
-                        if (!(event.get() instanceof MessageEvent messageEvent)) {
+                        if (!(event.get() instanceof MessageAction messageEvent)) {
                             throw invalidMessageTypeException;
                         }
                         if (!(messageEvent.getPayload() instanceof XRPLProposeMessage message)) {
@@ -40,11 +40,11 @@ public class XRPLProposeMessageMutatorFactory extends MessageMutatorFactory {
                 new MessageMutationFault("xrpl-propose-proposal-dec", "Decrement Proposal Seq", List.of(XRPLProposeMessage.class)) {
                     @Override
                     public void accept(ScenarioContext serializable) {
-                        Optional<Event> event = serializable.getEvent();
+                        Optional<Action> event = serializable.getEvent();
                         if (event.isEmpty()) {
                             throw invalidMessageTypeException;
                         }
-                        if (!(event.get() instanceof MessageEvent messageEvent)) {
+                        if (!(event.get() instanceof MessageAction messageEvent)) {
                             throw invalidMessageTypeException;
                         }
                         if (!(messageEvent.getPayload() instanceof XRPLProposeMessage message)) {
@@ -58,11 +58,11 @@ public class XRPLProposeMessageMutatorFactory extends MessageMutatorFactory {
                 new MessageMutationFault("xrpl-propose-mutate-tx", "Mutate Tx", List.of(XRPLProposeMessage.class)) {
                     @Override
                     public void accept(ScenarioContext serializable) {
-                        Optional<Event> event = serializable.getEvent();
+                        Optional<Action> event = serializable.getEvent();
                         if (event.isEmpty()) {
                             throw invalidMessageTypeException;
                         }
-                        if (!(event.get() instanceof MessageEvent messageEvent)) {
+                        if (!(event.get() instanceof MessageAction messageEvent)) {
                             throw invalidMessageTypeException;
                         }
                         if (!(messageEvent.getPayload() instanceof XRPLProposeMessage message)) {

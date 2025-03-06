@@ -9,12 +9,12 @@ import lombok.experimental.SuperBuilder;
 /**
  * Event that represents a message being sent from one node to another.
  *
- * @see Event
+ * @see Action
  */
 @EqualsAndHashCode(callSuper = true)
 @Data
 @JsonTypeName("Message")
 @SuperBuilder
 @ToString(callSuper = true)
-public class MessageEvent extends BaseMessageEvent<MessagePayload> {
+public class MessageAction extends BaseMessageAction<MessagePayload> {
 }

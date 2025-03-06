@@ -36,8 +36,8 @@ few methods:
 
 Timeouts are implemented via callbacks to a `Runnable`, also handled by the `Transport`:
 
-- `setTimeout(Runnable, timeout)`: Creates a timeout event of `timeout` milliseconds, which will then invoke
-  the `Runnable`. The time is currently being ignored, and is instead triggered just like any other event by the
+- `setTimeout(Runnable, timeout)`: Creates a timeout action of `timeout` milliseconds, which will then invoke
+  the `Runnable`. The time is currently being ignored, and is instead triggered just like any other action by the
   scheduler.
 - `clearAllTimeouts()`: Invalidates all outstanding timeouts for the current replica.
 

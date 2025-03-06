@@ -1,7 +1,7 @@
 package byzzbench.simulator.faults;
 
 import byzzbench.simulator.Scenario;
-import byzzbench.simulator.transport.Event;
+import byzzbench.simulator.transport.Action;
 import byzzbench.simulator.utils.NonNull;
 import lombok.Getter;
 
@@ -23,17 +23,17 @@ public class ScenarioContext {
     /**
      * The event that is being processed. This is optional, as not all faults are event-specific.
      */
-    private final Event eventOptional;
+    private final Action actionOptional;
 
     /**
      * Creates a new fault context.
      *
      * @param scenario The scenario that is being processed.
-     * @param event    The event that is being processed.
+     * @param action   The event that is being processed.
      */
-    public ScenarioContext(@NonNull Scenario scenario, Event event) {
+    public ScenarioContext(@NonNull Scenario scenario, Action action) {
         this.scenario = scenario;
-        this.eventOptional = event;
+        this.actionOptional = action;
     }
 
     /**
@@ -50,7 +50,7 @@ public class ScenarioContext {
      *
      * @return The event that is being processed.
      */
-    public Optional<Event> getEvent() {
-        return Optional.ofNullable(eventOptional);
+    public Optional<Action> getEvent() {
+        return Optional.ofNullable(actionOptional);
     }
 }

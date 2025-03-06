@@ -12,7 +12,7 @@ import java.io.Serializable;
 @Data
 @SuperBuilder
 @ToString(callSuper = true)
-public abstract class BaseMessageEvent<T extends Serializable> extends BaseEvent implements MailboxEvent {
+public abstract class BaseMessageAction<T extends Serializable> extends BaseAction implements MailboxEvent {
     /**
      * The unique identifier of the receiving node
      */
