@@ -1,7 +1,7 @@
 package byzzbench.simulator.protocols.pbft;
 
-import byzzbench.simulator.BaseScenario;
 import byzzbench.simulator.Replica;
+import byzzbench.simulator.Scenario;
 import byzzbench.simulator.protocols.pbft_java.MessageLog;
 import byzzbench.simulator.protocols.pbft_java.PbftTerminationPredicate;
 import byzzbench.simulator.scheduler.Scheduler;
@@ -12,7 +12,7 @@ import java.util.SortedSet;
 import java.util.TreeSet;
 
 @Log
-public class PbftScenario extends BaseScenario {
+public class PbftScenario extends Scenario {
     private final int NUM_NODES = 4;
 
     public PbftScenario(Scheduler scheduler) {

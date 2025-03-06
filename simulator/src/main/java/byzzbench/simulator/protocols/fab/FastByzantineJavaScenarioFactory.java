@@ -1,7 +1,7 @@
 package byzzbench.simulator.protocols.fab;
 
-import byzzbench.simulator.BaseScenarioFactory;
 import byzzbench.simulator.Scenario;
+import byzzbench.simulator.ScenarioFactory;
 import byzzbench.simulator.config.ByzzBenchConfig;
 import byzzbench.simulator.scheduler.Scheduler;
 import byzzbench.simulator.service.MessageMutatorService;
@@ -11,7 +11,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.stereotype.Component;
 
 @Component
-public class FastByzantineJavaScenarioFactory extends BaseScenarioFactory {
+public class FastByzantineJavaScenarioFactory extends ScenarioFactory {
     public FastByzantineJavaScenarioFactory(SchedulerFactoryService schedulerFactoryService, ByzzBenchConfig byzzBenchConfig, ObjectMapper objectMapper) {
         super(schedulerFactoryService, byzzBenchConfig, objectMapper);
     }

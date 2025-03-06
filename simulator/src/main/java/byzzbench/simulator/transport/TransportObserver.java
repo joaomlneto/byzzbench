@@ -6,30 +6,30 @@ public interface TransportObserver {
     /**
      * Called when an event is added to the transport layer.
      *
-     * @param action The event that was added.
+     * @param Action The event that was added.
      */
-    void onEventAdded(Action action);
+    void onEventAdded(Action Action);
 
     /**
      * Called when the status of an event changes to {@link Action.Status#DROPPED}.
      *
-     * @param action The event that was dropped.
+     * @param Action The event that was dropped.
      */
-    void onEventDropped(Action action);
+    void onEventDropped(Action Action);
 
     /**
      * Called when the status of an event changes from {@link Action.Status#DROPPED} to {@link Action.Status#QUEUED}.
      *
-     * @param action The event that was re-queued after being previously dropped.
+     * @param Action The event that was re-queued after being previously dropped.
      */
-    void onEventRequeued(Action action);
+    void onEventRequeued(Action Action);
 
     /**
      * Called when the status of an event changes to {@link Action.Status#DELIVERED}.
      *
-     * @param action The event that was delivered.
+     * @param Action The event that was delivered.
      */
-    void onEventDelivered(Action action);
+    void onEventDelivered(Action Action);
 
     /**
      * Called when a message is mutated.

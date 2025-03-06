@@ -160,21 +160,21 @@ public class Transport {
     /**
      * Append an event to the transport layer.
      *
-     * @param action The event to append
+     * @param Action The event to append
      */
-    private synchronized void appendEvent(Action action) {
+    private synchronized void appendEvent(Action Action) {
         // add the event to the map
-        this.getEvents().put(action.getEventId(), action);
+        this.getEvents().put(Action.getEventId(), Action);
 
         // notify observers
-        this.observers.forEach(o -> o.onEventAdded(action));
+        this.observers.forEach(o -> o.onEventAdded(Action));
 
         // apply automatic faults
         this.automaticFaults.values()
-                .forEach(f -> f.testAndAccept(new ScenarioContext(this.scenario, action)));
+                .forEach(f -> f.testAndAccept(new ScenarioContext(this.scenario, Action)));
 
         // notify observers
-        this.getObservers().forEach(o -> o.onEventAdded(action));
+        this.getObservers().forEach(o -> o.onEventAdded(Action));
     }
 
     /**

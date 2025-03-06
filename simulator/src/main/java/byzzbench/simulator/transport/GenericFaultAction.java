@@ -17,7 +17,7 @@ import lombok.experimental.SuperBuilder;
 @JsonTypeName("GenericFault")
 @SuperBuilder
 @ToString(callSuper = true)
-public class GenericFaultAction extends BaseAction {
+public class GenericFaultAction extends Action {
     /**
      * The payload of the request.
      */

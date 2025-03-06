@@ -1,7 +1,7 @@
 package byzzbench.simulator.protocols.tendermint;
 
-import byzzbench.simulator.BaseScenario;
 import byzzbench.simulator.Replica;
+import byzzbench.simulator.Scenario;
 import byzzbench.simulator.scheduler.Scheduler;
 import com.fasterxml.jackson.databind.JsonNode;
 import lombok.extern.java.Log;
@@ -10,7 +10,7 @@ import java.util.SortedSet;
 import java.util.TreeSet;
 
 @Log
-public class TendermintScenarioExecutor extends BaseScenario {
+public class TendermintScenarioExecutor extends Scenario {
     private final int NUM_NODES = 4;
 
     public TendermintScenarioExecutor(Scheduler scheduler) {

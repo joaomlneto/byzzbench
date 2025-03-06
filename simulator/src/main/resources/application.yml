@@ -5,9 +5,21 @@ spring:
   jackson:
     mapper:
       sort-properties-alphabetically: true
-  devtools:
-    livereload:
-      enabled: false
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
+  datasource:
+    url: jdbc:h2:mem:byzzbench
+    username: sa
+    password:
+    driver-class-name: org.h2.Driver
+  jpa:
+    database-platform: org.hibernate.dialect.H2Dialect
+    generate-ddl: true
+    show-sql: true
+    defer-datasource-initialization: true
+
 springdoc:
   swagger-ui:
     path: /
@@ -50,3 +62,4 @@ byzzbench:
       minEvents: 500 # check if N events have been scheduled. If so, can terminate
       minRounds: 5 # check if N rounds have elapsed. If so, can terminate
       samplingFrequency: 1 # check if should terminate every N scheduler decisions
+

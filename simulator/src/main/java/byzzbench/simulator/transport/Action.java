@@ -1,42 +1,43 @@
 package byzzbench.simulator.transport;
 
 import byzzbench.simulator.utils.NonNull;
-import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import org.springframework.validation.annotation.Validated;
+import lombok.Builder;
+import lombok.Data;
+import lombok.experimental.SuperBuilder;
 
 import java.io.Serializable;
 import java.time.Instant;
 
-@Validated
-@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "type", visible = true)
-public interface Action extends Serializable {
+@Data
+@SuperBuilder
+public abstract class Action implements Serializable {
     /**
-     * Get the eventId
-     *
-     * @return a long representing the eventId
+     * The unique identifier of the event.
      */
     @NonNull
-    long getEventId();
+    private final long eventId;
 
     /**
-     * Get the time at which the event was created
-     *
-     * @return an Instant representing the time at which the event was created
+     * The physical time at which the request was created.
      */
-    Instant getCreatedAt();
+    @Builder.Default
+    @NonNull
+    private final Instant createdAt = Instant.now();
 
     /**
-     * Get the time at which the event was delivered
-     *
-     * @return an Instant representing the time at which the event was delivered
+     * The physical time at which the request was delivered.
      */
-    Instant getDeliveredAt();
+    @NonNull
+    private transient Instant deliveredAt;
 
-    Status getStatus();
+    /**
+     * The status of the event.
+     */
+    @Builder.Default
+    @NonNull
+    private Status status = Status.QUEUED;
 
-    void setStatus(Status status);
-
-    enum Status {
+    public enum Status {
         QUEUED,
         DELIVERED,
         DROPPED

@@ -3,7 +3,6 @@ plugins {
     id("org.springframework.boot") version "3.3.9"
     id("io.spring.dependency-management") version "1.1.7"
     id("org.graalvm.buildtools.native") version "0.10.5"
-    //id("com.vaadin") version "24.4.7"
     id("com.github.psxpaul.execfork") version "0.2.2"
     id("org.springdoc.openapi-gradle-plugin") version "1.9.0"
 }
@@ -25,19 +24,17 @@ repositories {
     mavenCentral()
 }
 
-//extra["vaadinVersion"] = "24.6.4"
-
 dependencies {
     implementation("org.springframework.boot:spring-boot-starter-web")
     implementation("org.springframework.boot:spring-boot-starter-data-jpa")
-    compileOnly("org.projectlombok:lombok")
+    implementation("org.springframework.boot:spring-boot-starter-validation")
+    implementation("org.xerial:sqlite-jdbc:3.49.1.0")
     annotationProcessor("org.springframework.boot:spring-boot-configuration-processor")
+    compileOnly("org.projectlombok:lombok")
     annotationProcessor("org.projectlombok:lombok")
+    runtimeOnly("com.h2database:h2")
     testImplementation("org.springframework.boot:spring-boot-starter-test")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
-    implementation("org.springframework.boot:spring-boot-starter-validation")
-    runtimeOnly("com.h2database:h2")
-    implementation("org.xerial:sqlite-jdbc:3.49.1.0")
 
     // sqlite dialect
     //implementation("org.hibernate:hibernate-community-dialects:5.6.3.Final")
@@ -56,12 +53,6 @@ dependencies {
     implementation("com.fasterxml.jackson.module:jackson-module-parameter-names:2.18.3")
     implementation("com.fasterxml.jackson.datatype:jackson-datatype-jdk8:2.18.3")
 }
-
-/*dependencyManagement {
-    imports {
-        mavenBom("com.vaadin:vaadin-bom:${property("vaadinVersion")}")
-    }
-}*/
 
 tasks.withType<Test> {
     useJUnitPlatform()

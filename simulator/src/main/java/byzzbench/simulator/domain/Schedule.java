@@ -1,4 +1,4 @@
-package byzzbench.simulator.schedule;
+package byzzbench.simulator.domain;
 
 import byzzbench.simulator.Scenario;
 import byzzbench.simulator.ScenarioPredicate;
@@ -6,38 +6,55 @@ import byzzbench.simulator.transport.Action;
 import byzzbench.simulator.utils.NonNull;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import lombok.Builder;
+import jakarta.persistence.*;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.ToString;
-import lombok.extern.jackson.Jacksonized;
 
 import java.io.Serializable;
 import java.util.*;
 
+/**
+ * Represents a schedule of events that can be executed by the simulator.
+ */
 @Getter
-@Jacksonized
-@Builder
 @JsonIgnoreProperties(ignoreUnknown = true)
 @ToString
+@Entity
+@NoArgsConstructor
 public class Schedule implements Serializable {
     /**
      * The list of events in the schedule.
      */
     @NonNull
-    private final List<Action> actions = Collections.synchronizedList(new ArrayList<>());
+    @Transient
+    private final List<Action> actions = new ArrayList<>();
     /**
      * The set of invariants that are violated by this schedule.
      */
     @NonNull
+    @Transient
     private final SortedSet<ScenarioPredicate> brokenInvariants = new TreeSet<>();
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.SEQUENCE)
+    private long id;
 
     @NonNull
     @JsonIgnore
-    private final Scenario scenario;
-
+    @Transient
+    private Scenario scenario;
     @NonNull
-    @Builder.Default
     private boolean isFinalized = false;
+
+    /**
+     * Creates a new schedule for the given scenario.
+     *
+     * @param scenario the scenario that generated this schedule.
+     */
+    public Schedule(Scenario scenario) {
+        this.scenario = scenario;
+    }
 
     public void appendEvent(Action action) {
         if (isFinalized) {
@@ -78,7 +95,11 @@ public class Schedule implements Serializable {
      *
      * @return the id of the scenario that generated this schedule.
      */
-    public @NonNull String getScenarioId() {
-        return scenario.getId();
+    public @NonNull Scenario getScenario() {
+        if (scenario == null) {
+            // FIXME: should generate a scenario materializing the schedule here!
+            throw new IllegalStateException("No scenario set for this schedule");
+        }
+        return this.scenario;
     }
 }

@@ -20,7 +20,7 @@ import java.time.Instant;
 @JsonTypeName("Timeout")
 @SuperBuilder
 @ToString(callSuper = true)
-public class TimeoutAction extends BaseAction implements MailboxEvent {
+public class TimeoutAction extends Action implements MailboxEvent {
 
     /**
      * A human description of the event.

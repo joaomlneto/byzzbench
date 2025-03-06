@@ -1,6 +1,5 @@
 package byzzbench.simulator.protocols.dummy;
 
-import byzzbench.simulator.BaseScenario;
 import byzzbench.simulator.Replica;
 import byzzbench.simulator.Scenario;
 import byzzbench.simulator.ScenarioPredicate;
@@ -14,7 +13,7 @@ import java.util.TreeSet;
 
 @Getter
 @Log
-public class DummyScenario extends BaseScenario {
+public class DummyScenario extends Scenario {
     private final ScenarioPredicate terminationCondition = new ScenarioPredicate() {
         @Override
         public boolean test(Scenario scenario) {

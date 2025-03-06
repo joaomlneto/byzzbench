@@ -1,7 +1,7 @@
 package byzzbench.simulator.protocols.pbft;
 
-import byzzbench.simulator.BaseScenarioFactory;
 import byzzbench.simulator.Scenario;
+import byzzbench.simulator.ScenarioFactory;
 import byzzbench.simulator.config.ByzzBenchConfig;
 import byzzbench.simulator.scheduler.Scheduler;
 import byzzbench.simulator.service.MessageMutatorService;
@@ -16,7 +16,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  * commented-out @Component annotation below.
  */
 //@Component
-public class PbftScenarioFactory extends BaseScenarioFactory {
+public class PbftScenarioFactory extends ScenarioFactory {
     public PbftScenarioFactory(SchedulerFactoryService schedulerFactoryService, ByzzBenchConfig byzzBenchConfig, ObjectMapper objectMapper) {
         super(schedulerFactoryService, byzzBenchConfig, objectMapper);
     }

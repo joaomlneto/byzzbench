@@ -1,7 +1,7 @@
 package byzzbench.simulator.protocols.pbft_java;
 
-import byzzbench.simulator.BaseScenario;
 import byzzbench.simulator.Replica;
+import byzzbench.simulator.Scenario;
 import byzzbench.simulator.scheduler.Scheduler;
 import com.fasterxml.jackson.databind.JsonNode;
 import lombok.extern.java.Log;
@@ -14,7 +14,7 @@ import java.util.TreeSet;
  * https://github.com/caojohnny/pbft-java
  */
 @Log
-public class PbftJavaScenario extends BaseScenario {
+public class PbftJavaScenario extends Scenario {
     private final int numReplicas = 4;
 
     public PbftJavaScenario(Scheduler scheduler) {

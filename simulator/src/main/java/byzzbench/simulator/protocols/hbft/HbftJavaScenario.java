@@ -1,8 +1,8 @@
 package byzzbench.simulator.protocols.hbft;
 
-import byzzbench.simulator.BaseScenario;
 import byzzbench.simulator.Client;
 import byzzbench.simulator.Replica;
+import byzzbench.simulator.Scenario;
 import byzzbench.simulator.scheduler.Scheduler;
 import com.fasterxml.jackson.databind.JsonNode;
 import lombok.Getter;
@@ -13,7 +13,7 @@ import java.util.TreeSet;
 
 @Getter
 @Log
-public class HbftJavaScenario extends BaseScenario {
+public class HbftJavaScenario extends Scenario {
     private final int NUM_NODES = 4;
     private SortedSet<String> nodeIds;
 

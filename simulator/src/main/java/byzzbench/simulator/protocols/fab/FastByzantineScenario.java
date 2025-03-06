@@ -1,8 +1,9 @@
 package byzzbench.simulator.protocols.fab;
 
-import byzzbench.simulator.BaseScenario;
 import byzzbench.simulator.Replica;
+import byzzbench.simulator.Scenario;
 import byzzbench.simulator.scheduler.Scheduler;
+import byzzbench.simulator.transport.Transport;
 import com.fasterxml.jackson.databind.JsonNode;
 import lombok.extern.java.Log;
 
@@ -11,7 +12,7 @@ import java.util.SortedSet;
 import java.util.TreeSet;
 
 @Log
-public class FastByzantineScenario extends BaseScenario {
+public class FastByzantineScenario extends Scenario {
 //    public FastByzantineScenario(Scheduler scheduler) {
 //        super("fab-java", scheduler);
 //        this.terminationCondition = new FastByzantineTerminationCondition();
@@ -33,6 +34,7 @@ public class FastByzantineScenario extends BaseScenario {
 
     @Override
     protected void setup() {
+        Transport transport = this.getTransport();
         // Scenario with f = 1 (Byzantine nodes), p = 4, a = 6, l = 4.
         int p = 4;
         int a = 6;

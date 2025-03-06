@@ -1,7 +1,7 @@
 package byzzbench.simulator.protocols.XRPL;
 
-import byzzbench.simulator.BaseScenario;
 import byzzbench.simulator.Client;
+import byzzbench.simulator.Scenario;
 import byzzbench.simulator.scheduler.Scheduler;
 import byzzbench.simulator.transport.DefaultClientRequestPayload;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -11,7 +11,7 @@ import java.util.List;
 import java.util.SortedSet;
 import java.util.TreeSet;
 
-public class XRPLScenario extends BaseScenario {
+public class XRPLScenario extends Scenario {
     private final int NUM_NODES = 7;
 
 
@@ -184,6 +184,6 @@ public class XRPLScenario extends BaseScenario {
     private void sendClientRequest(String fromId, String operation, String toId) {
         Client from = this.getClients().get(fromId);
         DefaultClientRequestPayload payload = new DefaultClientRequestPayload(operation);
-        this.transport.sendMessage(from, payload, toId);
+        this.getTransport().sendMessage(from, payload, toId);
     }
 }

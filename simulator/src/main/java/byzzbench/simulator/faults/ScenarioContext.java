@@ -23,17 +23,17 @@ public class ScenarioContext {
     /**
      * The event that is being processed. This is optional, as not all faults are event-specific.
      */
-    private final Action actionOptional;
+    private final Action ActionOptional;
 
     /**
      * Creates a new fault context.
      *
      * @param scenario The scenario that is being processed.
-     * @param action   The event that is being processed.
+     * @param Action   The event that is being processed.
      */
-    public ScenarioContext(@NonNull Scenario scenario, Action action) {
+    public ScenarioContext(@NonNull Scenario scenario, Action Action) {
         this.scenario = scenario;
-        this.actionOptional = action;
+        this.ActionOptional = Action;
     }
 
     /**
@@ -51,6 +51,6 @@ public class ScenarioContext {
      * @return The event that is being processed.
      */
     public Optional<Action> getEvent() {
-        return Optional.ofNullable(actionOptional);
+        return Optional.ofNullable(ActionOptional);
     }
 }

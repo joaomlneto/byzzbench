@@ -1,19 +1,17 @@
 package byzzbench.simulator.protocols.hbft;
 
-import org.springframework.stereotype.Component;
-
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-
-import byzzbench.simulator.BaseScenarioFactory;
 import byzzbench.simulator.Scenario;
+import byzzbench.simulator.ScenarioFactory;
 import byzzbench.simulator.config.ByzzBenchConfig;
 import byzzbench.simulator.scheduler.Scheduler;
 import byzzbench.simulator.service.MessageMutatorService;
 import byzzbench.simulator.service.SchedulerFactoryService;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.springframework.stereotype.Component;
 
 @Component
-public class HbftJavaScenarioFactory extends BaseScenarioFactory {
+public class HbftJavaScenarioFactory extends ScenarioFactory {
     public HbftJavaScenarioFactory(SchedulerFactoryService schedulerFactoryService, ByzzBenchConfig byzzBenchConfig, ObjectMapper objectMapper) {
         super(schedulerFactoryService, byzzBenchConfig, objectMapper);
     }
