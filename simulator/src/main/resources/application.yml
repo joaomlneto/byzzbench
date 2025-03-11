@@ -5,20 +5,27 @@ spring:
   jackson:
     mapper:
       sort-properties-alphabetically: true
-  h2:
-    console:
-      enabled: true
-      path: /h2-console
+  #h2:
+  #  console:
+  #    enabled: true
+  #    path: /h2-console
   datasource:
-    url: jdbc:h2:mem:byzzbench
-    username: sa
-    password:
-    driver-class-name: org.h2.Driver
+    #url: jdbc:h2:mem:byzzbench
+    #username: sa
+    #password:
+    #driver-class-name: org.h2.Driver
+    url: jdbc:postgresql://localhost:5432/byzzbench
+    username: postgres
+    password: byzzbench
+    driver-class-name: org.postgresql.Driver
   jpa:
-    database-platform: org.hibernate.dialect.H2Dialect
     generate-ddl: true
     show-sql: true
     defer-datasource-initialization: true
+    #database-platform: org.hibernate.dialect.H2Dialect
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+    hibernate:
+      ddl-auto: update
 
 springdoc:
   swagger-ui:
@@ -28,10 +35,9 @@ springdoc:
 
 # ByzzBench configuration
 byzzbench:
-  autostart: true # Whether to start running scenarios automatically on startup
-  numScenarios: 1000
-  #outputPath: /tmp/byzzbench # The path to write the output to
-  outputSchedules: buggy # which schedules to write to file? one of 'all', 'buggy' or 'none'
+  autostart: true # Whether to start running a scenario campaign on startup.
+  numScenarios: 100 # Number of scenarios to run in the campaign.
+  saveSchedules: buggy # which schedules to save? 'all', 'buggy' or 'none'.
 
   scheduler:
     id: "byzzfuzz" # The ID of the scheduler to use
@@ -40,7 +46,6 @@ byzzbench:
     maxMutateMessages: 0 # Maximum number of messages to mutate per scenario
     deliverTimeoutWeight: 1 # The weight for scheduler to trigger a timeout
     deliverMessageWeight: 99 # The weight for scheduler to deliver a message
-    deliverClientRequestWeight: 99 # The weight for scheduler to deliver a client request to a replica
     dropMessageWeight: 0 # The weight for scheduler to drop a message
     mutateMessageWeight: 0 # The weight for scheduler to mutate a message
     params: # additional parameters for the scheduler
@@ -62,4 +67,3 @@ byzzbench:
       minEvents: 500 # check if N events have been scheduled. If so, can terminate
       minRounds: 5 # check if N rounds have elapsed. If so, can terminate
       samplingFrequency: 1 # check if should terminate every N scheduler decisions
-
