@@ -4,8 +4,8 @@ import byzzbench.simulator.faults.ScenarioContext;
 import byzzbench.simulator.faults.factories.MessageMutatorFactory;
 import byzzbench.simulator.faults.faults.MessageMutationFault;
 import byzzbench.simulator.protocols.fab.messages.QueryMessage;
-import byzzbench.simulator.transport.Action;
-import byzzbench.simulator.transport.MessageAction;
+import byzzbench.simulator.transport.Event;
+import byzzbench.simulator.transport.MessageEvent;
 import lombok.ToString;
 import org.springframework.stereotype.Component;
 
@@ -25,13 +25,13 @@ public class QueryMessageMutatorFactory extends MessageMutatorFactory {
                 ) {
                     @Override
                     public void accept(ScenarioContext serializable) {
-                        Optional<Action> event = serializable.getEvent();
+                        Optional<Event> event = serializable.getEvent();
 
                         if (event.isEmpty()) {
                             throw new IllegalArgumentException("Invalid message type");
                         }
 
-                        if (!(event.get() instanceof MessageAction messageEvent)) {
+                        if (!(event.get() instanceof MessageEvent messageEvent)) {
                             throw new IllegalArgumentException("Invalid message type");
                         }
 
@@ -54,12 +54,12 @@ public class QueryMessageMutatorFactory extends MessageMutatorFactory {
                 ) {
                     @Override
                     public void accept(ScenarioContext serializable) {
-                        Optional<Action> event = serializable.getEvent();
+                        Optional<Event> event = serializable.getEvent();
                         if (event.isEmpty()) {
                             throw new IllegalArgumentException("Invalid message type");
                         }
 
-                        if (!(event.get() instanceof MessageAction messageEvent)) {
+                        if (!(event.get() instanceof MessageEvent messageEvent)) {
                             throw new IllegalArgumentException("Invalid message type");
                         }
 

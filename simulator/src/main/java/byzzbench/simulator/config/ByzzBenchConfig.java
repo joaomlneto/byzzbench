@@ -1,12 +1,10 @@
 package byzzbench.simulator.config;
 
-import byzzbench.simulator.SimulatorApplication;
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
 import org.springframework.validation.annotation.Validated;
 
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -20,21 +18,20 @@ import java.util.Map;
 @Data
 @Validated
 public class ByzzBenchConfig {
+
+
     /**
      * Whether to start generating scenarios on startup automatically.
      */
     private boolean autostart = false;
-
     /**
      * The number of scenarios to run at a time. Defaults to Integer.MAX_VALUE.
      */
     private int numScenarios = Integer.MAX_VALUE;
-
     /**
-     * The path to the output directory. Defaults to "./output".
+     * Policy for saving schedules in the database.
      */
-    private Path outputPath = Path.of("output");
-
+    private SaveScheduleMode saveSchedules = SaveScheduleMode.ALL;
     /**
      * Scheduler parameters.
      */
@@ -44,13 +41,20 @@ public class ByzzBenchConfig {
      */
     private ScenarioConfig scenario = new ScenarioConfig();
 
-    /**
-     * Get the output path for this run, in the format "output/{start-time}".
-     *
-     * @return The output path for this run.
-     */
-    public Path getOutputPathForThisRun() {
-        return this.outputPath.resolve(String.valueOf(SimulatorApplication.getStartTime().getEpochSecond()));
+    // execution should be either "async" or "sync". Here is the enum:
+    public enum SaveScheduleMode {
+        /**
+         * Save all schedules in the database.
+         */
+        ALL,
+        /**
+         * Save only schedules that did not terminate successfully.
+         */
+        BUGGY,
+        /**
+         * Do not save any schedules.
+         */
+        NONE,
     }
 
     /**
@@ -103,10 +107,6 @@ public class ByzzBenchConfig {
          * Weighted probability of delivering a message
          */
         private int deliverMessageWeight = 99;
-        /**
-         * Weighted probability of delivering a request from a client
-         */
-        private int deliverClientRequestWeight = 99;
         /**
          * Weighted probability of dropping a message.
          * The default is 0 (no messages dropped as a scheduler decision).

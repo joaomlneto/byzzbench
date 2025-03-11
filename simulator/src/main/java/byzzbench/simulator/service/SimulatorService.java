@@ -1,10 +1,15 @@
 package byzzbench.simulator.service;
 
 import byzzbench.simulator.Scenario;
+import byzzbench.simulator.ScenarioPredicate;
 import byzzbench.simulator.config.ByzzBenchConfig;
+import byzzbench.simulator.domain.Campaign;
+import byzzbench.simulator.repository.CampaignRepository;
+import byzzbench.simulator.repository.ScheduleRepository;
 import byzzbench.simulator.scheduler.EventDecision;
 import byzzbench.simulator.state.ErroredPredicate;
-import byzzbench.simulator.transport.Action;
+import byzzbench.simulator.state.LivenessPredicate;
+import byzzbench.simulator.transport.Event;
 import byzzbench.simulator.transport.messages.MessageWithRound;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
@@ -16,10 +21,7 @@ import org.springframework.context.annotation.DependsOn;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Service;
 
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.time.Instant;
+import java.util.Collections;
 import java.util.Optional;
 import java.util.OptionalLong;
 import java.util.Set;
@@ -40,11 +42,25 @@ public class SimulatorService {
     private final ByzzBenchConfig byzzBenchConfig;
     private final ScenarioService scenarioService;
     private final ExecutorService executor = Executors.newFixedThreadPool(1);
+    private final ScheduleRepository scheduleRepository;
+    private final CampaignRepository campaignRepository;
     private SimulatorServiceMode mode = SimulatorServiceMode.STOPPED;
     private boolean shouldStop = false;
     private Scenario scenario;
     private String scenarioId;
     private JsonNode scenarioParams;
+
+    private void finalizeSchedule(Set<ScenarioPredicate> brokenInvariants, Campaign campaign) {
+        scenario.getSchedule().finalizeSchedule(brokenInvariants);
+        scenario.getSchedule().setCampaign(campaign);
+
+        // save the schedule according to the selected policy
+        if ((byzzBenchConfig.getSaveSchedules() == ByzzBenchConfig.SaveScheduleMode.ALL) ||
+                (byzzBenchConfig.getSaveSchedules() == ByzzBenchConfig.SaveScheduleMode.BUGGY
+                        && !brokenInvariants.isEmpty())) {
+            scheduleRepository.save(scenario.getSchedule());
+        }
+    }
 
     @EventListener(ApplicationReadyEvent.class)
     @DependsOn("simulatorApplication")
@@ -74,20 +90,6 @@ public class SimulatorService {
      * Creates a new scenario with the previously set scenario ID and parameters, replacing the current scenario.
      */
     public void resetScenario() {
-        if (this.scenario != null) {
-            // serialize it to file
-            Path root = byzzBenchConfig.getOutputPathForThisRun();
-            // create a directory "xyz" in the root path
-            String currentTimeWithMillis = String.format("%d%09d", Instant.now().getEpochSecond(), Instant.now().getNano());
-            int scenarioIndex = this.scenarioService.getScenarios().size();
-            Path scenarioPath = root.resolve(String.format("%s-%d", this.scenario.getId(), scenarioIndex));
-            System.out.println("Scenario path: " + scenarioPath);
-            try {
-                Files.createDirectories(scenarioPath);
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
-        }
         this.scenario = this.scenarioService.generateScenario(this.scenarioId, this.scenarioParams);
         this.scenario.runScenario();
     }
@@ -114,8 +116,15 @@ public class SimulatorService {
         }
 
         this.shouldStop = false;
+
+        // create thread to execute the campaign
         this.executor.submit(() -> {
             this.mode = SimulatorServiceMode.RUNNING;
+            long numScenarios = this.byzzBenchConfig.getNumScenarios();
+            Campaign campaign = new Campaign();
+            campaign.setNumScenarios(numScenarios);
+            campaignRepository.save(campaign);
+
             // reset the scenario to ensure that the scenario is in a clean state
             this.changeScenario(this.getScenarioId(), this.getScenarioParams());
 
@@ -124,9 +133,8 @@ public class SimulatorService {
             int numErr = 0;
             try {
                 // run the scenario until the stop flag is set
-                for (int i = 0; !this.shouldStop && i < this.byzzBenchConfig.getNumScenarios(); i++) {
-                    int scenarioId = this.scenarioService.getScenarios().size() + 1;
-                    System.out.println("Running scenario #" + scenarioId);
+                for (int i = 0; !this.shouldStop && i < numScenarios; i++) {
+                    log.info(String.format("Running scenario %d/%d%n", i + 1, numScenarios));
 
                     try {
                         while (true) {
@@ -141,17 +149,10 @@ public class SimulatorService {
 
                             if (decision.isEmpty()) {
                                 System.out.println("We're after GST and still no events!!");
-                                // print num of events in the scenario
-                                System.out.println("Number of events in the scenario: " + this.scenario.getSchedule().getActions().size());
-                                // print number of delivered events
-                                System.out.println("Number of delivered events: " + this.scenario.getTransport().getEventsInState(Action.Status.DELIVERED).size());
-                                // print ALL events in the scenario, independent of their status
-                                System.out.println("All events in the scenario:");
-                                this.scenario.getTransport().getEvents().values().forEach(System.out::println);
-                                // print the event IDs in the schedule
-                                System.out.println("Event IDs in the schedule:");
-                                this.scenario.getSchedule().getActions().forEach(e -> System.out.println(e.getEventId()));
-                                this.shouldStop = true;
+                                this.scenario.getSchedule().finalizeSchedule(Set.of(new LivenessPredicate()));
+                                scenario.getSchedule().setCampaign(campaign);
+                                scheduleRepository.save(scenario.getSchedule());
+                                numTerm++;
                                 break;
                             }
 
@@ -162,15 +163,14 @@ public class SimulatorService {
                             // if the invariants do not hold, terminate the run
                             if (!this.scenario.invariantsHold()) {
                                 log.info("Invariants do not hold, terminating. . .");
-                                var unsatisfiedInvariants = this.scenario.unsatisfiedInvariants();
-                                this.scenario.getSchedule().finalizeSchedule(unsatisfiedInvariants);
                                 numTerm++;
+                                this.finalizeSchedule(this.scenario.unsatisfiedInvariants(), campaign);
                                 break;
                             }
 
                             if (shouldCheckTermination) {
                                 OptionalLong maxDeliveredRound = this.scenario.getTransport()
-                                        .getEventsInState(Action.Status.DELIVERED)
+                                        .getEventsInState(Event.Status.DELIVERED)
                                         .stream()
                                         .filter(MessageWithRound.class::isInstance)
                                         .map(MessageWithRound.class::cast)
@@ -178,7 +178,7 @@ public class SimulatorService {
                                         .max();
 
                                 OptionalLong minQueuedRound = this.scenario.getTransport()
-                                        .getEventsInState(Action.Status.QUEUED)
+                                        .getEventsInState(Event.Status.QUEUED)
                                         .stream()
                                         .filter(MessageWithRound.class::isInstance)
                                         .map(MessageWithRound.class::cast)
@@ -190,7 +190,7 @@ public class SimulatorService {
                                         && currentRound >= byzzBenchConfig.getScenario().getTermination().getMinRounds()) {
                                     log.info("Reached min # of events or rounds for this run, terminating. . .");
                                     numMaxedOut++;
-                                    scenario.getSchedule().finalizeSchedule();
+                                    this.finalizeSchedule(Collections.emptySet(), campaign);
                                     break;
                                 }
                             }
@@ -200,7 +200,7 @@ public class SimulatorService {
                     } catch (Exception e) {
                         System.out.println("Error in schedule " + scenarioId + ": " + e);
                         e.printStackTrace();
-                        scenario.getSchedule().finalizeSchedule(Set.of(new ErroredPredicate()));
+                        this.finalizeSchedule(Set.of(new ErroredPredicate()), campaign);
                         numErr += 1;
                     }
 

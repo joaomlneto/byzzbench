@@ -2,8 +2,8 @@ package byzzbench.simulator.service;
 
 import byzzbench.simulator.faults.factories.MessageMutatorFactory;
 import byzzbench.simulator.faults.faults.MessageMutationFault;
-import byzzbench.simulator.transport.Action;
-import byzzbench.simulator.transport.MessageAction;
+import byzzbench.simulator.transport.Event;
+import byzzbench.simulator.transport.MessageEvent;
 import lombok.Getter;
 import org.springframework.stereotype.Service;
 
@@ -65,9 +65,9 @@ public class MessageMutatorService {
         return new ArrayList<>(this.mutatorsByClass.getOrDefault(clazz, Collections.emptySortedSet()));
     }
 
-    public List<MessageMutationFault> getMutatorsForEvent(Action Action) {
+    public List<MessageMutationFault> getMutatorsForEvent(Event Event) {
         // return empty list if it is not a message event
-        if (!(Action instanceof MessageAction me)) {
+        if (!(Event instanceof MessageEvent me)) {
             return Collections.emptyList();
         }
 

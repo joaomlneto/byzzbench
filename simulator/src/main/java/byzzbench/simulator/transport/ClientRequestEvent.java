@@ -7,14 +7,14 @@ import lombok.ToString;
 import lombok.experimental.SuperBuilder;
 
 /**
- * Event that represents a message being sent from one node to another.
+ * Event that represents a request from a client to a node.
  *
- * @see Action
+ * @see Event
  */
 @EqualsAndHashCode(callSuper = true)
 @Data
-@JsonTypeName("Message")
+@JsonTypeName("ClientRequest")
 @SuperBuilder
 @ToString(callSuper = true)
-public class MessageAction extends BaseMessageAction<MessagePayload> {
+public class ClientRequestEvent extends BaseMessageEvent<MessagePayload> {
 }

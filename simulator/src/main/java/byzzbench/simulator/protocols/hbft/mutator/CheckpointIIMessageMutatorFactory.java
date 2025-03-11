@@ -8,8 +8,8 @@ import byzzbench.simulator.protocols.hbft.HbftJavaReplica;
 import byzzbench.simulator.protocols.hbft.SpeculativeHistory;
 import byzzbench.simulator.protocols.hbft.message.CheckpointIIMessage;
 import byzzbench.simulator.protocols.hbft.message.RequestMessage;
-import byzzbench.simulator.transport.Action;
-import byzzbench.simulator.transport.MessageAction;
+import byzzbench.simulator.transport.Event;
+import byzzbench.simulator.transport.MessageEvent;
 import lombok.ToString;
 import org.springframework.stereotype.Component;
 
@@ -31,11 +31,11 @@ public class CheckpointIIMessageMutatorFactory extends MessageMutatorFactory {
                 new MessageMutationFault("hbft-checkpointII-seq-inc", "Increment Sequence Number", List.of(CheckpointIIMessage.class)) {
                     @Override
                     public void accept(ScenarioContext serializable) {
-                        Optional<Action> event = serializable.getEvent();
+                        Optional<Event> event = serializable.getEvent();
                         if (event.isEmpty()) {
                             throw invalidMessageTypeException;
                         }
-                        if (!(event.get() instanceof MessageAction messageEvent)) {
+                        if (!(event.get() instanceof MessageEvent messageEvent)) {
                             throw invalidMessageTypeException;
                         }
                         if (!(messageEvent.getPayload() instanceof CheckpointIIMessage message)) {
@@ -50,11 +50,11 @@ public class CheckpointIIMessageMutatorFactory extends MessageMutatorFactory {
                 new MessageMutationFault("hbft-checkpointII-seq-dec", "Decrement Sequence Number", List.of(CheckpointIIMessage.class)) {
                     @Override
                     public void accept(ScenarioContext serializable) {
-                        Optional<Action> event = serializable.getEvent();
+                        Optional<Event> event = serializable.getEvent();
                         if (event.isEmpty()) {
                             throw invalidMessageTypeException;
                         }
-                        if (!(event.get() instanceof MessageAction messageEvent)) {
+                        if (!(event.get() instanceof MessageEvent messageEvent)) {
                             throw invalidMessageTypeException;
                         }
                         if (!(messageEvent.getPayload() instanceof CheckpointIIMessage message)) {
@@ -68,11 +68,11 @@ public class CheckpointIIMessageMutatorFactory extends MessageMutatorFactory {
                 new MessageMutationFault("hbft-checkpointII-remove-last-request", "Remove last request from history", List.of(CheckpointIIMessage.class)) {
                     @Override
                     public void accept(ScenarioContext serializable) {
-                        Optional<Action> event = serializable.getEvent();
+                        Optional<Event> event = serializable.getEvent();
                         if (event.isEmpty()) {
                             throw invalidMessageTypeException;
                         }
-                        if (!(event.get() instanceof MessageAction messageEvent)) {
+                        if (!(event.get() instanceof MessageEvent messageEvent)) {
                             throw invalidMessageTypeException;
                         }
                         if (!(messageEvent.getPayload() instanceof CheckpointIIMessage message)) {
@@ -96,11 +96,11 @@ public class CheckpointIIMessageMutatorFactory extends MessageMutatorFactory {
                 new MessageMutationFault("hbft-checkpointII-remove-first-request", "Remove first request from history", List.of(CheckpointIIMessage.class)) {
                     @Override
                     public void accept(ScenarioContext serializable) {
-                        Optional<Action> event = serializable.getEvent();
+                        Optional<Event> event = serializable.getEvent();
                         if (event.isEmpty()) {
                             throw invalidMessageTypeException;
                         }
-                        if (!(event.get() instanceof MessageAction messageEvent)) {
+                        if (!(event.get() instanceof MessageEvent messageEvent)) {
                             throw invalidMessageTypeException;
                         }
                         if (!(messageEvent.getPayload() instanceof CheckpointIIMessage message)) {
@@ -125,11 +125,11 @@ public class CheckpointIIMessageMutatorFactory extends MessageMutatorFactory {
                 new MessageMutationFault("hbft-checkpointII-decrement-last-request-seq", "Decrement last request's seq num from history", List.of(CheckpointIIMessage.class)) {
                     @Override
                     public void accept(ScenarioContext serializable) {
-                        Optional<Action> event = serializable.getEvent();
+                        Optional<Event> event = serializable.getEvent();
                         if (event.isEmpty()) {
                             throw invalidMessageTypeException;
                         }
-                        if (!(event.get() instanceof MessageAction messageEvent)) {
+                        if (!(event.get() instanceof MessageEvent messageEvent)) {
                             throw invalidMessageTypeException;
                         }
                         if (!(messageEvent.getPayload() instanceof CheckpointIIMessage message)) {
@@ -154,11 +154,11 @@ public class CheckpointIIMessageMutatorFactory extends MessageMutatorFactory {
                 new MessageMutationFault("hbft-checkpointII-increment-last-request-seq", "Increment last request's seq num from history", List.of(CheckpointIIMessage.class)) {
                     @Override
                     public void accept(ScenarioContext serializable) {
-                        Optional<Action> event = serializable.getEvent();
+                        Optional<Event> event = serializable.getEvent();
                         if (event.isEmpty()) {
                             throw invalidMessageTypeException;
                         }
-                        if (!(event.get() instanceof MessageAction messageEvent)) {
+                        if (!(event.get() instanceof MessageEvent messageEvent)) {
                             throw invalidMessageTypeException;
                         }
                         if (!(messageEvent.getPayload() instanceof CheckpointIIMessage message)) {
@@ -183,11 +183,11 @@ public class CheckpointIIMessageMutatorFactory extends MessageMutatorFactory {
                 new MessageMutationFault("hbft-checkpointII-decrement-first-request-seq", "Decrement first request's seq num from history", List.of(CheckpointIIMessage.class)) {
                     @Override
                     public void accept(ScenarioContext serializable) {
-                        Optional<Action> event = serializable.getEvent();
+                        Optional<Event> event = serializable.getEvent();
                         if (event.isEmpty()) {
                             throw invalidMessageTypeException;
                         }
-                        if (!(event.get() instanceof MessageAction messageEvent)) {
+                        if (!(event.get() instanceof MessageEvent messageEvent)) {
                             throw invalidMessageTypeException;
                         }
                         if (!(messageEvent.getPayload() instanceof CheckpointIIMessage message)) {
@@ -212,11 +212,11 @@ public class CheckpointIIMessageMutatorFactory extends MessageMutatorFactory {
                 new MessageMutationFault("hbft-checkpointII-increment-first-request-seq", "Increment first request's seq num from history", List.of(CheckpointIIMessage.class)) {
                     @Override
                     public void accept(ScenarioContext serializable) {
-                        Optional<Action> event = serializable.getEvent();
+                        Optional<Event> event = serializable.getEvent();
                         if (event.isEmpty()) {
                             throw invalidMessageTypeException;
                         }
-                        if (!(event.get() instanceof MessageAction messageEvent)) {
+                        if (!(event.get() instanceof MessageEvent messageEvent)) {
                             throw invalidMessageTypeException;
                         }
                         if (!(messageEvent.getPayload() instanceof CheckpointIIMessage message)) {

@@ -44,11 +44,6 @@ public class Client implements Serializable, Node {
     private final AtomicLong requestSequenceNumber = new AtomicLong(0);
 
     /**
-     * The maximum number of requests that can be sent by the client.
-     */
-    private final long maxRequests = 1000;
-
-    /**
      * The replies received by the client.
      */
     private final List<Serializable> replies = new ArrayList<>();
@@ -85,9 +80,7 @@ public class Client implements Serializable, Node {
      */
     public void handleMessage(String senderId, MessagePayload reply) {
         this.replies.add(reply);
-        if (this.requestSequenceNumber.get() < this.maxRequests) {
-            this.sendRequest();
-        }
+        this.sendRequest();
     }
 
     @Override

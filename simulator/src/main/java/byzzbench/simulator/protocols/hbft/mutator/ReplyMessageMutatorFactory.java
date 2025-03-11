@@ -4,8 +4,8 @@ import byzzbench.simulator.faults.ScenarioContext;
 import byzzbench.simulator.faults.factories.MessageMutatorFactory;
 import byzzbench.simulator.faults.faults.MessageMutationFault;
 import byzzbench.simulator.protocols.hbft.message.ReplyMessage;
-import byzzbench.simulator.transport.Action;
-import byzzbench.simulator.transport.MessageAction;
+import byzzbench.simulator.transport.Event;
+import byzzbench.simulator.transport.MessageEvent;
 import lombok.ToString;
 import org.springframework.stereotype.Component;
 
@@ -26,11 +26,11 @@ public class ReplyMessageMutatorFactory extends MessageMutatorFactory {
                 new MessageMutationFault("hbft-reply-view-inc", "Increment View Number", List.of(ReplyMessage.class)) {
                     @Override
                     public void accept(ScenarioContext serializable) {
-                        Optional<Action> event = serializable.getEvent();
+                        Optional<Event> event = serializable.getEvent();
                         if (event.isEmpty()) {
                             throw invalidMessageTypeException;
                         }
-                        if (!(event.get() instanceof MessageAction messageEvent)) {
+                        if (!(event.get() instanceof MessageEvent messageEvent)) {
                             throw invalidMessageTypeException;
                         }
                         if (!(messageEvent.getPayload() instanceof ReplyMessage message)) {
@@ -44,11 +44,11 @@ public class ReplyMessageMutatorFactory extends MessageMutatorFactory {
                 new MessageMutationFault("hbft-reply-view-dec", "Decrement View Number", List.of(ReplyMessage.class)) {
                     @Override
                     public void accept(ScenarioContext serializable) {
-                        Optional<Action> event = serializable.getEvent();
+                        Optional<Event> event = serializable.getEvent();
                         if (event.isEmpty()) {
                             throw invalidMessageTypeException;
                         }
-                        if (!(event.get() instanceof MessageAction messageEvent)) {
+                        if (!(event.get() instanceof MessageEvent messageEvent)) {
                             throw invalidMessageTypeException;
                         }
                         if (!(messageEvent.getPayload() instanceof ReplyMessage message)) {
@@ -62,11 +62,11 @@ public class ReplyMessageMutatorFactory extends MessageMutatorFactory {
                 new MessageMutationFault("hbft-reply-seq-inc", "Increment Sequence Number", List.of(ReplyMessage.class)) {
                     @Override
                     public void accept(ScenarioContext serializable) {
-                        Optional<Action> event = serializable.getEvent();
+                        Optional<Event> event = serializable.getEvent();
                         if (event.isEmpty()) {
                             throw invalidMessageTypeException;
                         }
-                        if (!(event.get() instanceof MessageAction messageEvent)) {
+                        if (!(event.get() instanceof MessageEvent messageEvent)) {
                             throw invalidMessageTypeException;
                         }
                         if (!(messageEvent.getPayload() instanceof ReplyMessage message)) {
@@ -81,11 +81,11 @@ public class ReplyMessageMutatorFactory extends MessageMutatorFactory {
                 new MessageMutationFault("hbft-reply-sec-dec", "Decrement Sequence Number", List.of(ReplyMessage.class)) {
                     @Override
                     public void accept(ScenarioContext serializable) {
-                        Optional<Action> event = serializable.getEvent();
+                        Optional<Event> event = serializable.getEvent();
                         if (event.isEmpty()) {
                             throw invalidMessageTypeException;
                         }
-                        if (!(event.get() instanceof MessageAction messageEvent)) {
+                        if (!(event.get() instanceof MessageEvent messageEvent)) {
                             throw invalidMessageTypeException;
                         }
                         if (!(messageEvent.getPayload() instanceof ReplyMessage message)) {
@@ -99,11 +99,11 @@ public class ReplyMessageMutatorFactory extends MessageMutatorFactory {
                 new MessageMutationFault("hbft-reply-timestamp-inc", "Increment timestamp", List.of(ReplyMessage.class)) {
                     @Override
                     public void accept(ScenarioContext serializable) {
-                        Optional<Action> event = serializable.getEvent();
+                        Optional<Event> event = serializable.getEvent();
                         if (event.isEmpty()) {
                             throw invalidMessageTypeException;
                         }
-                        if (!(event.get() instanceof MessageAction messageEvent)) {
+                        if (!(event.get() instanceof MessageEvent messageEvent)) {
                             throw invalidMessageTypeException;
                         }
                         if (!(messageEvent.getPayload() instanceof ReplyMessage message)) {
@@ -117,11 +117,11 @@ public class ReplyMessageMutatorFactory extends MessageMutatorFactory {
                 new MessageMutationFault("hbft-reply-timestamp-dec", "Decrement timestamp", List.of(ReplyMessage.class)) {
                     @Override
                     public void accept(ScenarioContext serializable) {
-                        Optional<Action> event = serializable.getEvent();
+                        Optional<Event> event = serializable.getEvent();
                         if (event.isEmpty()) {
                             throw invalidMessageTypeException;
                         }
-                        if (!(event.get() instanceof MessageAction messageEvent)) {
+                        if (!(event.get() instanceof MessageEvent messageEvent)) {
                             throw invalidMessageTypeException;
                         }
                         if (!(messageEvent.getPayload() instanceof ReplyMessage message)) {

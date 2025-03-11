@@ -3,8 +3,8 @@ package byzzbench.simulator.scheduler;
 import byzzbench.simulator.Scenario;
 import byzzbench.simulator.config.ByzzBenchConfig;
 import byzzbench.simulator.service.MessageMutatorService;
-import byzzbench.simulator.transport.Action;
-import byzzbench.simulator.transport.MessageAction;
+import byzzbench.simulator.transport.Event;
+import byzzbench.simulator.transport.MessageEvent;
 import com.fasterxml.jackson.databind.JsonNode;
 import org.springframework.stereotype.Component;
 
@@ -15,7 +15,7 @@ import java.util.Optional;
  * A scheduler that delivers events in the order they were enqueued.
  */
 @Component
-public class FifoScheduler extends BaseScheduler {
+public class FifoScheduler extends Scheduler {
     public FifoScheduler(ByzzBenchConfig config, MessageMutatorService messageMutatorService) {
         super(config, messageMutatorService);
     }
@@ -31,14 +31,14 @@ public class FifoScheduler extends BaseScheduler {
     }
 
     @Override
-    public Optional<EventDecision> scheduleNext(Scenario scenario) throws Exception {
+    public Optional<EventDecision> scheduleNext(Scenario scenario) {
         // Get the next event
-        Optional<Action> event =
+        Optional<Event> event =
                 scenario.getTransport()
-                        .getEventsInState(Action.Status.QUEUED)
+                        .getEventsInState(Event.Status.QUEUED)
                         .stream()
-                        .filter(MessageAction.class::isInstance)
-                        .min(Comparator.comparingLong(Action::getEventId));
+                        .filter(MessageEvent.class::isInstance)
+                        .min(Comparator.comparingLong(Event::getEventId));
 
         if (event.isPresent()) {
             scenario.getTransport().deliverEvent(event.get().getEventId());

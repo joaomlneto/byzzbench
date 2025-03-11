@@ -1,32 +1,27 @@
 package byzzbench.simulator.protocols.tendermint;
 
-import java.util.SortedSet;
-import java.util.TreeSet;
-
-import byzzbench.simulator.protocols.tendermint.message.Block;
-import byzzbench.simulator.protocols.tendermint.message.ProposalMessage;
-import byzzbench.simulator.protocols.tendermint.message.RequestMessage;
+import byzzbench.simulator.scheduler.Scheduler;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
 import org.springframework.boot.test.context.SpringBootTest;
 
-import byzzbench.simulator.scheduler.Scheduler;
+import java.util.SortedSet;
+import java.util.TreeSet;
 
 @SpringBootTest
 public class TendermintReplicaTest {
 
+    private final int tolerance = 1;
+    Scheduler scheduler = Mockito.mock(Scheduler.class);
     private TendermintReplica replicaA;
     private TendermintReplica replicaB;
     private TendermintReplica replicaC;
     private TendermintReplica replicaD;
-    private int tolerance = 1;
-    Scheduler scheduler = Mockito.mock(Scheduler.class);
 
     @Test
-    void test() {}
+    void test() {
+    }
 
     @BeforeEach
     void setup() {

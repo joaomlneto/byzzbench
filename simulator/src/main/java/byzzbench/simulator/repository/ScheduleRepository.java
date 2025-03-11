@@ -6,5 +6,5 @@ import org.springframework.data.repository.CrudRepository;
 import java.util.Optional;
 
 public interface ScheduleRepository extends CrudRepository<Schedule, Long> {
-    Optional<Schedule> findById(Long aLong);
+    Optional<Schedule> findByScheduleId(Long scheduleId);
 }

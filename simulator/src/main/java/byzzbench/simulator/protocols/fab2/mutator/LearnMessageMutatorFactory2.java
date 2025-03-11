@@ -6,8 +6,8 @@ import byzzbench.simulator.faults.faults.MessageMutationFault;
 import byzzbench.simulator.protocols.fab2.Pair;
 import byzzbench.simulator.protocols.fab2.ProposalNumber;
 import byzzbench.simulator.protocols.fab2.messages.LearnMessage;
-import byzzbench.simulator.transport.Action;
-import byzzbench.simulator.transport.MessageAction;
+import byzzbench.simulator.transport.Event;
+import byzzbench.simulator.transport.MessageEvent;
 import lombok.ToString;
 import org.springframework.stereotype.Component;
 
@@ -27,13 +27,13 @@ public class LearnMessageMutatorFactory2 extends MessageMutatorFactory {
                 ) {
                     @Override
                     public void accept(ScenarioContext serializable) {
-                        Optional<Action> event = serializable.getEvent();
+                        Optional<Event> event = serializable.getEvent();
 
                         if (event.isEmpty()) {
                             throw new IllegalArgumentException("Invalid message type");
                         }
 
-                        if (!(event.get() instanceof MessageAction messageEvent)) {
+                        if (!(event.get() instanceof MessageEvent messageEvent)) {
                             throw new IllegalArgumentException("Invalid message type");
                         }
 
@@ -60,13 +60,13 @@ public class LearnMessageMutatorFactory2 extends MessageMutatorFactory {
                 ) {
                     @Override
                     public void accept(ScenarioContext serializable) {
-                        Optional<Action> event = serializable.getEvent();
+                        Optional<Event> event = serializable.getEvent();
 
                         if (event.isEmpty()) {
                             throw new IllegalArgumentException("Invalid message type");
                         }
 
-                        if (!(event.get() instanceof MessageAction messageEvent)) {
+                        if (!(event.get() instanceof MessageEvent messageEvent)) {
                             throw new IllegalArgumentException("Invalid message type");
                         }
 

@@ -10,7 +10,7 @@ import java.time.Instant;
 
 @Data
 @SuperBuilder
-public abstract class Action implements Serializable {
+public abstract class Event implements Serializable {
     /**
      * The unique identifier of the event.
      */

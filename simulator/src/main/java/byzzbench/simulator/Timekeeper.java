@@ -1,9 +1,9 @@
 package byzzbench.simulator;
 
 import byzzbench.simulator.faults.Fault;
-import byzzbench.simulator.transport.Action;
+import byzzbench.simulator.transport.Event;
 import byzzbench.simulator.transport.MutateMessageEventPayload;
-import byzzbench.simulator.transport.TimeoutAction;
+import byzzbench.simulator.transport.TimeoutEvent;
 import byzzbench.simulator.transport.TransportObserver;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
@@ -64,24 +64,24 @@ public class Timekeeper implements Serializable, TransportObserver {
     }
 
     @Override
-    public void onEventAdded(Action Action) {
+    public void onEventAdded(Event Event) {
         // nothing to do
     }
 
     @Override
-    public void onEventDropped(Action Action) {
+    public void onEventDropped(Event Event) {
         // nothing to do
     }
 
     @Override
-    public void onEventRequeued(Action Action) {
+    public void onEventRequeued(Event Event) {
         // nothing to do
     }
 
     @Override
-    public void onEventDelivered(Action Action) {
+    public void onEventDelivered(Event Event) {
         // check if it was a timeout
-        if (!(Action instanceof TimeoutAction timeoutEvent)) {
+        if (!(Event instanceof TimeoutEvent timeoutEvent)) {
             return;
         }
 
@@ -103,7 +103,7 @@ public class Timekeeper implements Serializable, TransportObserver {
     }
 
     @Override
-    public void onTimeout(TimeoutAction event) {
+    public void onTimeout(TimeoutEvent event) {
         // nothing to do
     }
 }

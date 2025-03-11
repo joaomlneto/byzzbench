@@ -2,8 +2,8 @@ package byzzbench.simulator.faults.faults;
 
 import byzzbench.simulator.faults.Fault;
 import byzzbench.simulator.faults.ScenarioContext;
-import byzzbench.simulator.transport.Action;
-import byzzbench.simulator.transport.MessageAction;
+import byzzbench.simulator.transport.Event;
+import byzzbench.simulator.transport.MessageEvent;
 import byzzbench.simulator.utils.NonNull;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
@@ -16,7 +16,7 @@ import java.util.Comparator;
 import java.util.Optional;
 
 /**
- * Abstract class for mutating {@link MessageAction}.
+ * Abstract class for mutating {@link MessageEvent}.
  * This class is used as a base to introduce arbitrary faults in the simulation.
  */
 @Getter
@@ -53,9 +53,9 @@ public abstract class MessageMutationFault implements Fault, Comparable<MessageM
      */
     @Override
     public final boolean test(ScenarioContext ctx) {
-        Optional<Action> event = ctx.getEvent();
+        Optional<Event> event = ctx.getEvent();
         return event.isPresent()
-                && event.get() instanceof MessageAction messageEvent
+                && event.get() instanceof MessageEvent messageEvent
                 && canMutate(messageEvent.getPayload());
     }
 

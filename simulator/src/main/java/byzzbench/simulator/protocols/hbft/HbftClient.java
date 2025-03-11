@@ -131,8 +131,7 @@ public class HbftClient extends Client {
          * and the request has not been completed yet.
          */
         if (this.completedReplies(clientReplyMessage.getTolerance())
-                && !this.completedRequests.contains(key)
-                && getRequestSequenceNumber().get() <= getMaxRequests()) {
+                && !this.completedRequests.contains(key)) {
             this.completedRequests.add(key);
             this.clearTimeout(this.timeouts.get(getRequestSequenceNumber().get()));
             this.sendRequest();

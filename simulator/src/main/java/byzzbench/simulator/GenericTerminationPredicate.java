@@ -1,7 +1,7 @@
 package byzzbench.simulator;
 
-import byzzbench.simulator.transport.Action;
-import byzzbench.simulator.transport.MessageAction;
+import byzzbench.simulator.transport.Event;
+import byzzbench.simulator.transport.MessageEvent;
 import byzzbench.simulator.transport.messages.MessageWithRound;
 
 import java.util.List;
@@ -27,10 +27,10 @@ public class GenericTerminationPredicate implements ScenarioPredicate {
 
         // Check if the maximum number of rounds has been reached
         if (maxRounds > 0) {
-            List<MessageWithRound> queuedMessages = scenario.getTransport().getEventsInState(Action.Status.DELIVERED)
+            List<MessageWithRound> queuedMessages = scenario.getTransport().getEventsInState(Event.Status.DELIVERED)
                     .stream()
-                    .filter(e -> e instanceof MessageAction msgEvent)
-                    .map(e -> (MessageAction) e)
+                    .filter(e -> e instanceof MessageEvent msgEvent)
+                    .map(e -> (MessageEvent) e)
                     .filter(e -> e.getPayload() instanceof MessageWithRound)
                     .map(e -> (MessageWithRound) e.getPayload())
                     .filter(msg -> msg.getRound() > maxRounds)

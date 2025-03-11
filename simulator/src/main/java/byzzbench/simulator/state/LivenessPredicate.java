@@ -2,7 +2,7 @@ package byzzbench.simulator.state;
 
 import byzzbench.simulator.Scenario;
 import byzzbench.simulator.ScenarioPredicate;
-import byzzbench.simulator.transport.Action;
+import byzzbench.simulator.transport.Event;
 
 /**
  * Predicate that checks if the scenario satisfies the liveness property.
@@ -20,7 +20,7 @@ public class LivenessPredicate implements ScenarioPredicate {
             return true;
         }
 
-        boolean hasQueuedEvents = !(scenarioExecutor.getTransport().getEventsInState(Action.Status.QUEUED).isEmpty());
+        boolean hasQueuedEvents = !(scenarioExecutor.getTransport().getEventsInState(Event.Status.QUEUED).isEmpty());
         if (!hasQueuedEvents) {
             System.out.println("LivenessPredicate: No events in the QUEUED state");
         }

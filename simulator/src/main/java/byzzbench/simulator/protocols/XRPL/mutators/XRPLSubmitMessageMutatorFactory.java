@@ -4,8 +4,8 @@ import byzzbench.simulator.faults.ScenarioContext;
 import byzzbench.simulator.faults.factories.MessageMutatorFactory;
 import byzzbench.simulator.faults.faults.MessageMutationFault;
 import byzzbench.simulator.protocols.XRPL.messages.XRPLSubmitMessage;
-import byzzbench.simulator.transport.Action;
-import byzzbench.simulator.transport.MessageAction;
+import byzzbench.simulator.transport.Event;
+import byzzbench.simulator.transport.MessageEvent;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -21,11 +21,11 @@ public class XRPLSubmitMessageMutatorFactory extends MessageMutatorFactory {
                 new MessageMutationFault("xrpl-submit-change-tx", "Change tx", List.of(XRPLSubmitMessage.class)) {
                     @Override
                     public void accept(ScenarioContext t) {
-                        Optional<Action> event = t.getEvent();
+                        Optional<Event> event = t.getEvent();
                         if (event.isEmpty()) {
                             throw invalidMessageTypeException;
                         }
-                        if (!(event.get() instanceof MessageAction messageEvent)) {
+                        if (!(event.get() instanceof MessageEvent messageEvent)) {
                             throw invalidMessageTypeException;
                         }
                         if (!(messageEvent.getPayload() instanceof XRPLSubmitMessage message)) {

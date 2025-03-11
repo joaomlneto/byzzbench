@@ -2,8 +2,8 @@ package byzzbench.simulator.faults.behaviors;
 
 import byzzbench.simulator.faults.FaultBehavior;
 import byzzbench.simulator.faults.ScenarioContext;
-import byzzbench.simulator.transport.Action;
-import byzzbench.simulator.transport.MessageAction;
+import byzzbench.simulator.transport.Event;
+import byzzbench.simulator.transport.MessageEvent;
 import byzzbench.simulator.transport.Router;
 import lombok.extern.java.Log;
 
@@ -79,16 +79,16 @@ public class ByzzFuzzDropMessageBehavior implements FaultBehavior {
 
     @Override
     public void accept(ScenarioContext context) {
-        Optional<Action> event = context.getEvent();
+        Optional<Event> event = context.getEvent();
 
         if (event.isEmpty()) {
             log.warning("No event to mutate");
             return;
         }
 
-        Action e = event.get();
+        Event e = event.get();
 
-        if (!(e instanceof MessageAction messageEvent)) {
+        if (!(e instanceof MessageEvent messageEvent)) {
             log.warning("Event is not a message event");
             return;
         }
@@ -102,7 +102,7 @@ public class ByzzFuzzDropMessageBehavior implements FaultBehavior {
         }
 
         // otherwise, drop the message: the sender and recipient are in different partitions
-        if (e.getStatus() == Action.Status.QUEUED) {
+        if (e.getStatus() == Event.Status.QUEUED) {
             context.getScenario().getTransport().dropEvent(e.getEventId());
         }
     }

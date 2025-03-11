@@ -13,14 +13,14 @@ import java.time.Instant;
 /**
  * Event that represents a message mutation.
  *
- * @see Action
+ * @see Event
  */
 @EqualsAndHashCode(callSuper = true)
 @Data
 @JsonTypeName("MutateMessage")
 @SuperBuilder
 @ToString(callSuper = true)
-public class MutateMessageAction extends Action {
+public class MutateMessageEvent extends Event {
     /**
      * The unique identifier of the event.
      */

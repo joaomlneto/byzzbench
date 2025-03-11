@@ -7,12 +7,13 @@ import lombok.ToString;
 import lombok.experimental.SuperBuilder;
 
 import java.io.Serializable;
+import java.time.Instant;
 
 @EqualsAndHashCode(callSuper = true)
 @Data
 @SuperBuilder
 @ToString(callSuper = true)
-public abstract class BaseMessageAction<T extends Serializable> extends Action implements MailboxEvent {
+public abstract class BaseMessageEvent<T extends Serializable> extends Event implements MailboxEvent {
     /**
      * The unique identifier of the receiving node
      */
@@ -29,7 +30,7 @@ public abstract class BaseMessageAction<T extends Serializable> extends Action i
      * The time the request was created.
      */
     @NonNull
-    private final long timestamp;
+    private final Instant timestamp;
 
     /**
      * The payload of the message.
