@@ -24,19 +24,20 @@ import java.util.Random;
 @Log
 public class TwinsReplica extends Replica {
     private final TwinsTransport twinsTransport;
-
     /**
      * The list of replicas that are part of this Twins replica.
      */
     private final ArrayList<Replica> replicas = new ArrayList<>();
+    Random rand = new Random();
 
     /**
      * Create a new Twins replica.
      *
-     * @param replica  the replica to clone
-     * @param numTwins the number of twins to create
+     * @param replica   the replica to clone
+     * @param numTwins  the number of twins to create
+     * @param numRounds the number of rounds to generate partitions for
      */
-    public TwinsReplica(Replica replica, int numTwins) {
+    public TwinsReplica(Replica replica, int numTwins, int numRounds) {
         super(replica.getId(), replica.getScenario(), new TotalOrderCommitLog());
 
         // Sanity check: must have at least 2 twins
@@ -62,15 +63,13 @@ public class TwinsReplica extends Replica {
         this.twinsTransport = new TwinsTransport(this);
         this.replicas.forEach(r -> r.setTransport(this.twinsTransport));
 
-        // Create some round partitions. TODO: parameterize!
+        // Create some round partitions.
         List<String> nodeIds = new ArrayList<>(replica.getNodeIds().stream().filter(id -> !id.equals(this.getId())).toList());
         nodeIds.addAll(getInternalIds());
         List<List<List<String>>> options = StirlingNumberSecondKind.getPartitions(nodeIds, 1);
         options.addAll(StirlingNumberSecondKind.getPartitions(nodeIds, 2));
         options.addAll(StirlingNumberSecondKind.getPartitions(nodeIds, 3));
-        // select a random option
-        Random rand = new Random();
-        for (long i = 0; i < 5; i++) {
+        for (long i = 0; i < numRounds; i++) {
             this.twinsTransport.getRoundPartitions().put(i, options.get(rand.nextInt(options.size())));
         }
 
