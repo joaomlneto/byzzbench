@@ -7,11 +7,12 @@ import byzzbench.simulator.protocols.pbft_java.message.RequestMessage;
 import lombok.extern.java.Log;
 
 import java.io.Serializable;
+import java.time.Duration;
 import java.util.Arrays;
 
 @Log
 public class FixedPbftJavaReplica<O extends Serializable, R extends Serializable> extends PbftJavaReplica<O, R> {
-    public FixedPbftJavaReplica(String replicaId, int tolerance, long timeout, MessageLog messageLog, Scenario scenario) {
+    public FixedPbftJavaReplica(String replicaId, int tolerance, Duration timeout, MessageLog messageLog, Scenario scenario) {
         super(replicaId, scenario, tolerance, timeout, messageLog);
     }
 

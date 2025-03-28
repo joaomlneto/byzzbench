@@ -6,6 +6,7 @@ import byzzbench.simulator.scheduler.Scheduler;
 import com.fasterxml.jackson.databind.JsonNode;
 import lombok.extern.java.Log;
 
+import java.time.Duration;
 import java.util.SortedSet;
 import java.util.TreeSet;
 
@@ -36,7 +37,7 @@ public class PbftJavaScenario extends BaseScenario {
 
         nodeIds.forEach(nodeId -> {
             MessageLog messageLog = new MessageLog(100, 100, 200);
-            Replica replica = new PbftJavaReplica<String, String>(nodeId, this, 1, 1000, messageLog);
+            Replica replica = new PbftJavaReplica<String, String>(nodeId, this, 1, Duration.ofSeconds(1), messageLog);
             this.addNode(replica);
         });
 
@@ -51,7 +52,7 @@ public class PbftJavaScenario extends BaseScenario {
     @Override
     public Replica cloneReplica(Replica replica) {
         MessageLog messageLog = new MessageLog(100, 100, 200);
-        return new PbftJavaReplica<String, String>(replica.getId(), this, 1, 1000, messageLog);
+        return new PbftJavaReplica<String, String>(replica.getId(), this, 1, Duration.ofSeconds(1), messageLog);
     }
 
     @Override
