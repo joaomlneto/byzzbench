@@ -65,7 +65,10 @@ public class Client implements Serializable, Node {
      * Sends a request to any replica in the system.
      */
     public void sendRequest() {
-        String recipientId = this.getScenario().getReplicas().keySet().iterator().next();
+        // get the IDs of replicas in the system (sorted)
+        List<String> recipientIds = new ArrayList<>(this.getScenario().getReplicas().keySet().stream().sorted().toList());
+        // select a "random" replica to send the request to
+        String recipientId = recipientIds.get(this.getScenario().getRandom().nextInt(recipientIds.size()));
         this.sendRequest(recipientId);
     }
 
