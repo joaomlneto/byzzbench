@@ -14,9 +14,21 @@ import lombok.Setter;
 import lombok.extern.java.Log;
 
 import java.io.Serializable;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicLong;
 
+/**
+ * A replica for the <a href="https://github.com/caojohnny/pbft-java">PBFT-Java</a> protocol from Johnny Cao:
+ * <p>
+ * It is a Java implementation of the Practical Byzantine Fault Tolerance (PBFT) protocol.
+ * It contains a few bugs, as described in the ByzzFuzz paper.
+ * It does not implement Checkpoints, digests; and has an initial sequence number of zero.
+ *
+ * @param <O> The operation type
+ * @param <R> The result type
+ */
 @Log
 public class PbftJavaReplica<O extends Serializable, R extends Serializable> extends LeaderBasedProtocolReplica {
     /**
@@ -29,7 +41,7 @@ public class PbftJavaReplica<O extends Serializable, R extends Serializable> ext
     private final int tolerance;
 
     @Getter
-    private final long timeout;
+    private final Duration timeout;
 
     /**
      * The current sequence number for the replica.
@@ -50,7 +62,7 @@ public class PbftJavaReplica<O extends Serializable, R extends Serializable> ext
     public PbftJavaReplica(String replicaId,
                            Scenario scenario,
                            int tolerance,
-                           long timeout,
+                           Duration timeout,
                            MessageLog messageLog) {
         super(replicaId, scenario, new TotalOrderCommitLog());
         this.tolerance = tolerance;
@@ -79,53 +91,53 @@ public class PbftJavaReplica<O extends Serializable, R extends Serializable> ext
      * @param key The key for the request
      * @return The remaining time for the timeout
      */
-    // public long checkTimeout(ReplicaRequestKey key) {
-    //     LinearBackoff backoff = this.timeouts.get(key);
-    //     if (backoff == null) {
-    //         return 0L;
-    //     }
+    public Duration checkTimeout(ReplicaRequestKey key) {
+        LinearBackoff backoff = this.timeouts.get(key);
+        if (backoff == null) {
+            return Duration.ZERO;
+        }
 
-    //     synchronized (backoff) {
-    //         long elapsed = backoff.elapsed();
+        synchronized (backoff) {
+            Duration elapsed = backoff.elapsed();
 
-    //         /*
-    //          * This method is called in a loop to check the timers on the requests
-    //          * that are currently waiting to be fulfilled.
-    //          *
-    //          * Per PBFT 4.5.2, each time a timeout occurs, a VIEW-CHANGE vote will
-    //          * be multicasted to the current view plus the number of timeouts that
-    //          * have occurred and the replica waits a longer period of time until
-    //          * the next vote is sent. The timer then waits for the sufficient number
-    //          * of VIEW-CHANGE votes to be received before being allowed to expire
-    //          * again after the next period of time and multicast the next
-    //          * VIEW-CHANGE.
-    //          */
-    //         long remainingTime = backoff.getTimeout() - elapsed;
-    //         if (remainingTime <= 0 && !backoff.isWaitingForVotes()) {
-    //             this.disgruntled = true;
+            /*
+             * This method is called in a loop to check the timers on the requests
+             * that are currently waiting to be fulfilled.
+             *
+             * Per PBFT 4.5.2, each time a timeout occurs, a VIEW-CHANGE vote will
+             * be multicasted to the current view plus the number of timeouts that
+             * have occurred and the replica waits a longer period of time until
+             * the next vote is sent. The timer then waits for the sufficient number
+             * of VIEW-CHANGE votes to be received before being allowed to expire
+             * again after the next period of time and multicast the next
+             * VIEW-CHANGE.
+             */
+            Duration remainingTime = backoff.getTimeout().minus(elapsed);
+            if ((!remainingTime.isPositive()) && !backoff.isWaitingForVotes()) {
+                this.disgruntled = true;
 
-    //             long newViewNumber = backoff.getNewViewNumber();
-    //             backoff.expire();
+                long newViewNumber = backoff.getNewViewNumber();
+                backoff.expire();
 
-    //             ViewChangeMessage viewChange = messageLog.produceViewChange(
-    //                     newViewNumber,
-    //                     this.getId(),
-    //                     this.tolerance);
-    //             this.sendViewChange(viewChange);
+                ViewChangeMessage viewChange = messageLog.produceViewChange(
+                        newViewNumber,
+                        this.getId(),
+                        this.tolerance);
+                this.sendViewChange(viewChange);
 
-    //             /*
-    //              * Timer expires, meaning that we will need to wait at least the
-    //              * next period of time before the timer is allowed to expire again
-    //              * due to having to als include the time for the votes to be
-    //              * received and processed
-    //              */
-    //             return backoff.getTimeout();
-    //         }
+                /*
+                 * Timer expires, meaning that we will need to wait at least the
+                 * next period of time before the timer is allowed to expire again
+                 * due to having to als include the time for the votes to be
+                 * received and processed
+                 */
+                return backoff.getTimeout();
+            }
 
-    //         // Timer has not expired yet, so wait out the remaining we computed
-    //         return remainingTime;
-    //     }
-    // }
+            // Timer has not expired yet, so wait out the remaining we computed
+            return remainingTime;
+        }
+    }
 
     /**
      * Resend the reply to the client.
@@ -137,7 +149,7 @@ public class PbftJavaReplica<O extends Serializable, R extends Serializable> ext
         ticket.getResult().thenAccept(result -> {
             long viewNumber = ticket.getViewNumber();
             RequestMessage request = ticket.getRequest();
-            long timestamp = request.getTimestamp();
+            Instant timestamp = request.getTimestamp();
             ReplyMessage reply = new ReplyMessage(
                     viewNumber,
                     timestamp,
@@ -158,7 +170,7 @@ public class PbftJavaReplica<O extends Serializable, R extends Serializable> ext
      */
     private void recvRequest(RequestMessage request, boolean wasRequestBuffered) {
         String clientId = request.getClientId();
-        long timestamp = request.getTimestamp();
+        Instant timestamp = request.getTimestamp();
 
         /*
          * At this stage, the request does not have a sequence number yet.
@@ -178,7 +190,7 @@ public class PbftJavaReplica<O extends Serializable, R extends Serializable> ext
         }
 
         // Start the timer for this request per PBFT 4.4
-        this.timeouts.computeIfAbsent(key, k -> new LinearBackoff(this.getViewNumber(), this.timeout));
+        this.timeouts.computeIfAbsent(key, k -> new LinearBackoff(this, this.getViewNumber(), this.timeout));
 
         String primaryId = this.getRoundRobinPrimaryId();
 
@@ -470,7 +482,7 @@ public class PbftJavaReplica<O extends Serializable, R extends Serializable> ext
                     Serializable result = this.compute(seqNumber, new SerializableLogEntry(operation));
 
                     String clientId = request.getClientId();
-                    long timestamp = request.getTimestamp();
+                    Instant timestamp = request.getTimestamp();
                     ReplyMessage reply = new ReplyMessage(
                             currentViewNumber,
                             timestamp,
@@ -615,7 +627,8 @@ public class PbftJavaReplica<O extends Serializable, R extends Serializable> ext
         }
 
         // PBFT 4.5.2 - Start the timers that will vote for newViewNumber + 1.
-        /* if (result.isBeginNextVote()) {
+        /*
+        if (result.isBeginNextVote()) {
             for (LinearBackoff backoff : this.timeouts.values()) {
                 synchronized (backoff) {
                     long timerViewNumber = backoff.getNewViewNumber();
@@ -624,7 +637,7 @@ public class PbftJavaReplica<O extends Serializable, R extends Serializable> ext
                     }
                 }
             }
-        } */
+        }*/
 
         if (newPrimaryId.equals(this.getId())) {
             /*
@@ -721,8 +734,7 @@ public class PbftJavaReplica<O extends Serializable, R extends Serializable> ext
     }
 
     public void handleClientRequest(String clientId, Serializable request) {
-        // FIXME: should not get timestamp from system time
-        RequestMessage m = new RequestMessage(request, System.currentTimeMillis(), clientId);
+        RequestMessage m = new RequestMessage(request, this.getCurrentTime(), clientId);
         this.recvRequest(m);
     }
 

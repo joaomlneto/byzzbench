@@ -32,11 +32,17 @@ public class TwinsScheduler extends RandomScheduler {
      */
     private final int numTwinsPerReplica;
 
+    /**
+     * The number of rounds to generate partitions for.
+     */
+    private final int numRounds;
+
     public TwinsScheduler(ByzzBenchConfig config, MessageMutatorService messageMutatorService) {
         super(config, messageMutatorService);
         Map<String, String> schedulerParams = config.getScheduler().getParams();
         this.numReplicas = Integer.parseInt(schedulerParams.getOrDefault("numReplicas", "1"));
         this.numTwinsPerReplica = Integer.parseInt(schedulerParams.getOrDefault("numTwinsPerReplica", "2"));
+        this.numRounds = Integer.parseInt(schedulerParams.getOrDefault("numRounds", "1"));
     }
 
     @Override
@@ -58,7 +64,7 @@ public class TwinsScheduler extends RandomScheduler {
         for (int i = 0; i < numReplicas; i++) {
             Replica replica = scenario.getReplicas().get(replicaIds.get(i));
             log.info("Creating " + numTwinsPerReplica + " twins for replica " + replica.getId());
-            scenario.getNodes().put(replica.getId(), new TwinsReplica(replica, numTwinsPerReplica));
+            scenario.getNodes().put(replica.getId(), new TwinsReplica(replica, numTwinsPerReplica, numRounds));
         }
     }
 

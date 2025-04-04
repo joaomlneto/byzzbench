@@ -6,12 +6,13 @@ import byzzbench.simulator.scheduler.Scheduler;
 import com.fasterxml.jackson.databind.JsonNode;
 import lombok.extern.java.Log;
 
+import java.time.Duration;
 import java.util.SortedSet;
 import java.util.TreeSet;
 
 /**
- * A scenario for running the PBFT-Java protocol, an implementation of the PBFT protocol in Java:
- * https://github.com/caojohnny/pbft-java
+ * A scenario for running the <a href="https://github.com/caojohnny/pbft-java">PBFT-Java protocol</a>, an implementation
+ * of the PBFT protocol in Java.
  */
 @Log
 public class PbftJavaScenario extends Scenario {
@@ -36,7 +37,7 @@ public class PbftJavaScenario extends Scenario {
 
         nodeIds.forEach(nodeId -> {
             MessageLog messageLog = new MessageLog(100, 100, 200);
-            Replica replica = new PbftJavaReplica<String, String>(nodeId, this, 1, 1000, messageLog);
+            Replica replica = new PbftJavaReplica<String, String>(nodeId, this, 1, Duration.ofSeconds(1), messageLog);
             this.addNode(replica);
         });
 
@@ -51,7 +52,7 @@ public class PbftJavaScenario extends Scenario {
     @Override
     public Replica cloneReplica(Replica replica) {
         MessageLog messageLog = new MessageLog(100, 100, 200);
-        return new PbftJavaReplica<String, String>(replica.getId(), this, 1, 1000, messageLog);
+        return new PbftJavaReplica<String, String>(replica.getId(), this, 1, Duration.ofSeconds(1), messageLog);
     }
 
     @Override

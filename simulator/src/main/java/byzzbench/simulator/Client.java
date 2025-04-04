@@ -2,6 +2,7 @@ package byzzbench.simulator;
 
 import byzzbench.simulator.protocols.hbft.message.ClientRequestMessage;
 import byzzbench.simulator.transport.MessagePayload;
+import byzzbench.simulator.transport.Transport;
 import byzzbench.simulator.utils.NonNull;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Getter;
@@ -24,7 +25,7 @@ import java.util.concurrent.atomic.AtomicLong;
 @SuperBuilder
 @RequiredArgsConstructor
 @Log
-public class Client implements Serializable, Node {
+public class Client extends Node implements Serializable {
     /**
      * The scenario object that this client belongs to.
      */
@@ -56,11 +57,19 @@ public class Client implements Serializable, Node {
         //this.setTimeout("sendRequest", this::sendRequest, Duration.ofSeconds(1));
     }
 
+    @Override
+    public Transport getTransport() {
+        return this.scenario.getTransport();
+    }
+
     /**
      * Sends a request to any replica in the system.
      */
     public void sendRequest() {
-        String recipientId = this.getScenario().getReplicas().keySet().iterator().next();
+        // get the IDs of replicas in the system (sorted)
+        List<String> recipientIds = new ArrayList<>(this.getScenario().getReplicas().keySet().stream().sorted().toList());
+        // select a "random" replica to send the request to
+        String recipientId = recipientIds.get(this.getScenario().getRandom().nextInt(recipientIds.size()));
         this.sendRequest(recipientId);
     }
 
@@ -68,7 +77,9 @@ public class Client implements Serializable, Node {
      * Sends a request to a given replica in the system.
      */
     public void sendRequest(String recipientId) {
-        MessagePayload payload = new ClientRequestMessage(this.getCurrentTime().toEpochMilli(), recipientId);
+        long sequenceNumber = getRequestSequenceNumber().incrementAndGet();
+        String requestId = String.format("%s/%d", getId(), sequenceNumber);
+        MessagePayload payload = new ClientRequestMessage(this.getCurrentTime().toEpochMilli(), requestId);
         this.getScenario().getTransport().sendMessage(this, payload, recipientId);
     }
 
@@ -84,6 +95,7 @@ public class Client implements Serializable, Node {
     }
 
     @Override
+    @JsonIgnore
     public Instant getCurrentTime() {
         return this.scenario.getTimekeeper().incrementAndGetTime(this);
     }
