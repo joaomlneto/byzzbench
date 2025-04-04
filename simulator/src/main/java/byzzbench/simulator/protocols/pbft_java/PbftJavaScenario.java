@@ -11,8 +11,8 @@ import java.util.SortedSet;
 import java.util.TreeSet;
 
 /**
- * A scenario for running the PBFT-Java protocol, an implementation of the PBFT protocol in Java:
- * https://github.com/caojohnny/pbft-java
+ * A scenario for running the <a href="https://github.com/caojohnny/pbft-java">PBFT-Java protocol</a>, an implementation
+ * of the PBFT protocol in Java.
  */
 @Log
 public class PbftJavaScenario extends BaseScenario {

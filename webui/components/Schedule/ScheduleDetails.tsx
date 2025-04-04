@@ -54,7 +54,7 @@ export const ScheduleDetails = ({
               <Tooltip label="Length of the schedule">
                 <Badge variant="white">{schedule.events.length}</Badge>
               </Tooltip>
-              {schedule.brokenInvariants.map((invariant) => (
+              {schedule.brokenInvariants?.map((invariant) => (
                 <Tooltip
                   key={invariant.id}
                   label={`Broken invariant: ${invariant.id}`}

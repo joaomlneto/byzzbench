@@ -29,7 +29,7 @@ import java.util.TreeSet;
 @Log
 @Getter
 @ToString
-public abstract class Replica implements Node {
+public abstract class Replica extends Node {
     /**
      * The message digest algorithm to use for hashing messages.
      */
@@ -84,17 +84,6 @@ public abstract class Replica implements Node {
         this.scenario = scenario;
         this.commitLog = commitLog;
         this.transport = scenario.getTransport();
-    }
-
-    /**
-     * Send a message to another node in the system.
-     *
-     * @param message   the message to send
-     * @param recipient the recipient of the message
-     */
-    public void sendMessage(MessagePayload message, String recipient) {
-        message.sign(this.id);
-        this.transport.sendMessage(this, message, recipient);
     }
 
     /**
@@ -267,6 +256,7 @@ public abstract class Replica implements Node {
         this.observers.forEach(observer -> observer.onTimeout(this));
     }
 
+    @Override
     @JsonIgnore
     public Instant getCurrentTime() {
         return this.scenario.getTimekeeper().incrementAndGetTime(this);

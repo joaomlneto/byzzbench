@@ -19,6 +19,16 @@ import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicLong;
 
+/**
+ * A replica for the <a href="https://github.com/caojohnny/pbft-java">PBFT-Java</a> protocol from Johnny Cao:
+ * <p>
+ * It is a Java implementation of the Practical Byzantine Fault Tolerance (PBFT) protocol.
+ * It contains a few bugs, as described in the ByzzFuzz paper.
+ * It does not implement Checkpoints, digests; and has an initial sequence number of zero.
+ *
+ * @param <O> The operation type
+ * @param <R> The result type
+ */
 @Log
 public class PbftJavaReplica<O extends Serializable, R extends Serializable> extends LeaderBasedProtocolReplica {
     /**
@@ -617,7 +627,8 @@ public class PbftJavaReplica<O extends Serializable, R extends Serializable> ext
         }
 
         // PBFT 4.5.2 - Start the timers that will vote for newViewNumber + 1.
-        /* if (result.isBeginNextVote()) {
+        /*
+        if (result.isBeginNextVote()) {
             for (LinearBackoff backoff : this.timeouts.values()) {
                 synchronized (backoff) {
                     long timerViewNumber = backoff.getNewViewNumber();
@@ -626,7 +637,7 @@ public class PbftJavaReplica<O extends Serializable, R extends Serializable> ext
                     }
                 }
             }
-        } */
+        }*/
 
         if (newPrimaryId.equals(this.getId())) {
             /*
@@ -723,7 +734,6 @@ public class PbftJavaReplica<O extends Serializable, R extends Serializable> ext
     }
 
     public void handleClientRequest(String clientId, Serializable request) {
-        // FIXME: should not get timestamp from system time
         RequestMessage m = new RequestMessage(request, this.getCurrentTime(), clientId);
         this.recvRequest(m);
     }

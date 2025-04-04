@@ -151,7 +151,7 @@ public class SimulatorService {
                                 // print the event IDs in the schedule
                                 System.out.println("Event IDs in the schedule:");
                                 this.scenario.getSchedule().getEvents().forEach(e -> System.out.println(e.getEventId()));
-                                this.shouldStop = true;
+                                //this.shouldStop = true;
                                 break;
                             }
 
