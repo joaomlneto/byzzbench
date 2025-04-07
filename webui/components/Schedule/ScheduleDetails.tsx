@@ -52,7 +52,7 @@ export const ScheduleDetails = ({
           {!hideScenario && (
             <>
               <Tooltip label="Length of the schedule">
-                <Badge variant="white">{schedule.actions.length}</Badge>
+                <Badge variant="white">{schedule.actions?.length}</Badge>
               </Tooltip>
               {schedule.brokenInvariants?.map((invariant) => (
                 <Tooltip
