@@ -43,6 +43,11 @@ public class TriggerTimeoutAction extends Action {
     private Instant expiresAt;
 
     /**
+     * The unique identifier of the event.
+     */
+    private long eventId;
+
+    /**
      * Converts a TimeoutEvent to a TriggerTimeoutAction.
      *
      * @param event The TimeoutEvent to convert.

@@ -5,6 +5,7 @@ import byzzbench.simulator.ScenarioPredicate;
 import byzzbench.simulator.transport.Event;
 import byzzbench.simulator.transport.MessageEvent;
 import byzzbench.simulator.transport.MutateMessageEvent;
+import byzzbench.simulator.transport.TimeoutEvent;
 import byzzbench.simulator.utils.NonNull;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
@@ -38,6 +39,7 @@ public class Schedule implements Serializable {
     private List<Action> actions = new ArrayList<>();
 
     @ManyToOne
+    @JsonIgnore
     private Campaign campaign;
 
     /**
@@ -86,6 +88,12 @@ public class Schedule implements Serializable {
             case MutateMessageEvent mutateMessageEvent -> appendAction(FaultInjectionAction.builder()
                     .faultId("mutate-" + mutateMessageEvent.getEventId())
                     .payload(mutateMessageEvent.getPayload())
+                    .schedule(this)
+                    .build());
+            case TimeoutEvent timeoutEvent -> appendAction(TriggerTimeoutAction.builder()
+                    .eventId(timeoutEvent.getEventId())
+                    .timeout(timeoutEvent.getTimeout())
+                    .schedule(this)
                     .build());
             default -> throw new IllegalArgumentException("Unsupported event type: " + event.getClass().getName());
         }
