@@ -2,7 +2,7 @@ plugins {
     java
     id("org.springframework.boot") version "3.3.9"
     id("io.spring.dependency-management") version "1.1.7"
-    id("org.graalvm.buildtools.native") version "0.10.5"
+    id("org.graalvm.buildtools.native") version "0.10.6"
     //id("com.vaadin") version "24.4.7"
     id("com.github.psxpaul.execfork") version "0.2.2"
     id("org.springdoc.openapi-gradle-plugin") version "1.9.0"
@@ -45,7 +45,7 @@ dependencies {
     //implementation("org.springdoc:springdoc-openapi-ui:1.8.0")
     // either API (just documentation) or API + UI (documentation + Swagger UI)
     //implementation("org.springdoc:springdoc-openapi-starter-webmvc-api:2.5.0")
-    implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.6.0")
+    implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.6")
     //implementation("jakarta.xml.bind:jakarta.xml.bind-api:4.0.2") // required for webmvc-ui
     //compileOnly("javax.servlet:javax.servlet-api:4.0.1")
 
