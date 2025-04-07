@@ -22,4 +22,9 @@ public class GenericFaultEvent extends Event {
      * The payload of the request.
      */
     private final Fault payload;
+
+    @Override
+    public String getType() {
+        return "GenericFault";
+    }
 }

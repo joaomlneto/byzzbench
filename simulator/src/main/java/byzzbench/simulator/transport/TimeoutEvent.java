@@ -69,4 +69,9 @@ public class TimeoutEvent extends Event implements MailboxEvent {
     public String getRecipientId() {
         return nodeId;
     }
+
+    @Override
+    public String getType() {
+        return "Timeout";
+    }
 }

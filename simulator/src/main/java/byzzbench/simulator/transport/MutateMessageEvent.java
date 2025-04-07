@@ -57,4 +57,9 @@ public class MutateMessageEvent extends Event {
      */
     @Builder.Default
     private Status status = Status.QUEUED;
+
+    @Override
+    public String getType() {
+        return "MutateMessage";
+    }
 }

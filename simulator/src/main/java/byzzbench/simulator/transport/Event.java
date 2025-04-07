@@ -37,6 +37,13 @@ public abstract class Event implements Serializable {
     @NonNull
     private Status status = Status.QUEUED;
 
+    /**
+     * A description of the type of event.
+     *
+     * @return The type of event.
+     */
+    public abstract String getType();
+
     public enum Status {
         QUEUED,
         DELIVERED,
