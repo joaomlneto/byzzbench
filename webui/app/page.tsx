@@ -67,7 +67,7 @@ export default function Home() {
           onChange={setSelectedAccordionEntries}
         >
           <Group wrap="nowrap" gap="xs" align="center">
-            <Title order={3}>{schedule?.data.scenarioId}</Title>
+            <Title order={3}>{schedule?.data.scheduleId}</Title>
             <PredicateList />
             <Switch
               label="Show mailboxes"

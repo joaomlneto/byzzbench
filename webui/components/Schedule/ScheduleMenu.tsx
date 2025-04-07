@@ -2,9 +2,9 @@ import {
   changeScenario,
   deleteAutomaticFaults,
   deliverMessage,
+  FaultInjectionAction,
   getEvent,
   mutateMessage,
-  MutateMessageEvent,
   Schedule,
 } from "@/lib/byzzbench-client";
 import { ActionIcon, Burger, Menu, Title } from "@mantine/core";
@@ -33,7 +33,12 @@ export const ScheduleMenu = ({ title, schedule }: ScheduleMenuProps) => {
         <Menu.Item
           onClick={async () => {
             console.log("Materializing Schedule: ", schedule);
-            await changeScenario({ scenarioId: schedule.scenarioId }, {});
+            await changeScenario(
+              {
+                scenarioId: "",
+              },
+              {},
+            );
             // remove all pre-scheduled faults.
             // we are going to replay event-by-event.
             await deleteAutomaticFaults();
@@ -41,8 +46,8 @@ export const ScheduleMenu = ({ title, schedule }: ScheduleMenuProps) => {
             let i = 0;
             let hasNotifiedMismatchedEvents = false;
 
-            for (const event of schedule.events ?? []) {
-              const remoteEvent = await getEvent(event.eventId).then(
+            for (const event of schedule.actions ?? []) {
+              const remoteEvent = await getEvent(event.actionId).then(
                 (event) => event.data,
               );
 
@@ -57,14 +62,14 @@ export const ScheduleMenu = ({ title, schedule }: ScheduleMenuProps) => {
               if (JSON.stringify(objA) !== JSON.stringify(objB)) {
                 hasNotifiedMismatchedEvents = true;
                 console.error(
-                  `Event ${event.eventId} does not match remote event`,
+                  `Event ${event.actionId} does not match remote event`,
                   objA,
                   objB,
                 );
                 if (!hasNotifiedMismatchedEvents) {
                   showNotification({
                     title: "Error materializing schedule",
-                    message: `Event ${event.eventId} does not match remote event. Will continue to try to materialize the rest of the schedule. See console for more details.`,
+                    message: `Event ${event.actionId} does not match remote event. Will continue to try to materialize the rest of the schedule. See console for more details.`,
                     color: "red",
                   });
                 }
@@ -73,18 +78,18 @@ export const ScheduleMenu = ({ title, schedule }: ScheduleMenuProps) => {
               }
 
               console.log(
-                `Pushing Event ${++i}/${schedule.events.length}: ${event}`,
+                `Pushing Event ${++i}/${schedule.actions.length}: ${event}`,
               );
               switch (event.type) {
                 case "Message":
                 case "Timeout":
                 case "ClientRequest":
-                  await deliverMessage(event.eventId);
+                  await deliverMessage(event.actionId);
                   break;
                 case "MutateMessage":
                   await mutateMessage(
-                    (event as MutateMessageEvent).payload!.eventId,
-                    (event as MutateMessageEvent).payload!.mutatorId,
+                    (event as FaultInjectionAction).payload!.eventId,
+                    (event as FaultInjectionAction).payload!.mutatorId,
                   );
                   break;
                 case "GenericFault":
@@ -128,7 +133,7 @@ export const ScheduleMenu = ({ title, schedule }: ScheduleMenuProps) => {
             )}`;
             const link = document.createElement("a");
             link.href = jsonString;
-            link.download = `${schedule.scenarioId}-${Date.now()}.schedule.json`;
+            link.download = `${schedule.scheduleId}-${Date.now()}.schedule.json`;
             link.click();
           }}
         >

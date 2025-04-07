@@ -1,6 +1,6 @@
 "use client";
 
-import { EventCard } from "@/components/Events/EventCard";
+import { ActionCard } from "@/components/Events/EventCard";
 import { Schedule } from "@/lib/byzzbench-client";
 import { Badge, Card, Group, Pagination, Title, Tooltip } from "@mantine/core";
 import { usePagination } from "@mantine/hooks";
@@ -34,7 +34,7 @@ export const ScheduleDetails = ({
 }: ScheduleDetailsProps) => {
   const queryClient = useQueryClient();
   const router = useRouter();
-  const numPages = Math.ceil((schedule.events?.length ?? 0) / entriesPerPage);
+  const numPages = Math.ceil((schedule.actions?.length ?? 0) / entriesPerPage);
   const pagination = usePagination({ total: numPages, initialPage: 1 });
   const start = (pagination.active - 1) * entriesPerPage;
   const end = start + entriesPerPage;
@@ -46,13 +46,13 @@ export const ScheduleDetails = ({
           <ScheduleMenu title={title} schedule={schedule} />
           {!hideTitle && (
             <Title order={4}>
-              {schedule.scenarioId} - {title}
+              {schedule.scheduleId} - {title}
             </Title>
           )}
           {!hideScenario && (
             <>
               <Tooltip label="Length of the schedule">
-                <Badge variant="white">{schedule.events.length}</Badge>
+                <Badge variant="white">{schedule.actions.length}</Badge>
               </Tooltip>
               {schedule.brokenInvariants?.map((invariant) => (
                 <Tooltip
@@ -75,9 +75,11 @@ export const ScheduleDetails = ({
               siblings={3}
               boundaries={2}
             />
-            {schedule.events
+            {schedule.actions
               ?.slice(start, end)
-              .map((event) => <EventCard event={event} key={event.eventId} />)}
+              .map((action) => (
+                <ActionCard action={action} key={action.actionId} />
+              ))}
           </>
         )}
       </Card.Section>

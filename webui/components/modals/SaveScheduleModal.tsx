@@ -16,7 +16,7 @@ export function SaveScheduleModal({
     initialValues: {
       name:
         innerProps.name ??
-        `${innerProps.schedule.scenarioId} @ ${new Date().toISOString()}`,
+        `${innerProps.schedule.scheduleId} @ ${new Date().toISOString()}`,
       schedule: innerProps.schedule,
     },
 
@@ -60,8 +60,8 @@ export function SaveScheduleModal({
           title={form.getValues().name}
           schedule={
             form.getValues().schedule ?? {
-              scenarioId: "",
-              events: [],
+              scheduleId: -1,
+              actions: [],
               finalized: false,
               brokenInvariants: [],
             }

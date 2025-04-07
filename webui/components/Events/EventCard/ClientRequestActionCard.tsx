@@ -8,7 +8,7 @@ export type ClientRequestEventCardProps = {
   event: ClientRequestEvent;
 } & CardProps;
 
-export const ClientRequestEventCard = ({
+export const ClientRequestActionCard = ({
   event,
   ...otherProps
 }: ClientRequestEventCardProps) => {

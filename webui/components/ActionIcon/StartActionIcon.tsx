@@ -10,7 +10,7 @@ import React from "react";
 export const StartActionIcon = () => {
   const queryClient = useQueryClient();
   const { mutate } = useStart({
-    eventsPerRun: 10,
+    //eventsPerRun: 10,
   });
 
   return (
