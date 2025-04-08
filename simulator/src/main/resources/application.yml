@@ -37,7 +37,7 @@ springdoc:
 byzzbench:
   autostart: true # Whether to start running a scenario campaign on startup.
   numScenarios: 100 # Number of scenarios to run in the campaign.
-  saveSchedules: buggy # which schedules to save? 'all', 'buggy' or 'none'.
+  saveSchedules: all # which schedules to save? 'all', 'buggy' or 'none'.
 
   scheduler:
     id: "byzzfuzz" # The ID of the scheduler to use
