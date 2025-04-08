@@ -414,16 +414,6 @@ public class SimulatorController {
     }
 
     /**
-     * Get the list of scenarios available in the simulator.
-     *
-     * @return The list of scenario IDs.
-     */
-    @GetMapping("/scenarios")
-    public List<String> getScenarios() {
-        return scenarioService.getScenarioIds();
-    }
-
-    /**
      * Change the scenario to the one with the given ID.
      *
      * @param scenarioId The ID of the scenario to change to.
