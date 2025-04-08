@@ -3,6 +3,7 @@ package byzzbench.simulator.domain;
 import byzzbench.simulator.Scenario;
 import byzzbench.simulator.utils.NonNull;
 import byzzbench.simulator.utils.serialization.ScheduleJsonConverter;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import jakarta.persistence.*;
@@ -13,6 +14,7 @@ import lombok.experimental.SuperBuilder;
 import java.util.function.Consumer;
 
 @Entity
+@Inheritance(strategy = InheritanceType.SINGLE_TABLE)
 @DiscriminatorColumn(name = "action_type")
 @Data
 @SuperBuilder
@@ -32,5 +34,6 @@ public abstract class Action implements Consumer<Scenario> {
     @ManyToOne
     //@JoinColumn(name = "schedule_id")
     @Convert(converter = ScheduleJsonConverter.class)
+    @JsonIgnore
     private Schedule schedule;
 }
