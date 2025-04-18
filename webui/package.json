@@ -48,7 +48,7 @@
     "@types/node": "^20.17.30",
     "@types/react": "^18.3.20",
     "@types/react-dom": "^18.3.6",
-    "eslint": "^8.57.1",
+    "eslint": "^9.25.0",
     "eslint-config-next": "14.2.27",
     "postcss": "^8.5.3",
     "postcss-preset-mantine": "^1.17.0",
