@@ -45,16 +45,16 @@ dependencies {
     //implementation("org.springdoc:springdoc-openapi-ui:1.8.0")
     // either API (just documentation) or API + UI (documentation + Swagger UI)
     //implementation("org.springdoc:springdoc-openapi-starter-webmvc-api:2.5.0")
-    implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.6")
+    implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.8")
     //implementation("jakarta.xml.bind:jakarta.xml.bind-api:4.0.2") // required for webmvc-ui
     //compileOnly("javax.servlet:javax.servlet-api:4.0.1")
 
-    implementation("com.fasterxml.jackson.core:jackson-core:2.18.3")
-    implementation("com.fasterxml.jackson.core:jackson-annotations:2.18.3")
-    implementation("com.fasterxml.jackson.core:jackson-databind:2.18.3")
-    implementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.18.3")
-    implementation("com.fasterxml.jackson.module:jackson-module-parameter-names:2.18.3")
-    implementation("com.fasterxml.jackson.datatype:jackson-datatype-jdk8:2.18.3")
+    implementation("com.fasterxml.jackson.core:jackson-core:2.19.0")
+    implementation("com.fasterxml.jackson.core:jackson-annotations:2.19.0")
+    implementation("com.fasterxml.jackson.core:jackson-databind:2.19.0")
+    implementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.19.0")
+    implementation("com.fasterxml.jackson.module:jackson-module-parameter-names:2.19.0")
+    implementation("com.fasterxml.jackson.datatype:jackson-datatype-jdk8:2.19.0")
 }
 
 /*dependencyManagement {
