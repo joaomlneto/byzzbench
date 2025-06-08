@@ -13,7 +13,7 @@ import java.util.TreeSet;
 
 @Log
 public class PbftScenario extends BaseScenario {
-    private final int NUM_NODES = 4;
+    private static final int NUM_NODES = 4;
 
     public PbftScenario(Scheduler scheduler) {
         super("pbft", scheduler);
