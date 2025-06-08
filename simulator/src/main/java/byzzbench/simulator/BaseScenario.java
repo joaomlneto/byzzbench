@@ -270,10 +270,6 @@ public abstract class BaseScenario implements Scenario {
         this.getSchedule().finalizeSchedule(this.unsatisfiedInvariants());
     }
 
-    public void writeToFile() {
-
-    }
-
     @Override
     public SortedSet<String> getNodeIds(Node node) {
         return new TreeSet<>(this.getNodes().keySet());

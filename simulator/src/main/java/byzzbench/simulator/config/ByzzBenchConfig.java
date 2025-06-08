@@ -45,15 +45,6 @@ public class ByzzBenchConfig {
     private ScenarioConfig scenario = new ScenarioConfig();
 
     /**
-     * Get the output path for this run, in the format "output/{start-time}".
-     *
-     * @return The output path for this run.
-     */
-    public Path getOutputPathForThisRun() {
-        return this.outputPath.resolve(String.valueOf(SimulatorApplication.getStartTime().getEpochSecond()));
-    }
-
-    /**
      * Configuration for the termination
      */
     @Data

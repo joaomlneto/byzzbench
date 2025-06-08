@@ -1,5 +1,6 @@
 package byzzbench.simulator.service;
 
+import byzzbench.simulator.OutputLogger;
 import byzzbench.simulator.Scenario;
 import byzzbench.simulator.config.ByzzBenchConfig;
 import byzzbench.simulator.scheduler.EventDecision;
@@ -10,16 +11,12 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.java.Log;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.annotation.DependsOn;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Service;
 
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.time.Instant;
 import java.util.Optional;
 import java.util.OptionalLong;
 import java.util.Set;
@@ -35,7 +32,7 @@ import java.util.concurrent.Executors;
 @Getter
 @Service
 @RequiredArgsConstructor
-@Log
+@Slf4j
 public class SimulatorService {
     private final ByzzBenchConfig byzzBenchConfig;
     private final ScenarioService scenarioService;
@@ -74,22 +71,10 @@ public class SimulatorService {
      * Creates a new scenario with the previously set scenario ID and parameters, replacing the current scenario.
      */
     public void resetScenario() {
-        if (this.scenario != null) {
-            // serialize it to file
-            Path root = byzzBenchConfig.getOutputPathForThisRun();
-            // create a directory "xyz" in the root path
-            String currentTimeWithMillis = String.format("%d%09d", Instant.now().getEpochSecond(), Instant.now().getNano());
-            int scenarioIndex = this.scenarioService.getScenarios().size();
-            Path scenarioPath = root.resolve(String.format("%s-%d", this.scenario.getId(), scenarioIndex));
-            System.out.println("Scenario path: " + scenarioPath);
-            try {
-                Files.createDirectories(scenarioPath);
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
-        }
-        this.scenario = this.scenarioService.generateScenario(this.scenarioId, this.scenarioParams);
-        this.scenario.runScenario();
+        int scenarioIndex = this.scenarioService.getScenarios().size();
+        scenario = scenarioService.generateScenario(scenarioId, scenarioParams);
+        scenario.getTransport().addObserver(new OutputLogger(byzzBenchConfig.getOutputPath(), scenarioId, scenarioIndex));
+        scenario.runScenario();
     }
 
     /**
@@ -161,8 +146,8 @@ public class SimulatorService {
 
                             // if the invariants do not hold, terminate the run
                             if (!this.scenario.invariantsHold()) {
-                                log.info("Invariants do not hold, terminating. . .");
-                                var unsatisfiedInvariants = this.scenario.unsatisfiedInvariants();
+                                var unsatisfiedInvariants = scenario.unsatisfiedInvariants();
+                                log.info("Invariants do not hold, terminating... {}", unsatisfiedInvariants);
                                 this.scenario.getSchedule().finalizeSchedule(unsatisfiedInvariants);
                                 numTerm++;
                                 break;
@@ -198,8 +183,7 @@ public class SimulatorService {
                         }
 
                     } catch (Exception e) {
-                        System.out.println("Error in schedule " + scenarioId + ": " + e);
-                        e.printStackTrace();
+                        log.error("Error in schedule {}", scenarioId, e);
                         scenario.getSchedule().finalizeSchedule(Set.of(new ErroredPredicate()));
                         numErr += 1;
                     }
