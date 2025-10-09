@@ -2,6 +2,10 @@ package byzzbench.simulator.scheduler;
 
 import byzzbench.simulator.Scenario;
 import byzzbench.simulator.config.ByzzBenchConfig;
+import byzzbench.simulator.domain.Action;
+import byzzbench.simulator.domain.DeliverMessageAction;
+import byzzbench.simulator.domain.FaultInjectionAction;
+import byzzbench.simulator.domain.TriggerTimeoutAction;
 import byzzbench.simulator.faults.faults.MessageMutationFault;
 import byzzbench.simulator.service.MessageMutatorService;
 import byzzbench.simulator.transport.Event;
@@ -42,7 +46,7 @@ public class RandomScheduler extends Scheduler {
     }
 
     @Override
-    public synchronized Optional<EventDecision> scheduleNext(Scenario scenario) {
+    public synchronized Optional<Action> scheduleNext(Scenario scenario) {
         // Get a random event
         List<Event> availableEvents = scenario.getTransport().getEventsInState(Event.Status.QUEUED);
 
@@ -70,7 +74,7 @@ public class RandomScheduler extends Scheduler {
         if (dieRoll < 0) {
             Event timeout = getRandomElement(timeoutEvents);
             scenario.getTransport().deliverEvent(timeout.getEventId());
-            EventDecision decision = new EventDecision(EventDecision.DecisionType.DELIVERED, timeout.getEventId());
+            Action decision = TriggerTimeoutAction.builder().timeoutEventId(timeout.getEventId()).build();
             return Optional.of(decision);
         }
 
@@ -79,7 +83,7 @@ public class RandomScheduler extends Scheduler {
         if (dieRoll < 0) {
             Event message = getNextMessageEvent(scenario, messageEvents);
             scenario.getTransport().deliverEvent(message.getEventId());
-            EventDecision decision = new EventDecision(EventDecision.DecisionType.DELIVERED, message.getEventId());
+            Action decision = DeliverMessageAction.builder().messageEventId(message.getEventId()).build();
             return Optional.of(decision);
         }
 
@@ -88,7 +92,7 @@ public class RandomScheduler extends Scheduler {
         if (dieRoll < 0) {
             Event message = getRandomElement(messageEvents);
             scenario.getTransport().dropEvent(message.getEventId());
-            EventDecision decision = new EventDecision(EventDecision.DecisionType.DROPPED, message.getEventId());
+            Action decision = FaultInjectionAction.builder().faultId("drop-message").eventId(message.getEventId()).build();
             return Optional.of(decision);
         }
 
@@ -108,7 +112,7 @@ public class RandomScheduler extends Scheduler {
                     getRandomElement(mutators));
             scenario.getTransport().deliverEvent(message.getEventId());
 
-            EventDecision decision = new EventDecision(EventDecision.DecisionType.MUTATED_AND_DELIVERED, message.getEventId());
+            Action decision = FaultInjectionAction.builder().faultId("mutate-and-deliver").eventId(message.getEventId()).build();
             return Optional.of(decision);
         }
 

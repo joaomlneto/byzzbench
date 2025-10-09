@@ -3,12 +3,12 @@ package byzzbench.simulator.service;
 import byzzbench.simulator.Scenario;
 import byzzbench.simulator.ScenarioPredicate;
 import byzzbench.simulator.config.ByzzBenchConfig;
+import byzzbench.simulator.domain.Action;
 import byzzbench.simulator.domain.Campaign;
 import byzzbench.simulator.domain.ScenarioParameters;
 import byzzbench.simulator.domain.Schedule;
 import byzzbench.simulator.repository.CampaignRepository;
 import byzzbench.simulator.repository.ScheduleRepository;
-import byzzbench.simulator.scheduler.EventDecision;
 import byzzbench.simulator.scheduler.Scheduler;
 import byzzbench.simulator.state.ErroredPredicate;
 import byzzbench.simulator.state.LivenessPredicate;
@@ -153,7 +153,7 @@ public class SimulatorService {
 
                     try {
                         while (true) {
-                            Optional<EventDecision> decision = this.scheduler.scheduleNext(this.scenario);
+                            Optional<Action> decision = this.scheduler.scheduleNext(this.scenario);
                             System.out.println("Decision: " + decision);
 
                             // if the scheduler did not make a decision, and we're before GST, set GST!

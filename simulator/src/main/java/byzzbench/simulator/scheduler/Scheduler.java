@@ -2,6 +2,7 @@ package byzzbench.simulator.scheduler;
 
 import byzzbench.simulator.Scenario;
 import byzzbench.simulator.config.ByzzBenchConfig;
+import byzzbench.simulator.domain.Action;
 import byzzbench.simulator.service.MessageMutatorService;
 import byzzbench.simulator.transport.Event;
 import byzzbench.simulator.transport.MessageEvent;
@@ -87,7 +88,7 @@ public abstract class Scheduler {
      *
      * @return The decision made by the scheduler.
      */
-    public abstract Optional<EventDecision> scheduleNext(Scenario scenario);
+    public abstract Optional<Action> scheduleNext(Scenario scenario);
 
     /**
      * Resets the state of the scheduler.

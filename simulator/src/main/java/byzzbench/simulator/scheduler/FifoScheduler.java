@@ -2,6 +2,8 @@ package byzzbench.simulator.scheduler;
 
 import byzzbench.simulator.Scenario;
 import byzzbench.simulator.config.ByzzBenchConfig;
+import byzzbench.simulator.domain.Action;
+import byzzbench.simulator.domain.DeliverMessageAction;
 import byzzbench.simulator.service.MessageMutatorService;
 import byzzbench.simulator.transport.Event;
 import byzzbench.simulator.transport.MessageEvent;
@@ -30,7 +32,7 @@ public class FifoScheduler extends Scheduler {
     }
 
     @Override
-    public Optional<EventDecision> scheduleNext(Scenario scenario) {
+    public Optional<Action> scheduleNext(Scenario scenario) {
         // Get the next event
         Optional<Event> event =
                 scenario.getTransport()
@@ -41,7 +43,7 @@ public class FifoScheduler extends Scheduler {
 
         if (event.isPresent()) {
             scenario.getTransport().deliverEvent(event.get().getEventId());
-            EventDecision decision = new EventDecision(EventDecision.DecisionType.DELIVERED, event.get().getEventId());
+            Action decision = DeliverMessageAction.builder().messageEventId(event.get().getEventId()).build();
             return Optional.of(decision);
         } else {
             return Optional.empty();

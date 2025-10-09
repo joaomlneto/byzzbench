@@ -2,7 +2,7 @@ package byzzbench.simulator.controller;
 
 
 import byzzbench.simulator.Scenario;
-import byzzbench.simulator.scheduler.EventDecision;
+import byzzbench.simulator.domain.Action;
 import byzzbench.simulator.scheduler.Scheduler;
 import byzzbench.simulator.service.ScenarioService;
 import byzzbench.simulator.service.SchedulerService;
@@ -44,8 +44,8 @@ public class SchedulerController {
      * @return The action that was executed.
      */
     @PostMapping("/scheduler/{schedulerId}/{scenarioId}")
-    public Optional<EventDecision> executeSchedulerAction(@NonNull @PathVariable("schedulerId") String schedulerId,
-                                                          @PathVariable("scenarioId") long scenarioId) {
+    public Optional<Action> executeSchedulerAction(@NonNull @PathVariable("schedulerId") String schedulerId,
+                                                   @PathVariable("scenarioId") long scenarioId) {
         Scheduler scheduler = schedulerService.getScheduler(schedulerId);
         Scenario scenario = scenarioService.getScenarioById(scenarioId);
         return scheduler.scheduleNext(scenario);
