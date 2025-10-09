@@ -1,15 +1,8 @@
-import {
-  changeScenario,
-  deleteAutomaticFaults,
-  deliverMessage,
-  FaultInjectionAction,
-  getEvent,
-  mutateMessage,
-  Schedule,
-} from "@/lib/byzzbench-client";
+"use client";
+
+import { materializeSchedule, Schedule } from "@/lib/byzzbench-client";
 import { ActionIcon, Burger, Menu, Title } from "@mantine/core";
 import { openContextModal } from "@mantine/modals";
-import { showNotification } from "@mantine/notifications";
 import { useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import React from "react";
@@ -33,19 +26,12 @@ export const ScheduleMenu = ({ title, schedule }: ScheduleMenuProps) => {
         <Menu.Item
           onClick={async () => {
             console.log("Materializing Schedule: ", schedule);
-            await changeScenario(
-              {
-                scenarioId: "",
-              },
-              {},
-            );
-            // remove all pre-scheduled faults.
-            // we are going to replay event-by-event.
-            await deleteAutomaticFaults();
+            const result = await materializeSchedule(schedule.scheduleId!);
 
             let i = 0;
             let hasNotifiedMismatchedEvents = false;
 
+            /*
             for (const event of schedule.actions ?? []) {
               const remoteEvent = await getEvent(event.actionId).then(
                 (event) => event.data,
@@ -96,13 +82,15 @@ export const ScheduleMenu = ({ title, schedule }: ScheduleMenuProps) => {
                   // Ignore these: messages that were dropped are already dropped anyways
                   /*await enableNetworkFault(
                     (event as GenericFaultEvent).payload!.id!,
-                  );*/
+                  );* /
                   break;
                 default:
                   console.error("Unknown event type", event);
               }
             }
-            await queryClient.invalidateQueries();
+             */
+            //await queryClient.invalidateQueries();
+            console.log("Materialize result: ", result.data);
             router.push("/");
           }}
         >

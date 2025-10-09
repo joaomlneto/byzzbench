@@ -2,9 +2,9 @@ package byzzbench.simulator.protocols.XRPL;
 
 import byzzbench.simulator.Client;
 import byzzbench.simulator.Scenario;
-import byzzbench.simulator.scheduler.Scheduler;
+import byzzbench.simulator.domain.ScenarioParameters;
+import byzzbench.simulator.domain.Schedule;
 import byzzbench.simulator.transport.DefaultClientRequestPayload;
-import com.fasterxml.jackson.databind.JsonNode;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -12,17 +12,17 @@ import java.util.SortedSet;
 import java.util.TreeSet;
 
 public class XRPLScenario extends Scenario {
+    private static final String SCENARIO_ID = "xrpl";
     private final int NUM_NODES = 7;
-
 
     private List<XRPLReplica> replica_list;
 
-    public XRPLScenario(Scheduler scheduler) {
-        super("xrpl", scheduler);
+    public XRPLScenario(Schedule schedule) {
+        super(schedule, SCENARIO_ID);
     }
 
     @Override
-    public void loadScenarioParameters(JsonNode parameters) {
+    public void loadScenarioParameters(ScenarioParameters parameters) {
         // no parameters to load
     }
 
@@ -139,12 +139,13 @@ public class XRPLScenario extends Scenario {
     private void runScenario3() {
         System.out.println("Running scenario 3");
         try {
-            this.addClient(new Client(this, "C0") {
+            this.addClient(new XRPLClient(this, "C0") {
                 @Override
                 public void initialize() {
                     this.getScenario().getTransport().sendMessage(
                             this,
-                            new DefaultClientRequestPayload("tx"),
+                            // FIXME: Request IDs are not implemented
+                            new DefaultClientRequestPayload(0, "tx"),
                             "D"
                     );
                     //this.getScenario().getTransport().sendClientRequest(this.getId(), "tx", "D");
@@ -183,7 +184,8 @@ public class XRPLScenario extends Scenario {
      */
     private void sendClientRequest(String fromId, String operation, String toId) {
         Client from = this.getClients().get(fromId);
-        DefaultClientRequestPayload payload = new DefaultClientRequestPayload(operation);
+        // FIXME: Request IDs are not implemented
+        DefaultClientRequestPayload payload = new DefaultClientRequestPayload(0, operation);
         this.getTransport().sendMessage(from, payload, toId);
     }
 }

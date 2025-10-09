@@ -7,7 +7,6 @@ import byzzbench.simulator.transport.Event;
 import byzzbench.simulator.transport.MessageEvent;
 import byzzbench.simulator.transport.TimeoutEvent;
 import byzzbench.simulator.utils.NonNull;
-import com.fasterxml.jackson.databind.JsonNode;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -39,9 +38,25 @@ public abstract class Scheduler {
     @Getter(AccessLevel.PROTECTED)
     private final transient MessageMutatorService messageMutatorService;
     /**
+     * Set of scenarios that have been initialized
+     */
+    private final Set<Scenario> initializedScenarios = new HashSet<>();
+    /**
      * Random number generator
      */
     protected Random rand = new Random();
+
+    /**
+     * Initializes the scenario if it has not yet been initialized.
+     *
+     * @param scenario
+     */
+    public void initializeScenarioIfNotYetDone(Scenario scenario) {
+        if (!initializedScenarios.contains(scenario)) {
+            this.initializeScenario(scenario);
+            initializedScenarios.add(scenario);
+        }
+    }
 
     /**
      * Called whenever this scheduler has been assigned a new scenario.
@@ -56,7 +71,7 @@ public abstract class Scheduler {
      *
      * @param parameters The JSON object containing the parameters for the scheduler.
      */
-    public final void loadParameters(JsonNode parameters) {
+    public final void loadParameters(SchedulerParameters parameters) {
         this.loadSchedulerParameters(parameters);
     }
 
@@ -120,7 +135,7 @@ public abstract class Scheduler {
             firstTimeoutForEachReplica.putIfAbsent(event.getRecipientId(), event);
         }
 
-        switch (config.getScheduler().getExecutionMode()) {
+        switch (scenario.getExecutionMode()) {
             case SYNC -> {
                 // get the set of replica IDs with messages in their mailbox
                 Set<String> replicasWithQueuedMessagesInMailbox = getQueuedMessageEvents(scenario).stream()
@@ -134,8 +149,7 @@ public abstract class Scheduler {
             case ASYNC -> {
                 return firstTimeoutForEachReplica.values().stream().toList();
             }
-            default ->
-                    throw new IllegalStateException("Unknown execution mode: " + config.getScheduler().getExecutionMode());
+            default -> throw new IllegalStateException("Unknown execution mode: " + scenario.getExecutionMode());
         }
     }
 
@@ -144,7 +158,7 @@ public abstract class Scheduler {
      *
      * @param parameters The JSON object containing the parameters for the scheduler.
      */
-    protected abstract void loadSchedulerParameters(JsonNode parameters);
+    protected abstract void loadSchedulerParameters(SchedulerParameters parameters);
 
     /**
      * Retrieve one of the queued message events.
@@ -152,16 +166,15 @@ public abstract class Scheduler {
      * @param messageEvents The list of queued message events
      * @return The next message event
      */
-    public <T extends Event> T getNextMessageEvent(List<T> messageEvents) {
-        switch (config.getScheduler().getExecutionMode()) {
+    public <T extends Event> T getNextMessageEvent(Scenario scenario, List<T> messageEvents) {
+        switch (scenario.getExecutionMode()) {
             case SYNC -> {
                 return messageEvents.stream().min(Comparator.comparing(Event::getEventId)).orElseThrow();
             }
             case ASYNC -> {
                 return messageEvents.get(rand.nextInt(messageEvents.size()));
             }
-            default ->
-                    throw new IllegalStateException("Unknown execution mode: " + config.getScheduler().getExecutionMode());
+            default -> throw new IllegalStateException("Unknown execution mode: " + scenario.getExecutionMode());
         }
     }
 

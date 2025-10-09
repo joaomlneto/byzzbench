@@ -153,11 +153,12 @@ public abstract class Replica extends Node {
     /**
      * Send a reply to a client.
      *
-     * @param clientId the ID of the client
-     * @param reply    the reply payload
+     * @param clientId  the ID of the client
+     * @param requestId the ID of the request
+     * @param reply     the reply payload
      */
-    public void sendReplyToClient(String clientId, Serializable reply) {
-        this.transport.sendClientResponse(this, new DefaultClientReplyPayload(reply), clientId);
+    public void sendReplyToClient(String clientId, Serializable requestId, Serializable reply) {
+        this.transport.sendClientResponse(this, new DefaultClientReplyPayload(requestId, reply), clientId);
     }
 
     /**
@@ -191,12 +192,13 @@ public abstract class Replica extends Node {
      * @param timeout the timeout duration
      * @return the timer object
      */
+    @Override
     public long setTimeout(String name, Runnable r, Duration timeout) {
         Runnable wrapper = () -> {
             this.notifyObserversTimeout();
             r.run();
         };
-        return this.transport.setTimeout(this, wrapper, timeout, name);
+        return super.setTimeout(name, wrapper, timeout);
     }
 
     /**
@@ -206,20 +208,6 @@ public abstract class Replica extends Node {
      */
     public void clearTimeout(long eventId) {
         this.transport.clearTimeout(this, eventId);
-    }
-
-    /**
-     * Clear timeout based on description.
-     */
-    public void clearTimeout(String description) {
-        this.scenario.getTransport().clearTimeout(this, description);
-    }
-
-    /**
-     * Clear all timeouts for this replica.
-     */
-    public void clearAllTimeouts() {
-        this.transport.clearReplicaTimeouts(this);
     }
 
     /**
@@ -254,12 +242,6 @@ public abstract class Replica extends Node {
      */
     public void notifyObserversTimeout() {
         this.observers.forEach(observer -> observer.onTimeout(this));
-    }
-
-    @Override
-    @JsonIgnore
-    public Instant getCurrentTime() {
-        return this.scenario.getTimekeeper().incrementAndGetTime(this);
     }
 
     /**

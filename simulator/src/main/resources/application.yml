@@ -25,7 +25,10 @@ spring:
     database-platform: org.hibernate.dialect.H2Dialect
     #database-platform: org.hibernate.dialect.PostgreSQLDialect
     hibernate:
-      ddl-auto: update
+      ddl-auto: create
+  data:
+    rest:
+      base-path: "/jpa"
 
 springdoc:
   swagger-ui:
@@ -36,7 +39,7 @@ springdoc:
 # ByzzBench configuration
 byzzbench:
   autostart: true # Whether to start running a scenario campaign on startup.
-  numScenarios: 100 # Number of scenarios to run in the campaign.
+  numScenarios: 2 # Number of scenarios to run in the campaign.
   saveSchedules: all # which schedules to save? 'all', 'buggy' or 'none'.
 
   scheduler:
@@ -60,11 +63,12 @@ byzzbench:
 
   scenario:
     id: pbft-java
-    params:
+    params: # TODO: logic to read this is not yet implemented
       replicas: 4
+      clients: 1
     scheduledFaults:
       factories: [ ]
     termination: # Success condition for the scenario - terminates it when all conditions are met
       minEvents: 500 # check if N events have been scheduled. If so, can terminate
-      minRounds: 5 # check if N rounds have elapsed. If so, can terminate
+      minRounds: 0 # check if N rounds have elapsed. If so, can terminate
       samplingFrequency: 1 # check if should terminate every N scheduler decisions

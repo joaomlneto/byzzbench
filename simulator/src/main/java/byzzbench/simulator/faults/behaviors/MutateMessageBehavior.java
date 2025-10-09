@@ -1,16 +1,15 @@
 package byzzbench.simulator.faults.behaviors;
 
-import byzzbench.simulator.ApplicationContextUtils;
 import byzzbench.simulator.faults.FaultBehavior;
 import byzzbench.simulator.faults.ScenarioContext;
 import byzzbench.simulator.faults.faults.MessageMutationFault;
+import byzzbench.simulator.service.ApplicationContextProvider;
 import byzzbench.simulator.service.MessageMutatorService;
 import byzzbench.simulator.transport.Event;
 import byzzbench.simulator.transport.MessageEvent;
 import byzzbench.simulator.transport.MessagePayload;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.java.Log;
-import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -55,8 +54,7 @@ public class MutateMessageBehavior implements FaultBehavior {
         MessagePayload payload = messageEvent.getPayload();
 
         // get available mutators for message
-        ApplicationContext ctx = ApplicationContextUtils.getApplicationContext();
-        MessageMutatorService messageMutatorService = ctx.getBean(MessageMutatorService.class);
+        MessageMutatorService messageMutatorService = ApplicationContextProvider.getMessageMutatorService();
         List<MessageMutationFault> mutators = messageMutatorService.getMutatorsForClass(payload.getClass());
 
         if (mutators.isEmpty()) {

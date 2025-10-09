@@ -3,17 +3,14 @@ package byzzbench.simulator.protocols.dummy;
 import byzzbench.simulator.Scenario;
 import byzzbench.simulator.ScenarioFactory;
 import byzzbench.simulator.config.ByzzBenchConfig;
-import byzzbench.simulator.scheduler.Scheduler;
-import byzzbench.simulator.service.MessageMutatorService;
-import byzzbench.simulator.service.SchedulerFactoryService;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import byzzbench.simulator.domain.Schedule;
+import byzzbench.simulator.service.SchedulerService;
 import org.springframework.stereotype.Component;
 
 @Component
 public class DummyScenarioFactory extends ScenarioFactory {
-    public DummyScenarioFactory(SchedulerFactoryService schedulerFactoryService, ByzzBenchConfig byzzBenchConfig, ObjectMapper objectMapper) {
-        super(schedulerFactoryService, byzzBenchConfig, objectMapper);
+    public DummyScenarioFactory(SchedulerService schedulerService, ByzzBenchConfig byzzBenchConfig) {
+        super(schedulerService, byzzBenchConfig);
     }
 
     @Override
@@ -22,10 +19,9 @@ public class DummyScenarioFactory extends ScenarioFactory {
     }
 
     @Override
-    public Scenario createScenario(MessageMutatorService messageMutatorService, JsonNode params) {
-        Scheduler scheduler = this.createScheduler(messageMutatorService, params);
-        DummyScenario scenarioExecutor = new DummyScenario(scheduler);
-        scenarioExecutor.loadParameters(params);
+    public Scenario createScenario(Schedule schedule) {
+        DummyScenario scenarioExecutor = new DummyScenario(schedule);
+        scenarioExecutor.loadParameters(schedule.getParameters());
         return scenarioExecutor;
     }
 }

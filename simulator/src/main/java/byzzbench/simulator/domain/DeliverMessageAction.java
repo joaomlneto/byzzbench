@@ -22,6 +22,12 @@ import java.time.Instant;
 @NoArgsConstructor
 public class DeliverMessageAction extends Action {
     /**
+     * The unique identifier of this message event.
+     */
+    @NonNull
+    private long messageEventId;
+
+    /**
      * The unique identifier of the receiving node
      */
     @NonNull
@@ -55,6 +61,7 @@ public class DeliverMessageAction extends Action {
      */
     public static DeliverMessageAction fromEvent(MessageEvent messageEvent) {
         return DeliverMessageAction.builder()
+                .messageEventId(messageEvent.getEventId())
                 .recipientId(messageEvent.getRecipientId())
                 .senderId(messageEvent.getSenderId())
                 .timestamp(messageEvent.getTimestamp())
@@ -64,6 +71,6 @@ public class DeliverMessageAction extends Action {
 
     @Override
     public void accept(Scenario scenario) {
-        throw new UnsupportedOperationException("Not implemented yet");
+        scenario.getTransport().deliverEvent(this.messageEventId, false);
     }
 }

@@ -20,6 +20,11 @@ public class FaultInjectionAction extends Action {
     /**
      * The unique identifier of the event.
      */
+    private long eventId;
+
+    /**
+     * The unique identifier of the fault.
+     */
     private String faultId;
 
     /**

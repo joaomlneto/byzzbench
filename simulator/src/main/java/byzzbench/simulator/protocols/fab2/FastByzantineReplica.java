@@ -402,7 +402,8 @@ public class FastByzantineReplica extends LeaderBasedProtocolReplica {
                 committed = true;
 
                 log.info("Learner " + getId() + " sending reply to client...");
-                this.sendReplyToClient(clientId, acceptValue.getValue());
+                // FIXME: Request IDs are not implemented
+                this.sendReplyToClient(clientId, -1, acceptValue.getValue());
             }
 
             multicastMessage(new LearnMessage(acceptValue), this.proposerNodeIds);
@@ -502,7 +503,8 @@ public class FastByzantineReplica extends LeaderBasedProtocolReplica {
                 committed = true;
 
                 log.info("Learner " + getId() + " sending reply to client...");
-                this.sendReplyToClient(clientId, learnMessage.getValueAndProposalNumber().getValue());
+                // FIXME: Request IDs are not implemented
+                this.sendReplyToClient(clientId, -1, learnMessage.getValueAndProposalNumber().getValue());
             }
 
             multicastMessage(new LearnMessage(learnMessage.getValueAndProposalNumber()), this.proposerNodeIds);

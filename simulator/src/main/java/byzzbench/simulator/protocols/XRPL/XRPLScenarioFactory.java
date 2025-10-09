@@ -3,17 +3,14 @@ package byzzbench.simulator.protocols.XRPL;
 import byzzbench.simulator.Scenario;
 import byzzbench.simulator.ScenarioFactory;
 import byzzbench.simulator.config.ByzzBenchConfig;
-import byzzbench.simulator.scheduler.Scheduler;
-import byzzbench.simulator.service.MessageMutatorService;
-import byzzbench.simulator.service.SchedulerFactoryService;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import byzzbench.simulator.domain.Schedule;
+import byzzbench.simulator.service.SchedulerService;
 import org.springframework.stereotype.Component;
 
 @Component
 public class XRPLScenarioFactory extends ScenarioFactory {
-    public XRPLScenarioFactory(SchedulerFactoryService schedulerFactoryService, ByzzBenchConfig byzzBenchConfig, ObjectMapper objectMapper) {
-        super(schedulerFactoryService, byzzBenchConfig, objectMapper);
+    public XRPLScenarioFactory(SchedulerService schedulerService, ByzzBenchConfig byzzBenchConfig) {
+        super(schedulerService, byzzBenchConfig);
     }
 
     @Override
@@ -22,10 +19,9 @@ public class XRPLScenarioFactory extends ScenarioFactory {
     }
 
     @Override
-    public Scenario createScenario(MessageMutatorService messageMutatorService, JsonNode params) {
-        Scheduler scheduler = this.createScheduler(messageMutatorService, params);
-        XRPLScenario scenarioExecutor = new XRPLScenario(scheduler);
-        scenarioExecutor.loadParameters(params);
+    public Scenario createScenario(Schedule schedule) {
+        XRPLScenario scenarioExecutor = new XRPLScenario(schedule);
+        scenarioExecutor.loadParameters(schedule.getParameters());
         return scenarioExecutor;
     }
 }

@@ -5,8 +5,14 @@ import { useGetMutators } from "@/lib/byzzbench-client";
 import { Grid } from "@mantine/core";
 import React from "react";
 
-export const MutatorsList = () => {
-  const { data: nodeIds } = useGetMutators({ query: { retry: true } });
+export type MutatorsListProps = {
+  // No props for now
+};
+
+export const MutatorsList = (props: MutatorsListProps) => {
+  const { data: nodeIds } = useGetMutators({
+    query: { retry: true },
+  });
   return (
     <Grid gutter="md">
       {nodeIds?.data.map((nodeId) => (

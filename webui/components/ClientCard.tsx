@@ -1,16 +1,17 @@
 "use client";
 
 import { NodeStateNavLink } from "@/components/NodeStateNavLink";
-import { useGetClient } from "@/lib/byzzbench-client";
+import { useGetScenarioClient } from "@/lib/byzzbench-client";
 import { Card, Title } from "@mantine/core";
 import React from "react";
 
 export type ClientCardProps = {
+  scenarioId: number;
   clientId: string;
 };
 
-export const ClientCard = ({ clientId }: ClientCardProps) => {
-  const { data } = useGetClient(clientId);
+export const ClientCard = ({ scenarioId, clientId }: ClientCardProps) => {
+  const { data } = useGetScenarioClient(scenarioId, clientId);
 
   return (
     <Card p="md" style={{ maxWidth: "400px" }}>

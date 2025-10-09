@@ -7,7 +7,6 @@ import byzzbench.simulator.faults.FaultFactory;
 import byzzbench.simulator.faults.ScenarioContext;
 import byzzbench.simulator.faults.factories.ByzzFuzzScenarioFaultFactory;
 import byzzbench.simulator.service.MessageMutatorService;
-import com.fasterxml.jackson.databind.JsonNode;
 import lombok.Getter;
 import lombok.extern.java.Log;
 import org.springframework.stereotype.Component;
@@ -59,29 +58,28 @@ public class ByzzFuzzScheduler extends RandomScheduler {
     }
 
     @Override
-    public void loadSchedulerParameters(JsonNode parameters) {
+    public void loadSchedulerParameters(SchedulerParameters parameters) {
         System.out.println("Loading ByzzFuzz parameters:");
 
-        if (parameters != null)
-            System.out.println(parameters.toPrettyString());
-
-        if (parameters != null && parameters.has("numRoundsWithProcessFaults")) {
-            this.numRoundsWithProcessFaults = parameters.get("numRoundsWithProcessFaults").asInt();
+        if (parameters != null) {
+            System.out.println(parameters);
         }
 
-        if (parameters != null && parameters.has("numRoundsWithNetworkFaults")) {
-            this.numRoundsWithNetworkFaults = parameters.get("numRoundsWithNetworkFaults").asInt();
+        if (parameters != null && parameters.getParams().containsKey("numRoundsWithProcessFaults")) {
+            this.numRoundsWithProcessFaults = Integer.parseInt(parameters.getParams().get("numRoundsWithProcessFaults"));
         }
 
-        if (parameters != null && parameters.has("numRoundsWithFaults")) {
-            this.numRoundsWithFaults = parameters.get("numRoundsWithFaults").asInt();
+        if (parameters != null && parameters.getParams().containsKey("numRoundsWithNetworkFaults")) {
+            this.numRoundsWithNetworkFaults = Integer.parseInt(parameters.getParams().get("numRoundsWithNetworkFaults"));
+        }
+
+        if (parameters != null && parameters.getParams().containsKey("numRoundsWithFaults")) {
+            this.numRoundsWithFaults = Integer.parseInt(parameters.getParams().get("numRoundsWithFaults"));
         }
     }
 
     @Override
     public void initializeScenario(Scenario scenario) {
-        super.initializeScenario(scenario);
-
         // Generate round-aware small-scope mutations for the scenario
         FaultFactory faultFactory = new ByzzFuzzScenarioFaultFactory();
         ScenarioContext context = new ScenarioContext(scenario);

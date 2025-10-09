@@ -4,8 +4,12 @@ import { useGetScenarioPredicates } from "@/lib/byzzbench-client";
 import { Badge, Group } from "@mantine/core";
 import React, { useMemo } from "react";
 
-export const PredicateList = () => {
-  const predicatesQuery = useGetScenarioPredicates();
+export type PredicateListProps = {
+  scenarioId: number;
+};
+
+export const PredicateList = ({ scenarioId }: PredicateListProps) => {
+  const predicatesQuery = useGetScenarioPredicates(scenarioId);
 
   const predicates = useMemo(
     () => predicatesQuery?.data?.data ?? {},

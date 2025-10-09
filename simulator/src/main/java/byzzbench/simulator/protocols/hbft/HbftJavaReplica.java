@@ -721,7 +721,7 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
     public void sendReply(String clientId, ReplyMessage reply) {
         //this.sendMessage(reply, clientId);
         ClientReplyMessage clientReplyMessage = new ClientReplyMessage(reply, this.tolerance);
-        this.sendReplyToClient(clientId, clientReplyMessage);
+        this.sendReplyToClient(clientId, reply.getTimestamp(), clientReplyMessage);
 
         // When prior requests are fulfilled, attempt to process the buffer
         // to ensure they are dispatched in a timely manner

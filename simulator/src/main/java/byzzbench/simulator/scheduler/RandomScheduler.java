@@ -7,7 +7,6 @@ import byzzbench.simulator.service.MessageMutatorService;
 import byzzbench.simulator.transport.Event;
 import byzzbench.simulator.transport.MessageEvent;
 import byzzbench.simulator.transport.TimeoutEvent;
-import com.fasterxml.jackson.databind.JsonNode;
 import lombok.extern.java.Log;
 import org.springframework.stereotype.Component;
 
@@ -78,7 +77,7 @@ public class RandomScheduler extends Scheduler {
         // check if we should deliver a message (without changes)
         dieRoll -= deliverMessageWeight;
         if (dieRoll < 0) {
-            Event message = getNextMessageEvent(messageEvents);
+            Event message = getNextMessageEvent(scenario, messageEvents);
             scenario.getTransport().deliverEvent(message.getEventId());
             EventDecision decision = new EventDecision(EventDecision.DecisionType.DELIVERED, message.getEventId());
             return Optional.of(decision);
@@ -122,7 +121,7 @@ public class RandomScheduler extends Scheduler {
     }
 
     @Override
-    public void loadSchedulerParameters(JsonNode parameters) {
+    public void loadSchedulerParameters(SchedulerParameters parameters) {
         // no parameters to load
     }
 }

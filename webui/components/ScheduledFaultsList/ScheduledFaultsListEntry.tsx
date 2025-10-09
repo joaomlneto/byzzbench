@@ -4,12 +4,16 @@ import { Card, Group, Text } from "@mantine/core";
 import React from "react";
 
 export type FaultsListEntryProps = {
+  scenarioId: number;
   faultId: string;
   disabled?: boolean;
 };
 
-export const ScheduledFaultsListEntry = ({ faultId }: FaultsListEntryProps) => {
-  const faultQuery = useGetAutomaticFault(faultId);
+export const ScheduledFaultsListEntry = ({
+  scenarioId,
+  faultId,
+}: FaultsListEntryProps) => {
+  const faultQuery = useGetAutomaticFault(scenarioId, faultId);
   return (
     <Card withBorder shadow="sm" padding="xs" m={4} maw="350">
       <Group gap="xs">

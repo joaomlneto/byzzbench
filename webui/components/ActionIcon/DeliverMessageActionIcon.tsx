@@ -8,13 +8,14 @@ import { useQueryClient } from "@tanstack/react-query";
 import { memo } from "react";
 
 type DeliverMessageActionIconProps = {
+  scenarioId: number;
   messageId: number;
 };
 
 export const DeliverMessageActionIcon = memo(
-  ({ messageId }: DeliverMessageActionIconProps) => {
+  ({ scenarioId, messageId }: DeliverMessageActionIconProps) => {
     const queryClient = useQueryClient();
-    const { mutate } = useDeliverMessage(messageId);
+    const { mutate } = useDeliverMessage(scenarioId, messageId);
 
     return (
       <ActionIcon

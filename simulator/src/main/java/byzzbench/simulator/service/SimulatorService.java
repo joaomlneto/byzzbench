@@ -4,15 +4,16 @@ import byzzbench.simulator.Scenario;
 import byzzbench.simulator.ScenarioPredicate;
 import byzzbench.simulator.config.ByzzBenchConfig;
 import byzzbench.simulator.domain.Campaign;
+import byzzbench.simulator.domain.ScenarioParameters;
+import byzzbench.simulator.domain.Schedule;
 import byzzbench.simulator.repository.CampaignRepository;
 import byzzbench.simulator.repository.ScheduleRepository;
 import byzzbench.simulator.scheduler.EventDecision;
+import byzzbench.simulator.scheduler.Scheduler;
 import byzzbench.simulator.state.ErroredPredicate;
 import byzzbench.simulator.state.LivenessPredicate;
 import byzzbench.simulator.transport.Event;
 import byzzbench.simulator.transport.messages.MessageWithRound;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.java.Log;
@@ -29,10 +30,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 /**
- * Service for running the simulator.
- * <p>
- * This service is responsible for running the simulator with the selected
- * scenario.
+ * Service to manage active simulations.
  */
 @Getter
 @Service
@@ -44,11 +42,14 @@ public class SimulatorService {
     private final ExecutorService executor = Executors.newFixedThreadPool(1);
     private final ScheduleRepository scheduleRepository;
     private final CampaignRepository campaignRepository;
+    private final SchedulerService schedulerService;
     private SimulatorServiceMode mode = SimulatorServiceMode.STOPPED;
     private boolean shouldStop = false;
     private Scenario scenario;
-    private String scenarioId;
-    private JsonNode scenarioParams;
+    private String scenarioFactoryId;
+    private long scenarioId;
+    private ScenarioParameters scenarioParams;
+    private Scheduler scheduler;
 
     private void finalizeSchedule(Set<ScenarioPredicate> brokenInvariants, Campaign campaign) {
         scenario.getSchedule().finalizeSchedule(brokenInvariants);
@@ -60,28 +61,36 @@ public class SimulatorService {
                         && !brokenInvariants.isEmpty())) {
             scheduleRepository.save(scenario.getSchedule());
         }
+
     }
 
     @EventListener(ApplicationReadyEvent.class)
     @DependsOn("simulatorApplication")
     void onStartup() {
-        this.scenarioId = this.byzzBenchConfig.getScenario().getId();
-        this.scenarioParams = JsonNodeFactory.instance.objectNode();
-        this.changeScenario(byzzBenchConfig.getScenario().getId(), JsonNodeFactory.instance.objectNode());
+        this.scenarioFactoryId = this.byzzBenchConfig.getScenario().getId();
+        this.scenarioParams = ScenarioParameters.builder()
+                .scenarioFactoryId(this.byzzBenchConfig.getScenario().getId())
+                .randomSeed(1L)
+                .build();
+        this.changeScenario(this.scenarioFactoryId, this.scenarioParams);
 
         if (this.byzzBenchConfig.isAutostart()) {
             this.start();
         }
+
+        this.scheduler = this.schedulerService.getScheduler(
+                this.byzzBenchConfig.getScheduler().getId()
+        );
     }
 
     /**
      * Changes the scenario to the scenario with the given ID.
      *
-     * @param scenarioId The ID of the scenario to change to.
-     * @param params     The parameters for the scenario.
+     * @param scenarioFactoryId The ID of the scenario to change to.
+     * @param params            The parameters for the scenario.
      */
-    public void changeScenario(String scenarioId, JsonNode params) {
-        this.scenarioId = scenarioId;
+    public void changeScenario(String scenarioFactoryId, ScenarioParameters params) {
+        this.scenarioFactoryId = scenarioFactoryId;
         this.scenarioParams = params;
         this.resetScenario();
     }
@@ -90,7 +99,13 @@ public class SimulatorService {
      * Creates a new scenario with the previously set scenario ID and parameters, replacing the current scenario.
      */
     public void resetScenario() {
-        this.scenario = this.scenarioService.generateScenario(this.scenarioId, this.scenarioParams);
+        if (this.scenario != null) {
+            this.scenarioService.removeScenario(this.scenarioId);
+        }
+        Schedule schedule = new Schedule(scenarioParams);
+        scheduleRepository.save(schedule);
+        this.scenarioId = this.scenarioService.generateScenario(schedule);
+        this.scenario = this.scenarioService.getScenarios().get(this.scenarioId);
         this.scenario.runScenario();
     }
 
@@ -126,7 +141,7 @@ public class SimulatorService {
             campaignRepository.save(campaign);
 
             // reset the scenario to ensure that the scenario is in a clean state
-            this.changeScenario(this.getScenarioId(), this.getScenarioParams());
+            this.changeScenario(this.getScenarioFactoryId(), this.getScenarioParams());
 
             int numTerm = 0;
             int numMaxedOut = 0;
@@ -138,7 +153,7 @@ public class SimulatorService {
 
                     try {
                         while (true) {
-                            Optional<EventDecision> decision = this.scenario.getScheduler().scheduleNext(this.scenario);
+                            Optional<EventDecision> decision = this.scheduler.scheduleNext(this.scenario);
                             System.out.println("Decision: " + decision);
 
                             // if the scheduler did not make a decision, and we're before GST, set GST!
@@ -168,6 +183,10 @@ public class SimulatorService {
                                 break;
                             }
 
+                            System.out.println("Decision: " + decision.get());
+                            System.out.println("Num events: " + numEvents);
+                            System.out.println("Should check termination: " + shouldCheckTermination);
+
                             if (shouldCheckTermination) {
                                 OptionalLong maxDeliveredRound = this.scenario.getTransport()
                                         .getEventsInState(Event.Status.DELIVERED)
@@ -186,6 +205,10 @@ public class SimulatorService {
                                         .min();
                                 long currentRound = minQueuedRound.orElse(maxDeliveredRound.orElse(0));
 
+                                System.out.println("Current round: " + currentRound);
+                                System.out.println("Max round: " + maxDeliveredRound.orElse(0));
+                                System.out.println("Min round: " + byzzBenchConfig.getScenario().getTermination().getMinRounds());
+
                                 if (numEvents >= byzzBenchConfig.getScenario().getTermination().getMinEvents()
                                         && currentRound >= byzzBenchConfig.getScenario().getTermination().getMinRounds()) {
                                     log.info("Reached min # of events or rounds for this run, terminating. . .");
@@ -198,13 +221,13 @@ public class SimulatorService {
                         }
 
                     } catch (Exception e) {
-                        System.out.println("Error in schedule " + scenarioId + ": " + e);
+                        System.out.println("Error in schedule " + scenarioFactoryId + ": " + e);
                         e.printStackTrace();
                         this.finalizeSchedule(Set.of(new ErroredPredicate()), campaign);
                         numErr += 1;
+                    } finally {
+                        this.resetScenario();
                     }
-
-                    this.resetScenario();
                 }
             } catch (Exception e) {
                 throw new RuntimeException(e);

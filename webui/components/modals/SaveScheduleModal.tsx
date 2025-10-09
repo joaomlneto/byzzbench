@@ -34,13 +34,15 @@ export function SaveScheduleModal({
   useEffect(() => {
     const fetchData = async () => {
       // get event ids
-      const schedule = await getSchedule().then((res) => res.data);
+      const schedule = await getSchedule(innerProps.schedule.scheduleId!).then(
+        (res) => res.data,
+      );
 
       form.setFieldValue("events", schedule);
     };
 
     void fetchData();
-  }, [form]);
+  }, [form, innerProps.schedule.scheduleId]);
 
   return (
     <form
@@ -62,7 +64,6 @@ export function SaveScheduleModal({
             form.getValues().schedule ?? {
               scheduleId: -1,
               actions: [],
-              finalized: false,
               brokenInvariants: [],
             }
           }

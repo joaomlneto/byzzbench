@@ -12,13 +12,14 @@ import { useQueryClient } from "@tanstack/react-query";
 import React, { memo } from "react";
 
 type MutateMessageMenuProps = {
+  scenarioId: number;
   messageId: number;
 };
 
 export const MutateMessageMenu = memo(
-  ({ messageId }: MutateMessageMenuProps) => {
+  ({ scenarioId, messageId }: MutateMessageMenuProps) => {
     const queryClient = useQueryClient();
-    const { data, isLoading } = useGetMessageMutators(messageId);
+    const { data, isLoading } = useGetMessageMutators(scenarioId, messageId);
 
     if (isLoading || !data) {
       return <Loader />;
@@ -33,6 +34,7 @@ export const MutateMessageMenu = memo(
           <Menu.Label>Mutate and Deliver</Menu.Label>
           {data?.data.map((mutator) => (
             <MutateMessageMenuEntry
+              scenarioId={scenarioId}
               key={mutator}
               messageId={messageId}
               mutatorId={mutator}
@@ -64,7 +66,7 @@ export const MutateMessageMenu = memo(
             }
             onClick={(e) => {
               e.preventDefault();
-              dropMessage(messageId)
+              dropMessage(scenarioId, messageId)
                 .then(() => {
                   showNotification({
                     message: `Message ${messageId} dropped`,

@@ -2,9 +2,9 @@ package byzzbench.simulator.protocols.fab2;
 
 import byzzbench.simulator.Replica;
 import byzzbench.simulator.Scenario;
-import byzzbench.simulator.scheduler.Scheduler;
+import byzzbench.simulator.domain.ScenarioParameters;
+import byzzbench.simulator.domain.Schedule;
 import byzzbench.simulator.transport.Transport;
-import com.fasterxml.jackson.databind.JsonNode;
 import lombok.extern.java.Log;
 
 import java.util.List;
@@ -13,13 +13,14 @@ import java.util.TreeSet;
 
 @Log
 public class FastByzantineScenario extends Scenario {
+    private static final String SCENARIO_ID = "fab-java2";
 //    public FastByzantineScenario(Scheduler scheduler) {
 //        super("fab-java", scheduler);
 //        this.terminationCondition = new FastByzantineTerminationCondition();
 //    }
 
-    public FastByzantineScenario(Scheduler scheduler) {
-        super("fab-java2", scheduler);
+    public FastByzantineScenario(Schedule schedule) {
+        super(schedule, SCENARIO_ID);
         this.terminationCondition = new FastByzantineTerminationCondition();
     }
 
@@ -28,7 +29,7 @@ public class FastByzantineScenario extends Scenario {
      */
 
     @Override
-    protected void loadScenarioParameters(JsonNode parameters) {
+    protected void loadScenarioParameters(ScenarioParameters parameters) {
         // no parameters to load
     }
 

@@ -1,3 +1,5 @@
+"use client";
+
 import { contextModals } from "@/components/modals";
 import { MainLayout } from "@/layouts/MainLayout";
 import { TanstackQueryClientProvider } from "@/lib/TanstackQueryClientProvider";
@@ -13,14 +15,10 @@ import React from "react";
 
 export default function RootLayout({
   children,
-}: {
-  children: React.ReactNode;
-}) {
+}: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="en">
-      <head>
-        <ColorSchemeScript />
-      </head>
+      <head>{false && <ColorSchemeScript defaultColorScheme="auto" />}</head>
       <body>
         <TanstackQueryClientProvider>
           <MantineProvider>

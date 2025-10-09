@@ -3,17 +3,14 @@ package byzzbench.simulator.protocols.tendermint;
 import byzzbench.simulator.Scenario;
 import byzzbench.simulator.ScenarioFactory;
 import byzzbench.simulator.config.ByzzBenchConfig;
-import byzzbench.simulator.scheduler.Scheduler;
-import byzzbench.simulator.service.MessageMutatorService;
-import byzzbench.simulator.service.SchedulerFactoryService;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import byzzbench.simulator.domain.Schedule;
+import byzzbench.simulator.service.SchedulerService;
 import org.springframework.stereotype.Component;
 
 @Component
 public class TendermintScenarioFactory extends ScenarioFactory {
-    public TendermintScenarioFactory(SchedulerFactoryService schedulerFactoryService, ByzzBenchConfig byzzBenchConfig, ObjectMapper objectMapper) {
-        super(schedulerFactoryService, byzzBenchConfig, objectMapper);
+    public TendermintScenarioFactory(SchedulerService schedulerService, ByzzBenchConfig byzzBenchConfig) {
+        super(schedulerService, byzzBenchConfig);
     }
 
     @Override
@@ -22,10 +19,9 @@ public class TendermintScenarioFactory extends ScenarioFactory {
     }
 
     @Override
-    public Scenario createScenario(MessageMutatorService messageMutatorService, JsonNode params) {
-        Scheduler scheduler = this.createScheduler(messageMutatorService, params);
-        TendermintScenarioExecutor scenarioExecutor = new TendermintScenarioExecutor(scheduler);
-        scenarioExecutor.loadParameters(params);
+    public Scenario createScenario(Schedule schedule) {
+        TendermintScenarioExecutor scenarioExecutor = new TendermintScenarioExecutor(schedule);
+        scenarioExecutor.loadParameters(schedule.getParameters());
         return scenarioExecutor;
     }
 }

@@ -3,17 +3,14 @@ package byzzbench.simulator.protocols.fasthotstuff;
 import byzzbench.simulator.Scenario;
 import byzzbench.simulator.ScenarioFactory;
 import byzzbench.simulator.config.ByzzBenchConfig;
-import byzzbench.simulator.scheduler.Scheduler;
-import byzzbench.simulator.service.MessageMutatorService;
-import byzzbench.simulator.service.SchedulerFactoryService;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import byzzbench.simulator.domain.Schedule;
+import byzzbench.simulator.service.SchedulerService;
 import org.springframework.stereotype.Component;
 
 @Component
 public class FastHotStuffScenarioFactory extends ScenarioFactory {
-    public FastHotStuffScenarioFactory(SchedulerFactoryService schedulerFactoryService, ByzzBenchConfig byzzBenchConfig, ObjectMapper objectMapper) {
-        super(schedulerFactoryService, byzzBenchConfig, objectMapper);
+    public FastHotStuffScenarioFactory(SchedulerService schedulerService, ByzzBenchConfig byzzBenchConfig) {
+        super(schedulerService, byzzBenchConfig);
     }
 
     @Override
@@ -22,10 +19,9 @@ public class FastHotStuffScenarioFactory extends ScenarioFactory {
     }
 
     @Override
-    public Scenario createScenario(MessageMutatorService messageMutatorService, JsonNode params) {
-        Scheduler scheduler = this.createScheduler(messageMutatorService, params);
-        FastHotStuffScenarioExecutor scenarioExecutor = new FastHotStuffScenarioExecutor(scheduler);
-        scenarioExecutor.loadParameters(params);
+    public Scenario createScenario(Schedule schedule) {
+        FastHotStuffScenarioExecutor scenarioExecutor = new FastHotStuffScenarioExecutor(schedule);
+        scenarioExecutor.loadParameters(schedule.getParameters());
         return scenarioExecutor;
     }
 }

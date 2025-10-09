@@ -2,7 +2,15 @@
 
 import { ActionCard } from "@/components/Events/EventCard";
 import { Schedule } from "@/lib/byzzbench-client";
-import { Badge, Card, Group, Pagination, Title, Tooltip } from "@mantine/core";
+import {
+  Badge,
+  Card,
+  Group,
+  JsonInput,
+  Pagination,
+  Title,
+  Tooltip,
+} from "@mantine/core";
 import { usePagination } from "@mantine/hooks";
 import { useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
@@ -15,6 +23,7 @@ export type ScheduleDetailsProps = {
   hideTitle?: boolean;
   hideScenario?: boolean;
   hideSchedule?: boolean;
+  hideParameters?: boolean;
   hideMaterializeButton?: boolean;
   hideSaveButton?: boolean;
   hideDownloadButton?: boolean;
@@ -29,6 +38,7 @@ export const ScheduleDetails = ({
   hideTitle = false,
   hideScenario = false,
   hideSchedule = false,
+  hideParameters = false,
   entriesPerPage = ENTRIES_PER_PAGE,
   schedule,
 }: ScheduleDetailsProps) => {
@@ -67,6 +77,13 @@ export const ScheduleDetails = ({
             </>
           )}
         </Group>
+        {!hideParameters && (
+          <JsonInput
+            label="Scenario Parameters"
+            value={JSON.stringify(schedule.parameters, null, 2)}
+            autosize
+          />
+        )}
         {!hideSchedule && (
           <>
             <Pagination

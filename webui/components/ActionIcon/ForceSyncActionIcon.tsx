@@ -1,14 +1,14 @@
 "use client";
 
-import { useScheduleNext } from "@/lib/byzzbench-client";
 import { ActionIcon, Tooltip } from "@mantine/core";
 import { IconRefresh } from "@tabler/icons-react";
 import { useQueryClient } from "@tanstack/react-query";
 import React from "react";
 
-export const ForceSyncActionIcon = () => {
+export type ForceSyncActionIconProps = {};
+
+export const ForceSyncActionIcon = ({}: ForceSyncActionIconProps) => {
   const queryClient = useQueryClient();
-  const { mutate } = useScheduleNext();
 
   return (
     <Tooltip label="Force resync">

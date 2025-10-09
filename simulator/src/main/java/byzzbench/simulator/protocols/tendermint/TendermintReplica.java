@@ -794,7 +794,7 @@ public class TendermintReplica extends LeaderBasedProtocolReplica {
     }
 
     public void sendReply(String clientId, ReplyMessage reply) {
-        this.sendReplyToClient(clientId, reply);
+        this.sendReplyToClient(clientId, String.format("%s/%s", reply.getHeight(), reply.getTimestamp()), reply);
     }
 
     public void print() {

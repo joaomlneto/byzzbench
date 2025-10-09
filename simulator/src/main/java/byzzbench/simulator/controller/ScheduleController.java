@@ -1,14 +1,14 @@
 package byzzbench.simulator.controller;
 
 
+import byzzbench.simulator.Scenario;
 import byzzbench.simulator.domain.Schedule;
 import byzzbench.simulator.repository.ScheduleRepository;
-import byzzbench.simulator.service.ScenarioService;
-import byzzbench.simulator.service.SimulatorService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -18,8 +18,6 @@ import java.util.stream.StreamSupport;
 @RestController
 @RequiredArgsConstructor
 public class ScheduleController {
-    private final ScenarioService scenarioService;
-    private final SimulatorService simulatorService;
     private final ScheduleRepository scheduleRepository;
 
     /**
@@ -43,5 +41,19 @@ public class ScheduleController {
     @GetMapping("/schedules/{id}")
     public Schedule getSchedule(@PathVariable Long id) {
         return scheduleRepository.findById(id).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Schedule not found"));
+    }
+
+    /**
+     * Materialize the scenario for a given schedule.
+     *
+     * @param id the id of the schedule
+     * @return the ID of the materialized scenario
+     */
+    @PostMapping("/schedules/{id}/materialize")
+    public String materializeSchedule(@PathVariable Long id) {
+        Schedule schedule = scheduleRepository.findById(id).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Schedule not found"));
+
+        Scenario scenario = schedule.materializeScenario();
+        return scenario.getDescription();
     }
 }

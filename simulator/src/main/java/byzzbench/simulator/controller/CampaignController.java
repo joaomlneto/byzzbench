@@ -6,24 +6,30 @@ import byzzbench.simulator.repository.CampaignRepository;
 import byzzbench.simulator.service.ScenarioService;
 import byzzbench.simulator.service.SimulatorService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.java.Log;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 import java.util.stream.StreamSupport;
 
+/**
+ * REST controller for CRUD operations on {@link Campaign}.
+ */
 @RestController
 @RequiredArgsConstructor
+@Log
 public class CampaignController {
     private final ScenarioService scenarioService;
     private final SimulatorService simulatorService;
     private final CampaignRepository campaignRepository;
 
     /**
-     * Get the list of all campaigns.
+     * Get the list of all available campaigns.
      *
      * @return a list of campaign ids
      */
@@ -34,16 +40,43 @@ public class CampaignController {
                 .toList();
     }
 
-    // get campaign
+    /**
+     * Create a campaign
+     */
+    @PostMapping("/campaigns")
+    public void createCampaign() {
+        Campaign campaign = new Campaign();
+        campaign.setNumScenarios(10);
+        campaignRepository.save(campaign);
+    }
 
     /**
      * Get a campaign by id.
      *
-     * @param id the id of the campaign
+     * @param campaignId the id of the campaign
      * @return the campaign
      */
-    @GetMapping("/campaigns/{id}")
-    public Campaign getCampaign(@PathVariable Long id) {
-        return campaignRepository.findById(id).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Campaign not found"));
+    @GetMapping("/campaigns/{campaignId}")
+    public Campaign getCampaign(@PathVariable Long campaignId) {
+        log.info("Fetching campaign with id: " + campaignId);
+        return campaignRepository.findById(campaignId).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Campaign not found"));
+    }
+
+    /**
+     * Start running scenarios for a given campaign.
+     *
+     * @param campaignId the id of the campaign
+     */
+    @PostMapping("/campaigns/{campaignId}/start")
+    public void start(@PathVariable Long campaignId) {
+        throw new UnsupportedOperationException("Not implemented yet");
+    }
+
+    /**
+     * Stop the current scenario.
+     */
+    @PostMapping("/campaigns/{campaignId}/stop")
+    public void stop(@PathVariable Long campaignId) {
+        throw new UnsupportedOperationException("Not implemented yet");
     }
 }

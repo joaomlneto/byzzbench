@@ -89,12 +89,12 @@ public class PbftJavaReplica<O extends Serializable, R extends Serializable> ext
      * Check the timeout for a given request.
      *
      * @param key The key for the request
-     * @return The remaining time for the timeout
      */
-    public Duration checkTimeout(ReplicaRequestKey key) {
+    public void handleRequestTimeout(ReplicaRequestKey key) {
         LinearBackoff backoff = this.timeouts.get(key);
         if (backoff == null) {
-            return Duration.ZERO;
+            throw new IllegalStateException("No timer for this request?");
+            //return Duration.ZERO;
         }
 
         synchronized (backoff) {
@@ -116,11 +116,10 @@ public class PbftJavaReplica<O extends Serializable, R extends Serializable> ext
             if ((!remainingTime.isPositive()) && !backoff.isWaitingForVotes()) {
                 this.disgruntled = true;
 
-                long newViewNumber = backoff.getNewViewNumber();
                 backoff.expire();
 
                 ViewChangeMessage viewChange = messageLog.produceViewChange(
-                        newViewNumber,
+                        backoff.getNewViewNumber(),
                         this.getId(),
                         this.tolerance);
                 this.sendViewChange(viewChange);
@@ -131,11 +130,11 @@ public class PbftJavaReplica<O extends Serializable, R extends Serializable> ext
                  * due to having to als include the time for the votes to be
                  * received and processed
                  */
-                return backoff.getTimeout();
+                //return backoff.getTimeout();
+            } else {
+                // Timer has not expired yet, so wait out the remaining we computed
+                throw new IllegalStateException("Timer has not expired yet?!");
             }
-
-            // Timer has not expired yet, so wait out the remaining we computed
-            return remainingTime;
         }
     }
 
@@ -156,7 +155,7 @@ public class PbftJavaReplica<O extends Serializable, R extends Serializable> ext
                     clientId,
                     this.getId(),
                     result);
-            this.sendReply(clientId, reply);
+            this.sendReply(clientId, timestamp, reply);
         }).exceptionally(t -> {
             throw new RuntimeException(t);
         });
@@ -190,7 +189,8 @@ public class PbftJavaReplica<O extends Serializable, R extends Serializable> ext
         }
 
         // Start the timer for this request per PBFT 4.4
-        this.timeouts.computeIfAbsent(key, k -> new LinearBackoff(this, this.getViewNumber(), this.timeout));
+        this.timeouts.computeIfAbsent(key, k ->
+                new LinearBackoff(this, this.getViewNumber(), this.timeout, String.format("Request %s", k), () -> this.handleRequestTimeout(key)));
 
         String primaryId = this.getRoundRobinPrimaryId();
 
@@ -207,11 +207,9 @@ public class PbftJavaReplica<O extends Serializable, R extends Serializable> ext
          * fulfilled serially in an async manner because each reply to a
          * buffered request is guaranteed to dispatch the next buffered request.
          */
-        if (!wasRequestBuffered) {
-            if (messageLog.shouldBuffer()) {
-                messageLog.buffer(request);
-                return;
-            }
+        if (!wasRequestBuffered && messageLog.shouldBuffer()) {
+            messageLog.buffer(request);
+            return;
         }
 
         long currentViewNumber = this.getViewNumber();
@@ -492,7 +490,7 @@ public class PbftJavaReplica<O extends Serializable, R extends Serializable> ext
 
                     ReplicaRequestKey key = new ReplicaRequestKey(clientId, timestamp);
                     messageLog.completeTicket(key, currentViewNumber, seqNumber);
-                    this.sendReply(clientId, reply);
+                    this.sendReply(clientId, timestamp, reply);
 
                     this.timeouts.remove(key);
                 }
@@ -541,9 +539,9 @@ public class PbftJavaReplica<O extends Serializable, R extends Serializable> ext
      * @param clientId The client ID
      * @param reply    The reply message
      */
-    public void sendReply(String clientId, ReplyMessage reply) {
+    public void sendReply(String clientId, Instant requestTimestamp, ReplyMessage reply) {
         //this.sendMessage(reply, clientId);
-        this.sendReplyToClient(clientId, reply);
+        this.sendReplyToClient(clientId, requestTimestamp, reply);
 
         // When prior requests are fulfilled, attempt to process the buffer
         // to ensure they are dispatched in a timely manner
@@ -627,7 +625,6 @@ public class PbftJavaReplica<O extends Serializable, R extends Serializable> ext
         }
 
         // PBFT 4.5.2 - Start the timers that will vote for newViewNumber + 1.
-        /*
         if (result.isBeginNextVote()) {
             for (LinearBackoff backoff : this.timeouts.values()) {
                 synchronized (backoff) {
@@ -637,7 +634,7 @@ public class PbftJavaReplica<O extends Serializable, R extends Serializable> ext
                     }
                 }
             }
-        }*/
+        }
 
         if (newPrimaryId.equals(this.getId())) {
             /*
@@ -746,6 +743,7 @@ public class PbftJavaReplica<O extends Serializable, R extends Serializable> ext
             case PrePrepareMessage prePrepare -> recvPrePrepare(prePrepare);
             case PrepareMessage prepare -> recvPrepare(prepare);
             case CommitMessage commit -> recvCommit(commit);
+            case ViewChangeMessage viewChange -> recvViewChange(viewChange);
             case null, default -> throw new IllegalArgumentException("Unknown message type: " + m);
         }
     }

@@ -3,9 +3,9 @@
 import { NodeMailbox } from "@/components/Events/NodeMailbox";
 import { NodeStateNavLink } from "@/components/NodeStateNavLink";
 import {
-  useGetFaultyReplicas,
-  useGetNode,
-  useGetPartitions,
+  useGetScenarioFaultyReplicaIds,
+  useGetScenarioNode,
+  useGetScenarioPartitions,
 } from "@/lib/byzzbench-client";
 import {
   Card,
@@ -20,14 +20,19 @@ import { IconBug } from "@tabler/icons-react";
 import React from "react";
 
 export type NodeCardProps = {
+  scenarioId: number;
   nodeId: string;
   showMailboxes?: boolean;
 };
 
-export const NodeCard = ({ nodeId, showMailboxes = true }: NodeCardProps) => {
-  const { data, isLoading } = useGetNode(nodeId);
-  const faultyReplicasQuery = useGetFaultyReplicas();
-  const partitionsQuery = useGetPartitions();
+export const NodeCard = ({
+  scenarioId,
+  nodeId,
+  showMailboxes = true,
+}: NodeCardProps) => {
+  const { data, isLoading } = useGetScenarioNode(scenarioId, nodeId);
+  const faultyReplicasQuery = useGetScenarioFaultyReplicaIds(scenarioId);
+  const partitionsQuery = useGetScenarioPartitions(scenarioId);
 
   const isFaulty = faultyReplicasQuery.data?.data.includes(nodeId);
 
@@ -70,7 +75,7 @@ export const NodeCard = ({ nodeId, showMailboxes = true }: NodeCardProps) => {
         />
       )}
       <Space h="xs" />
-      {showMailboxes && <NodeMailbox nodeId={nodeId} />}
+      {showMailboxes && <NodeMailbox scenarioId={scenarioId} nodeId={nodeId} />}
     </Card>
   );
 };

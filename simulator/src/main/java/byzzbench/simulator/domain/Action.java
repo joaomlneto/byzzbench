@@ -11,6 +11,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
 
+import java.io.Serializable;
 import java.util.function.Consumer;
 
 @Entity
@@ -25,7 +26,7 @@ import java.util.function.Consumer;
         @JsonSubTypes.Type(value = FaultInjectionAction.class, name = "FaultInjectionAction"),
         @JsonSubTypes.Type(value = TriggerTimeoutAction.class, name = "TriggerTimeoutAction"),
 })
-public abstract class Action implements Consumer<Scenario> {
+public abstract class Action implements Consumer<Scenario>, Serializable {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @NonNull

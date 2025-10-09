@@ -286,7 +286,7 @@ public class FastByzantineReplica extends LeaderBasedProtocolReplica {
         if (this.forwards == this.nodeIds.size() - 1) {
             if (committed) {
                 log.info("Client ID: " + this.clientId);
-                this.sendReplyToClient(clientId, proposedValue);
+                this.sendReplyToClient(clientId, 0, proposedValue);
                 log.info("Finished handling client request");
                 this.broadcastMessage(new NewViewMessage(this.viewNumber + 1));
                 reset(this.viewNumber, getId(), forwardClientRequest);
@@ -342,7 +342,7 @@ public class FastByzantineReplica extends LeaderBasedProtocolReplica {
                 committed = true;
 
                 log.info("Learner " + getId() + " sending reply to client...");
-                this.sendReplyToClient(clientId, acceptValue.getValue());
+                this.sendReplyToClient(clientId, 0, acceptValue.getValue());
             }
 
             multicastMessage(new LearnMessage(acceptValue), this.proposerNodeIds);
@@ -412,7 +412,7 @@ public class FastByzantineReplica extends LeaderBasedProtocolReplica {
                 committed = true;
 
                 log.info("Learner " + getId() + " sending reply to client...");
-                this.sendReplyToClient(clientId, learnMessage.getValueAndProposalNumber().getValue());
+                this.sendReplyToClient(clientId, 0, learnMessage.getValueAndProposalNumber().getValue());
 
             }
 

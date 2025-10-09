@@ -10,7 +10,6 @@ import lombok.extern.java.Log;
 
 import java.io.Serializable;
 import java.util.*;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 @Log
@@ -18,7 +17,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class MessageLog {
     @JsonIgnore
     private FastByzantineReplica replica = null;
-//    private NewFastByzantineReplica newFastByzantineReplica = null;
+    //    private NewFastByzantineReplica newFastByzantineReplica = null;
     private SortedMap<String, Pair> acceptorsWithAcceptedProposal = new TreeMap<>();
     @Getter
     private SortedMap<String, Pair> proposersWithLearnedValue = new TreeMap<>();
@@ -106,7 +105,7 @@ public class MessageLog {
     }
 
     public void resolveClientRequest(String clientId, Serializable request) {
-        DefaultClientRequestPayload clientRequest = new DefaultClientRequestPayload(request);
+        DefaultClientRequestPayload clientRequest = new DefaultClientRequestPayload(0, request);
         if (clientRequestMessages.containsKey(clientId)) clientRequestMessages.get(clientId).remove(clientRequest);
         reset();
         learnedValue = null;
@@ -213,7 +212,8 @@ public class MessageLog {
         learnersWithLearnedValue.put(senderId, learnValue);
 
         // Delete the message from the learnMessages map
-        if (learnMessages.containsKey(learnValue.getNumber())) learnMessages.get(learnValue.getNumber()).remove(learnMessage);
+        if (learnMessages.containsKey(learnValue.getNumber()))
+            learnMessages.get(learnValue.getNumber()).remove(learnMessage);
     }
 
     public boolean learnerHasLearnedValue(Pair learnValue, int quorum) {
@@ -252,7 +252,8 @@ public class MessageLog {
         Pair satisfiedValue = satisfiedMessage.getValueAndProposalNumber();
         satisfiedProposerNodes.computeIfAbsent(senderId, k -> satisfiedValue);
         // Remove the message from the satisfiedMessages map
-        if (satisfiedMessages.containsKey(satisfiedValue.getNumber())) satisfiedMessages.get(satisfiedValue.getNumber()).remove(satisfiedMessage);
+        if (satisfiedMessages.containsKey(satisfiedValue.getNumber()))
+            satisfiedMessages.get(satisfiedValue.getNumber()).remove(satisfiedMessage);
     }
 
     public Pair onPull(String senderId, PullMessage pullMessage) {

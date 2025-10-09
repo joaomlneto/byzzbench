@@ -3,8 +3,8 @@ package byzzbench.simulator.protocols.hbft;
 import byzzbench.simulator.Client;
 import byzzbench.simulator.Replica;
 import byzzbench.simulator.Scenario;
-import byzzbench.simulator.scheduler.Scheduler;
-import com.fasterxml.jackson.databind.JsonNode;
+import byzzbench.simulator.domain.ScenarioParameters;
+import byzzbench.simulator.domain.Schedule;
 import lombok.Getter;
 import lombok.extern.java.Log;
 
@@ -14,15 +14,16 @@ import java.util.TreeSet;
 @Getter
 @Log
 public class HbftJavaScenario extends Scenario {
+    private static final String SCENARIO_ID = "hbft";
     private final int NUM_NODES = 4;
     private SortedSet<String> nodeIds;
 
-    public HbftJavaScenario(Scheduler scheduler) {
-        super("hbft", scheduler);
+    public HbftJavaScenario(Schedule schedule) {
+        super(schedule, SCENARIO_ID);
     }
 
     @Override
-    public void loadScenarioParameters(JsonNode parameters) {
+    public void loadScenarioParameters(ScenarioParameters parameters) {
         // no parameters to load
     }
 
@@ -53,7 +54,7 @@ public class HbftJavaScenario extends Scenario {
     protected void setNumHbftClients(int numClients) {
         for (int i = 0; i < numClients; i++) {
             String clientId = String.format("C%d", i);
-            Client client = HbftClient.builder().id(clientId).scenario(this).build();
+            Client client = new HbftClient(this, clientId);
             this.addClient(client);
         }
     }

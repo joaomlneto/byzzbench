@@ -3,7 +3,7 @@ const nextConfig = {
   output: "standalone",
   typescript: {
     // FIXME: this is a workaround for now
-    ignoreBuildErrors: true,
+    //ignoreBuildErrors: true,
   },
 };
 

@@ -45,7 +45,7 @@ public class TriggerTimeoutAction extends Action {
     /**
      * The unique identifier of the event.
      */
-    private long eventId;
+    private long timeoutEventId;
 
     /**
      * Converts a TimeoutEvent to a TriggerTimeoutAction.
@@ -55,6 +55,7 @@ public class TriggerTimeoutAction extends Action {
      */
     public static TriggerTimeoutAction fromEvent(TimeoutEvent event) {
         return TriggerTimeoutAction.builder()
+                .timeoutEventId(event.getEventId())
                 .description(event.getDescription())
                 .nodeId(event.getNodeId())
                 .timeout(event.getTimeout())
@@ -64,6 +65,6 @@ public class TriggerTimeoutAction extends Action {
 
     @Override
     public void accept(Scenario scenario) {
-        throw new UnsupportedOperationException("Not implemented yet");
+        scenario.getTransport().deliverEvent(this.timeoutEventId, false);
     }
 }

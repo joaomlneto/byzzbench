@@ -191,7 +191,7 @@ public class TwinsTransport extends Transport implements Serializable {
     }
 
     @Override
-    public synchronized void clearReplicaTimeouts(Node node) {
+    public synchronized void clearNodeTimeouts(Node node) {
         if (!(node instanceof Replica replica)) {
             throw new IllegalArgumentException("Node must be a Replica");
         }

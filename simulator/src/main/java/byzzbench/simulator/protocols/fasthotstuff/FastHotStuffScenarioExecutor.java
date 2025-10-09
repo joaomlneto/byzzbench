@@ -2,8 +2,8 @@ package byzzbench.simulator.protocols.fasthotstuff;
 
 import byzzbench.simulator.Replica;
 import byzzbench.simulator.Scenario;
-import byzzbench.simulator.scheduler.Scheduler;
-import com.fasterxml.jackson.databind.JsonNode;
+import byzzbench.simulator.domain.ScenarioParameters;
+import byzzbench.simulator.domain.Schedule;
 import lombok.extern.java.Log;
 
 import java.util.SortedSet;
@@ -11,14 +11,15 @@ import java.util.TreeSet;
 
 @Log
 public class FastHotStuffScenarioExecutor extends Scenario {
+    private static final String SCENARIO_ID = "fasthotstuff";
     private final int NUM_NODES = 4;
 
-    public FastHotStuffScenarioExecutor(Scheduler scheduler) {
-        super("fasthotstuff", scheduler);
+    public FastHotStuffScenarioExecutor(Schedule schedule) {
+        super(schedule, SCENARIO_ID);
     }
 
     @Override
-    public void loadScenarioParameters(JsonNode parameters) {
+    public void loadScenarioParameters(ScenarioParameters parameters) {
         // no parameters to load
     }
 

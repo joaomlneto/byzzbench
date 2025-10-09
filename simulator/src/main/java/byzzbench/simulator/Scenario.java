@@ -1,25 +1,18 @@
 package byzzbench.simulator;
 
 import byzzbench.simulator.domain.*;
-import byzzbench.simulator.faults.Fault;
-import byzzbench.simulator.faults.ScenarioContext;
-import byzzbench.simulator.faults.factories.ByzzFuzzScenarioFaultFactory;
 import byzzbench.simulator.faults.faults.GlobalStabilizationTimeFault;
 import byzzbench.simulator.faults.faults.HealNodeNetworkFault;
 import byzzbench.simulator.faults.faults.IsolateProcessNetworkFault;
-import byzzbench.simulator.scheduler.Scheduler;
+import byzzbench.simulator.faults.faults.MessageMutationFault;
+import byzzbench.simulator.scheduler.SchedulerParameters;
 import byzzbench.simulator.state.AgreementPredicate;
 import byzzbench.simulator.state.LivenessPredicate;
 import byzzbench.simulator.state.adob.AdobDistributedState;
-import byzzbench.simulator.transport.Event;
-import byzzbench.simulator.transport.MessageEvent;
-import byzzbench.simulator.transport.TimeoutEvent;
-import byzzbench.simulator.transport.Transport;
+import byzzbench.simulator.transport.*;
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.databind.JsonNode;
-import jakarta.persistence.Id;
 import lombok.Getter;
-import lombok.NoArgsConstructor;
+import lombok.Setter;
 import lombok.Synchronized;
 import lombok.ToString;
 import lombok.extern.java.Log;
@@ -34,7 +27,6 @@ import java.util.stream.Stream;
  */
 @Getter(onMethod_ = {@Synchronized})
 @Log
-@NoArgsConstructor
 public abstract class Scenario implements Serializable {
     /**
      * Map of node id to the {@link Node} object.
@@ -46,11 +38,6 @@ public abstract class Scenario implements Serializable {
      */
     private final List<ScenarioPredicate> invariants = List.of(new AgreementPredicate(), new LivenessPredicate());
     /**
-     * The schedule of events in order of delivery.
-     */
-    @JsonIgnore
-    private final Schedule schedule = new Schedule(this);
-    /**
      * The observers of this scenario.
      */
     @JsonIgnore
@@ -60,6 +47,33 @@ public abstract class Scenario implements Serializable {
      */
     private final SortedSet<String> faultyReplicaIds = new TreeSet<>();
     /**
+     * The list of possible message mutation faults in the scenario.
+     */
+    private final List<MessageMutationFault> messageMutationFaults = new ArrayList<>();
+    /**
+     * Execution mode for the scenario, limiting which actions are enabled at each step.
+     */
+    private final SchedulerParameters.ExecutionMode executionMode = SchedulerParameters.ExecutionMode.SYNC;
+    /**
+     * A description for the scenario.
+     */
+    private final String description;
+    /**
+     * The transport layer for the scenario.
+     */
+    @ToString.Exclude
+    private final transient Transport transport;
+    /**
+     * The timekeeper for the scenario.
+     */
+    @JsonIgnore
+    private final transient Timekeeper timekeeper;
+    /**
+     * The schedule of events in order of delivery.
+     */
+    @JsonIgnore
+    private final Schedule schedule;
+    /**
      * The termination condition for the scenario.
      */
     protected ScenarioPredicate terminationCondition;
@@ -68,41 +82,34 @@ public abstract class Scenario implements Serializable {
      * TODO: parameterize the seed
      */
     @Getter
-    Random random = new Random(1L);
+    Random random;
     /**
-     * A unique identifier for the scenario.
+     * The unique identifier of the scenario instance.
      */
-    @Id
-    //@GeneratedValue(strategy = GenerationType.AUTO)
-    private String id;
-    /**
-     * The transport layer for the scenario.
-     */
-    @ToString.Exclude
-    private transient Transport transport;
-    /**
-     * The timekeeper for the scenario.
-     */
-    @JsonIgnore
-    private transient Timekeeper timekeeper;
-    /**
-     * The scheduler for the scenario.
-     */
-    private Scheduler scheduler;
+    @Getter
+    @Setter()
+    private long scenarioId;
 
     /**
      * Creates a new scenario with the given unique identifier and scheduler.
      *
-     * @param id        The unique identifier for the scenario.
-     * @param scheduler The scheduler for the scenario.
+     * @param schedule    The schedule for the scenario.
+     * @param description The description for the scenario.
      */
-    protected Scenario(String id, Scheduler scheduler) {
-        this.id = id;
-        this.scheduler = scheduler;
+    protected Scenario(Schedule schedule, String description) {
+        this.description = description;
+        this.random = new Random(schedule.getParameters().getRandomSeed());
         this.transport = new Transport(this);
         this.timekeeper = new Timekeeper(this);
         this.setupScenario();
         this.addObserver(new AdobDistributedState());
+
+        // this must be the last line in the constructor
+        this.schedule = schedule;
+    }
+
+    public String getDescription() {
+        return String.format("%s (Schedule %d)", this.description, this.getScheduleId());
     }
 
     /**
@@ -188,19 +195,6 @@ public abstract class Scenario implements Serializable {
     }
 
     /**
-     * Sets the number of clients in the scenario.
-     *
-     * @param numClients The number of clients to set.
-     */
-    protected void setNumClients(int numClients) {
-        for (int i = 0; i < numClients; i++) {
-            String clientId = String.format("C%d", i);
-            Client client = Client.builder().id(clientId).scenario(this).build();
-            this.addClient(client);
-        }
-    }
-
-    /**
      * Adds a client to the scenario.
      *
      * @param client The client to add.
@@ -233,23 +227,20 @@ public abstract class Scenario implements Serializable {
      *
      * @param parameters The parameters for the scenario.
      */
-    public final void loadParameters(JsonNode parameters) {
+    public final void loadParameters(ScenarioParameters parameters) {
+        // FIXME: param above instead of JsonNode should be ScenarioParameters
         // get num clients
-        if (parameters.has("numClients")) {
-            this.setNumClients(parameters.get("numClients").asInt());
+        if (parameters.getNumClients() != null) {
+            //this.setNumClients(parameters.getNumClients());
+            //throw new UnsupportedOperationException("Not implemented");
         }
 
-        // get scheduler
-        if (parameters.has("scheduler")) {
-            JsonNode schedulerParameters = parameters.get("scheduler");
-            this.scheduler.loadParameters(schedulerParameters);
-        }
-
-        if (parameters.has("faults")) {
-            System.out.println("Faults: " + parameters.get("faults").toPrettyString());
-            ByzzFuzzScenarioFaultFactory faultFactory = new ByzzFuzzScenarioFaultFactory();
-            List<Fault> faults = faultFactory.generateFaults(new ScenarioContext(this));
-            faults.forEach(fault -> this.transport.addFault(fault, true));
+        if (parameters.getFaults() != null) {
+            throw new UnsupportedOperationException("Not implemented");
+            //System.out.println("Faults: " + parameters.get("faults").toPrettyString());
+            //ByzzFuzzScenarioFaultFactory faultFactory = new ByzzFuzzScenarioFaultFactory();
+            //List<Fault> faults = faultFactory.generateFaults(new ScenarioContext(this));
+            //faults.forEach(fault -> this.transport.addFault(fault, true));
         }
 
         this.loadScenarioParameters(parameters);
@@ -275,7 +266,7 @@ public abstract class Scenario implements Serializable {
      * @return The list of available {@link DeliverMessageAction}.
      */
     private List<DeliverMessageAction> getAvailableDeliverMessageAction() {
-        switch (scheduler.getConfig().getScheduler().getExecutionMode()) {
+        switch (this.getExecutionMode()) {
             // return the first queued message in each mailbox
             case SYNC -> {
                 Set<String> recipientIdsSeen = new HashSet<>();
@@ -290,8 +281,7 @@ public abstract class Scenario implements Serializable {
                         .map(DeliverMessageAction::fromEvent)
                         .toList();
             }
-            default ->
-                    throw new IllegalStateException("Unknown execution mode: " + scheduler.getConfig().getScheduler().getExecutionMode());
+            default -> throw new IllegalStateException("Unknown execution mode: " + this.getExecutionMode());
         }
     }
 
@@ -307,14 +297,28 @@ public abstract class Scenario implements Serializable {
                 .sorted(Comparator.comparing(TimeoutEvent::getExpiresAt))
                 .filter(event -> recipientIdsSeen.add(event.getRecipientId()));
 
-        switch (this.getScheduler().getConfig().getScheduler().getExecutionMode()) {
+        switch (this.getExecutionMode()) {
             // return the first timeout for each replica without a message in their mailbox
             case SYNC -> {
+                // check which replicas have messages in their mailbox
+                Set<String> replicasWithMessages = this.getQueuedEventsOfType(MessageEvent.class)
+                        .map(MessageEvent::getRecipientId)
+                        .collect(Collectors.toSet());
+                System.out.println("Replicas with messages in their mailbox: " + replicasWithMessages);
+                // if any replica has a message in its mailbox, do not return any timeouts!
+                if (!replicasWithMessages.isEmpty()) {
+                    System.out.println("No timeouts returned because some replicas have messages in their mailbox");
+                    return Collections.emptyList();
+                }
+
                 // return only timeouts for replicas without messages in their mailbox
-                return firstTimeoutForEachReplica
-                        .filter(event -> !recipientIdsSeen.contains(event.getRecipientId()))
+                List<TriggerTimeoutAction> actions = firstTimeoutForEachReplica
                         .map(TriggerTimeoutAction::fromEvent)
                         .toList();
+
+                System.out.println("First timeouts for each replica: " + actions);
+
+                return actions;
             }
             // return the first timeout for each replica
             case ASYNC -> {
@@ -322,13 +326,20 @@ public abstract class Scenario implements Serializable {
                         .map(TriggerTimeoutAction::fromEvent)
                         .toList();
             }
-            default ->
-                    throw new IllegalStateException("Unknown execution mode: " + this.getScheduler().getConfig().getScheduler().getExecutionMode());
+            default -> throw new IllegalStateException("Unknown execution mode: " + this.getExecutionMode());
         }
     }
 
-    private List<FaultInjectionAction> getAvailableFaultInjectionAction() {
-        throw new UnsupportedOperationException("Not implemented!");
+    private List<? extends FaultInjectionAction> getAvailableFaultInjectionAction() {
+        List<DeliverMessageAction> events = this.getAvailableDeliverMessageAction();
+
+        return getQueuedEventsOfType(MutateMessageEvent.class)
+                .map(event -> FaultInjectionAction.builder()
+                        .eventId(event.getEventId())
+                        .faultId("TODO - not implemented yet!")
+                        .payload(event.getPayload())
+                        .build())
+                .toList();
     }
 
     /**
@@ -339,7 +350,8 @@ public abstract class Scenario implements Serializable {
     public List<? extends Action> getAvailableActions() {
         return Stream.of(
                         getAvailableDeliverMessageAction().stream(),
-                        getAvailableTriggerTimeoutAction().stream())
+                        getAvailableTriggerTimeoutAction().stream(),
+                        getAvailableFaultInjectionAction().stream())
                 .reduce(Stream::concat)
                 .orElseGet(Stream::empty)
                 .toList();
@@ -352,7 +364,7 @@ public abstract class Scenario implements Serializable {
      *
      * @param parameters The JSON object containing the parameters for the scenario.
      */
-    protected abstract void loadScenarioParameters(JsonNode parameters);
+    protected abstract void loadScenarioParameters(ScenarioParameters parameters);
 
     /**
      * Logic to set up the scenario - must be implemented by subclasses.
@@ -375,7 +387,6 @@ public abstract class Scenario implements Serializable {
 
         //this.getClients().values().forEach(Client::initialize);
         this.getNodes().values().forEach(Node::initialize);
-        this.scheduler.initializeScenario(this);
         this.transport.addFault(new GlobalStabilizationTimeFault(), false);
     }
 
@@ -450,5 +461,26 @@ public abstract class Scenario implements Serializable {
      */
     public SortedSet<String> getReplicaIds(Node node) {
         return new TreeSet<>(this.getReplicas().keySet());
+    }
+
+    /**
+     * Retrieves the schedule ID associated with the scenario.
+     *
+     * @return The schedule ID as a long value.
+     */
+    public long getScheduleId() {
+        return this.schedule.getScheduleId();
+    }
+
+    /**
+     * Retrieves the campaign ID associated with the scenario's schedule.
+     *
+     * @return The campaign ID as a long value.
+     */
+    public Optional<Long> getCampaignId() {
+        if (this.schedule.getCampaign() == null) {
+            return Optional.empty();
+        }
+        return Optional.of(this.schedule.getCampaign().getCampaignId());
     }
 }

@@ -1,19 +1,19 @@
 package byzzbench.simulator.protocols.dummy;
 
+import byzzbench.simulator.Client;
 import byzzbench.simulator.Replica;
 import byzzbench.simulator.Scenario;
 import byzzbench.simulator.ScenarioPredicate;
-import byzzbench.simulator.scheduler.Scheduler;
-import com.fasterxml.jackson.databind.JsonNode;
+import byzzbench.simulator.domain.ScenarioParameters;
+import byzzbench.simulator.domain.Schedule;
+import byzzbench.simulator.protocols.pbft_java.PbftClient;
 import lombok.Getter;
 import lombok.extern.java.Log;
-
-import java.util.SortedSet;
-import java.util.TreeSet;
 
 @Getter
 @Log
 public class DummyScenario extends Scenario {
+    private static final String SCENARIO_ID = "dummy";
     private final ScenarioPredicate terminationCondition = new ScenarioPredicate() {
         @Override
         public boolean test(Scenario scenario) {
@@ -21,27 +21,30 @@ public class DummyScenario extends Scenario {
         }
     };
 
-    public DummyScenario(Scheduler scheduler) {
-        super("dummy", scheduler);
+    public DummyScenario(Schedule schedule) {
+        super(schedule, SCENARIO_ID);
     }
 
     @Override
-    public void loadScenarioParameters(JsonNode parameters) {
+    public void loadScenarioParameters(ScenarioParameters parameters) {
         // no parameters to load
     }
 
     @Override
     protected void setup() {
         try {
-            SortedSet<String> nodeIds = new TreeSet<>();
+            // add replicas
             for (int i = 0; i < 2; i++) {
-                nodeIds.add(Character.toString((char) ('A' + i)));
-            }
-            nodeIds.forEach(nodeId -> {
-                Replica replica = new DummyReplica(nodeId, this);
+                Replica replica = new DummyReplica(Character.toString((char) ('A' + i)), this);
                 this.addNode(replica);
-            });
-            this.setNumClients(2);
+            }
+
+            // add clients
+            for (int i = 0; i < 2; i++) {
+                String clientId = String.format("C%d", i);
+                Client client = new PbftClient(this, clientId);
+                this.addClient(client);
+            }
         } catch (Exception e) {
             throw new RuntimeException(e);
         }

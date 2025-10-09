@@ -2,10 +2,10 @@ package byzzbench.simulator.protocols.pbft;
 
 import byzzbench.simulator.Replica;
 import byzzbench.simulator.Scenario;
+import byzzbench.simulator.domain.ScenarioParameters;
+import byzzbench.simulator.domain.Schedule;
 import byzzbench.simulator.protocols.pbft_java.MessageLog;
 import byzzbench.simulator.protocols.pbft_java.PbftTerminationPredicate;
-import byzzbench.simulator.scheduler.Scheduler;
-import com.fasterxml.jackson.databind.JsonNode;
 import lombok.extern.java.Log;
 
 import java.util.SortedSet;
@@ -13,15 +13,16 @@ import java.util.TreeSet;
 
 @Log
 public class PbftScenario extends Scenario {
+    private static final String SCENARIO_ID = "pbft";
     private final int NUM_NODES = 4;
 
-    public PbftScenario(Scheduler scheduler) {
-        super("pbft", scheduler);
+    public PbftScenario(Schedule schedule) {
+        super(schedule, SCENARIO_ID);
         this.terminationCondition = new PbftTerminationPredicate();
     }
 
     @Override
-    public void loadScenarioParameters(JsonNode parameters) {
+    public void loadScenarioParameters(ScenarioParameters parameters) {
         // no parameters to load
     }
 

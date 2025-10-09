@@ -4,7 +4,11 @@ import { useGetAllAdobCaches } from "@/lib/byzzbench-client";
 import React, { useEffect, useMemo, useState } from "react";
 import { GraphUtils, GraphView } from "react-digraph";
 
-export const AdoBStateDiagram = () => {
+export type AdoBStateDiagramProps = {
+  scenarioId: number;
+};
+
+export const AdoBStateDiagram = ({ scenarioId }: AdoBStateDiagramProps) => {
   const [isClient, setIsClient] = useState(false);
 
   useEffect(() => {
@@ -98,7 +102,7 @@ export const AdoBStateDiagram = () => {
     },
   };
 
-  const { data } = useGetAllAdobCaches();
+  const { data } = useGetAllAdobCaches(scenarioId);
 
   const nodes = useMemo(() => {
     return (

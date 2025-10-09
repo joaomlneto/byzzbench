@@ -27,7 +27,7 @@ repositories {
 dependencies {
     implementation("org.springframework.boot:spring-boot-starter-web")
     implementation("org.springframework.boot:spring-boot-starter-data-jpa")
-    implementation("org.springframework.boot:spring-boot-starter-data-rest")
+    //implementation("org.springframework.boot:spring-boot-starter-data-rest")
     implementation("org.springframework.boot:spring-boot-starter-validation")
     implementation("org.xerial:sqlite-jdbc:3.49.1.0")
     runtimeOnly("org.postgresql:postgresql")
@@ -37,9 +37,10 @@ dependencies {
     runtimeOnly("com.h2database:h2")
     testImplementation("org.springframework.boot:spring-boot-starter-test")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+    implementation("io.hypersistence:hypersistence-utils-hibernate-63:3.11.0")
 
     // sqlite dialect
-    //implementation("org.hibernate:hibernate-community-dialects:5.6.3.Final")
+    //implementation("org.hibernate:deate-community-dialects:5.6.3.Final")
 
     //implementation("org.springdoc:springdoc-openapi-ui:1.8.0")
     // either API (just documentation) or API + UI (documentation + Swagger UI)

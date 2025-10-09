@@ -1,0 +1,68 @@
+"use client";
+
+import { useGetSchedule } from "@/lib/byzzbench-client";
+import { Anchor, Badge, Card, Group, Tooltip } from "@mantine/core";
+import {
+  IconBolt,
+  IconBug,
+  IconCircleCheck,
+  IconRuler,
+} from "@tabler/icons-react";
+
+export type ScheduleCardProps = {
+  scheduleId: number;
+};
+
+export const ScheduleCard = ({ scheduleId }: ScheduleCardProps) => {
+  const { data } = useGetSchedule(scheduleId);
+
+  const isBuggy = (data?.data.brokenInvariants ?? []).length > 0;
+
+  return (
+    <Card withBorder>
+      <Card.Section p="xs">
+        <Group justify="space-between">
+          <Anchor href={"/schedules/" + scheduleId}>
+            Schedule {scheduleId}
+          </Anchor>
+          <Group>
+            <Tooltip label="Schedule length">
+              <Badge>
+                <Group gap="xs">
+                  <IconRuler size={12} />
+                  {data?.data.actions.length}
+                </Group>
+              </Badge>
+            </Tooltip>
+            <Tooltip label="Number of faults">
+              <Badge color="yellow">
+                <Group gap="xs">
+                  <IconBolt size={12} />
+                  {
+                    data?.data.actions.filter(
+                      (action) => action.type !== "DeliverMessageAction",
+                    ).length
+                  }
+                </Group>
+              </Badge>
+            </Tooltip>
+            {!isBuggy && (
+              <div>
+                <Tooltip label="Correct schedule">
+                  <IconCircleCheck color="green" />
+                </Tooltip>
+              </div>
+            )}
+            {isBuggy && (
+              <div>
+                <Tooltip label="Buggy schedule">
+                  <IconBug color="red" />
+                </Tooltip>
+              </div>
+            )}
+          </Group>
+        </Group>
+      </Card.Section>
+    </Card>
+  );
+};

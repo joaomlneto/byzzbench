@@ -5,7 +5,6 @@ import byzzbench.simulator.config.ByzzBenchConfig;
 import byzzbench.simulator.service.MessageMutatorService;
 import byzzbench.simulator.transport.Event;
 import byzzbench.simulator.transport.MessageEvent;
-import com.fasterxml.jackson.databind.JsonNode;
 import org.springframework.stereotype.Component;
 
 import java.util.Comparator;
@@ -55,7 +54,7 @@ public class FifoScheduler extends Scheduler {
     }
 
     @Override
-    public void loadSchedulerParameters(JsonNode parameters) {
+    public void loadSchedulerParameters(SchedulerParameters parameters) {
         // no parameters to load
     }
 }

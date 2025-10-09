@@ -1,20 +1,19 @@
 package byzzbench.simulator;
 
 import byzzbench.simulator.protocols.hbft.message.ClientRequestMessage;
+import byzzbench.simulator.transport.DefaultClientReplyPayload;
 import byzzbench.simulator.transport.MessagePayload;
 import byzzbench.simulator.transport.Transport;
 import byzzbench.simulator.utils.NonNull;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
-import lombok.experimental.SuperBuilder;
+import lombok.Setter;
 import lombok.extern.java.Log;
 
 import java.io.Serializable;
 import java.time.Duration;
-import java.time.Instant;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
@@ -22,10 +21,14 @@ import java.util.concurrent.atomic.AtomicLong;
  * The client is responsible for sending requests to the replicas in the system.
  */
 @Getter
-@SuperBuilder
 @RequiredArgsConstructor
 @Log
-public class Client extends Node implements Serializable {
+public abstract class Client extends Node implements Serializable {
+    /**
+     * The set of request IDs that have been completed by the client.
+     */
+    protected final Set<Serializable> completedRequests = new HashSet<>();
+
     /**
      * The scenario object that this client belongs to.
      */
@@ -45,16 +48,35 @@ public class Client extends Node implements Serializable {
     private final AtomicLong requestSequenceNumber = new AtomicLong(0);
 
     /**
-     * The replies received by the client.
+     * The replies received by the client for each request ID.
      */
-    private final List<Serializable> replies = new ArrayList<>();
+    private final Map<Serializable, List<Serializable>> replies = new HashMap<>();
+
+    /**
+     * The timeout duration for the client to wait for a reply.
+     */
+    @Setter
+    private Duration timeout = Duration.ofSeconds(60);
+
+    /**
+     * The current request ID being processed by the client.
+     */
+    private String currentRequestId;
 
     @Override
     public void initialize() {
         // Send the first request
         this.sendRequest();
-        //System.out.println("CLIENT TIMEOUT SETUP");
-        //this.setTimeout("sendRequest", this::sendRequest, Duration.ofSeconds(1));
+    }
+
+    /**
+     * Generates a unique request ID for the client.
+     *
+     * @return The unique request ID.
+     */
+    public String generateRequestId() {
+        this.currentRequestId = String.format("%s/%d", getId(), getRequestSequenceNumber().incrementAndGet());
+        return currentRequestId;
     }
 
     @Override
@@ -63,68 +85,80 @@ public class Client extends Node implements Serializable {
     }
 
     /**
-     * Sends a request to any replica in the system.
+     * Returns the ID of a random replica in the system.
+     *
+     * @return a replica ID
      */
-    public void sendRequest() {
+    public String getRandomRecipientId() {
         // get the IDs of replicas in the system (sorted)
         List<String> recipientIds = new ArrayList<>(this.getScenario().getReplicas().keySet().stream().sorted().toList());
         // select a "random" replica to send the request to
-        String recipientId = recipientIds.get(this.getScenario().getRandom().nextInt(recipientIds.size()));
-        this.sendRequest(recipientId);
+        return recipientIds.get(this.getScenario().getRandom().nextInt(recipientIds.size()));
+    }
+
+    /**
+     * Issue a new request, and send it to a random replica in the system.
+     */
+    public void sendRequest() {
+        this.sendRequest(generateRequestId(), getRandomRecipientId());
     }
 
     /**
      * Sends a request to a given replica in the system.
      */
-    public void sendRequest(String recipientId) {
-        long sequenceNumber = getRequestSequenceNumber().incrementAndGet();
-        String requestId = String.format("%s/%d", getId(), sequenceNumber);
+    public void sendRequest(String requestId, String recipientId) {
         MessagePayload payload = new ClientRequestMessage(this.getCurrentTime().toEpochMilli(), requestId);
         this.getScenario().getTransport().sendMessage(this, payload, recipientId);
+        this.setTimeout(String.format("Request %s", requestId), this::retransmitRequest, this.timeout);
     }
 
     /**
-     * Handles a reply received by the client.
+     * Retransmits the current request
+     */
+    public void retransmitRequest() {
+        this.sendRequest(this.getCurrentRequestId(), getRandomRecipientId());
+    }
+
+    /**
+     * Handles a message received by the client.
      *
      * @param senderId The ID of the sender of the reply.
-     * @param reply    The reply received by the client.
+     * @param message  The message received by the client.
      */
-    public void handleMessage(String senderId, MessagePayload reply) {
-        this.replies.add(reply);
-        this.sendRequest();
-    }
+    public void handleMessage(String senderId, MessagePayload message) {
+        // check if the message is a valid reply payload
+        if (!(message instanceof DefaultClientReplyPayload reply)) {
+            throw new IllegalArgumentException("Invalid reply type");
+        }
 
-    @Override
-    @JsonIgnore
-    public Instant getCurrentTime() {
-        return this.scenario.getTimekeeper().incrementAndGetTime(this);
+        // add the reply to the replies map for the request ID
+        this.replies.computeIfAbsent(reply.getRequestId(), k -> new ArrayList<>())
+                .add(reply.getReply());
+
+        // check if the request is not marked as completed, but
+        // it is now completed based on the this latest reply
+        if (!this.completedRequests.contains(reply.getRequestId())
+                && this.isRequestCompleted(reply)) {
+            this.markRequestAsCompleted(reply.getRequestId());
+        }
     }
 
     /**
-     * Set a timeout for this replica.
+     * Checks whether a request can now be marked as completed
      *
-     * @param name    a name for the timeout
-     * @param r       the runnable to execute when the timeout occurs
-     * @param timeout the timeout duration
-     * @return the timer object
+     * @param message the latest message payload received by the client
+     * @return true if the request is now completed, false otherwise
      */
-    public long setTimeout(String name, Runnable r, Duration timeout) {
-        return this.scenario.getTransport().setTimeout(this, r, timeout, "REQUEST");
-    }
+    public abstract boolean isRequestCompleted(DefaultClientReplyPayload message);
 
     /**
-     * Clear a timeout for this replica.
+     * Marks a request as completed by the client.
      *
-     * @param eventId the event ID of the timeout to clear
+     * @param requestId the ID of the request to mark as completed
      */
-    public void clearTimeout(long eventId) {
-        this.scenario.getTransport().clearTimeout(this, eventId);
+    protected void markRequestAsCompleted(Serializable requestId) {
+        this.completedRequests.add(requestId);
+        log.info(String.format("Request %s completed by client %s", requestId, this.getId()));
     }
 
-    /**
-     * Clear all timeouts for this replica.
-     */
-    public void clearAllTimeouts() {
-        this.scenario.getTransport().clearReplicaTimeouts(this);
-    }
 }

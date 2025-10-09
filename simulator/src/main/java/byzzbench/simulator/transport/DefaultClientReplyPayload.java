@@ -11,6 +11,7 @@ import java.io.Serializable;
 @EqualsAndHashCode(callSuper = true)
 @Data
 public class DefaultClientReplyPayload extends MessagePayload {
+    private final Serializable requestId;
     private final Serializable reply;
 
     @Override

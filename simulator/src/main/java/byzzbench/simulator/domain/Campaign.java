@@ -1,14 +1,19 @@
 package byzzbench.simulator.domain;
 
+import byzzbench.simulator.utils.NonNull;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
+import org.springframework.data.annotation.CreatedDate;
 
+import java.io.Serializable;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 
 /**
  * A collection of schedules generated using a specific strategy and a specific set of parameters.
@@ -18,7 +23,17 @@ import java.util.List;
 @Data
 @ToString
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class Campaign {
+public class Campaign implements Serializable {
+    /**
+     * The initial random seed used to generate the scenarios for this campaign.
+     */
+    private long initialRandomSeed;
+
+    /**
+     * A random number generator initialized with the initial random seed.
+     */
+    private Random random = new Random();
+
     /**
      * The unique identifier for this campaign.
      */
@@ -39,11 +54,18 @@ public class Campaign {
     private List<Schedule> schedules = new ArrayList<>();
 
     /**
+     * When this campaign was created.
+     */
+    @CreatedDate
+    @NonNull
+    private Instant createdAt = Instant.now();
+
+    /**
      * Get the list of schedule IDs for this campaign.
      *
      * @return a list of schedule IDs
      */
-    public List<Long> getScheduleIds() {
+    public @NonNull List<Long> getScheduleIds() {
         return schedules.stream().map(Schedule::getScheduleId).toList();
     }
 }

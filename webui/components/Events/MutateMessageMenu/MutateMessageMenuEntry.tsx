@@ -11,18 +11,24 @@ import { useQueryClient } from "@tanstack/react-query";
 import React from "react";
 
 type MutateMessageMenuEntryProps = {
+  scenarioId: number;
   messageId: number;
   mutatorId: string;
 };
 
 export const MutateMessageMenuEntry = ({
+  scenarioId,
   messageId,
   mutatorId,
 }: MutateMessageMenuEntryProps) => {
   const queryClient = useQueryClient();
   const { data } = useGetMutator(mutatorId);
 
-  const { mutate: mutateMessage } = useMutateMessage(messageId, mutatorId);
+  const { mutate: mutateMessage } = useMutateMessage(
+    scenarioId,
+    messageId,
+    mutatorId,
+  );
 
   return (
     <Menu.Item

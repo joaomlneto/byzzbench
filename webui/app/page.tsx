@@ -1,25 +1,15 @@
 "use client";
 
-import { ClientList } from "@/components/ClientList";
-import { DroppedMessagesList } from "@/components/Events";
-import { ScenarioEnabledFaultsList } from "@/components/FaultsList";
-import { NodeList } from "@/components/NodeList";
-import { PredicateList } from "@/components/PredicateList";
-import { RunningSimulatorStats } from "@/components/RunningSimulatorStats";
-import { ScheduleDetails } from "@/components/Schedule";
-import { ScenarioScheduledFaultsList } from "@/components/ScheduledFaultsList";
-import { useGetMode, useGetSchedule } from "@/lib/byzzbench-client";
+import { SchedulerAnchor } from "@/components/Anchor";
+import { ScheduleCard } from "@/components/Schedule";
 import {
-  Accordion,
-  AppShell,
-  Container,
-  Group,
-  ScrollArea,
-  Stack,
-  Switch,
-  Title,
-} from "@mantine/core";
-import { useLocalStorage } from "@mantine/hooks";
+  useGetCampaigns,
+  useGetScenarios,
+  useGetSchedulers,
+  useGetSchedules,
+} from "@/lib/byzzbench-client";
+import { Anchor, Container, SimpleGrid, Stack, Title } from "@mantine/core";
+import Link from "next/link";
 import React from "react";
 
 /*
@@ -34,101 +24,59 @@ const AdoBStateDiagram = dynamic<{}>(
 );*/
 
 export default function Home() {
-  const [selectedAccordionEntries, setSelectedAccordionEntries] =
-    useLocalStorage<string[]>({
-      key: "byzzbench/selectedAccordionEntries",
-      defaultValue: ["nodes", "schedule"],
-    });
-
-  const { data: schedule } = useGetSchedule();
-
-  const mode = useGetMode();
-
-  const [showMailboxes, setShowMailboxes] = useLocalStorage<boolean>({
-    key: "byzzbench/showMailboxes",
-    defaultValue: false,
-  });
-
-  if (mode.data?.data === "RUNNING") {
-    return (
-      <Container fluid p="xl">
-        <RunningSimulatorStats />
-      </Container>
-    );
-  }
+  const { data: campaignIds } = useGetCampaigns();
+  const { data: scenarioIds } = useGetScenarios();
+  const { data: scheduleIds } = useGetSchedules();
+  const { data: schedulerIds } = useGetSchedulers();
 
   return (
     <Container fluid p="xl">
-      <Stack gap="md">
-        <Accordion
-          multiple
-          variant="separated"
-          value={selectedAccordionEntries}
-          onChange={setSelectedAccordionEntries}
-        >
-          <Group wrap="nowrap" gap="xs" align="center">
-            <Title order={3}>{schedule?.data.scheduleId}</Title>
-            <PredicateList />
-            <Switch
-              label="Show mailboxes"
-              checked={showMailboxes}
-              onChange={(event) => {
-                setShowMailboxes(event.currentTarget.checked);
-              }}
-            />
-          </Group>
-          <Accordion.Item key="clients" value="clients">
-            <Accordion.Control>Clients</Accordion.Control>
-            <Accordion.Panel>
-              <ClientList />
-            </Accordion.Panel>
-          </Accordion.Item>
-          <Accordion.Item key="nodes" value="nodes">
-            <Accordion.Control>Nodes</Accordion.Control>
-            <Accordion.Panel>
-              <NodeList showMailboxes={showMailboxes} />
-            </Accordion.Panel>
-          </Accordion.Item>
-          {/*<Accordion.Item key="adob" value="adob">
-            <Accordion.Control>AdoB State</Accordion.Control>
-            <Accordion.Panel>
-              <AdoBStateDiagram />
-            </Accordion.Panel>
-          </Accordion.Item>*/}
-        </Accordion>
-      </Stack>
-      <AppShell.Aside p="md" maw={400}>
-        <ScrollArea type="never" mah="100vh">
-          <Stack gap="xs">
-            <Title order={5}>Schedule</Title>
-            <ScrollArea mah={500} type="always" style={{ overflowY: "auto" }}>
-              <div style={{ maxHeight: "500px", overflowY: "auto" }}>
-                {schedule?.data && (
-                  <ScheduleDetails
-                    hideTitle
-                    hideMaterializeButton
-                    hideDownloadButton
-                    hideDetailsButton
-                    hideScenario
-                    hideSaveButton
-                    title="Current Schedule"
-                    schedule={schedule.data}
-                  />
-                )}
-              </div>
-            </ScrollArea>
-            <Title order={5}>Trigger Faulty Behaviors</Title>
-            <ScenarioEnabledFaultsList />
-            <Title order={5}>ScheduledFaults</Title>
-            <ScenarioScheduledFaultsList />
-            <Title order={5}>Discarded Events</Title>
-
-            <ScrollArea mah={500} type="always" style={{ overflowY: "auto" }}>
-              <DroppedMessagesList />
-            </ScrollArea>
+      <SimpleGrid cols={2}>
+        <div>
+          <Title order={3}>Active Campaigns</Title>
+          <ul>
+            {campaignIds?.data.map((campaignId) => (
+              <li key={campaignId}>
+                <Anchor component={Link} href={`/campaigns/${campaignId}`}>
+                  Campaign {campaignId}
+                </Anchor>
+              </li>
+            ))}
+          </ul>
+        </div>
+        <div>
+          <Title order={3}>Active Scenarios</Title>
+          <ul>
+            {scenarioIds?.data.map((scenarioId) => (
+              <li key={scenarioId}>
+                <Anchor component={Link} href={`/scenarios/${scenarioId}`}>
+                  Scenario {scenarioId}
+                </Anchor>
+              </li>
+            ))}
+          </ul>
+        </div>
+        <div>
+          <Title order={3}>Saved Schedules</Title>
+          <Stack mt="md" gap="xs">
+            {scheduleIds?.data.map((scheduleId) => (
+              <ScheduleCard key={scheduleId} scheduleId={Number(scheduleId)} />
+            ))}
           </Stack>
-        </ScrollArea>
-      </AppShell.Aside>
+        </div>
+        <div>
+          <Title order={3}>Exploration Strategies</Title>
+          <ul>
+            {schedulerIds?.data.map((schedulerId) => (
+              <li key={schedulerId}>
+                <SchedulerAnchor schedulerId={schedulerId}>
+                  {schedulerId}
+                </SchedulerAnchor>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </SimpleGrid>
     </Container>
   );
 }

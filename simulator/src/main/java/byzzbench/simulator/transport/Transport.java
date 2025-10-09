@@ -204,6 +204,10 @@ public class Transport {
     }
 
     public synchronized void deliverEvent(long eventId) {
+        this.deliverEvent(eventId, true);
+    }
+
+    public synchronized void deliverEvent(long eventId, boolean addToSchedule) {
         Event e = this.getEvents().get(eventId);
 
         // check if null
@@ -224,7 +228,9 @@ public class Transport {
         }
 
         // deliver the event
-        this.scenario.getSchedule().appendEvent(e);
+        if (addToSchedule) {
+            this.scenario.getSchedule().appendEvent(e);
+        }
         e.setStatus(Event.Status.DELIVERED);
 
         // For timeouts, this should be called before, so the Replica time is updated
@@ -287,7 +293,7 @@ public class Transport {
     public synchronized void applyMutation(long eventId, Fault fault) {
         Event e = this.getEvents().get(eventId);
 
-        // check if event does not exist
+        // check if the event does not exist
         if (e == null) {
             throw new IllegalArgumentException(String.format("Event %d not found", eventId));
         }
@@ -297,7 +303,7 @@ public class Transport {
             throw new IllegalArgumentException("Mutator not found");
         }
 
-        // check if event is not in QUEUED state
+        // check if the event is not in QUEUED state
         if (e.getStatus() != Event.Status.QUEUED) {
             log.warning("Attempting to mutate event not in QUEUED state");
             return;
@@ -310,7 +316,7 @@ public class Transport {
                     "Event %d is not a message - cannot mutate it.", eventId));
         }
 
-        // check if sender is faulty
+        // check if the sender is faulty
         if (!this.scenario.isFaultyReplica(m.getSenderId())) {
             throw new IllegalArgumentException(
                     String.format("Cannot mutate message: sender %s is not marked as faulty", m.getSenderId())
@@ -389,6 +395,7 @@ public class Transport {
      */
     public synchronized long setTimeout(Node node, Runnable runnable,
                                         Duration timeout, String description) {
+        System.out.println("Setting timeout for " + node.getId() + " in " + timeout + "ms: " + description);
         TimeoutEvent timeoutEvent = TimeoutEvent.builder()
                 .eventId(this.eventSeqNum.getAndIncrement())
                 .description(description)
@@ -471,7 +478,7 @@ public class Transport {
      *
      * @param node The node to clear timeouts for.
      */
-    public synchronized void clearReplicaTimeouts(Node node) {
+    public synchronized void clearNodeTimeouts(Node node) {
         // get all event IDs for timeouts from this node
         List<Long> eventIds = this.getQueuedTimeouts(node);
 

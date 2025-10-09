@@ -1,12 +1,13 @@
 package byzzbench.simulator.faults.factories;
 
 import byzzbench.simulator.Scenario;
+import byzzbench.simulator.config.ByzzBenchConfig;
 import byzzbench.simulator.faults.Fault;
 import byzzbench.simulator.faults.FaultFactory;
 import byzzbench.simulator.faults.ScenarioContext;
 import byzzbench.simulator.faults.faults.ByzzFuzzNetworkFault;
 import byzzbench.simulator.faults.faults.ByzzFuzzProcessFault;
-import byzzbench.simulator.scheduler.ByzzFuzzScheduler;
+import byzzbench.simulator.service.ApplicationContextProvider;
 import byzzbench.simulator.utils.SetSubsets;
 import lombok.extern.java.Log;
 import org.springframework.stereotype.Component;
@@ -29,15 +30,20 @@ public class ByzzFuzzScenarioFaultFactory implements FaultFactory {
         List<Fault> faults = new ArrayList<>();
         Scenario scenario = input.getScenario();
 
-        // assert the scenario is configured with a byzzfuzz scheduler
-        if (!(scenario.getScheduler() instanceof ByzzFuzzScheduler scheduler)) {
-            throw new IllegalArgumentException("Scenario scheduler must be a ByzzFuzzScheduler");
+        ByzzBenchConfig config = ApplicationContextProvider.getConfig();
+
+        if (config.getScheduler() == null || config.getScheduler().getParams() == null
+                || !config.getScheduler().getParams().containsKey("numRoundsWithProcessFaults")
+                || !config.getScheduler().getParams().containsKey("numRoundsWithNetworkFaults")
+                || !config.getScheduler().getParams().containsKey("numRoundsWithFaults")) {
+            log.warning("ByzzFuzzScenarioFaultFactory: Missing scheduler configuration parameters");
+            return faults;
         }
 
         // get scheduler params
-        int c = scheduler.getNumRoundsWithProcessFaults();
-        int d = scheduler.getNumRoundsWithNetworkFaults();
-        int r = scheduler.getNumRoundsWithFaults();
+        int c = Integer.parseInt(config.getScheduler().getParams().get("numRoundsWithProcessFaults"));
+        int d = Integer.parseInt(config.getScheduler().getParams().get("numRoundsWithNetworkFaults"));
+        int r = Integer.parseInt(config.getScheduler().getParams().get("numRoundsWithFaults"));
         Set<String> replicaIds = scenario.getReplicas().keySet();
         Set<String> faultyReplicaIds = scenario.getFaultyReplicaIds();
 

@@ -1,17 +1,17 @@
 package byzzbench.simulator.protocols.hbft;
 
 import byzzbench.simulator.Client;
+import byzzbench.simulator.Scenario;
 import byzzbench.simulator.protocols.hbft.message.*;
 import byzzbench.simulator.protocols.hbft.pojo.ClientReplyKey;
+import byzzbench.simulator.transport.DefaultClientReplyPayload;
 import byzzbench.simulator.transport.MessagePayload;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Getter;
-import lombok.experimental.SuperBuilder;
 
 import java.io.Serializable;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.time.Duration;
 import java.util.*;
 
 
@@ -20,7 +20,6 @@ import java.util.*;
  * The client is responsible for sending requests to the replicas in the system.
  */
 @Getter
-@SuperBuilder
 public class HbftClient extends Client {
     /**
      * The message digest algorithm to use for hashing messages.
@@ -44,7 +43,7 @@ public class HbftClient extends Client {
     /**
      * The request sequence number already completed.
      */
-    private final Set<ClientReplyKey> completedRequests = new HashSet<>();
+    //private final Set<ClientReplyKey> completedRequests = new HashSet<>();
 
     /**
      * The sent requests.
@@ -61,11 +60,9 @@ public class HbftClient extends Client {
      */
     private final SortedMap<Long, Long> timeouts = new TreeMap<>();
 
-    /**
-     * Timeout for client in seconds
-     */
-    private final long timeout = 8;
-
+    public HbftClient(Scenario scenario, String id) {
+        super(scenario, id);
+    }
 
     /**
      * As of hBFT 4.1, sends a request to all replica in the system.
@@ -80,7 +77,7 @@ public class HbftClient extends Client {
         this.broadcastRequest(timestamp, requestId);
 
         // Set timeout
-        Long timeoutId = this.setTimeout("REQUEST", this::retransmitOrPanic, this.timeout);
+        Long timeoutId = this.setTimeout("REQUEST", this::retransmitOrPanic, this.getTimeout());
         timeouts.put(getRequestSequenceNumber().get(), timeoutId);
     }
 
@@ -98,7 +95,7 @@ public class HbftClient extends Client {
             getScenario().getTransport().multicast(this, getScenario().getTransport().getNodeIds(), panic);
         }
         this.clearTimeout(timeouts.get(getRequestSequenceNumber().get()));
-        Long timeoutId = this.setTimeout("REQUEST", this::retransmitOrPanic, this.timeout);
+        Long timeoutId = this.setTimeout("REQUEST", this::retransmitOrPanic, this.getTimeout());
         timeouts.put(getRequestSequenceNumber().get(), timeoutId);
     }
 
@@ -138,17 +135,10 @@ public class HbftClient extends Client {
         }
     }
 
-    /**
-     * Set a timeout for this replica.
-     *
-     * @param name    a name for the timeout
-     * @param r       the runnable to execute when the timeout occurs
-     * @param timeout the timeout duration
-     * @return the timer object
-     */
-    public long setTimeout(String name, Runnable r, long timeout) {
-        Duration duration = Duration.ofSeconds(timeout);
-        return getScenario().getTransport().setTimeout(this, r, duration, name);
+    @Override
+    public boolean isRequestCompleted(DefaultClientReplyPayload message) {
+        // we use custom logic. this should not be called!
+        throw new UnsupportedOperationException("isRequestCompleted is not supported in HbftClient");
     }
 
     /**
@@ -194,13 +184,6 @@ public class HbftClient extends Client {
         }
         return false;
     }
-
-    /**
-     * Clear all timeouts for this client.
-     */
-    // public void clearAllTimeouts() {
-    //     getScenario.getTransport().clearClientTimeouts(getId());
-    // }
 
     /**
      * Create a digest of a message.
