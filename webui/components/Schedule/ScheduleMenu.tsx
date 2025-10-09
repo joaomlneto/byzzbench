@@ -26,12 +26,16 @@ export const ScheduleMenu = ({ title, schedule }: ScheduleMenuProps) => {
         <Menu.Item
           onClick={async () => {
             console.log("Materializing Schedule: ", schedule);
-            const result = await materializeSchedule(schedule.scheduleId!);
+            if (!schedule.materialized) {
+              const result = await materializeSchedule(schedule.scheduleId!);
+              console.log("Materialize result: ", result.data);
+            }
+            router.push(`/scenarios/${schedule.scheduleId}`);
 
+            /*
             let i = 0;
             let hasNotifiedMismatchedEvents = false;
 
-            /*
             for (const event of schedule.actions ?? []) {
               const remoteEvent = await getEvent(event.actionId).then(
                 (event) => event.data,
@@ -90,8 +94,6 @@ export const ScheduleMenu = ({ title, schedule }: ScheduleMenuProps) => {
             }
              */
             //await queryClient.invalidateQueries();
-            console.log("Materialize result: ", result.data);
-            router.push("/");
           }}
         >
           Materialize
