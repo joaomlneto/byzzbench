@@ -115,7 +115,8 @@ To configure the simulator, you can modify the [
 
 It has two main subsections:
 
-- `scheduler`: The scheduler configuration: which scheduler to use, and its parameters such as the probability of
+- `explorationStrategy`: The explorationStrategy configuration: which explorationStrategy to use, and its parameters
+  such as the probability of
   dropping messages.
 - `scenario`: The scenario configuration: which scenario to run, and its parameters such as conditions to stop the
   simulation.

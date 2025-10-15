@@ -1,4 +1,4 @@
-package byzzbench.simulator.scheduler.twins;
+package byzzbench.simulator.exploration_strategy.twins;
 
 import byzzbench.simulator.Node;
 import byzzbench.simulator.Replica;

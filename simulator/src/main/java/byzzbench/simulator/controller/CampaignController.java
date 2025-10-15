@@ -3,8 +3,6 @@ package byzzbench.simulator.controller;
 
 import byzzbench.simulator.domain.Campaign;
 import byzzbench.simulator.repository.CampaignRepository;
-import byzzbench.simulator.service.ScenarioService;
-import byzzbench.simulator.service.SimulatorService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.java.Log;
 import org.springframework.http.HttpStatus;
@@ -24,8 +22,6 @@ import java.util.stream.StreamSupport;
 @RequiredArgsConstructor
 @Log
 public class CampaignController {
-    private final ScenarioService scenarioService;
-    private final SimulatorService simulatorService;
     private final CampaignRepository campaignRepository;
 
     /**

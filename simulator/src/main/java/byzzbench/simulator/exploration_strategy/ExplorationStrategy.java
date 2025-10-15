@@ -1,56 +1,58 @@
-package byzzbench.simulator.scheduler;
+package byzzbench.simulator.exploration_strategy;
 
 import byzzbench.simulator.Scenario;
 import byzzbench.simulator.config.ByzzBenchConfig;
 import byzzbench.simulator.domain.Action;
-import byzzbench.simulator.service.MessageMutatorService;
+import byzzbench.simulator.domain.DeliverMessageAction;
+import byzzbench.simulator.domain.TriggerTimeoutAction;
 import byzzbench.simulator.transport.Event;
 import byzzbench.simulator.transport.MessageEvent;
 import byzzbench.simulator.transport.TimeoutEvent;
-import byzzbench.simulator.utils.NonNull;
-import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
- * Abstract base class for a scheduler.
+ * Abstract base class for an exploration strategy.
  */
 @RequiredArgsConstructor
-public abstract class Scheduler {
+@Getter
+public abstract class ExplorationStrategy {
     /**
      * The remaining number of drop messages for each scenario.
-     * If the number of remaining drop messages is 0, the scheduler will not drop messages.
+     * If the number of remaining drop messages is 0, the exploration_strategy will not drop messages.
      */
     protected final Map<Scenario, Integer> remainingDropMessages = new HashMap<>();
+
     /**
      * The remaining number of mutate messages for each scenario.
-     * If the number of remaining mutate messages is 0, the scheduler will not mutate messages.
+     * If the number of remaining mutate messages is 0, the exploration_strategy will not mutate messages.
      */
     protected final Map<Scenario, Integer> remainingMutateMessages = new HashMap<>();
+
     /**
      * ByzzBench configuration
      */
     @Getter
     private final ByzzBenchConfig config;
-    @NonNull
-    @Getter(AccessLevel.PROTECTED)
-    private final transient MessageMutatorService messageMutatorService;
+
     /**
      * Set of scenarios that have been initialized
      */
     private final Set<Scenario> initializedScenarios = new HashSet<>();
+
     /**
      * Random number generator
      */
-    protected Random rand = new Random();
+    protected Random rand = new Random(1L); // FIXME: seed
 
     /**
      * Initializes the scenario if it has not yet been initialized.
      *
-     * @param scenario
+     * @param scenario the scenario to ensure is initialized
      */
     public void initializeScenarioIfNotYetDone(Scenario scenario) {
         if (!initializedScenarios.contains(scenario)) {
@@ -60,19 +62,19 @@ public abstract class Scheduler {
     }
 
     /**
-     * Called whenever this scheduler has been assigned a new scenario.
+     * Called whenever this exploration_strategy has been assigned a new scenario.
      * This allows for schedulers like ByzzFuzz to pre-schedule faults.
      *
-     * @param scenario the scenario being assigned to this scheduler
+     * @param scenario the scenario being assigned to this exploration_strategy
      */
     public abstract void initializeScenario(Scenario scenario);
 
     /**
-     * Loads the parameters for the scheduler from a JSON object.
+     * Loads the parameters for the exploration_strategy from a JSON object.
      *
-     * @param parameters The JSON object containing the parameters for the scheduler.
+     * @param parameters The JSON object containing the parameters for the exploration_strategy.
      */
-    public final void loadParameters(SchedulerParameters parameters) {
+    public final void loadParameters(ExplorationStrategyParameters parameters) {
         this.loadSchedulerParameters(parameters);
     }
 
@@ -86,12 +88,12 @@ public abstract class Scheduler {
     /**
      * Schedules the next event to be delivered.
      *
-     * @return The decision made by the scheduler.
+     * @return The decision made by the exploration_strategy.
      */
     public abstract Optional<Action> scheduleNext(Scenario scenario);
 
     /**
-     * Resets the state of the scheduler.
+     * Resets the state of the exploration_strategy.
      */
     public abstract void reset();
 
@@ -138,6 +140,11 @@ public abstract class Scheduler {
 
         switch (scenario.getExecutionMode()) {
             case SYNC -> {
+                // if some replicas have messages in their mailbox, no timeouts!
+                if (!getQueuedMessageEvents(scenario).isEmpty()) {
+                    return Collections.emptyList();
+                }
+
                 // get the set of replica IDs with messages in their mailbox
                 Set<String> replicasWithQueuedMessagesInMailbox = getQueuedMessageEvents(scenario).stream()
                         .map(MessageEvent::getRecipientId)
@@ -155,11 +162,11 @@ public abstract class Scheduler {
     }
 
     /**
-     * Loads the subclass-specific parameters for the scheduler from a JSON object.
+     * Loads the subclass-specific parameters for the exploration_strategy from a JSON object.
      *
-     * @param parameters The JSON object containing the parameters for the scheduler.
+     * @param parameters The JSON object containing the parameters for the exploration_strategy.
      */
-    protected abstract void loadSchedulerParameters(SchedulerParameters parameters);
+    protected abstract void loadSchedulerParameters(ExplorationStrategyParameters parameters);
 
     /**
      * Retrieve one of the queued message events.
@@ -220,5 +227,31 @@ public abstract class Scheduler {
     public int mutateMessageWeight(Scenario scenario) {
         int remaining = remainingMutateMessages.computeIfAbsent(scenario, s -> config.getScheduler().getMaxMutateMessages());
         return remaining > 0 ? config.getScheduler().getMutateMessageWeight() : 0;
+    }
+
+    /**
+     * Returns all available actions (deliver message, trigger timeout) in the scenario
+     *
+     * @param scenario The scenario
+     * @return The list of available actions
+     */
+    public List<Action> getAvailableActions(Scenario scenario) {
+        Stream<Action> messageEvents = this.getQueuedMessageEvents(scenario).stream().map(DeliverMessageAction::fromEvent);
+        Stream<Action> timeoutEvents = this.getQueuedTimeoutEvents(scenario).stream().map(TriggerTimeoutAction::fromEvent);
+        return Stream.concat(messageEvents, timeoutEvents).toList();
+    }
+
+    /**
+     * Retrieves the exploration-strategy-specific data for the scenario.
+     *
+     * @param scenario The scenario
+     * @return The exploration-strategy-specific data for the scenario.
+     */
+    public ScenarioStrategyData getScenarioStrategyData(Scenario scenario) {
+        return ScenarioStrategyData.builder()
+                .remainingDropMessages(this.getConfig().getScheduler().getMaxDropMessages())
+                .remainingMutateMessages(this.getConfig().getScheduler().getMaxMutateMessages())
+                .initializedByStrategy(this.getInitializedScenarios().contains(scenario))
+                .build();
     }
 }

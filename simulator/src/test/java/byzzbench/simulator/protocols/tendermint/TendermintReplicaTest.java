@@ -1,6 +1,6 @@
 package byzzbench.simulator.protocols.tendermint;
 
-import byzzbench.simulator.scheduler.Scheduler;
+import byzzbench.simulator.exploration_strategy.ExplorationStrategy;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -13,7 +13,7 @@ import java.util.TreeSet;
 public class TendermintReplicaTest {
 
     private final int tolerance = 1;
-    Scheduler scheduler = Mockito.mock(Scheduler.class);
+    ExplorationStrategy explorationStrategy = Mockito.mock(ExplorationStrategy.class);
     private TendermintReplica replicaA;
     private TendermintReplica replicaB;
     private TendermintReplica replicaC;
@@ -35,7 +35,7 @@ public class TendermintReplicaTest {
         nodeIds.add("C");
         nodeIds.add("D");
 
-        TendermintScenarioExecutor tendermintScenarioExecutor = new TendermintScenarioExecutor(scheduler);
+        TendermintScenarioExecutor tendermintScenarioExecutor = new TendermintScenarioExecutor(explorationStrategy);
         replicaA = new TendermintReplica(replicaAId, nodeIds, tendermintScenarioExecutor);
         replicaB = new TendermintReplica(replicaBId, nodeIds, tendermintScenarioExecutor);
         replicaC = new TendermintReplica(replicaCId, nodeIds, tendermintScenarioExecutor);

@@ -11,12 +11,10 @@ import org.springframework.stereotype.Component;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.Random;
 
 @Component
 @ToString
 public class ProposalMessageMutatorFactory extends MessageMutatorFactory {
-    private final Random random = new Random();
     RuntimeException invalidMessageTypeException = new IllegalArgumentException("Invalid message type");
 
     @Override

@@ -12,13 +12,11 @@ import org.springframework.stereotype.Component;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.Random;
 
 @Component
 @ToString
 public class CommitMessageMutatorFactory extends MessageMutatorFactory {
     RuntimeException invalidMessageTypeException = new IllegalArgumentException("Invalid message type");
-    Random random = new Random();
     int bound = 100;
 
     @Override

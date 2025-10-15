@@ -2,9 +2,7 @@ package byzzbench.simulator.protocols.pbft;
 
 import byzzbench.simulator.Scenario;
 import byzzbench.simulator.ScenarioFactory;
-import byzzbench.simulator.config.ByzzBenchConfig;
 import byzzbench.simulator.domain.Schedule;
-import byzzbench.simulator.service.SchedulerService;
 
 /**
  * Factory for creating scenarios based on the reference PBFT implementation.
@@ -14,9 +12,6 @@ import byzzbench.simulator.service.SchedulerService;
  */
 //@Component
 public class PbftScenarioFactory extends ScenarioFactory {
-    public PbftScenarioFactory(SchedulerService schedulerService, ByzzBenchConfig byzzBenchConfig) {
-        super(schedulerService, byzzBenchConfig);
-    }
 
     @Override
     public String getId() {

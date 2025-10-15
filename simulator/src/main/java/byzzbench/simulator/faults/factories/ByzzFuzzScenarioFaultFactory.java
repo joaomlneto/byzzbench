@@ -36,11 +36,11 @@ public class ByzzFuzzScenarioFaultFactory implements FaultFactory {
                 || !config.getScheduler().getParams().containsKey("numRoundsWithProcessFaults")
                 || !config.getScheduler().getParams().containsKey("numRoundsWithNetworkFaults")
                 || !config.getScheduler().getParams().containsKey("numRoundsWithFaults")) {
-            log.warning("ByzzFuzzScenarioFaultFactory: Missing scheduler configuration parameters");
+            log.warning("ByzzFuzzScenarioFaultFactory: Missing exploration_strategy configuration parameters");
             return faults;
         }
 
-        // get scheduler params
+        // get exploration_strategy params
         int c = Integer.parseInt(config.getScheduler().getParams().get("numRoundsWithProcessFaults"));
         int d = Integer.parseInt(config.getScheduler().getParams().get("numRoundsWithNetworkFaults"));
         int r = Integer.parseInt(config.getScheduler().getParams().get("numRoundsWithFaults"));

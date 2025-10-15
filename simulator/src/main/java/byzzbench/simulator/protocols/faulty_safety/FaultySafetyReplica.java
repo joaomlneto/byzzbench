@@ -1,4 +1,4 @@
-package byzzbench.simulator.protocols.dummy;
+package byzzbench.simulator.protocols.faulty_safety;
 
 import byzzbench.simulator.Replica;
 import byzzbench.simulator.Scenario;
@@ -11,8 +11,8 @@ import lombok.extern.java.Log;
 
 @Log
 @ToString(callSuper = true)
-public class DummyReplica extends Replica {
-    public DummyReplica(String replicaId, Scenario scenario) {
+public class FaultySafetyReplica extends Replica {
+    public FaultySafetyReplica(String replicaId, Scenario scenario) {
         super(replicaId, scenario, new TotalOrderCommitLog());
     }
 

@@ -30,9 +30,20 @@ public class Campaign implements Serializable {
     private long initialRandomSeed;
 
     /**
+     * The unique identifier of the scenario factory used to generate scenarios for this campaign.
+     */
+    private String scenarioFactoryId;
+
+    /**
+     * The unique identifier of the exploration strategy used to generate scenarios for this campaign.
+     */
+    private String explorationStrategyId;
+
+    /**
      * A random number generator initialized with the initial random seed.
      */
-    private Random random = new Random();
+    @JsonIgnore
+    private Random random;
 
     /**
      * The unique identifier for this campaign.

@@ -48,7 +48,7 @@ public class ScenarioController {
      */
     @GetMapping("/scenarios")
     public Set<Long> getScenarios() {
-        return scenarioService.getScenarios().keySet();
+        return scenarioService.getMaterializedScheduleIds();
     }
 
     /**
@@ -145,6 +145,19 @@ public class ScenarioController {
     @GetMapping("/scenarios/{scenarioId}/faulty-replicas")
     public SortedSet<String> getScenarioFaultyReplicaIds(@PathVariable long scenarioId) {
         return scenarioService.getScenarioById(scenarioId).getFaultyReplicaIds();
+    }
+
+    /**
+     * Get the list of faults configured in the scenario
+     *
+     * @param scenarioId The ID of the scenario
+     * @return the set of IDs of faulty replicas
+     */
+    @GetMapping("/scenarios/{scenarioId}/faults")
+    public SortedSet<String> getScenarioFaults(@PathVariable long scenarioId) {
+        return scenarioService.getScenarioById(scenarioId).getFaults().stream()
+                .map(Fault::getId)
+                .collect(Collectors.toCollection(TreeSet::new));
     }
 
     /**
@@ -445,7 +458,7 @@ public class ScenarioController {
      */
     @DeleteMapping("/scenarios/{scenarioId}")
     public void deleteScenario(@PathVariable long scenarioId) {
-        scenarioService.getScenarios().remove(scenarioId);
+        scenarioService.storeSchedule(scenarioId);
     }
 
     /**

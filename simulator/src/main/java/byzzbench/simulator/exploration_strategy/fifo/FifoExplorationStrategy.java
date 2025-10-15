@@ -1,10 +1,11 @@
-package byzzbench.simulator.scheduler;
+package byzzbench.simulator.exploration_strategy.fifo;
 
 import byzzbench.simulator.Scenario;
 import byzzbench.simulator.config.ByzzBenchConfig;
 import byzzbench.simulator.domain.Action;
 import byzzbench.simulator.domain.DeliverMessageAction;
-import byzzbench.simulator.service.MessageMutatorService;
+import byzzbench.simulator.exploration_strategy.ExplorationStrategy;
+import byzzbench.simulator.exploration_strategy.ExplorationStrategyParameters;
 import byzzbench.simulator.transport.Event;
 import byzzbench.simulator.transport.MessageEvent;
 import org.springframework.stereotype.Component;
@@ -13,12 +14,12 @@ import java.util.Comparator;
 import java.util.Optional;
 
 /**
- * A scheduler that delivers events in the order they were enqueued.
+ * A exploration_strategy that delivers events in the order they were enqueued.
  */
 @Component
-public class FifoScheduler extends Scheduler {
-    public FifoScheduler(ByzzBenchConfig config, MessageMutatorService messageMutatorService) {
-        super(config, messageMutatorService);
+public class FifoExplorationStrategy extends ExplorationStrategy {
+    public FifoExplorationStrategy(ByzzBenchConfig config) {
+        super(config);
     }
 
     @Override
@@ -56,7 +57,7 @@ public class FifoScheduler extends Scheduler {
     }
 
     @Override
-    public void loadSchedulerParameters(SchedulerParameters parameters) {
+    public void loadSchedulerParameters(ExplorationStrategyParameters parameters) {
         // no parameters to load
     }
 }

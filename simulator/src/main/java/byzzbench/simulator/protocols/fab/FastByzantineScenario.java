@@ -14,8 +14,8 @@ import java.util.TreeSet;
 @Log
 public class FastByzantineScenario extends Scenario {
     private static final String SCENARIO_ID = "fab-java";
-//    public FastByzantineScenario(Scheduler scheduler) {
-//        super("fab-java", scheduler);
+//    public FastByzantineScenario(Scheduler exploration_strategy) {
+//        super("fab-java", exploration_strategy);
 //        this.terminationCondition = new FastByzantineTerminationCondition();
 //    }
 

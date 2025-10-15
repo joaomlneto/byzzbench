@@ -14,12 +14,12 @@ import java.util.List;
 
 
 public class XRPLLedger implements Serializable {
+    private final String parentId;
+    private final int seq;
     @Setter
     List<String> transactions;
     private String Id;
-    private final String parentId;
-    private final int seq;
-    //Fields to implement dummy signature and verification
+    //Fields to implement faulty_safety signature and verification
     private boolean isSigned = false;
     private String signerId = null;
 
@@ -107,8 +107,8 @@ public class XRPLLedger implements Serializable {
             // Combine all byte arrays
             ByteBuffer buffer = ByteBuffer.allocate(
                     Integer.BYTES + parentIdBytes.length +
-                    seqBytes.length +
-                    transactionsBuffer.position());
+                            seqBytes.length +
+                            transactionsBuffer.position());
 
             // Add the lengths and byte arrays to the buffer
             buffer.putInt(parentIdBytes.length);

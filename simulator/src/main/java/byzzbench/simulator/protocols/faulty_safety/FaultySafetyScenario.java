@@ -1,4 +1,4 @@
-package byzzbench.simulator.protocols.dummy;
+package byzzbench.simulator.protocols.faulty_safety;
 
 import byzzbench.simulator.Client;
 import byzzbench.simulator.Replica;
@@ -12,8 +12,8 @@ import lombok.extern.java.Log;
 
 @Getter
 @Log
-public class DummyScenario extends Scenario {
-    private static final String SCENARIO_ID = "dummy";
+public class FaultySafetyScenario extends Scenario {
+    private static final String SCENARIO_ID = "faulty_safety";
     private final ScenarioPredicate terminationCondition = new ScenarioPredicate() {
         @Override
         public boolean test(Scenario scenario) {
@@ -21,7 +21,7 @@ public class DummyScenario extends Scenario {
         }
     };
 
-    public DummyScenario(Schedule schedule) {
+    public FaultySafetyScenario(Schedule schedule) {
         super(schedule, SCENARIO_ID);
     }
 
@@ -35,7 +35,7 @@ public class DummyScenario extends Scenario {
         try {
             // add replicas
             for (int i = 0; i < 2; i++) {
-                Replica replica = new DummyReplica(Character.toString((char) ('A' + i)), this);
+                Replica replica = new FaultySafetyReplica(Character.toString((char) ('A' + i)), this);
                 this.addNode(replica);
             }
 
@@ -57,7 +57,7 @@ public class DummyScenario extends Scenario {
 
     @Override
     public int maxFaultyReplicas(int n) {
-        // this is a dummy protocol, so anything goes
+        // this is a faulty_safety protocol, so anything goes
         return n;
     }
 }

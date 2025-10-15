@@ -70,7 +70,7 @@ public class Schedule implements Serializable {
      */
     @JsonIgnore
     @Transient
-    private transient Optional<Scenario> scenario = Optional.empty();
+    private transient Scenario scenario;
 
     /**
      * Creates a new schedule for the given scenario.
@@ -124,13 +124,6 @@ public class Schedule implements Serializable {
     }
 
     /**
-     * Marks the schedule as read-only, without any broken invariants.
-     */
-    public void finalizeSchedule() {
-        finalizeSchedule(Collections.emptySet());
-    }
-
-    /**
      * Returns true if the schedule is buggy, i.e., it violates some invariants.
      *
      * @return true if the schedule is buggy, false otherwise.
@@ -146,7 +139,10 @@ public class Schedule implements Serializable {
      * @return the id of the scenario that generated this schedule.
      */
     public @NonNull Scenario getScenario() {
-        return this.scenario.orElseThrow(() -> new IllegalStateException("No scenario set for this schedule"));
+        if (this.scenario == null) {
+            throw new IllegalStateException("No scenario set for this schedule");
+        }
+        return this.scenario;
     }
 
     /**
@@ -162,43 +158,25 @@ public class Schedule implements Serializable {
      * Materializes the scenario associated with this schedule, if not already done.
      * This method will throw an exception if the schedule already has a scenario.
      *
-     * @return the materialized scenario.
      * @throws IllegalStateException if the schedule already has a scenario.
      */
-    public Scenario materializeScenario() {
-        System.out.println("Materializing scenario for schedule " + this.scheduleId);
-
+    public void materializeScenario() {
         // check if already materialized
         if (this.isMaterialized()) {
-            System.out.println("Schedule " + this.scheduleId + " already has a scenario associated with it");
-            System.out.println("Scenario: " + this.scenario);
             throw new IllegalStateException("Schedule already has a scenario associated with it");
         }
 
-        System.out.println("\n\n\n\n\nMaterializing scenario for schedule " + this.scheduleId);
-
-        String scenarioFactoryId = this.parameters.getScenarioFactoryId();
-        System.out.println("Using scenario factory: " + scenarioFactoryId);
-
-        ScenarioService scenarioService = ApplicationContextProvider.getScenarioService();
-        long scenarioId = scenarioService.generateScenario(this);
-        System.out.println("Generated scenario with ID: " + scenarioId);
-
-        Scenario scenario = scenarioService.getScenarios().get(scenarioId);
-        scenario.setScenarioId(scenarioId);
-        this.scenario = Optional.of(scenario);
-
-        // apply each action in order
-        for (Action action : this.actions) {
-            action.accept(scenario);
+        try {
+            ScenarioService scenarioService = ApplicationContextProvider.getScenarioService();
+            this.scenario = scenarioService.generateScenario(this);
+        } catch (NoSuchElementException e) {
+            this.scenario = null;
+            throw new IllegalStateException("Failed to materialize scenario for schedule " + this.scheduleId, e);
         }
-
-        System.out.println("Done materializing scenario for schedule " + this.scheduleId + "\n\n\n");
-        return scenario;
     }
 
     public boolean isMaterialized() {
-        return this.scenario.isPresent();
+        return this.scenario != null;
     }
 
     /**
@@ -208,6 +186,9 @@ public class Schedule implements Serializable {
      * If no scenario is found for the given schedule ID, the `scenario` field
      * remains unset.
      */
+    /*
+     * This is no longer needed, since all schedules are memorized in the ScenarioService
+     * if they have a scenario materialized!
     @PostLoad
     public void onLoad() {
         try {
@@ -217,5 +198,5 @@ public class Schedule implements Serializable {
             System.out.println("No scenario found for schedule " + this.scheduleId);
             // ignore - scenario not materialized
         }
-    }
+    }*/
 }

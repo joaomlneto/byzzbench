@@ -1,37 +1,33 @@
-package byzzbench.simulator.scheduler;
+package byzzbench.simulator.exploration_strategy.byzzfuzz;
 
 import byzzbench.simulator.Scenario;
 import byzzbench.simulator.config.ByzzBenchConfig;
+import byzzbench.simulator.exploration_strategy.ExplorationStrategyParameters;
+import byzzbench.simulator.exploration_strategy.random.RandomExplorationStrategy;
 import byzzbench.simulator.faults.Fault;
 import byzzbench.simulator.faults.FaultFactory;
 import byzzbench.simulator.faults.ScenarioContext;
 import byzzbench.simulator.faults.factories.ByzzFuzzScenarioFaultFactory;
-import byzzbench.simulator.service.MessageMutatorService;
 import lombok.Getter;
 import lombok.extern.java.Log;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Random;
 
 /**
- * The ByzzFuzz scheduler from "Randomized Testing of Byzantine Fault Tolerant Algorithms" by
+ * The ByzzFuzz exploration_strategy from "Randomized Testing of Byzantine Fault Tolerant Algorithms" by
  * Levin N. Winter, Florena Buse, Daan de Graaf, Klaus von Gleissenthall, and Burcu Kulahcioglu Ozkan.
  * https://dl.acm.org/doi/10.1145/3586053
  */
 @Component
 @Log
 @Getter
-public class ByzzFuzzScheduler extends RandomScheduler {
+public class ByzzFuzzExplorationStrategy extends RandomExplorationStrategy {
     /**
      * Small-scope mutations to be applied to protocol messages
      */
     private final List<Fault> mutations = new ArrayList<>();
-    /**
-     * Random number generator
-     */
-    private final Random random = new Random();
     /**
      * Number of protocol rounds with process faults
      */
@@ -48,8 +44,8 @@ public class ByzzFuzzScheduler extends RandomScheduler {
     @Getter
     private int numRoundsWithFaults = 3;
 
-    public ByzzFuzzScheduler(ByzzBenchConfig config, MessageMutatorService messageMutatorService) {
-        super(config, messageMutatorService);
+    public ByzzFuzzExplorationStrategy(ByzzBenchConfig config) {
+        super(config);
     }
 
     @Override
@@ -58,7 +54,7 @@ public class ByzzFuzzScheduler extends RandomScheduler {
     }
 
     @Override
-    public void loadSchedulerParameters(SchedulerParameters parameters) {
+    public void loadSchedulerParameters(ExplorationStrategyParameters parameters) {
         System.out.println("Loading ByzzFuzz parameters:");
 
         if (parameters != null) {

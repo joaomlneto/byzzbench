@@ -30,6 +30,7 @@ public abstract class Action implements Consumer<Scenario>, Serializable {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @NonNull
+    @JsonIgnore // this only makes sense in the database context. Don't send it to the client.
     private long actionId;
 
     @ManyToOne

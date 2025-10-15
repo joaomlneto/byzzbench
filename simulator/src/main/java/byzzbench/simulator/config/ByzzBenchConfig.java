@@ -1,6 +1,6 @@
 package byzzbench.simulator.config;
 
-import byzzbench.simulator.scheduler.SchedulerParameters;
+import byzzbench.simulator.exploration_strategy.ExplorationStrategyParameters;
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
@@ -32,13 +32,12 @@ public class ByzzBenchConfig {
     /**
      * Scheduler parameters.
      */
-    private SchedulerParameters scheduler = new SchedulerParameters();
+    private ExplorationStrategyParameters scheduler = new ExplorationStrategyParameters();
     /**
      * Scenario parameters.
      */
     private ScenarioConfig scenario = new ScenarioConfig();
-
-    // execution should be either "async" or "sync". Here is the enum:
+    
     public enum SaveScheduleMode {
         /**
          * Save all schedules in the database.

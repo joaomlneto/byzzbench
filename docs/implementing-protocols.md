@@ -38,7 +38,7 @@ Timeouts are implemented via callbacks to a `Runnable`, also handled by the `Tra
 
 - `setTimeout(Runnable, timeout)`: Creates a timeout Action of `timeout` milliseconds, which will then invoke
   the `Runnable`. The time is currently being ignored, and is instead triggered just like any other Action by the
-  scheduler.
+  explorationStrategy.
 - `clearAllTimeouts()`: Invalidates all outstanding timeouts for the current replica.
 
 ## Commit Log

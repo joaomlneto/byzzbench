@@ -1,11 +1,12 @@
 package byzzbench.simulator;
 
 import byzzbench.simulator.domain.*;
+import byzzbench.simulator.exploration_strategy.ExplorationStrategyParameters;
+import byzzbench.simulator.faults.Fault;
 import byzzbench.simulator.faults.faults.GlobalStabilizationTimeFault;
 import byzzbench.simulator.faults.faults.HealNodeNetworkFault;
 import byzzbench.simulator.faults.faults.IsolateProcessNetworkFault;
 import byzzbench.simulator.faults.faults.MessageMutationFault;
-import byzzbench.simulator.scheduler.SchedulerParameters;
 import byzzbench.simulator.state.AgreementPredicate;
 import byzzbench.simulator.state.LivenessPredicate;
 import byzzbench.simulator.state.adob.AdobDistributedState;
@@ -53,7 +54,7 @@ public abstract class Scenario implements Serializable {
     /**
      * Execution mode for the scenario, limiting which actions are enabled at each step.
      */
-    private final SchedulerParameters.ExecutionMode executionMode = SchedulerParameters.ExecutionMode.SYNC;
+    private final ExplorationStrategyParameters.ExecutionMode executionMode = ExplorationStrategyParameters.ExecutionMode.SYNC;
     /**
      * A description for the scenario.
      */
@@ -91,7 +92,7 @@ public abstract class Scenario implements Serializable {
     private long scenarioId;
 
     /**
-     * Creates a new scenario with the given unique identifier and scheduler.
+     * Creates a new scenario with the given unique identifier and exploration_strategy.
      *
      * @param schedule    The schedule for the scenario.
      * @param description The description for the scenario.
@@ -228,7 +229,6 @@ public abstract class Scenario implements Serializable {
      * @param parameters The parameters for the scenario.
      */
     public final void loadParameters(ScenarioParameters parameters) {
-        // FIXME: param above instead of JsonNode should be ScenarioParameters
         // get num clients
         if (parameters.getNumClients() != null) {
             //this.setNumClients(parameters.getNumClients());
@@ -482,5 +482,17 @@ public abstract class Scenario implements Serializable {
             return Optional.empty();
         }
         return Optional.of(this.schedule.getCampaign().getCampaignId());
+    }
+
+    public List<Fault> getFaults() {
+        List<Fault> networkFaults = this.transport.getNetworkFaults().values().stream()
+                .toList();
+        List<Fault> transportFaults = this.transport.getAutomaticFaults().values().stream()
+                .toList();
+        List<Fault> mutationFaults = new ArrayList<>(this.messageMutationFaults);
+        return Stream.of(networkFaults.stream(), transportFaults.stream(), mutationFaults.stream())
+                .reduce(Stream::concat)
+                .orElseGet(Stream::empty)
+                .toList();
     }
 }

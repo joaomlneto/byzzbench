@@ -1,4 +1,4 @@
-package byzzbench.simulator.scheduler;
+package byzzbench.simulator.exploration_strategy.random;
 
 import byzzbench.simulator.Scenario;
 import byzzbench.simulator.config.ByzzBenchConfig;
@@ -6,8 +6,10 @@ import byzzbench.simulator.domain.Action;
 import byzzbench.simulator.domain.DeliverMessageAction;
 import byzzbench.simulator.domain.FaultInjectionAction;
 import byzzbench.simulator.domain.TriggerTimeoutAction;
+import byzzbench.simulator.exploration_strategy.ExplorationStrategy;
+import byzzbench.simulator.exploration_strategy.ExplorationStrategyParameters;
 import byzzbench.simulator.faults.faults.MessageMutationFault;
-import byzzbench.simulator.service.MessageMutatorService;
+import byzzbench.simulator.service.ApplicationContextProvider;
 import byzzbench.simulator.transport.Event;
 import byzzbench.simulator.transport.MessageEvent;
 import byzzbench.simulator.transport.TimeoutEvent;
@@ -16,23 +18,20 @@ import org.springframework.stereotype.Component;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.Random;
 import java.util.SortedSet;
 
 /**
- * A scheduler that randomly selects events to deliver, drop, mutate or timeout.
+ * A exploration_strategy that randomly selects events to deliver, drop, mutate or timeout.
  */
 @Component
 @Log
-public class RandomScheduler extends Scheduler {
-    private final Random random = new Random();
-
-    public RandomScheduler(ByzzBenchConfig config, MessageMutatorService messageMutatorService) {
-        super(config, messageMutatorService);
+public class RandomExplorationStrategy extends ExplorationStrategy {
+    public RandomExplorationStrategy(ByzzBenchConfig config) {
+        super(config);
     }
 
     public <T> T getRandomElement(List<T> list) {
-        return list.get(random.nextInt(list.size()));
+        return list.get(this.getRand().nextInt(list.size()));
     }
 
     @Override
@@ -66,7 +65,7 @@ public class RandomScheduler extends Scheduler {
         int deliverMessageWeight = messageEvents.size() * this.deliverMessageWeight();
         int dropMessageWeight = (messageEvents.size() * this.dropMessageWeight(scenario));
         int mutateMessageWeight = (mutateableMessageEvents.size() * this.mutateMessageWeight(scenario));
-        int dieRoll = random.nextInt(timeoutWeight + deliverMessageWeight
+        int dieRoll = this.getRand().nextInt(timeoutWeight + deliverMessageWeight
                 + dropMessageWeight + mutateMessageWeight);
 
         // check if we should trigger a timeout
@@ -100,7 +99,7 @@ public class RandomScheduler extends Scheduler {
         dieRoll -= mutateMessageWeight;
         if (dieRoll < 0) {
             Event message = getRandomElement(mutateableMessageEvents);
-            List<MessageMutationFault> mutators = this.getMessageMutatorService().getMutatorsForEvent(message);
+            List<MessageMutationFault> mutators = ApplicationContextProvider.getMessageMutatorService().getMutatorsForEvent(message);
 
             if (mutators.isEmpty()) {
                 // no mutators, return nothing
@@ -125,7 +124,7 @@ public class RandomScheduler extends Scheduler {
     }
 
     @Override
-    public void loadSchedulerParameters(SchedulerParameters parameters) {
+    public void loadSchedulerParameters(ExplorationStrategyParameters parameters) {
         // no parameters to load
     }
 }

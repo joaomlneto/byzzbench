@@ -30,7 +30,7 @@
 // import byzzbench.simulator.protocols.hbft.pojo.ReplicaTicketPhase;
 // import byzzbench.simulator.protocols.hbft.utils.Checkpoint;
 // import byzzbench.simulator.protocols.hbft.utils.ScheduleLogger;
-// import byzzbench.simulator.scheduler.Scheduler;
+// import byzzbench.simulator.exploration_strategy.Scheduler;
 // import byzzbench.simulator.state.LogEntry;
 // import byzzbench.simulator.state.SerializableLogEntry;
 
@@ -42,7 +42,7 @@
 //     private HbftJavaReplica replicaD;
 //     private HbftJavaReplica primary;
 //     private int tolerance = 1;
-//     Scheduler scheduler = Mockito.mock(Scheduler.class);
+//     Scheduler exploration_strategy = Mockito.mock(Scheduler.class);
 //     ScheduleLogger logger = new ScheduleLogger();
 
 //     @Test
@@ -63,12 +63,12 @@
 //         MessageLog messageLogPrimary = new MessageLog(100, 100, 200);
 //         MessageLog messageLogC = new MessageLog(100, 100, 200);
 //         MessageLog messageLogD = new MessageLog(100, 100, 200);
-        
-//         /* 
-//          * We need to have a Scheduler in order to be 
+
+//         /*
+//          * We need to have a Scheduler in order to be
 //          * able to test message reception and sending
 //          */
-//         HbftJavaScenario hbftScenario = new HbftJavaScenario(scheduler);
+//         HbftJavaScenario hbftScenario = new HbftJavaScenario(exploration_strategy);
 //         replicaA = new HbftJavaReplica<String, String>(replicaAId, nodeIds, tolerance, 5, messageLogA, hbftScenario);
 //         replicaC = new HbftJavaReplica<String, String>(replicaCId, nodeIds, tolerance, 5, messageLogC, hbftScenario);
 //         replicaD = new HbftJavaReplica<String, String>(replicaDId, nodeIds, tolerance, 5, messageLogD, hbftScenario);
@@ -85,7 +85,7 @@
 // 	void testRecvDoubleRequestWithinView() {
 //         HbftJavaReplica spyReplica = Mockito.spy(replicaA);
 //         RequestMessage request = new RequestMessage("123", 0, "C0");
-        
+
 //         spyReplica.recvRequest(request);
 //         spyReplica.recvRequest(request);
 //         verify(spyReplica, times(1)).sendRequest(primary.getId(), request);
@@ -96,7 +96,7 @@
 // 	// void testRecvDoubleRequestAccrossViews() {
 //     //     HbftJavaReplica spyReplica = Mockito.spy(replicaA);
 //     //     RequestMessage request = new RequestMessage("123", 0, "C0");
-        
+
 //     //     spyReplica.recvRequest(request);
 //     //     spyReplica.enterNewView(2);
 //     //     spyReplica.setCheckpointForNewView(false);
@@ -115,7 +115,7 @@
 //         RequestMessage request = new RequestMessage("123", 0, "C0");
 //         byte[] digest = replicaA.digest(request);
 //         PrepareMessage prepare = new PrepareMessage(viewNumber, seqNumber, digest, request);
-        
+
 //         replicaA.recvPrepare(prepare);
 
 //         // Prepare message should be accepted
@@ -130,7 +130,7 @@
 //         byte[] digest = replicaA.digest(request);
 //         PrepareMessage prepare = new PrepareMessage(viewNumber, seqNumber, digest, request);
 //         PrepareMessage prepare0 = new PrepareMessage(viewNumber, 0, digest, request);
-        
+
 //         replicaA.recvPrepare(prepare);
 //         replicaA.recvPrepare(prepare0);
 
@@ -147,7 +147,7 @@
 //         byte[] digest = replicaA.digest(request);
 //         PrepareMessage prepare = new PrepareMessage(viewNumber, seqNumber, digest, request);
 //         PrepareMessage prepare0 = new PrepareMessage(0, seqNumber, digest, request);
-        
+
 //         replicaA.recvPrepare(prepare);
 //         replicaA.recvPrepare(prepare0);
 
@@ -155,7 +155,7 @@
 //         Assert.isTrue(replicaA.getMessageLog().getTicket(viewNumber, seqNumber) == null, "Prepare messages with incorrect viewNum not accepted!");
 //         Assert.isTrue(replicaA.getMessageLog().getTicket(0, seqNumber) == null, "Prepare messages with incorrect viewNum not accepted!");
 //     }
-    
+
 //     @Test
 // 	void testRecvWrongDigestPrepare() {
 //         long viewNumber = 1;
@@ -164,7 +164,7 @@
 //         RequestMessage request2 = new RequestMessage("321", 100, "C0");
 //         byte[] digest = replicaA.digest(request2);
 //         PrepareMessage prepare = new PrepareMessage(viewNumber, seqNumber, digest, request);
-        
+
 //         replicaA.recvPrepare(prepare);
 
 //         // Prepare message should not be accepted
@@ -179,7 +179,7 @@
 //         byte[] digest = replicaA.digest(request);
 //         PrepareMessage prepare = new PrepareMessage(viewNumber, seqNumber, digest, request);
 //         PrepareMessage prepare2 = new PrepareMessage(viewNumber, seqNumber + 1, digest, request);
-        
+
 //         replicaA.recvPrepare(prepare);
 
 //         // Correct prepare should be accepted
@@ -320,11 +320,11 @@
 
 //         // PANIC should be forwarded
 //         verify(spyPrimary, times(1)).forwardPanic(panic);
-        
+
 //         // It needs to send a checkpoint message as it is primary and got PANIC from client
 //         verify(spyPrimary, times(1)).broadcastMessageIncludingSelf(Mockito.any(CheckpointIMessage.class));
 //     } */
-// /* 
+// /*
 //     @Test
 // 	void testPrimaryRecvPanicFromEnoughReplicas() {
 //         HbftJavaReplica spyPrimary = Mockito.spy(primary);
@@ -344,7 +344,7 @@
 //         spyPrimary.recvPanic(panic);
 //         panic.sign(replicaC.getId());
 //         spyPrimary.recvPanic(panic);
-        
+
 
 //         Assert.isTrue(spyPrimary.getMessageLog().getPanics().containsValue(panic), "Panic should have been accepted!");
 
@@ -357,7 +357,7 @@
 
 //         panic.sign(replicaD.getId());
 //         spyPrimary.recvPanic(panic);
-        
+
 //         // It needs to send a checkpoint message as it is primary and got 2f+1 PANIC from replicas
 //         verify(spyPrimary, times(1)).broadcastMessageIncludingSelf(Mockito.any(CheckpointIMessage.class));
 //     }
@@ -382,7 +382,7 @@
 //         spyReplica.recvPanic(panic);
 //         panic.sign(replicaC.getId());
 //         spyReplica.recvPanic(panic);
-        
+
 //         // PANIC should be forwarded
 //         verify(spyReplica, times(2)).forwardPanic(Mockito.any(PanicMessage.class));
 
@@ -411,7 +411,7 @@
 //         spyReplica.recvCheckpoint(checkpoint);
 //         spyReplica.recvCheckpoint(checkpoint2);
 //         spyReplica.recvCheckpoint(checkpoint3);
-        
+
 //         //verify(spyReplica, times(0)).getMessageLog().appendCheckpoint(checkpoint, 1, null, viewNumber);
 //         verify(spyReplica, times(3)).sendViewChange(Mockito.any(ViewChangeMessage.class));
 //     }
@@ -423,7 +423,7 @@
 //         CheckpointMessage checkpoint = new CheckpointIMessage(0, digest, primary.getId(), null);
 
 //         spyReplica.recvCheckpoint(checkpoint);
-        
+
 //         verify(spyReplica, times(2)).clearTimeout(Mockito.any(String.class));
 //         verify(spyReplica, times(1)).sendCheckpoint(Mockito.any(CheckpointIIMessage.class));
 //     }
@@ -442,7 +442,7 @@
 //         Assert.isTrue(!replicaA.getMessageLog().isCER1(checkpoint2, 1), "Cer1 should not be complete with this checkpoint!");
 
 //         spyReplica.recvCheckpoint(checkpoint3);
-        
+
 //         verify(spyReplica, times(1)).sendCheckpoint(Mockito.any(CheckpointIIMessage.class));
 //         verify(spyReplica, times(1)).sendCheckpoint(Mockito.any(CheckpointIIIMessage.class));
 //         Assert.isTrue(replicaA.getMessageLog().isCER1(checkpoint3, 1), "Cer1 should be complete with this checkpoint!");
@@ -458,7 +458,7 @@
 //         spyReplica.recvCheckpoint(checkpoint);
 //         spyReplica.recvCheckpoint(checkpoint2);
 //         spyReplica.recvCheckpoint(checkpoint2);
-        
+
 //         verify(spyReplica, times(1)).sendCheckpoint(Mockito.any(CheckpointIIMessage.class));
 //         verify(spyReplica, times(0)).sendCheckpoint(Mockito.any(CheckpointIIIMessage.class));
 //         Assert.isTrue(!replicaA.getMessageLog().isCER1(checkpoint2, 1), "Cer1 should not be complete with this checkpoint!");
@@ -480,7 +480,7 @@
 //         spyReplica.recvCheckpoint(checkpoint2);
 //         spyReplica.recvCheckpoint(checkpoint3);
 //         spyReplica.recvCheckpoint(checkpoint4);
-        
+
 //         verify(spyReplica, times(1)).sendViewChange(Mockito.any(ViewChangeMessage.class));
 //         verify(spyReplica, times(0)).sendCheckpoint(Mockito.any(CheckpointIIMessage.class));
 //         verify(spyReplica, times(1)).sendCheckpoint(Mockito.any(CheckpointIIIMessage.class));
@@ -504,7 +504,7 @@
 //         spyReplica.recvCheckpoint(checkpoint2);
 //         spyReplica.recvCheckpoint(checkpoint3);
 //         spyReplica.recvCheckpoint(checkpoint4);
-        
+
 //         verify(spyReplica, times(1)).sendViewChange(Mockito.any(ViewChangeMessage.class));
 //         verify(spyReplica, times(0)).sendCheckpoint(Mockito.any(CheckpointIIMessage.class));
 //         verify(spyReplica, times(0)).sendCheckpoint(Mockito.any(CheckpointIIIMessage.class));
@@ -669,7 +669,7 @@
 //         spyReplica.recvCheckpoint(checkpoint2);
 //         spyReplica.recvCheckpoint(checkpoint3);
 //         spyReplica.recvCheckpoint(checkpoint4);
-        
+
 //         //verify(spyReplica, times(1)).sendViewChange(Mockito.any(ViewChangeMessage.class));
 //         //verify(spyReplica, times(0)).sendCheckpoint(Mockito.any(CheckpointIIMessage.class));
 //         verify(spyReplica, times(0)).sendCheckpoint(Mockito.any(CheckpointIIIMessage.class));
@@ -734,7 +734,7 @@
 //         spyReplica.recvViewChange(viewChange2);
 
 //         verify(spyReplica, times(1)).sendViewChange(Mockito.any(ViewChangeMessage.class));
-//         // Should not include any request in R        
+//         // Should not include any request in R
 //         verify(spyReplica, times(1))
 //         .recvNewView(Mockito.argThat(arg -> arg.getNewViewNumber() == newView.getNewViewNumber()
 //             && arg.getSpeculativeHistory().getRequests().size() == 1
@@ -766,13 +766,13 @@
 //         PrepareMessage prepare = new PrepareMessage(viewNumber, seqNumber, digest, request);
 //         CommitMessage commit = new CommitMessage(viewNumber, seqNumber, digest, request, primary.getId(), primary.getSpeculativeHistory());
 //         CommitMessage commit2 = new CommitMessage(viewNumber, seqNumber, digest, request, replicaC.getId(), replicaC.getSpeculativeHistory());
-        
+
 //         spyReplica.recvPrepare(prepare);
 //         spyReplica.recvCommit(commit);
 //         spyReplica.recvCommit(commit2);
 
 //         Assert.isTrue(replicaA.getSpeculativeHistory().getRequests().containsValue(request) && replicaA.getSpeculativeHistory().getRequests().containsKey(seqNumber), "Correct speculative history!");
-        
+
 //         CheckpointMessage checkpoint = new CheckpointIMessage(seqNumber, replicaA.digest(replicaA.getSpeculativeHistory()), primary.getId(), replicaA.getSpeculativeHistory());
 //         CheckpointMessage checkpoint2 = new CheckpointIIMessage(seqNumber, replicaA.digest(replicaA.getSpeculativeHistory()), replicaC.getId(), replicaA.getSpeculativeHistory());
 //         CheckpointMessage checkpoint3 = new CheckpointIIMessage(seqNumber, replicaA.digest(replicaA.getSpeculativeHistory()), replicaD.getId(), replicaA.getSpeculativeHistory());
@@ -799,7 +799,7 @@
 //         spyReplica.sendViewChangeOnTimeout();
 
 //         verify(spyReplica, times(1))
-//         .sendViewChange(Mockito.argThat(arg -> arg.getNewViewNumber() == viewNumber + 1 
+//         .sendViewChange(Mockito.argThat(arg -> arg.getNewViewNumber() == viewNumber + 1
 //             && arg.getRequestsR().values().size() == 1
 //             && arg.getRequestsR().get(arg.getRequestsR().lastKey()) == replicaA.getSpeculativeRequests().get(replicaA.getSpeculativeRequests().lastKey())
 //             && arg.getSpeculativeHistoryP() == checkpoint.getHistory()
@@ -816,13 +816,13 @@
 //         PrepareMessage prepare = new PrepareMessage(viewNumber, seqNumber, digest, request);
 //         CommitMessage commit = new CommitMessage(viewNumber, seqNumber, digest, request, primary.getId(), primary.getSpeculativeHistory());
 //         CommitMessage commit2 = new CommitMessage(viewNumber, seqNumber, digest, request, replicaC.getId(), replicaC.getSpeculativeHistory());
-        
+
 //         spyReplica.recvPrepare(prepare);
 //         spyReplica.recvCommit(commit);
 //         spyReplica.recvCommit(commit2);
 
 //         Assert.isTrue(replicaA.getSpeculativeHistory().getRequests().containsValue(request) && replicaA.getSpeculativeHistory().getRequests().containsKey(seqNumber), "Correct speculative history!");
-        
+
 //         CheckpointMessage checkpoint = new CheckpointIIMessage(seqNumber, replicaA.digest(replicaA.getSpeculativeHistory()), primary.getId(), replicaA.getSpeculativeHistory());
 //         CheckpointMessage checkpoint2 = new CheckpointIIMessage(seqNumber, replicaA.digest(replicaA.getSpeculativeHistory()), replicaC.getId(), replicaA.getSpeculativeHistory());
 //         CheckpointMessage checkpoint3 = new CheckpointIIMessage(seqNumber, replicaA.digest(replicaA.getSpeculativeHistory()), replicaD.getId(), replicaA.getSpeculativeHistory());
@@ -849,7 +849,7 @@
 //         spyReplica.sendViewChangeOnTimeout();
 
 //         verify(spyReplica, times(1))
-//         .sendViewChange(Mockito.argThat(arg -> arg.getNewViewNumber() == viewNumber + 1 
+//         .sendViewChange(Mockito.argThat(arg -> arg.getNewViewNumber() == viewNumber + 1
 //             && arg.getRequestsR().values().size() == 1
 //             && arg.getRequestsR().get(arg.getRequestsR().lastKey()) == replicaA.getSpeculativeRequests().get(replicaA.getSpeculativeRequests().lastKey())
 //             && arg.getSpeculativeHistoryP() == checkpoint.getHistory()
@@ -866,13 +866,13 @@
 //         PrepareMessage prepare = new PrepareMessage(viewNumber, seqNumber, digest, request);
 //         CommitMessage commit = new CommitMessage(viewNumber, seqNumber, digest, request, primary.getId(), primary.getSpeculativeHistory());
 //         CommitMessage commit2 = new CommitMessage(viewNumber, seqNumber, digest, request, replicaC.getId(), replicaC.getSpeculativeHistory());
-        
+
 //         spyReplica.recvPrepare(prepare);
 //         spyReplica.recvCommit(commit);
 //         spyReplica.recvCommit(commit2);
 
 //         Assert.isTrue(replicaA.getSpeculativeHistory().getRequests().containsValue(request) && replicaA.getSpeculativeHistory().getRequests().containsKey(seqNumber), "Correct speculative history!");
-        
+
 //         CheckpointMessage checkpoint = new CheckpointIMessage(seqNumber, replicaA.digest(replicaA.getSpeculativeHistory()), primary.getId(), replicaA.getSpeculativeHistory());;
 
 //         spyReplica.recvCheckpoint(checkpoint);
@@ -891,7 +891,7 @@
 //         spyReplica.sendViewChangeOnTimeout();
 
 //         verify(spyReplica, times(1))
-//         .sendViewChange(Mockito.argThat(arg -> arg.getNewViewNumber() == viewNumber + 1 
+//         .sendViewChange(Mockito.argThat(arg -> arg.getNewViewNumber() == viewNumber + 1
 //             && arg.getRequestsR().values().size() == 2
 //             && arg.getRequestsR().get(arg.getRequestsR().firstKey()) == replicaA.getSpeculativeRequests().get(replicaA.getSpeculativeRequests().firstKey())
 //             && arg.getRequestsR().get(arg.getRequestsR().lastKey()) == replicaA.getSpeculativeRequests().get(replicaA.getSpeculativeRequests().lastKey())
@@ -909,7 +909,7 @@
 //         PrepareMessage prepare = new PrepareMessage(viewNumber, seqNumber, digest, request);
 //         CommitMessage commit = new CommitMessage(viewNumber, seqNumber, digest, request, primary.getId(), primary.getSpeculativeHistory());
 //         CommitMessage commit2 = new CommitMessage(viewNumber, seqNumber, digest, request, replicaD.getId(), replicaD.getSpeculativeHistory());
-        
+
 //         spyReplica.recvPrepare(prepare);
 //         spyReplica.recvCommit(commit);
 //         spyReplica.recvCommit(commit2);
@@ -927,13 +927,13 @@
 //         spyReplica.recvViewChange(viewChange5);
 
 //         verify(spyReplica, times(1))
-//         .sendViewChange(Mockito.argThat(arg -> arg.getNewViewNumber() == viewNumber + 1 
+//         .sendViewChange(Mockito.argThat(arg -> arg.getNewViewNumber() == viewNumber + 1
 //             && arg.getRequestsR().values().size() == 1
 //             && arg.getRequestsR().get(arg.getRequestsR().firstKey()) == replicaC.getSpeculativeRequests().get(replicaC.getSpeculativeRequests().firstKey())
 //             && arg.getSpeculativeHistoryP() == null
 //             && arg.getSpeculativeHistoryQ() == null));
 //         verify(spyReplica, times(1))
-//         .recvNewView(Mockito.argThat(arg -> arg.getNewViewNumber() == viewNumber + 1 
+//         .recvNewView(Mockito.argThat(arg -> arg.getNewViewNumber() == viewNumber + 1
 //             && arg.getCheckpoint().getSequenceNumber() == 0
 //             && arg.getCheckpoint().getHistory() == null
 //             && arg.getSpeculativeHistory().getHistory().get(1L) == null
@@ -941,7 +941,7 @@
 //             && arg.getViewChangeProofs().contains(viewChange5)));
 //     } */
 
-//     /* 
+//     /*
 //      * Duplicate view-changes from same replica with small change
 //      */
 //     @Test
@@ -954,15 +954,15 @@
 //         history.addEntry(seqNumber, request);
 //         ViewChangeMessage viewChange  = new ViewChangeMessage(2, null, null, null, replicaC.getId());
 //         ViewChangeMessage viewChange2  = new ViewChangeMessage(2, null, null, history.getRequests(), replicaC.getId());
-        
+
 //         spyReplica.recvViewChange(viewChange);
 //         spyReplica.recvViewChange(viewChange2);
-        
+
 //         Assert.isTrue(!replicaA.getMessageLog().getViewChanges().get(2L).get(replicaC.getId()).equals(viewChange), "Should not contain first view change!");
 //         Assert.isTrue(replicaA.getMessageLog().getViewChanges().get(2L).get(replicaC.getId()).equals(viewChange2), "Should contain second view change!");
 //     }
 
-//     /* 
+//     /*
 //      * Test1 - Correct with replica being empty, and receiving null checkpoint
 //      * and 1 request in R with correct view-changes
 //      */
@@ -982,15 +982,15 @@
 //         viewChanges.add(viewChange2);
 //         viewChanges.add(viewChange3);
 //         NewViewMessage newView = new NewViewMessage(2, viewChanges, checkpoint, history);
-        
+
 //         spyReplica.recvNewView(newView);
-        
+
 //         Assert.isTrue(replicaA.getMessageLog().acceptNewView(newView, 1, logger), "Should accept the new view!");
 
 //         verify(spyReplica, times(1)).enterNewView(newView.getNewViewNumber());
 //     }
 
-//     /* 
+//     /*
 //      * Test2 - Correct with replica being empty, and receiving null checkpoint
 //      * and 1 request in R with correct view-changes
 //      * 1 view change has an extra request
@@ -1018,15 +1018,15 @@
 //         historyNewView.addEntry(seqNumber, request);
 //         historyNewView.addEntry(seqNumber + 1, null);
 //         NewViewMessage newView = new NewViewMessage(2, viewChanges, checkpoint, historyNewView);
-        
+
 //         spyReplica.recvNewView(newView);
-        
+
 //         Assert.isTrue(replicaA.getMessageLog().acceptNewView(newView, 1, logger), "Should accept the new view!");
 
 //         verify(spyReplica, times(1)).enterNewView(newView.getNewViewNumber());
 //     }
 
-//     /* 
+//     /*
 //      * Test3 - Correct with correct Q and P
 //      */
 //     @Test
@@ -1051,15 +1051,15 @@
 //         historyNewView.addEntry(seqNumber, request);
 //         historyNewView.addEntry(seqNumber + 1, null);
 //         NewViewMessage newView = new NewViewMessage(2, viewChanges, new Checkpoint(history.getGreatestSeqNumber(), history), historyNewView);
-        
+
 //         spyReplica.recvNewView(newView);
-        
+
 //         Assert.isTrue(replicaA.getMessageLog().acceptNewView(newView, 1, logger), "Should accept the new view!");
 
 //         verify(spyReplica, times(1)).enterNewView(newView.getNewViewNumber());
 //     }
 
-//     /* 
+//     /*
 //      * IncorrectTest1 - Incorrect with replica being empty,
 //      * receiving requests which the view changes dont support
 //      */
@@ -1086,15 +1086,15 @@
 //         historyNewView.addEntry(seqNumber, request);
 //         historyNewView.addEntry(seqNumber + 1, request2);
 //         NewViewMessage newView = new NewViewMessage(2, viewChanges, checkpoint, historyNewView);
-        
+
 //         spyReplica.recvNewView(newView);
-        
+
 //         Assert.isTrue(!replicaA.getMessageLog().acceptNewView(newView, 1, logger), "Should not accept the new view!");
 
 //         verify(spyReplica, times(0)).enterNewView(newView.getNewViewNumber());
 //     }
 
-//     /* 
+//     /*
 //      * IncorrectTest2 - Incorrect niew-view number
 //      */
 //     @Test
@@ -1116,15 +1116,15 @@
 //         viewChanges.add(viewChange);
 //         viewChanges.add(viewChange2);
 //         viewChanges.add(viewChange3);
-        
+
 //         NewViewMessage newView = new NewViewMessage(2, viewChanges, checkpoint, history);
-    
+
 //         spyReplica.recvNewView(newView);
 //         Assert.isTrue(!replicaA.getMessageLog().acceptNewView(newView, 1, logger), "Should not accept the new view!");
 //         verify(spyReplica, times(0)).enterNewView(newView.getNewViewNumber());
 //     }
 
-//     // /* 
+//     // /*
 //     //  * IncorrectTest3 - Incorrect, wrong checkpoint
 //     //  * 2 missing Q
 //     //  */
@@ -1143,15 +1143,15 @@
 //     //     viewChanges.add(viewChange);
 //     //     viewChanges.add(viewChange2);
 //     //     viewChanges.add(viewChange3);
-        
+
 //     //     NewViewMessage newView = new NewViewMessage(2, viewChanges, new Checkpoint(history.getGreatestSeqNumber(), history), history);
-    
+
 //     //     spyReplica.recvNewView(newView);
 //     //     Assert.isTrue(!replicaA.getMessageLog().acceptNewView(newView, 1, logger), "Should not accept the new view!");
 //     //     verify(spyReplica, times(0)).enterNewView(newView.getNewViewNumber());
 //     // }
 
-//     // /* 
+//     // /*
 //     //  * IncorrectTest4 - Incorrect, wrong checkpoint,
 //     //  * 1 missing P
 //     //  */
@@ -1170,9 +1170,9 @@
 //     //     viewChanges.add(viewChange);
 //     //     viewChanges.add(viewChange2);
 //     //     viewChanges.add(viewChange3);
-        
+
 //     //     NewViewMessage newView = new NewViewMessage(2, viewChanges, new Checkpoint(history.getGreatestSeqNumber(), history), history);
-    
+
 //     //     spyReplica.recvNewView(newView);
 //     //     Assert.isTrue(!replicaA.getMessageLog().acceptNewView(newView, 1, logger), "Should not accept the new view!");
 //     //     verify(spyReplica, times(0)).enterNewView(newView.getNewViewNumber());
@@ -1208,7 +1208,7 @@
 //         SpeculativeHistory historyExpected = new SpeculativeHistory();
 //         historyExpected.addEntry(seqNumber + 1, request2);
 //         historyExpected.addEntry(seqNumber + 3, request3);
-    
+
 //         spyReplica.recvNewView(newView);
 //         Assert.isTrue(replicaA.getMessageLog().acceptNewView(newView, 1, logger), "Should accept the new view!");
 //         verify(spyReplica, times(1)).enterNewView(newView.getNewViewNumber());

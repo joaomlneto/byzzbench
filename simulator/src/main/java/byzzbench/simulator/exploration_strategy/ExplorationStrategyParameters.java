@@ -1,4 +1,4 @@
-package byzzbench.simulator.scheduler;
+package byzzbench.simulator.exploration_strategy;
 
 import byzzbench.simulator.config.ByzzBenchConfig;
 import lombok.Data;
@@ -9,8 +9,7 @@ import java.util.List;
 import java.util.Map;
 
 @Data
-public class SchedulerParameters {
-    private final ExecutionMode executionMode = ExecutionMode.SYNC;
+public class ExplorationStrategyParameters {
     private String id;
     private int maxDropMessages = 0;
     private int maxMutateMessages = 0;
@@ -24,14 +23,15 @@ public class SchedulerParameters {
 
     public enum ExecutionMode {
         /**
-         * The scheduler will deliver any message that is currently queued.
+         * The exploration strategy can deliver any message that is currently queued.
          * This is the default behavior.
          */
         ASYNC,
         /**
-         * The scheduler will deliver the earliest-sent message that is currently queued.
+         * The exploration strategy will deliver the earliest-sent message that is currently queued.
          * This follows the communication-closure hypothesis.
          * This should be used with a non-zero "dropMessageWeight" to emulate the behavior in ByzzFuzz.
+         * This also disables timeout delivery if there are any queued messages.
          */
         SYNC,
     }

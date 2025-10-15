@@ -10,10 +10,12 @@ import React from "react";
 
 export type DoSchedulerActionIconProps = {
   scenarioId: number;
+  onChange?: (value: string | null) => void;
 };
 
 export const DoSchedulerActionIcon = ({
   scenarioId,
+  onChange,
 }: DoSchedulerActionIconProps) => {
   const queryClient = useQueryClient();
   const [selected, setSelected] = React.useState<string | null>(null);
@@ -24,7 +26,10 @@ export const DoSchedulerActionIcon = ({
       <SchedulerSelect
         label="Exploration Strategy"
         value={selected}
-        onChange={setSelected}
+        onChange={(value) => {
+          setSelected(value);
+          onChange?.(value);
+        }}
         size="xs"
       />
       <Tooltip label="Execute next action from strategy">

@@ -2,11 +2,10 @@ package byzzbench.simulator.controller;
 
 import byzzbench.simulator.Scenario;
 import byzzbench.simulator.config.ByzzBenchConfig;
-import byzzbench.simulator.domain.ScenarioParameters;
+import byzzbench.simulator.domain.Schedule;
 import byzzbench.simulator.faults.faults.MessageMutationFault;
 import byzzbench.simulator.service.MessageMutatorService;
 import byzzbench.simulator.service.ScenarioService;
-import byzzbench.simulator.service.SimulatorService;
 import byzzbench.simulator.utils.NonNull;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -27,7 +26,6 @@ import java.util.stream.Collectors;
 public class ByzzBenchController {
     private final ByzzBenchConfig byzzBenchConfig;
     private final MessageMutatorService messageMutatorService;
-    private final SimulatorService simulatorService;
     private final ScenarioService scenarioService;
 
     /**
@@ -48,11 +46,11 @@ public class ByzzBenchController {
     /**
      * Get the list of saved schedules.
      *
-     * @return The
+     * @return The list of saved schedules.
      */
     @GetMapping("/saved-schedules")
     public SavedSchedulesInfo getAllScheduleIds() {
-        List<Scenario> scenarios = scenarioService.getScenarios().values().stream().toList();
+        List<Scenario> scenarios = scenarioService.getActiveSchedules().values().stream().map(Schedule::getScenario).toList();
         synchronized (scenarios) {
             List<Integer> buggySchedules = scenarios.stream()
                     .filter(scenario -> scenario.getSchedule().isBuggy())
@@ -73,10 +71,13 @@ public class ByzzBenchController {
      */
     @PostMapping("/scenarios")
     public String createScenario() {
+        throw new UnsupportedOperationException("Not implemented yet");
+        /*
         // TODO accept parameters via POST body
         String scenarioId = simulatorService.getScenario().getDescription();
         this.simulatorService.changeScenario(scenarioId, new ScenarioParameters());
         return simulatorService.getScenario().getDescription();
+        */
     }
 
     /**

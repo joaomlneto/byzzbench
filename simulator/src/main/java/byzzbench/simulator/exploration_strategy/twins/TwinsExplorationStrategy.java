@@ -1,10 +1,9 @@
-package byzzbench.simulator.scheduler.twins;
+package byzzbench.simulator.exploration_strategy.twins;
 
 import byzzbench.simulator.Replica;
 import byzzbench.simulator.Scenario;
 import byzzbench.simulator.config.ByzzBenchConfig;
-import byzzbench.simulator.scheduler.RandomScheduler;
-import byzzbench.simulator.service.MessageMutatorService;
+import byzzbench.simulator.exploration_strategy.random.RandomExplorationStrategy;
 import lombok.Getter;
 import lombok.extern.java.Log;
 import org.springframework.stereotype.Component;
@@ -13,7 +12,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * The Twins scheduler from "Twins: BFT Systems Made Robust" by Shehar Bano,
+ * The Twins exploration_strategy from "Twins: BFT Systems Made Robust" by Shehar Bano,
  * Alberto Sonnino, Andrey Chursin, Dmitri Perelman, Zekun Li, Avery Ching and
  * Dahlia Malkhi.
  * https://drops.dagstuhl.de/entities/document/10.4230/LIPIcs.OPODIS.2021.7
@@ -21,7 +20,7 @@ import java.util.Map;
 @Component
 @Log
 @Getter
-public class TwinsScheduler extends RandomScheduler {
+public class TwinsExplorationStrategy extends RandomExplorationStrategy {
     /**
      * The number of replicas to create twins for.
      */
@@ -37,8 +36,8 @@ public class TwinsScheduler extends RandomScheduler {
      */
     private final int numRounds;
 
-    public TwinsScheduler(ByzzBenchConfig config, MessageMutatorService messageMutatorService) {
-        super(config, messageMutatorService);
+    public TwinsExplorationStrategy(ByzzBenchConfig config) {
+        super(config);
         Map<String, String> schedulerParams = config.getScheduler().getParams();
         this.numReplicas = Integer.parseInt(schedulerParams.getOrDefault("numReplicas", "1"));
         this.numTwinsPerReplica = Integer.parseInt(schedulerParams.getOrDefault("numTwinsPerReplica", "2"));

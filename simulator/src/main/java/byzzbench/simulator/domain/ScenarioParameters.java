@@ -32,12 +32,6 @@ public class ScenarioParameters implements Serializable {
     private Long randomSeed = 1L;
 
     /**
-     * FIXME: to be removed
-     * The unique identifier of the scheduler that generated the scenario.
-     */
-    private String schedulerId;
-
-    /**
      * Number of clients in the scenario.
      */
     @Builder.Default
