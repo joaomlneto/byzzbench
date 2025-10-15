@@ -20,16 +20,24 @@ export const CampaignDetails = ({ campaignId }: CampaignDetailsProps) => {
   return (
     <Stack gap="xs">
       {data?.data.createdAt && <p>Created {createdAt}</p>}
+      <JsonInput
+        label="Campaign Details"
+        value={JSON.stringify(
+          {
+            ...data?.data,
+            campaignId: undefined,
+            scheduleIds: undefined,
+            createdAt: undefined,
+          },
+          null,
+          2,
+        )}
+        readOnly
+        autosize
+      />
       {data?.data.scheduleIds.map((scheduleId) => (
         <ScheduleCard key={scheduleId} scheduleId={scheduleId} />
       ))}
-      {false && (
-        <JsonInput
-          value={JSON.stringify(data?.data, null, 2)}
-          readOnly
-          autosize
-        />
-      )}
     </Stack>
   );
 };
