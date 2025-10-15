@@ -12,16 +12,14 @@ import java.util.List;
 import java.util.SortedSet;
 import java.util.TreeSet;
 
+/**
+ * Single-shot implementation of the <a href="https://ieeexplore.ieee.org/document/1467815">Fast Byzantine Paxos (FaB Paxos)</a> protocol.
+ */
 @Log
 public class FastByzantineScenario extends Scenario {
-    private static final String SCENARIO_ID = "fab-java";
-//    public FastByzantineScenario(Scheduler exploration_strategy) {
-//        super("fab-java", exploration_strategy);
-//        this.terminationCondition = new FastByzantineTerminationCondition();
-//    }
 
     public FastByzantineScenario(Schedule schedule) {
-        super(schedule, SCENARIO_ID);
+        super(schedule);
         this.terminationCondition = new FastByzantineTerminationCondition();
     }
 

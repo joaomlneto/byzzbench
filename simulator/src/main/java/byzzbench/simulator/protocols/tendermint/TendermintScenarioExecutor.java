@@ -13,11 +13,10 @@ import java.util.TreeSet;
 
 @Log
 public class TendermintScenarioExecutor extends Scenario {
-    private static final String SCENARIO_ID = "tendermint";
     private final int NUM_NODES = 4;
 
     public TendermintScenarioExecutor(Schedule schedule) {
-        super(schedule, SCENARIO_ID);
+        super(schedule);
         this.terminationCondition = new TendermintTerminationPredicate();
     }
 

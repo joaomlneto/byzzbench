@@ -6,7 +6,6 @@ import byzzbench.simulator.Scenario;
 import byzzbench.simulator.domain.ScenarioParameters;
 import byzzbench.simulator.domain.Schedule;
 import byzzbench.simulator.protocols.pbft_java.MessageLog;
-import byzzbench.simulator.protocols.pbft_java.PbftTerminationPredicate;
 import lombok.extern.java.Log;
 
 import java.util.SortedSet;
@@ -14,12 +13,15 @@ import java.util.TreeSet;
 
 @Log
 public class PbftScenario extends Scenario {
-    private static final String SCENARIO_ID = "pbft";
     private final int NUM_NODES = 4;
 
+    /**
+     * Creates a new scenario from the given schedule.
+     *
+     * @param schedule The schedule for the scenario.
+     */
     public PbftScenario(Schedule schedule) {
-        super(schedule, SCENARIO_ID);
-        this.terminationCondition = new PbftTerminationPredicate();
+        super(schedule);
     }
 
     @Override

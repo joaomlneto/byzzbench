@@ -12,10 +12,14 @@ import lombok.extern.java.Log;
 @Getter
 @Log
 public class FaultyLivenessScenario extends Scenario {
-    private static final String SCENARIO_ID = "faulty-liveness";
 
+    /**
+     * Creates a new scenario from the given schedule.
+     *
+     * @param schedule The schedule for the scenario.
+     */
     public FaultyLivenessScenario(Schedule schedule) {
-        super(schedule, SCENARIO_ID);
+        super(schedule);
     }
 
     @Override

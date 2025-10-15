@@ -104,18 +104,18 @@ public class ScenarioService {
 
         try {
             ScenarioParameters parameters = schedule.getParameters();
-            Class[] constructorParams = new Class[]{Schedule.class};
-            Class<? extends Scenario> scenarioClass = this.scenarioClasses.get(parameters.getScenarioFactoryId());
+            Class<? extends Scenario> scenarioClass = this.scenarioClasses.get(parameters.getScenarioId());
 
             if (scenarioClass == null) {
-                log.severe("Unknown scenario: " + parameters.getScenarioFactoryId());
+                log.severe("Unknown scenario: " + parameters.getScenarioId());
                 log.severe("Available scenarios:");
                 for (String scenarioClassName : scenarioClasses.keySet()) {
                     log.severe("- " + scenarioClassName);
                 }
-                throw new IllegalArgumentException("Unknown scenario id: " + parameters.getScenarioFactoryId());
+                throw new IllegalArgumentException("Unknown scenario id: " + parameters.getScenarioId());
             }
 
+            Class[] constructorParams = new Class[]{Schedule.class};
             Constructor<? extends Scenario> cons = scenarioClass.getConstructor(constructorParams);
             Scenario scenario = cons.newInstance(schedule);
             scenario.setScenarioId(schedule.getScheduleId());

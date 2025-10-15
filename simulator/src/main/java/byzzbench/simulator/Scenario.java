@@ -56,10 +56,6 @@ public abstract class Scenario implements Serializable {
      */
     private final ExplorationStrategyParameters.ExecutionMode executionMode = ExplorationStrategyParameters.ExecutionMode.SYNC;
     /**
-     * A description for the scenario.
-     */
-    private final String description;
-    /**
      * The transport layer for the scenario.
      */
     @ToString.Exclude
@@ -92,13 +88,11 @@ public abstract class Scenario implements Serializable {
     private long scenarioId;
 
     /**
-     * Creates a new scenario with the given unique identifier and exploration_strategy.
+     * Creates a new scenario from the given schedule.
      *
-     * @param schedule    The schedule for the scenario.
-     * @param description The description for the scenario.
+     * @param schedule The schedule for the scenario.
      */
-    protected Scenario(Schedule schedule, String description) {
-        this.description = description;
+    protected Scenario(Schedule schedule) {
         this.random = new Random(schedule.getParameters().getRandomSeed());
         this.transport = new Transport(this);
         this.timekeeper = new Timekeeper(this);
@@ -109,8 +103,13 @@ public abstract class Scenario implements Serializable {
         this.schedule = schedule;
     }
 
-    public String getDescription() {
-        return String.format("%s (Schedule %d)", this.description, this.getScheduleId());
+    /**
+     * Gets a brief description of the scenario.
+     *
+     * @return The description of the scenario.
+     */
+    public final String getDescription() {
+        return this.getClass().getSimpleName();
     }
 
     /**

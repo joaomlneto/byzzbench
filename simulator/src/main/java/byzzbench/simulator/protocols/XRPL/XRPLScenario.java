@@ -6,20 +6,26 @@ import byzzbench.simulator.Scenario;
 import byzzbench.simulator.domain.ScenarioParameters;
 import byzzbench.simulator.domain.Schedule;
 import byzzbench.simulator.transport.DefaultClientRequestPayload;
+import lombok.extern.java.Log;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.SortedSet;
 import java.util.TreeSet;
 
+@Log
 public class XRPLScenario extends Scenario {
-    private static final String SCENARIO_ID = "xrpl";
     private final int NUM_NODES = 7;
 
     private List<XRPLReplica> replica_list;
 
+    /**
+     * Creates a new scenario from the given schedule.
+     *
+     * @param schedule The schedule for the scenario.
+     */
     public XRPLScenario(Schedule schedule) {
-        super(schedule, SCENARIO_ID);
+        super(schedule);
     }
 
     @Override

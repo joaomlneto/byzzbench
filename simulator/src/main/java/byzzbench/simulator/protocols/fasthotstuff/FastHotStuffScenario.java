@@ -10,13 +10,20 @@ import lombok.extern.java.Log;
 import java.util.SortedSet;
 import java.util.TreeSet;
 
+/**
+ * A scenario for running the <a href="https://arxiv.org/abs/2010.11454">Fast-HotStuff protocol</a>
+ */
 @Log
 public class FastHotStuffScenario extends Scenario {
-    private static final String SCENARIO_ID = "fasthotstuff";
     private final int NUM_NODES = 4;
 
+    /**
+     * Creates a new scenario from the given schedule.
+     *
+     * @param schedule The schedule for the scenario.
+     */
     public FastHotStuffScenario(Schedule schedule) {
-        super(schedule, SCENARIO_ID);
+        super(schedule);
     }
 
     @Override

@@ -15,12 +15,15 @@ import java.time.Duration;
  */
 @Log
 public class PbftJavaScenario extends Scenario {
-    private static final String SCENARIO_ID = "pbft-java";
     private final int numReplicas = 4;
 
+    /**
+     * Creates a new scenario with the given unique identifier and exploration_strategy.
+     *
+     * @param schedule The schedule for the scenario.
+     */
     public PbftJavaScenario(Schedule schedule) {
-        super(schedule, SCENARIO_ID);
-        this.terminationCondition = new PbftTerminationPredicate();
+        super(schedule);
     }
 
     @Override

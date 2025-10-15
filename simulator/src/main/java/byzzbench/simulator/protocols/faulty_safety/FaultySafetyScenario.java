@@ -3,7 +3,6 @@ package byzzbench.simulator.protocols.faulty_safety;
 import byzzbench.simulator.Client;
 import byzzbench.simulator.Replica;
 import byzzbench.simulator.Scenario;
-import byzzbench.simulator.ScenarioPredicate;
 import byzzbench.simulator.domain.ScenarioParameters;
 import byzzbench.simulator.domain.Schedule;
 import byzzbench.simulator.protocols.pbft_java.PbftClient;
@@ -13,16 +12,14 @@ import lombok.extern.java.Log;
 @Getter
 @Log
 public class FaultySafetyScenario extends Scenario {
-    private static final String SCENARIO_ID = "faulty_safety";
-    private final ScenarioPredicate terminationCondition = new ScenarioPredicate() {
-        @Override
-        public boolean test(Scenario scenario) {
-            return false;
-        }
-    };
 
+    /**
+     * Creates a new scenario from the given schedule.
+     *
+     * @param schedule The schedule for the scenario.
+     */
     public FaultySafetyScenario(Schedule schedule) {
-        super(schedule, SCENARIO_ID);
+        super(schedule);
     }
 
     @Override

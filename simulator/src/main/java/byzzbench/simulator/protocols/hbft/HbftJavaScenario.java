@@ -14,12 +14,11 @@ import java.util.TreeSet;
 @Getter
 @Log
 public class HbftJavaScenario extends Scenario {
-    private static final String SCENARIO_ID = "hbft";
     private final int NUM_NODES = 4;
     private SortedSet<String> nodeIds;
 
     public HbftJavaScenario(Schedule schedule) {
-        super(schedule, SCENARIO_ID);
+        super(schedule);
     }
 
     @Override

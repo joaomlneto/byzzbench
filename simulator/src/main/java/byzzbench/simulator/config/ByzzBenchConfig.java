@@ -37,7 +37,7 @@ public class ByzzBenchConfig {
      * Scenario parameters.
      */
     private ScenarioConfig scenario = new ScenarioConfig();
-    
+
     public enum SaveScheduleMode {
         /**
          * Save all schedules in the database.
@@ -108,7 +108,7 @@ public class ByzzBenchConfig {
     @Data
     public final class ScenarioConfig {
         private TerminationConfig termination = new TerminationConfig();
-        private String id = "pbft-java";
+        private String id = "byzzbench.simulator.protocols.pbft_java.PbftJavaScenario";
         private Map<String, String> params = new HashMap<>();
     }
 }

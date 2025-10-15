@@ -23,7 +23,7 @@ public class ScenarioParameters implements Serializable {
     /**
      * The unique identifier of the scenario.
      */
-    private String scenarioFactoryId;
+    private String scenarioId;
 
     /**
      * The random seed used to generate the scenario.
@@ -54,6 +54,6 @@ public class ScenarioParameters implements Serializable {
      */
     @JsonIgnore
     public boolean isValid() {
-        return scenarioFactoryId != null && !scenarioFactoryId.isEmpty() && randomSeed != null;
+        return scenarioId != null && !scenarioId.isEmpty() && randomSeed != null;
     }
 }

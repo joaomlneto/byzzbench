@@ -130,15 +130,11 @@ public class CampaignService {
 
                 long numScenarios = campaign.getNumScenarios();
                 System.out.println("Number of scenarios: " + numScenarios);
-                String scenarioFactoryId = campaign.getScenarioId();
-                System.out.println("Scenario Factory ID: " + scenarioFactoryId);
+                String scenarioId = campaign.getScenarioId();
+                System.out.println("Scenario Factory ID: " + scenarioId);
                 String explorationStrategyId = campaign.getExplorationStrategyId();
                 System.out.println("Exploration Strategy ID: " + explorationStrategyId);
-
-                System.out.println("Scenario Factory ID: " + scenarioFactoryId);
                 ExplorationStrategy explorationStrategy = explorationStrategyService.getExplorationStrategy(explorationStrategyId);
-                Scenario currentScenario = null;
-
                 System.out.println("Exploration Strategy ID: " + explorationStrategyId);
 
                 this.numTerm = 0;
@@ -150,7 +146,7 @@ public class CampaignService {
                     log.info(String.format("Running scenario %d/%d%n", i + 1, numScenarios));
                     // FIXME: scenario parameters should be generated according to the campaign parameters
                     ScenarioParameters scenarioParams = ScenarioParameters.builder()
-                            .scenarioFactoryId(byzzBenchConfig.getScenario().getId())
+                            .scenarioId(byzzBenchConfig.getScenario().getId())
                             .randomSeed(1L)
                             .build();
                     Schedule schedule = new Schedule(scenarioParams);
