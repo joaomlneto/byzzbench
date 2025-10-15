@@ -62,7 +62,7 @@ byzzbench:
       numRounds: 5
 
   scenario:
-    id: pbft-java
+    id: byzzbench.simulator.protocols.pbft_java.PbftJavaScenario
     params: # TODO: logic to read this is not yet implemented
       replicas: 4
       clients: 1

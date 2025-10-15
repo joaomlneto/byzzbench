@@ -10,11 +10,11 @@ import java.util.SortedSet;
 import java.util.TreeSet;
 
 @Log
-public class FastHotStuffScenarioExecutor extends Scenario {
+public class FastHotStuffScenario extends Scenario {
     private static final String SCENARIO_ID = "fasthotstuff";
     private final int NUM_NODES = 4;
 
-    public FastHotStuffScenarioExecutor(Schedule schedule) {
+    public FastHotStuffScenario(Schedule schedule) {
         super(schedule, SCENARIO_ID);
     }
 

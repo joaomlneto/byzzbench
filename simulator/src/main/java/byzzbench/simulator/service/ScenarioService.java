@@ -1,16 +1,21 @@
 package byzzbench.simulator.service;
 
 import byzzbench.simulator.Scenario;
-import byzzbench.simulator.ScenarioFactory;
 import byzzbench.simulator.domain.Action;
 import byzzbench.simulator.domain.ScenarioParameters;
 import byzzbench.simulator.domain.Schedule;
 import byzzbench.simulator.repository.ScheduleRepository;
+import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.java.Log;
+import org.springframework.beans.factory.config.BeanDefinition;
+import org.springframework.context.annotation.ClassPathScanningCandidateComponentProvider;
+import org.springframework.core.type.filter.AssignableTypeFilter;
 import org.springframework.stereotype.Service;
 
+import java.lang.reflect.Constructor;
 import java.util.*;
 
 /**
@@ -20,6 +25,7 @@ import java.util.*;
 @Service
 @Getter
 @Log
+@RequiredArgsConstructor
 public class ScenarioService {
     /**
      * Repository for schedules
@@ -29,7 +35,12 @@ public class ScenarioService {
     /**
      * Map of scenario id to scenario factory bean
      */
-    private final SortedMap<String, ScenarioFactory> scenarioFactories = new TreeMap<>();
+    //private final SortedMap<String, ScenarioFactory> scenarioFactories = new TreeMap<>();
+
+    /**
+     * Map of scenario classnames to their respective classes
+     */
+    private final SortedMap<String, Class<Scenario>> scenarioClasses = new TreeMap<>();
 
     /**
      * The schedules that are currently active (with an active simulation in memory)
@@ -37,14 +48,25 @@ public class ScenarioService {
     @Getter
     private final Map<Long, Schedule> activeSchedules = new HashMap<>();
 
-    public ScenarioService(List<? extends ScenarioFactory> scenarioExecutors, ScheduleRepository scheduleRepository) {
-        this.scheduleRepository = scheduleRepository;
-        for (ScenarioFactory scenarioExecutor : scenarioExecutors) {
-            if (scenarioFactories.containsKey(scenarioExecutor.getId())) {
-                throw new IllegalArgumentException("Duplicate scenario id: " + scenarioExecutor.getId());
-            }
-            scenarioFactories.put(scenarioExecutor.getId(), scenarioExecutor);
-        }
+    @PostConstruct
+    public void onStartup() {
+        ClassPathScanningCandidateComponentProvider provider =
+                new ClassPathScanningCandidateComponentProvider(false);
+        provider.addIncludeFilter(new AssignableTypeFilter(Scenario.class));
+        Set<BeanDefinition> components = provider.findCandidateComponents("byzzbench");
+        components.stream()
+                .forEach(bd -> {
+                    try {
+                        System.out.println("Found scenario class: " + bd.getBeanClassName());
+                        Class<?> cls = Class.forName(bd.getBeanClassName());
+                        System.out.println(" - " + cls.getName());
+                        scenarioClasses.put(bd.getBeanClassName(), (Class<Scenario>) cls);
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                });
+        System.out.println("Registered scenarios:");
+        System.out.println(scenarioClasses);
     }
 
     /**
@@ -91,7 +113,7 @@ public class ScenarioService {
 
         try {
             ScenarioParameters parameters = schedule.getParameters();
-            ScenarioFactory scenarioFactory = scenarioFactories.get(parameters.getScenarioFactoryId());
+            /*ScenarioFactory scenarioFactory = scenarioFactories.get(parameters.getScenarioFactoryId());
             if (scenarioFactory == null) {
                 log.severe("Unknown scenario: " + parameters.getScenarioFactoryId());
                 log.severe("Available scenarios:");
@@ -99,9 +121,25 @@ public class ScenarioService {
                     log.severe("- " + scenarioId);
                 }
                 throw new IllegalArgumentException("Unknown scenario id: " + parameters.getScenarioFactoryId());
+            }*/
+
+
+            Class[] constructorParams = new Class[]{Schedule.class};
+            Class<? extends Scenario> scenarioClass = this.scenarioClasses.get(parameters.getScenarioFactoryId());
+
+            if (scenarioClass == null) {
+                log.severe("Unknown scenario: " + parameters.getScenarioFactoryId());
+                log.severe("Available scenarios:");
+                for (String scenarioClassName : scenarioClasses.keySet()) {
+                    log.severe("- " + scenarioClassName);
+                }
+                throw new IllegalArgumentException("Unknown scenario id: " + parameters.getScenarioFactoryId());
             }
-            Scenario scenario = scenarioFactory.createScenario(schedule);
+
+            Constructor<? extends Scenario> cons = scenarioClass.getConstructor(constructorParams);
+            Scenario scenario = cons.newInstance(schedule);
             scenario.setScenarioId(schedule.getScheduleId());
+            scenario.loadParameters(schedule.getParameters());
 
             // apply each action in order
             for (Action action : schedule.getActions()) {
@@ -112,7 +150,7 @@ public class ScenarioService {
             return scenario;
         } catch (Exception e) {
             log.severe("Failed to generate scenario: " + e.getMessage());
-            throw e;
+            throw new RuntimeException(e);
         }
     }
 
@@ -122,7 +160,7 @@ public class ScenarioService {
      * @return the ids of all registered scenarios
      */
     public List<String> getScenarioFactoryIds() {
-        return List.copyOf(scenarioFactories.keySet());
+        return List.copyOf(scenarioClasses.keySet());
     }
 
     /**
