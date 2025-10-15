@@ -1,7 +1,6 @@
 package byzzbench.simulator;
 
 import byzzbench.simulator.domain.*;
-import byzzbench.simulator.exploration_strategy.ExplorationStrategyParameters;
 import byzzbench.simulator.faults.Fault;
 import byzzbench.simulator.faults.faults.GlobalStabilizationTimeFault;
 import byzzbench.simulator.faults.faults.HealNodeNetworkFault;
@@ -54,7 +53,7 @@ public abstract class Scenario implements Serializable {
     /**
      * Execution mode for the scenario, limiting which actions are enabled at each step.
      */
-    private final ExplorationStrategyParameters.ExecutionMode executionMode = ExplorationStrategyParameters.ExecutionMode.SYNC;
+    private final ExecutionMode executionMode = ExecutionMode.SYNC;
     /**
      * The transport layer for the scenario.
      */
