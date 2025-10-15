@@ -71,10 +71,6 @@ public abstract class Scenario implements Serializable {
     @JsonIgnore
     private final Schedule schedule;
     /**
-     * The termination condition for the scenario.
-     */
-    protected ScenarioPredicate terminationCondition;
-    /**
      * Pseudo-random number generator for the scenario.
      * TODO: parameterize the seed
      */
@@ -387,15 +383,6 @@ public abstract class Scenario implements Serializable {
         //this.getClients().values().forEach(Client::initialize);
         this.getNodes().values().forEach(Node::initialize);
         this.transport.addFault(new GlobalStabilizationTimeFault(), false);
-    }
-
-    /**
-     * Check whether the scenario is finished, according to the termination condition.
-     *
-     * @return True if the scenario is finished, false otherwise.
-     */
-    public boolean isTerminated() {
-        return this.terminationCondition.test(this);
     }
 
     /**

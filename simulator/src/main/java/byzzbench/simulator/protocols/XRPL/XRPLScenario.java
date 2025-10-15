@@ -36,7 +36,6 @@ public class XRPLScenario extends Scenario {
     @Override
     protected void setup() {
         setupForScenario3();
-        this.terminationCondition = new XRPLTerminationCondition(replica_list);
     }
 
     @Override

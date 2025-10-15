@@ -17,7 +17,6 @@ public class TendermintScenarioExecutor extends Scenario {
 
     public TendermintScenarioExecutor(Schedule schedule) {
         super(schedule);
-        this.terminationCondition = new TendermintTerminationPredicate();
     }
 
     @Override

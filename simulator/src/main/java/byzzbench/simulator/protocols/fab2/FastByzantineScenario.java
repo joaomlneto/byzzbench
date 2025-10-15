@@ -20,7 +20,6 @@ public class FastByzantineScenario extends Scenario {
 
     public FastByzantineScenario(Schedule schedule) {
         super(schedule);
-        this.terminationCondition = new FastByzantineTerminationCondition();
     }
 
     /**
