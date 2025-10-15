@@ -69,13 +69,14 @@ public class CampaignService {
 
     @PostConstruct
     public void init() {
-        // create a campaign from config
-        long numScenarios = this.byzzBenchConfig.getNumScenarios();
-        Campaign campaign = new Campaign();
-        campaign.setExplorationStrategyId(this.byzzBenchConfig.getScheduler().getId());
-        campaign.setNumScenarios(numScenarios);
-        this.registerNewCampaign(campaign);
-        this.runCampaign(campaign);
+        // read campaign configs from application.yml and run them
+        if (byzzBenchConfig.isAutostart()) {
+            for (var campaignConfig : byzzBenchConfig.getCampaigns()) {
+                Campaign cfgCampaign = Campaign.fromConfig(campaignConfig);
+                this.registerNewCampaign(cfgCampaign);
+                this.runCampaign(cfgCampaign);
+            }
+        }
     }
 
     public enum ScenarioExecutionResult {

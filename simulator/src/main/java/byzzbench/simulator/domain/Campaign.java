@@ -1,5 +1,6 @@
 package byzzbench.simulator.domain;
 
+import byzzbench.simulator.config.CampaignConfig;
 import byzzbench.simulator.utils.NonNull;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
@@ -70,6 +71,22 @@ public class Campaign implements Serializable {
     @CreatedDate
     @NonNull
     private Instant createdAt = Instant.now();
+
+    /**
+     * Create a campaign from a campaign configuration.
+     *
+     * @param config the campaign configuration
+     * @return the created campaign
+     */
+    public static Campaign fromConfig(CampaignConfig config) {
+        Campaign campaign = new Campaign();
+        campaign.setInitialRandomSeed(config.getInitialRandomSeed());
+        campaign.setScenarioId(config.getScenarioId());
+        campaign.setExplorationStrategyId(config.getExplorationStrategyId());
+        campaign.setNumScenarios(config.getNumScenarios());
+        campaign.setRandom(new Random(config.getInitialRandomSeed()));
+        return campaign;
+    }
 
     /**
      * Get the list of schedule IDs for this campaign.

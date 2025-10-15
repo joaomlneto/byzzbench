@@ -6,7 +6,9 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
 import org.springframework.validation.annotation.Validated;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -37,6 +39,11 @@ public class ByzzBenchConfig {
      * Scenario parameters.
      */
     private ScenarioConfig scenario = new ScenarioConfig();
+
+    /**
+     * List of campaign configurations to run at startup.
+     */
+    private List<CampaignConfig> campaigns = new ArrayList<>();
 
     public enum SaveScheduleMode {
         /**
