@@ -60,4 +60,14 @@ public class FaultySafetyScenario extends Scenario {
         // this is a faulty_safety protocol, so anything goes
         return n;
     }
+
+    @Override
+    public Class<? extends Replica> getReplicaClass() {
+        return FaultySafetyReplica.class;
+    }
+
+    @Override
+    public Class<? extends Client> getClientClass() {
+        return PbftClient.class;
+    }
 }

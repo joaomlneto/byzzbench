@@ -32,7 +32,7 @@ public class Campaign implements Serializable {
     /**
      * The unique identifier of the scenario factory used to generate scenarios for this campaign.
      */
-    private String scenarioFactoryId;
+    private String scenarioId;
 
     /**
      * The unique identifier of the exploration strategy used to generate scenarios for this campaign.

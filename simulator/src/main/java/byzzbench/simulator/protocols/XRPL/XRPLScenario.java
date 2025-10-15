@@ -1,6 +1,7 @@
 package byzzbench.simulator.protocols.XRPL;
 
 import byzzbench.simulator.Client;
+import byzzbench.simulator.Replica;
 import byzzbench.simulator.Scenario;
 import byzzbench.simulator.domain.ScenarioParameters;
 import byzzbench.simulator.domain.Schedule;
@@ -173,6 +174,16 @@ public class XRPLScenario extends Scenario {
             throw new IllegalArgumentException("XRP requires at least 6 replicas");
         }
         return maxFaultyReplicas;
+    }
+
+    @Override
+    public Class<? extends Replica> getReplicaClass() {
+        return XRPLReplica.class;
+    }
+
+    @Override
+    public Class<? extends Client> getClientClass() {
+        return XRPLClient.class;
     }
 
     /**

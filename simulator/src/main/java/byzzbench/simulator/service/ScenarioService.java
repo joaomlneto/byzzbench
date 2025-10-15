@@ -33,11 +33,6 @@ public class ScenarioService {
     private final ScheduleRepository scheduleRepository;
 
     /**
-     * Map of scenario id to scenario factory bean
-     */
-    //private final SortedMap<String, ScenarioFactory> scenarioFactories = new TreeMap<>();
-
-    /**
      * Map of scenario classnames to their respective classes
      */
     private final SortedMap<String, Class<Scenario>> scenarioClasses = new TreeMap<>();
@@ -54,19 +49,15 @@ public class ScenarioService {
                 new ClassPathScanningCandidateComponentProvider(false);
         provider.addIncludeFilter(new AssignableTypeFilter(Scenario.class));
         Set<BeanDefinition> components = provider.findCandidateComponents("byzzbench");
-        components.stream()
-                .forEach(bd -> {
-                    try {
-                        System.out.println("Found scenario class: " + bd.getBeanClassName());
-                        Class<?> cls = Class.forName(bd.getBeanClassName());
-                        System.out.println(" - " + cls.getName());
-                        scenarioClasses.put(bd.getBeanClassName(), (Class<Scenario>) cls);
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                    }
-                });
-        System.out.println("Registered scenarios:");
-        System.out.println(scenarioClasses);
+        components.forEach(bd -> {
+            try {
+                log.info("Found scenario class: " + bd.getBeanClassName());
+                Class<?> cls = Class.forName(bd.getBeanClassName());
+                scenarioClasses.put(bd.getBeanClassName(), (Class<Scenario>) cls);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        });
     }
 
     /**
@@ -99,7 +90,7 @@ public class ScenarioService {
     }
 
     /**
-     * Generate a scenario by the ID of the scenario factory and the parameters
+     * Generate a scenario from a schedule.
      *
      * @param schedule the schedule that describes the scenario to generate
      * @return the unique ID of the scenario
@@ -113,17 +104,6 @@ public class ScenarioService {
 
         try {
             ScenarioParameters parameters = schedule.getParameters();
-            /*ScenarioFactory scenarioFactory = scenarioFactories.get(parameters.getScenarioFactoryId());
-            if (scenarioFactory == null) {
-                log.severe("Unknown scenario: " + parameters.getScenarioFactoryId());
-                log.severe("Available scenarios:");
-                for (String scenarioId : scenarioFactories.keySet()) {
-                    log.severe("- " + scenarioId);
-                }
-                throw new IllegalArgumentException("Unknown scenario id: " + parameters.getScenarioFactoryId());
-            }*/
-
-
             Class[] constructorParams = new Class[]{Schedule.class};
             Class<? extends Scenario> scenarioClass = this.scenarioClasses.get(parameters.getScenarioFactoryId());
 

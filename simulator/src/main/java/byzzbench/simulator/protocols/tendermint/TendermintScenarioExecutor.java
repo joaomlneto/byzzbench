@@ -69,4 +69,14 @@ public class TendermintScenarioExecutor extends Scenario {
     public int maxFaultyReplicas(int n) {
         return 1;
     }
+
+    @Override
+    public Class<? extends Replica> getReplicaClass() {
+        return TendermintReplica.class;
+    }
+
+    @Override
+    public Class<? extends Client> getClientClass() {
+        return PbftClient.class;
+    }
 }

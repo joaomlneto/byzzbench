@@ -130,7 +130,7 @@ public class CampaignService {
 
                 long numScenarios = campaign.getNumScenarios();
                 System.out.println("Number of scenarios: " + numScenarios);
-                String scenarioFactoryId = campaign.getScenarioFactoryId();
+                String scenarioFactoryId = campaign.getScenarioId();
                 System.out.println("Scenario Factory ID: " + scenarioFactoryId);
                 String explorationStrategyId = campaign.getExplorationStrategyId();
                 System.out.println("Exploration Strategy ID: " + explorationStrategyId);

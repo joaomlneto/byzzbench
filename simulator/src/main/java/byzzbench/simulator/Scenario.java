@@ -495,4 +495,18 @@ public abstract class Scenario implements Serializable {
                 .orElseGet(Stream::empty)
                 .toList();
     }
+
+    /**
+     * Get the class of the replicas in the scenario.
+     *
+     * @return The class of the replicas in the scenario.
+     */
+    public abstract Class<? extends Replica> getReplicaClass();
+
+    /**
+     * Get the class of the clients in the scenario.
+     *
+     * @return The class of the clients in the scenario.
+     */
+    public abstract Class<? extends Client> getClientClass();
 }

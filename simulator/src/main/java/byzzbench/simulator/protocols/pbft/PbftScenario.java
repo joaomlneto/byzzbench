@@ -1,5 +1,6 @@
 package byzzbench.simulator.protocols.pbft;
 
+import byzzbench.simulator.Client;
 import byzzbench.simulator.Replica;
 import byzzbench.simulator.Scenario;
 import byzzbench.simulator.domain.ScenarioParameters;
@@ -56,5 +57,15 @@ public class PbftScenario extends Scenario {
     @Override
     public int maxFaultyReplicas(int n) {
         return (n - 1) / 3;
+    }
+
+    @Override
+    public Class<? extends Replica> getReplicaClass() {
+        return PbftReplica.class;
+    }
+
+    @Override
+    public Class<? extends Client> getClientClass() {
+        return PbftClient.class;
     }
 }

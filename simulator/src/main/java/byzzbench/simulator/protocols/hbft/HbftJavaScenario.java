@@ -81,4 +81,14 @@ public class HbftJavaScenario extends Scenario {
     public int maxFaultyReplicas(int n) {
         return (n - 1) / 3;
     }
+
+    @Override
+    public Class<? extends Replica> getReplicaClass() {
+        return HbftJavaReplica.class;
+    }
+
+    @Override
+    public Class<? extends Client> getClientClass() {
+        return HbftClient.class;
+    }
 }

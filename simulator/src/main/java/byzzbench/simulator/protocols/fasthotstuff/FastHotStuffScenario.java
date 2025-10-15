@@ -1,5 +1,6 @@
 package byzzbench.simulator.protocols.fasthotstuff;
 
+import byzzbench.simulator.Client;
 import byzzbench.simulator.Replica;
 import byzzbench.simulator.Scenario;
 import byzzbench.simulator.domain.ScenarioParameters;
@@ -49,5 +50,16 @@ public class FastHotStuffScenario extends Scenario {
     @Override
     public int maxFaultyReplicas(int n) {
         return (n - 1) / 3;
+    }
+
+    @Override
+    public Class<? extends Replica> getReplicaClass() {
+        return FastHotStuffReplica.class;
+    }
+
+    @Override
+    public Class<? extends Client> getClientClass() {
+        // FIXME: no clients for this protocol!!
+        return null;
     }
 }
