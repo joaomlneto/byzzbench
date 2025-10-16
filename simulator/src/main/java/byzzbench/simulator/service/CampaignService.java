@@ -69,10 +69,10 @@ public class CampaignService {
     @PostConstruct
     public void init() {
         // read campaign configs from application.yml and run them
-        if (byzzBenchConfig.isAutostart()) {
-            for (var campaignConfig : byzzBenchConfig.getCampaigns()) {
-                Campaign cfgCampaign = Campaign.fromConfig(campaignConfig);
-                this.registerNewCampaign(cfgCampaign);
+        for (var campaignConfig : byzzBenchConfig.getCampaigns()) {
+            Campaign cfgCampaign = Campaign.fromConfig(campaignConfig);
+            this.registerNewCampaign(cfgCampaign);
+            if (byzzBenchConfig.isAutostart()) {
                 this.runCampaign(cfgCampaign);
             }
         }

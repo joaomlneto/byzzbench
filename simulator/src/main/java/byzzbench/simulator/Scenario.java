@@ -298,21 +298,14 @@ public abstract class Scenario implements Serializable {
                 Set<String> replicasWithMessages = this.getQueuedEventsOfType(MessageEvent.class)
                         .map(MessageEvent::getRecipientId)
                         .collect(Collectors.toSet());
-                System.out.println("Replicas with messages in their mailbox: " + replicasWithMessages);
                 // if any replica has a message in its mailbox, do not return any timeouts!
                 if (!replicasWithMessages.isEmpty()) {
-                    System.out.println("No timeouts returned because some replicas have messages in their mailbox");
                     return Collections.emptyList();
                 }
-
                 // return only timeouts for replicas without messages in their mailbox
-                List<TriggerTimeoutAction> actions = firstTimeoutForEachReplica
+                return firstTimeoutForEachReplica
                         .map(TriggerTimeoutAction::fromEvent)
                         .toList();
-
-                System.out.println("First timeouts for each replica: " + actions);
-
-                return actions;
             }
             // return the first timeout for each replica
             case ASYNC -> {

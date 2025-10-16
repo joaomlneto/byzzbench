@@ -11,6 +11,7 @@ import java.util.Map;
 @Data
 public class ExplorationStrategyParameters {
     private String id;
+    private int maxMutationsPerMessage = 2;
     private int maxDropMessages = 0;
     private int maxMutateMessages = 0;
     private int deliverTimeoutWeight = 1;
