@@ -12,7 +12,6 @@ import byzzbench.simulator.state.adob.AdobDistributedState;
 import byzzbench.simulator.transport.*;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Getter;
-import lombok.Setter;
 import lombok.Synchronized;
 import lombok.ToString;
 import lombok.extern.java.Log;
@@ -75,12 +74,6 @@ public abstract class Scenario implements Serializable {
      */
     @Getter
     Random random;
-    /**
-     * The unique identifier of the scenario instance.
-     */
-    @Getter
-    @Setter()
-    private long scenarioId;
 
     /**
      * Creates a new scenario from the given schedule.
