@@ -120,7 +120,25 @@ public abstract class ExplorationStrategy {
      * @return The list of message events
      */
     public List<MessageEvent> getQueuedMessageEvents(Scenario scenario) {
-        return getQueuedEventsOfType(scenario, MessageEvent.class);
+        List<MessageEvent> queuedMessages = getQueuedEventsOfType(scenario, MessageEvent.class);
+
+        switch (scenario.getExecutionMode()) {
+            case SYNC -> {
+                // retrieve the first message in the mailbox for each replica
+                Map<String, MessageEvent> firstMessageForEachReplica = new HashMap<>();
+                for (MessageEvent message : queuedMessages) {
+                    firstMessageForEachReplica.putIfAbsent(message.getRecipientId(), message);
+                }
+                return firstMessageForEachReplica.values().stream().toList();
+            }
+            case ASYNC -> {
+                // in async mode, all queued messages can be delivered
+                return queuedMessages;
+            }
+            default -> throw new IllegalStateException("Unknown execution mode: " + scenario.getExecutionMode());
+        }
+
+
     }
 
     /**
