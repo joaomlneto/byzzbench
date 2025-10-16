@@ -330,7 +330,7 @@ public abstract class Scenario implements Serializable {
         return getQueuedEventsOfType(MutateMessageEvent.class)
                 .map(event -> FaultInjectionAction.builder()
                         .eventId(event.getEventId())
-                        .faultId("TODO - not implemented yet!")
+                        .faultBehaviorId("TODO - not implemented yet!")
                         .payload(event.getPayload())
                         .build())
                 .toList();
@@ -494,4 +494,22 @@ public abstract class Scenario implements Serializable {
      * @return The class of the clients in the scenario.
      */
     public abstract Class<? extends Client> getClientClass();
+
+    /**
+     * Get the number of replicas in the scenario.
+     *
+     * @return The number of replicas.
+     */
+    public long getNumReplicas() {
+        return this.getReplicas().size();
+    }
+
+    /**
+     * Get the number of clients in the scenario.
+     *
+     * @return The number of clients.
+     */
+    public long getNumClients() {
+        return this.getClients().size();
+    }
 }

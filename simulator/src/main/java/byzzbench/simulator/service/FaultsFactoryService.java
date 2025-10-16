@@ -91,4 +91,12 @@ public class FaultsFactoryService {
                 });
 
     }
+
+    public FaultBehavior getFaultBehavior(String faultBehaviorId) {
+        FaultBehavior faultBehavior = faultBehaviors.get(faultBehaviorId);
+        if (faultBehavior == null) {
+            throw new IllegalArgumentException("Unknown fault behavior id: " + faultBehaviorId);
+        }
+        return faultBehavior;
+    }
 }

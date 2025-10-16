@@ -209,7 +209,7 @@ public class CampaignService {
                     }
 
                     long numEvents = currentScenario.getSchedule().getActions().size();
-                    long terminationSamplingFreq = byzzBenchConfig.getScenario().getTermination().getSamplingFrequency();
+                    long terminationSamplingFreq = this.getCampaign().getTermination().getSamplingFrequency();
                     boolean shouldCheckTermination = (numEvents % terminationSamplingFreq) == 0;
 
                     // if the invariants do not hold, terminate the run
@@ -244,10 +244,10 @@ public class CampaignService {
 
                         System.out.println("Current round: " + currentRound);
                         System.out.println("Max round: " + maxDeliveredRound.orElse(0));
-                        System.out.println("Min round: " + byzzBenchConfig.getScenario().getTermination().getMinRounds());
+                        System.out.println("Min round: " + this.getCampaign().getTermination().getMinRounds());
 
-                        if (numEvents >= byzzBenchConfig.getScenario().getTermination().getMinEvents()
-                                && currentRound >= byzzBenchConfig.getScenario().getTermination().getMinRounds()) {
+                        if (numEvents >= this.getCampaign().getTermination().getMinEvents()
+                                && currentRound >= this.getCampaign().getTermination().getMinRounds()) {
                             log.info("Reached min # of events or rounds for this run, terminating. . .");
                             this.result = ScenarioExecutionResult.CORRECT;
                             this.finalizeSchedule(currentScenario, Collections.emptySet());

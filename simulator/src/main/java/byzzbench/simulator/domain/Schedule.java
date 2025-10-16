@@ -4,10 +4,7 @@ import byzzbench.simulator.Scenario;
 import byzzbench.simulator.ScenarioPredicate;
 import byzzbench.simulator.service.ApplicationContextProvider;
 import byzzbench.simulator.service.ScenarioService;
-import byzzbench.simulator.transport.Event;
-import byzzbench.simulator.transport.MessageEvent;
-import byzzbench.simulator.transport.MutateMessageEvent;
-import byzzbench.simulator.transport.TimeoutEvent;
+import byzzbench.simulator.transport.*;
 import byzzbench.simulator.utils.NonNull;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
@@ -92,13 +89,18 @@ public class Schedule implements Serializable {
                     .schedule(this)
                     .build());
             case MutateMessageEvent mutateMessageEvent -> appendAction(FaultInjectionAction.builder()
-                    .faultId("mutate-" + mutateMessageEvent.getEventId())
+                    .faultBehaviorId("mutate-" + mutateMessageEvent.getEventId())
                     .payload(mutateMessageEvent.getPayload())
                     .schedule(this)
                     .build());
             case TimeoutEvent timeoutEvent -> appendAction(TriggerTimeoutAction.builder()
                     .timeoutEventId(timeoutEvent.getEventId())
                     .timeout(timeoutEvent.getTimeout())
+                    .schedule(this)
+                    .build());
+            case GenericFaultEvent faultEvent -> appendAction(FaultInjectionAction.builder()
+                    .faultBehaviorId("fault-" + faultEvent.getEventId())
+                    .payload(new MutateMessageEventPayload(faultEvent.getEventId(), faultEvent.getType()))
                     .schedule(this)
                     .build());
             default -> throw new IllegalArgumentException("Unsupported event type: " + event.getClass().getName());

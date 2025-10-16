@@ -61,27 +61,6 @@ public class ByzzBenchConfig {
     }
 
     /**
-     * Configuration for the termination
-     */
-    @Data
-    public static final class TerminationConfig {
-        /**
-         * The minimum number of events to run before termination. 0 means no minimum.
-         */
-        private long minEvents = 0;
-        /**
-         * The minimum number of rounds to run before termination. 0 means no minimum.
-         */
-        private long minRounds = 2;
-        /**
-         * Frequency of checking termination conditions.
-         * Setting it to "1" means check every round, 2 means check every other round, etc.
-         * The default is 1 (check every round).
-         */
-        private long samplingFrequency = 1;
-    }
-
-    /**
      * Configuration for a fault or mutation.
      * A fault is identified by a predicate and a behavior.
      */
@@ -114,7 +93,7 @@ public class ByzzBenchConfig {
      */
     @Data
     public final class ScenarioConfig {
-        private TerminationConfig termination = new TerminationConfig();
+        //private TerminationConfig termination = new TerminationConfig();
         private String id = "byzzbench.simulator.protocols.pbft_java.PbftJavaScenario";
         private Map<String, String> params = new HashMap<>();
     }

@@ -76,12 +76,23 @@ byzzbench:
   campaigns:
     - initialRandomSeed: 123
       numScenarios: 3
-      scenarioId: byzzbench.simulator.protocols.pbft_java.PbftJavaScenario
-      scenarioParams:
-        replicas: 4
-        clients: 1
+      scenarioParameters:
+        scenarioId: byzzbench.simulator.protocols.pbft_java.PbftJavaScenario
+        numReplicas: 4
+        numClients: 1
       explorationStrategyId: byzzfuzz
+      termination:
+        minEvents: 10
+        minRounds: 0
+        samplingFrequency: 1
     - initialRandomSeed: 456
       numScenarios: 2
-      scenarioId: byzzbench.simulator.protocols.hbft.HbftJavaScenario
+      scenarioParameters:
+        scenarioId: byzzbench.simulator.protocols.hbft.HbftJavaScenario
+        numReplicas: 4
+        numClients: 1
       explorationStrategyId: random
+      termination:
+        minEvents: 10
+        minRounds: 0
+        samplingFrequency: 1

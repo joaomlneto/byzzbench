@@ -13,6 +13,7 @@ import {
   AccordionProps,
   Anchor,
   Group,
+  JsonInput,
   SimpleGrid,
 } from "@mantine/core";
 import { useLocalStorage } from "@mantine/hooks";
@@ -44,21 +45,15 @@ export const SimulationAccordion = ({
       value={selectedAccordionEntries}
       onChange={setSelectedAccordionEntries}
     >
-      {data && (
-        <p>
-          {data.data.description} -{" "}
+      <Group wrap="nowrap" gap="xs" align="center">
+        <p>{data?.data.description}</p>
+        <PredicateList scenarioId={scenarioId} />
+        <ShowMailboxesSwitch />
+        {data?.data?.scheduleId && (
           <Anchor component={Link} href={`/schedules/${data.data.scheduleId}`}>
             {`Schedule ${data.data.scheduleId}`}
           </Anchor>
-        </p>
-      )}
-      <Group wrap="nowrap" gap="xs" align="center">
-        <DoSchedulerActionIcon
-          scenarioId={scenarioId}
-          onChange={setSelectedStrategy}
-        />
-        <PredicateList scenarioId={scenarioId} />
-        <ShowMailboxesSwitch />
+        )}
         {data?.data?.campaignId && (
           <Anchor
             component={Link}
@@ -68,9 +63,40 @@ export const SimulationAccordion = ({
           </Anchor>
         )}
       </Group>
-      <Accordion.Item key="strategy-actions" value="strategy-actions">
-        <Accordion.Control>Exploration Strategy Actions</Accordion.Control>
+      <Accordion.Item key="parameters" value="parameters">
+        <Accordion.Control>Scenario Info</Accordion.Control>
         <Accordion.Panel>
+          <JsonInput
+            label="Scenario"
+            variant="unstyled"
+            inputSize="xs"
+            size="xs"
+            autosize
+            readOnly
+            maxRows={20}
+            value={JSON.stringify(
+              {
+                ...data?.data,
+                random: undefined,
+                invariants: undefined,
+                clients: undefined,
+                replicas: undefined,
+                faults: undefined,
+                availableActions: undefined,
+              },
+              null,
+              2,
+            )}
+          />
+        </Accordion.Panel>
+      </Accordion.Item>
+      <Accordion.Item key="strategy-actions" value="strategy-actions">
+        <Accordion.Control>Exploration Strategy</Accordion.Control>
+        <Accordion.Panel>
+          <DoSchedulerActionIcon
+            scenarioId={scenarioId}
+            onChange={setSelectedStrategy}
+          />
           <SimpleGrid cols={2}>
             <StrategyActionList
               scenarioId={scenarioId}

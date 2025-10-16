@@ -1,8 +1,6 @@
 package byzzbench.simulator.domain;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.AllArgsConstructor;
-import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
@@ -28,14 +26,12 @@ public class ScenarioParameters implements Serializable {
     /**
      * The random seed used to generate the scenario.
      */
-    @Builder.Default
-    private Long randomSeed = 1L;
+    private Long randomSeed;
 
     /**
      * Number of clients in the scenario.
      */
-    @Builder.Default
-    private Integer numClients = 1;
+    private Integer numClients;
 
     /**
      * Number of replicas in the scenario.
@@ -46,14 +42,4 @@ public class ScenarioParameters implements Serializable {
      * List of faults to be injected in the scenario.
      */
     private List<String> faults;
-
-    /**
-     * Checks if the scenario parameters are valid.
-     *
-     * @return true if the scenario parameters are valid, false otherwise.
-     */
-    @JsonIgnore
-    public boolean isValid() {
-        return scenarioId != null && !scenarioId.isEmpty() && randomSeed != null;
-    }
 }

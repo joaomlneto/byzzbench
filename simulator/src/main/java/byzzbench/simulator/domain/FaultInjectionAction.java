@@ -1,6 +1,10 @@
 package byzzbench.simulator.domain;
 
 import byzzbench.simulator.Scenario;
+import byzzbench.simulator.faults.FaultBehavior;
+import byzzbench.simulator.faults.ScenarioContext;
+import byzzbench.simulator.service.ApplicationContextProvider;
+import byzzbench.simulator.service.FaultsFactoryService;
 import byzzbench.simulator.transport.MutateMessageEventPayload;
 import byzzbench.simulator.utils.NonNull;
 import jakarta.persistence.Entity;
@@ -25,7 +29,7 @@ public class FaultInjectionAction extends Action {
     /**
      * The unique identifier of the fault.
      */
-    private String faultId;
+    private String faultBehaviorId;
 
     /**
      * The payload of the request.
@@ -33,8 +37,22 @@ public class FaultInjectionAction extends Action {
     @NonNull
     private MutateMessageEventPayload payload;
 
+    /**
+     * Converts a FaultBehavior to a FaultInjectionAction.
+     *
+     * @param faultBehavior The FaultBehavior to convert.
+     * @return The FaultInjectionAction that represents the FaultBehavior.
+     */
+    public static FaultInjectionAction fromEvent(FaultBehavior faultBehavior) {
+        return FaultInjectionAction.builder()
+                .faultBehaviorId(faultBehavior.getId())
+                .build();
+    }
+
     @Override
     public void accept(Scenario scenario) {
-        throw new UnsupportedOperationException("Not implemented yet");
+        FaultsFactoryService faultsFactoryService = ApplicationContextProvider.getFaultsFactoryService();
+        FaultBehavior behavior = faultsFactoryService.getFaultBehavior(faultBehaviorId);
+        behavior.accept(new ScenarioContext(scenario, scenario.getTransport().getEvent(eventId)));
     }
 }

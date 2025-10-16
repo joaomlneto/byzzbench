@@ -4,7 +4,9 @@ import byzzbench.simulator.Scenario;
 import byzzbench.simulator.config.ByzzBenchConfig;
 import byzzbench.simulator.domain.Action;
 import byzzbench.simulator.domain.DeliverMessageAction;
+import byzzbench.simulator.domain.FaultInjectionAction;
 import byzzbench.simulator.domain.TriggerTimeoutAction;
+import byzzbench.simulator.faults.Fault;
 import byzzbench.simulator.transport.Event;
 import byzzbench.simulator.transport.MessageEvent;
 import byzzbench.simulator.transport.TimeoutEvent;
@@ -119,6 +121,19 @@ public abstract class ExplorationStrategy {
      */
     public List<MessageEvent> getQueuedMessageEvents(Scenario scenario) {
         return getQueuedEventsOfType(scenario, MessageEvent.class);
+    }
+
+    /**
+     * Returns the queued message events in the scenario
+     *
+     * @param scenario The scenario
+     * @return The list of message events
+     */
+    public List<Fault> getEnabledFaultActions(Scenario scenario) {
+        List<Fault> faults = new ArrayList<>();
+        faults.addAll(scenario.getTransport().getEnabledNetworkFaults());
+        faults.addAll(scenario.getMessageMutationFaults());
+        return faults;
     }
 
     /**
@@ -238,7 +253,8 @@ public abstract class ExplorationStrategy {
     public List<Action> getAvailableActions(Scenario scenario) {
         Stream<Action> messageEvents = this.getQueuedMessageEvents(scenario).stream().map(DeliverMessageAction::fromEvent);
         Stream<Action> timeoutEvents = this.getQueuedTimeoutEvents(scenario).stream().map(TriggerTimeoutAction::fromEvent);
-        return Stream.concat(messageEvents, timeoutEvents).toList();
+        Stream<Action> faultEvents = this.getEnabledFaultActions(scenario).stream().map(FaultInjectionAction::fromEvent);
+        return Stream.concat(Stream.concat(messageEvents, timeoutEvents), faultEvents).toList();
     }
 
     /**

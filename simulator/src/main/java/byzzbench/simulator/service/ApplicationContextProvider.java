@@ -21,12 +21,40 @@ public class ApplicationContextProvider implements ApplicationContextAware {
         return applicationContext.getBean(ScenarioService.class);
     }
 
+    /**
+     * Get the MessageMutatorService bean from the application context.
+     *
+     * @return the MessageMutatorService bean
+     */
     public static MessageMutatorService getMessageMutatorService() {
         return applicationContext.getBean(MessageMutatorService.class);
     }
 
+    /**
+     * Get the ByzzBenchConfig bean from the application context.
+     *
+     * @return the ByzzBenchConfig bean
+     */
     public static ByzzBenchConfig getConfig() {
         return applicationContext.getBean(ByzzBenchConfig.class);
+    }
+
+    /**
+     * Get the FaultsFactoryService bean from the application context.
+     *
+     * @return the FaultsFactoryService bean
+     */
+    public static FaultsFactoryService getFaultsFactoryService() {
+        return applicationContext.getBean(FaultsFactoryService.class);
+    }
+
+    /**
+     * Get the CampaignService bean from the application context.
+     *
+     * @return the CampaignService bean
+     */
+    public static CampaignService getCampaignService() {
+        return applicationContext.getBean(CampaignService.class);
     }
 
     @Override

@@ -1,6 +1,7 @@
 package byzzbench.simulator.domain;
 
 import byzzbench.simulator.config.CampaignConfig;
+import byzzbench.simulator.config.TerminationConfig;
 import byzzbench.simulator.utils.NonNull;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
@@ -73,18 +74,30 @@ public class Campaign implements Serializable {
     private Instant createdAt = Instant.now();
 
     /**
+     * The termination configuration for this campaign.
+     */
+    @Embedded
+    private TerminationConfig termination;
+
+    /**
      * Create a campaign from a campaign configuration.
      *
      * @param config the campaign configuration
      * @return the created campaign
      */
     public static Campaign fromConfig(CampaignConfig config) {
+        // ensure user is not trying to override scenario parameters that are set by the campaign
+        if (config.getScenarioParameters().getRandomSeed() != null) {
+            throw new IllegalArgumentException("Scenario parameters in campaign config must not have a random seed set");
+        }
+
         Campaign campaign = new Campaign();
         campaign.setInitialRandomSeed(config.getInitialRandomSeed());
-        campaign.setScenarioId(config.getScenarioId());
+        campaign.setScenarioId(config.getScenarioParameters().getScenarioId());
         campaign.setExplorationStrategyId(config.getExplorationStrategyId());
         campaign.setNumScenarios(config.getNumScenarios());
         campaign.setRandom(new Random(config.getInitialRandomSeed()));
+        campaign.setTermination(config.getTermination());
         return campaign;
     }
 

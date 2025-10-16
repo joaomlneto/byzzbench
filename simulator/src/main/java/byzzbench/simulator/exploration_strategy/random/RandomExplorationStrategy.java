@@ -91,7 +91,7 @@ public class RandomExplorationStrategy extends ExplorationStrategy {
         if (dieRoll < 0) {
             Event message = getRandomElement(messageEvents);
             scenario.getTransport().dropEvent(message.getEventId());
-            Action decision = FaultInjectionAction.builder().faultId("drop-message").eventId(message.getEventId()).build();
+            Action decision = FaultInjectionAction.builder().faultBehaviorId("drop-message").eventId(message.getEventId()).build();
             return Optional.of(decision);
         }
 
@@ -111,7 +111,7 @@ public class RandomExplorationStrategy extends ExplorationStrategy {
                     getRandomElement(mutators));
             scenario.getTransport().deliverEvent(message.getEventId());
 
-            Action decision = FaultInjectionAction.builder().faultId("mutate-and-deliver").eventId(message.getEventId()).build();
+            Action decision = FaultInjectionAction.builder().faultBehaviorId("mutate-and-deliver").eventId(message.getEventId()).build();
             return Optional.of(decision);
         }
 
