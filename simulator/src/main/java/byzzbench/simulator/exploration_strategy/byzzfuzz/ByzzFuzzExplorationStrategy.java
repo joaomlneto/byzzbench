@@ -3,6 +3,7 @@ package byzzbench.simulator.exploration_strategy.byzzfuzz;
 import byzzbench.simulator.Scenario;
 import byzzbench.simulator.config.ByzzBenchConfig;
 import byzzbench.simulator.exploration_strategy.ExplorationStrategyParameters;
+import byzzbench.simulator.exploration_strategy.ScenarioStrategyData;
 import byzzbench.simulator.exploration_strategy.random.RandomExplorationStrategy;
 import byzzbench.simulator.faults.Fault;
 import byzzbench.simulator.faults.FaultFactory;
@@ -13,7 +14,9 @@ import lombok.extern.java.Log;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * The ByzzFuzz exploration_strategy from "Randomized Testing of Byzantine Fault Tolerant Algorithms" by
@@ -24,6 +27,10 @@ import java.util.List;
 @Log
 @Getter
 public class ByzzFuzzExplorationStrategy extends RandomExplorationStrategy {
+    /**
+     * Map of faults per scenario (to avoid generating them multiple times)
+     */
+    private final Map<Scenario, List<Fault>> scenarioFaults = new HashMap<>();
     /**
      * Small-scope mutations to be applied to protocol messages
      */
@@ -81,6 +88,20 @@ public class ByzzFuzzExplorationStrategy extends RandomExplorationStrategy {
         ScenarioContext context = new ScenarioContext(scenario);
         List<Fault> faults = faultFactory.generateFaults(context);
         faults.forEach(fault -> scenario.getTransport().addFault(fault, true));
+
+        this.scenarioFaults.put(scenario, faults);
     }
 
+    @Override
+    public ScenarioStrategyData getScenarioStrategyData(Scenario scenario) {
+        return ByzzFuzzScenarioStrategyData.builder()
+                .remainingDropMessages(this.getConfig().getScheduler().getMaxDropMessages())
+                .remainingMutateMessages(this.getConfig().getScheduler().getMaxMutateMessages())
+                .initializedByStrategy(this.getInitializedScenarios().contains(scenario))
+                .numRoundsWithProcessFaults(this.getNumRoundsWithProcessFaults())
+                .numRoundsWithNetworkFaults(this.getNumRoundsWithNetworkFaults())
+                .numRoundsWithFaults(this.getNumRoundsWithFaults())
+                .faults(this.scenarioFaults.get(scenario))
+                .build();
+    }
 }
