@@ -7,7 +7,6 @@ import org.springframework.stereotype.Component;
 import org.springframework.validation.annotation.Validated;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -35,10 +34,6 @@ public class ByzzBenchConfig {
      * Scheduler parameters.
      */
     private ExplorationStrategyParameters scheduler = new ExplorationStrategyParameters();
-    /**
-     * Scenario parameters.
-     */
-    private ScenarioConfig scenario = new ScenarioConfig();
 
     /**
      * List of campaign configurations to run at startup.
@@ -86,15 +81,5 @@ public class ByzzBenchConfig {
     public final class BehaviorConfig {
         private final String id;
         private final Map<String, String> params;
-    }
-
-    /**
-     * Configuration for the scenario component.
-     */
-    @Data
-    public final class ScenarioConfig {
-        //private TerminationConfig termination = new TerminationConfig();
-        private String id = "byzzbench.simulator.protocols.pbft_java.PbftJavaScenario";
-        private Map<String, String> params = new HashMap<>();
     }
 }

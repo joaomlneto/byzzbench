@@ -61,18 +61,6 @@ byzzbench:
       numTwinsPerReplica: 2
       numRounds: 5
 
-  scenario:
-    id: byzzbench.simulator.protocols.pbft_java.PbftJavaScenario
-    params: # TODO: logic to read this is not yet implemented
-      replicas: 4
-      clients: 1
-    scheduledFaults:
-      factories: [ ]
-    termination: # Success condition for the scenario - terminates it when all conditions are met
-      minEvents: 10 # check if N events have been scheduled. If so, can terminate
-      minRounds: 0 # check if N rounds have elapsed. If so, can terminate
-      samplingFrequency: 1 # check if should terminate every N exploration_strategy decisions
-
   campaigns:
     - initialRandomSeed: 123
       numScenarios: 3
