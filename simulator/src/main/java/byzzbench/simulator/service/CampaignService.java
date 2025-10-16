@@ -8,7 +8,6 @@ import byzzbench.simulator.domain.Campaign;
 import byzzbench.simulator.domain.ScenarioParameters;
 import byzzbench.simulator.exploration_strategy.ExplorationStrategy;
 import byzzbench.simulator.repository.CampaignRepository;
-import byzzbench.simulator.repository.ScheduleRepository;
 import byzzbench.simulator.state.ErroredPredicate;
 import byzzbench.simulator.state.LivenessPredicate;
 import byzzbench.simulator.transport.Event;
@@ -32,7 +31,6 @@ public class CampaignService {
     private final CampaignRepository campaignRepository;
     private final ScenarioService scenarioService;
     private final ExplorationStrategyService explorationStrategyService;
-    private final ScheduleRepository scheduleRepository;
 
     private final Map<Long, Campaign> activeCampaigns = new HashMap<>();
 
@@ -116,40 +114,35 @@ public class CampaignService {
          */
         private long numErr = 0;
 
-        private boolean running = false;
-
         @Override
         public void run() {
+            log.info(String.format("Starting campaign %d with %d scenarios%n",
+                    campaign.getCampaignId(), campaign.getNumScenarios()));
+            boolean running = true;
             try {
-                log.info(String.format("Starting campaign %d with %d scenarios%n",
-                        campaign.getCampaignId(), campaign.getNumScenarios()));
-
-                this.running = true;
-
-                System.out.println("Hi im here");
-
                 long numScenarios = campaign.getNumScenarios();
-                System.out.println("Number of scenarios: " + numScenarios);
-                String scenarioId = campaign.getScenarioId();
-                System.out.println("Scenario Factory ID: " + scenarioId);
                 String explorationStrategyId = campaign.getExplorationStrategyId();
-                System.out.println("Exploration Strategy ID: " + explorationStrategyId);
                 ExplorationStrategy explorationStrategy = explorationStrategyService.getExplorationStrategy(explorationStrategyId);
-                System.out.println("Exploration Strategy ID: " + explorationStrategyId);
 
                 this.numTerm = 0;
                 this.numMaxedOut = 0;
                 this.numErr = 0;
 
                 // run the scenario until the stop flag is set
-                for (int i = 0; this.running && i < numScenarios; i++) {
+                for (int i = 0; running && i < numScenarios; i++) {
                     log.info(String.format("Running scenario %d/%d%n", i + 1, numScenarios));
 
                     ScenarioParameters scenarioParams = campaign.getScenarioParameters();
                     Scenario scenario = scenarioService.generateScenario(scenarioParams);
 
-                    Runnable r = new ScenarioRunner(campaign, scenario, explorationStrategy);
+                    ScenarioRunner r = new ScenarioRunner(campaign, scenario, explorationStrategy);
                     r.run();
+                    ScenarioExecutionResult result = r.getResult();
+                    switch (result) {
+                        case CORRECT -> numMaxedOut++;
+                        case TERMINATED -> numTerm++;
+                        case ERRORED -> numErr++;
+                    }
                 }
             } catch (Exception e) {
                 log.severe("Error running campaign: " + e);
@@ -157,7 +150,7 @@ public class CampaignService {
             } finally {
                 log.info(String.format("Campaign %d finished: %d terminated, %d maxed out, %d errored%n",
                         campaign.getCampaignId(), numTerm, numMaxedOut, numErr));
-                this.running = false;
+                running = false;
             }
 
         }
@@ -189,18 +182,23 @@ public class CampaignService {
         @Override
         public void run() {
             try {
+                // initialize the exploration_strategy with the scenario
+                explorationStrategy.initializeScenarioIfNotYetDone(currentScenario);
+
+                // main scheduling loop
                 while (true) {
                     Optional<Action> decision = explorationStrategy.scheduleNext(currentScenario);
-                    System.out.println("Decision: " + decision);
+                    log.info("Decision: " + decision);
 
-                    // if the exploration_strategy did not make a decision, and we're before GST, set GST!
+                    // if the exploration_strategy did not make a decision, and we're before GST, trigger GST!
                     if (decision.isEmpty() && !currentScenario.getTransport().isGlobalStabilizationTime()) {
                         currentScenario.getTransport().globalStabilizationTime();
                         continue;
                     }
 
+                    // if the exploration_strategy did not make a decision, and we're after GST, terminate the run
                     if (decision.isEmpty()) {
-                        System.out.println("We're after GST and still no events!!");
+                        log.info("We're after GST and still no events!!");
                         currentScenario.getSchedule().finalizeSchedule(Set.of(new LivenessPredicate()));
                         currentScenario.getSchedule().setCampaign(campaign);
                         scenarioService.storeSchedule(currentScenario.getSchedule().getScheduleId());
@@ -220,9 +218,9 @@ public class CampaignService {
                         break;
                     }
 
-                    System.out.println("Decision: " + decision.get());
-                    System.out.println("Num events: " + numEvents);
-                    System.out.println("Should check termination: " + shouldCheckTermination);
+                    //log.info("Decision: " + decision.get());
+                    //log.info("Num events: " + numEvents);
+                    //log.info("Should check termination: " + shouldCheckTermination);
 
                     if (shouldCheckTermination) {
                         OptionalLong maxDeliveredRound = currentScenario.getTransport()
@@ -242,9 +240,9 @@ public class CampaignService {
                                 .min();
                         long currentRound = minQueuedRound.orElse(maxDeliveredRound.orElse(0));
 
-                        System.out.println("Current round: " + currentRound);
-                        System.out.println("Max round: " + maxDeliveredRound.orElse(0));
-                        System.out.println("Min round: " + this.getCampaign().getTermination().getMinRounds());
+                        //log.info("Current round: " + currentRound);
+                        //log.info("Max round: " + maxDeliveredRound.orElse(0));
+                        //log.info("Min round: " + this.getCampaign().getTermination().getMinRounds());
 
                         if (numEvents >= this.getCampaign().getTermination().getMinEvents()
                                 && currentRound >= this.getCampaign().getTermination().getMinRounds()) {
@@ -256,7 +254,7 @@ public class CampaignService {
                     }
                 }
             } catch (Exception e) {
-                System.out.println("Error in schedule. " + e);
+                log.info("Error in schedule. " + e);
                 e.printStackTrace();
                 this.finalizeSchedule(currentScenario, Set.of(new ErroredPredicate()));
                 this.result = ScenarioExecutionResult.ERRORED;
