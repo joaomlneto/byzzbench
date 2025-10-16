@@ -222,7 +222,7 @@ public class Transport {
 
         // if it is a MessageEvent and there is no connectivity between the nodes, drop it
         if (e instanceof MessageEvent m && !router.haveConnectivity(m.getSenderId(), m.getRecipientId())) {
-            log.info("Dropped: " + m.getSenderId() + "->" + m.getRecipientId() + ": " + m.getPayload());
+            log.fine("Dropped: " + m.getSenderId() + "->" + m.getRecipientId() + ": " + m.getPayload());
             m.setStatus(Event.Status.DROPPED);
             return;
         }
@@ -243,7 +243,7 @@ public class Transport {
             default -> throw new IllegalArgumentException("Unknown event type");
         }
 
-        log.info("Delivered " + e);
+        log.fine("Delivered " + e);
     }
 
     /**
@@ -271,7 +271,7 @@ public class Transport {
 
         e.setStatus(Event.Status.DROPPED);
         this.getObservers().forEach(o -> o.onEventDropped(e));
-        log.info("Dropped: " + e);
+        log.fine("Dropped: " + e);
     }
 
     /**
@@ -351,7 +351,7 @@ public class Transport {
         this.scenario.getSchedule().appendEvent(mutateMessageEvent);
         this.getObservers().forEach(o -> o.onMessageMutation(mutateMessageEvent.getPayload()));
 
-        log.info("Mutated: " + m);
+        log.fine("Mutated: " + m);
     }
 
     public synchronized void applyFault(String faultId) {
@@ -406,7 +406,7 @@ public class Transport {
                 .build();
         this.appendEvent(timeoutEvent);
         this.observers.forEach(o -> o.onTimeout(timeoutEvent));
-        log.info(description + " timeout set for " + node.getId() + " in " + timeout + "ms: " + timeoutEvent);
+        log.fine(description + " timeout set for " + node.getId() + " in " + timeout + "ms: " + timeoutEvent);
         return timeoutEvent.getEventId();
     }
 
