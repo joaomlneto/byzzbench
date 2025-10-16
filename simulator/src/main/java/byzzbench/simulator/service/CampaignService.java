@@ -6,7 +6,6 @@ import byzzbench.simulator.config.ByzzBenchConfig;
 import byzzbench.simulator.domain.Action;
 import byzzbench.simulator.domain.Campaign;
 import byzzbench.simulator.domain.ScenarioParameters;
-import byzzbench.simulator.domain.Schedule;
 import byzzbench.simulator.exploration_strategy.ExplorationStrategy;
 import byzzbench.simulator.repository.CampaignRepository;
 import byzzbench.simulator.repository.ScheduleRepository;
@@ -142,17 +141,12 @@ public class CampaignService {
                 this.numMaxedOut = 0;
                 this.numErr = 0;
 
-                // run scenario until stop flag is set
+                // run the scenario until the stop flag is set
                 for (int i = 0; this.running && i < numScenarios; i++) {
                     log.info(String.format("Running scenario %d/%d%n", i + 1, numScenarios));
-                    // FIXME: scenario parameters should be generated according to the campaign parameters
-                    ScenarioParameters scenarioParams = ScenarioParameters.builder()
-                            .scenarioId(byzzBenchConfig.getScenario().getId())
-                            .randomSeed(1L)
-                            .build();
-                    Schedule schedule = new Schedule(scenarioParams);
-                    scheduleRepository.save(schedule);
-                    Scenario scenario = scenarioService.generateScenario(schedule);
+
+                    ScenarioParameters scenarioParams = campaign.getScenarioParameters();
+                    Scenario scenario = scenarioService.generateScenario(scenarioParams);
 
                     Runnable r = new ScenarioRunner(campaign, scenario, explorationStrategy);
                     r.run();

@@ -96,4 +96,17 @@ public class Campaign implements Serializable {
     public @NonNull List<Long> getScheduleIds() {
         return schedules.stream().map(Schedule::getScheduleId).toList();
     }
+
+    /**
+     * Generate the parameters for the next scenario in this campaign.
+     *
+     * @return the parameters for the next scenario
+     */
+    public ScenarioParameters getScenarioParameters() {
+        return ScenarioParameters.builder()
+                .randomSeed(this.random.nextLong())
+                .scenarioId(this.scenarioId)
+                // TODO set other parameters from campaign configuration
+                .build();
+    }
 }

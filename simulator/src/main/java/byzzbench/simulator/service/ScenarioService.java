@@ -90,10 +90,24 @@ public class ScenarioService {
     }
 
     /**
+     * Generate a scenario from parameters.
+     *
+     * @param parameters the parameters that describe the scenario to generate
+     * @return the generated scenario
+     * @throws IllegalArgumentException if the scenario id is unknown
+     * @throws IllegalStateException    if the schedule is already materialized
+     */
+    public synchronized Scenario generateScenario(ScenarioParameters parameters) {
+        Schedule schedule = new Schedule(parameters);
+        scheduleRepository.save(schedule);
+        return this.generateScenario(schedule);
+    }
+
+    /**
      * Generate a scenario from a schedule.
      *
      * @param schedule the schedule that describes the scenario to generate
-     * @return the unique ID of the scenario
+     * @return the generated scenario
      * @throws IllegalArgumentException if the scenario id is unknown
      * @throws IllegalStateException    if the schedule is already materialized
      */
