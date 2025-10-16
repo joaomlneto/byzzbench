@@ -23,10 +23,6 @@ public class ByzzBenchConfig {
      */
     private boolean autostart = false;
     /**
-     * The number of scenarios to run at a time. Defaults to Integer.MAX_VALUE.
-     */
-    private int numScenarios = Integer.MAX_VALUE;
-    /**
      * Policy for saving schedules in the database.
      */
     private SaveScheduleMode saveSchedules = SaveScheduleMode.ALL;
