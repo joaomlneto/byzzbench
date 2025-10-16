@@ -39,6 +39,7 @@ springdoc:
 # ByzzBench configuration
 byzzbench:
   autostart: true # Whether to start running a scenario campaign on startup.
+  removeCompletedSimulations: false # Whether to remove completed simulations.
   saveSchedules: all # which schedules to save? 'all', 'buggy' or 'none'.
 
   scheduler:

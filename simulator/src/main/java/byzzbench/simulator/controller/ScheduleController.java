@@ -57,7 +57,7 @@ public class ScheduleController {
     public String materializeSchedule(@PathVariable Long scheduleId) {
         try {
             Schedule schedule = scenarioService.getScheduleById(scheduleId);
-            schedule.materializeScenario();
+            scenarioService.generateScenario(schedule);
             return schedule.getScenario().getDescription();
         } catch (NoSuchElementException e) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Schedule not found");

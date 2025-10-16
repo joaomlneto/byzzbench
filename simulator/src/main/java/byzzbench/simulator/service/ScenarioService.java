@@ -1,6 +1,7 @@
 package byzzbench.simulator.service;
 
 import byzzbench.simulator.Scenario;
+import byzzbench.simulator.config.ByzzBenchConfig;
 import byzzbench.simulator.domain.Action;
 import byzzbench.simulator.domain.ScenarioParameters;
 import byzzbench.simulator.domain.Schedule;
@@ -27,6 +28,11 @@ import java.util.*;
 @Log
 @RequiredArgsConstructor
 public class ScenarioService {
+    /**
+     * Application configuration
+     */
+    private final ByzzBenchConfig byzzBenchConfig;
+
     /**
      * Repository for schedules
      */
@@ -85,7 +91,9 @@ public class ScenarioService {
         Schedule schedule = this.activeSchedules.get(scheduleId);
         if (schedule != null) {
             scheduleRepository.save(schedule);
-            this.activeSchedules.remove(scheduleId);
+            if (byzzBenchConfig.isRemoveCompletedSimulations()) {
+                this.activeSchedules.remove(scheduleId);
+            }
         }
     }
 
@@ -117,9 +125,11 @@ public class ScenarioService {
         }
 
         try {
+            // find the scenario class by its id
             ScenarioParameters parameters = schedule.getParameters();
             Class<? extends Scenario> scenarioClass = this.scenarioClasses.get(parameters.getScenarioId());
 
+            // if not found, throw an exception
             if (scenarioClass == null) {
                 log.severe("Unknown scenario: " + parameters.getScenarioId());
                 log.severe("Available scenarios:");
@@ -129,10 +139,10 @@ public class ScenarioService {
                 throw new IllegalArgumentException("Unknown scenario id: " + parameters.getScenarioId());
             }
 
+            // instantiate the scenario and initialize it with the schedule parameters
             Class[] constructorParams = new Class[]{Schedule.class};
             Constructor<? extends Scenario> cons = scenarioClass.getConstructor(constructorParams);
             Scenario scenario = cons.newInstance(schedule);
-            scenario.setScenarioId(schedule.getScheduleId());
             scenario.loadParameters(schedule.getParameters());
 
             // apply each action in order
@@ -140,7 +150,11 @@ public class ScenarioService {
                 action.accept(scenario);
             }
 
+            // mark the schedule as materialized
+            schedule.setScenario(scenario);
+
             this.activeSchedules.put(schedule.getScheduleId(), schedule);
+            System.out.println("Active schedules: " + this.activeSchedules.keySet());
             return scenario;
         } catch (Exception e) {
             log.severe("Failed to generate scenario: " + e.getMessage());

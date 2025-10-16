@@ -2,8 +2,6 @@ package byzzbench.simulator.domain;
 
 import byzzbench.simulator.Scenario;
 import byzzbench.simulator.ScenarioPredicate;
-import byzzbench.simulator.service.ApplicationContextProvider;
-import byzzbench.simulator.service.ScenarioService;
 import byzzbench.simulator.transport.*;
 import byzzbench.simulator.utils.NonNull;
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -154,27 +152,6 @@ public class Schedule implements Serializable {
      */
     public int getLength() {
         return this.actions.size();
-    }
-
-    /**
-     * Materializes the scenario associated with this schedule, if not already done.
-     * This method will throw an exception if the schedule already has a scenario.
-     *
-     * @throws IllegalStateException if the schedule already has a scenario.
-     */
-    public void materializeScenario() {
-        // check if already materialized
-        if (this.isMaterialized()) {
-            throw new IllegalStateException("Schedule already has a scenario associated with it");
-        }
-
-        try {
-            ScenarioService scenarioService = ApplicationContextProvider.getScenarioService();
-            this.scenario = scenarioService.generateScenario(this);
-        } catch (NoSuchElementException e) {
-            this.scenario = null;
-            throw new IllegalStateException("Failed to materialize scenario for schedule " + this.scheduleId, e);
-        }
     }
 
     public boolean isMaterialized() {

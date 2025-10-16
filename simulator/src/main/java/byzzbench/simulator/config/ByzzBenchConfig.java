@@ -23,6 +23,10 @@ public class ByzzBenchConfig {
      */
     private boolean autostart = false;
     /**
+     * Whether to remove simulations from memory after they have completed.
+     */
+    private boolean removeCompletedSimulations = true;
+    /**
      * Policy for saving schedules in the database.
      */
     private SaveScheduleMode saveSchedules = SaveScheduleMode.ALL;

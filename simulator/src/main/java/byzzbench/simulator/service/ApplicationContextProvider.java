@@ -57,6 +57,15 @@ public class ApplicationContextProvider implements ApplicationContextAware {
         return applicationContext.getBean(CampaignService.class);
     }
 
+    /**
+     * Get the ExplorationStrategyService bean from the application context.
+     *
+     * @return the ExplorationStrategyService bean
+     */
+    public static ExplorationStrategyService getExplorationStrategyService() {
+        return applicationContext.getBean(ExplorationStrategyService.class);
+    }
+
     @Override
     public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
         ApplicationContextProvider.applicationContext = applicationContext;
