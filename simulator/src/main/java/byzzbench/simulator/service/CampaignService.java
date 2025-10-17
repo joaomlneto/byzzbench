@@ -8,8 +8,8 @@ import byzzbench.simulator.domain.Campaign;
 import byzzbench.simulator.domain.ScenarioParameters;
 import byzzbench.simulator.exploration_strategy.ExplorationStrategy;
 import byzzbench.simulator.repository.CampaignRepository;
+import byzzbench.simulator.state.DeadlockPredicate;
 import byzzbench.simulator.state.ErroredPredicate;
-import byzzbench.simulator.state.LivenessPredicate;
 import byzzbench.simulator.transport.Event;
 import byzzbench.simulator.transport.messages.MessageWithRound;
 import jakarta.annotation.PostConstruct;
@@ -199,7 +199,7 @@ public class CampaignService {
                     // if the exploration_strategy did not make a decision, and we're after GST, terminate the run
                     if (decision.isEmpty()) {
                         log.info("We're after GST and still no events!!");
-                        currentScenario.getSchedule().finalizeSchedule(Set.of(new LivenessPredicate()));
+                        currentScenario.getSchedule().finalizeSchedule(Set.of(new DeadlockPredicate(currentScenario)));
                         currentScenario.getSchedule().setCampaign(campaign);
                         scenarioService.storeSchedule(currentScenario.getSchedule().getScheduleId());
                         this.result = ScenarioExecutionResult.TERMINATED;
@@ -256,7 +256,7 @@ public class CampaignService {
             } catch (Exception e) {
                 log.info("Error in schedule. " + e);
                 e.printStackTrace();
-                this.finalizeSchedule(currentScenario, Set.of(new ErroredPredicate()));
+                this.finalizeSchedule(currentScenario, Set.of(new ErroredPredicate(currentScenario)));
                 this.result = ScenarioExecutionResult.ERRORED;
             }
         }

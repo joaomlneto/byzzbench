@@ -545,5 +545,6 @@ public class Transport {
                 });
 
         this.isGlobalStabilizationTime = true;
+        this.observers.forEach(TransportObserver::onGlobalStabilizationTime);
     }
 }

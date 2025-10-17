@@ -6,30 +6,30 @@ public interface TransportObserver {
     /**
      * Called when an event is added to the transport layer.
      *
-     * @param Event The event that was added.
+     * @param event The event that was added.
      */
-    void onEventAdded(Event Event);
+    void onEventAdded(Event event);
 
     /**
      * Called when the status of an event changes to {@link Event.Status#DROPPED}.
      *
-     * @param Event The event that was dropped.
+     * @param event The event that was dropped.
      */
-    void onEventDropped(Event Event);
+    void onEventDropped(Event event);
 
     /**
      * Called when the status of an event changes from {@link Event.Status#DROPPED} to {@link Event.Status#QUEUED}.
      *
-     * @param Event The event that was re-queued after being previously dropped.
+     * @param event The event that was re-queued after being previously dropped.
      */
-    void onEventRequeued(Event Event);
+    void onEventRequeued(Event event);
 
     /**
      * Called when the status of an event changes to {@link Event.Status#DELIVERED}.
      *
-     * @param Event The event that was delivered.
+     * @param event The event that was delivered.
      */
-    void onEventDelivered(Event Event);
+    void onEventDelivered(Event event);
 
     /**
      * Called when a message is mutated.
@@ -51,4 +51,9 @@ public interface TransportObserver {
      * @param event The timeout event that was created.
      */
     void onTimeout(TimeoutEvent event);
+
+    /**
+     * Called when Global Stabilization Time is reached.
+     */
+    void onGlobalStabilizationTime();
 }

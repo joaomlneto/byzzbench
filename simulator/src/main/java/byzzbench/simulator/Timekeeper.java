@@ -106,4 +106,9 @@ public class Timekeeper implements Serializable, TransportObserver {
     public void onTimeout(TimeoutEvent event) {
         // nothing to do
     }
+
+    @Override
+    public void onGlobalStabilizationTime() {
+        // nothing to do
+    }
 }
