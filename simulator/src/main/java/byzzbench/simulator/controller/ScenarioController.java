@@ -289,11 +289,9 @@ public class ScenarioController {
     }
 
     @GetMapping("/scenarios/{scenarioId}/predicates")
-    public SortedMap<String, Boolean> getScenarioPredicates(@PathVariable long scenarioId) {
+    public List<ScenarioPredicate> getScenarioPredicates(@PathVariable long scenarioId) {
         Scenario scenario = scenarioService.getScenarioById(scenarioId);
-        return new TreeMap<>(scenario.getInvariants()
-                .stream()
-                .collect(Collectors.toMap(ScenarioPredicate::getId, p -> p.test(scenario))));
+        return scenario.getInvariants();
     }
 
     /**
