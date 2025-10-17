@@ -35,7 +35,7 @@ public abstract class Scenario implements Serializable {
     /**
      * The invariants that must be satisfied by the scenario at all times.
      */
-    private final List<ScenarioPredicate> invariants = List.of(new AgreementPredicate(), new LivenessPredicate());
+    private final List<ScenarioPredicate> invariants;
     /**
      * The observers of this scenario.
      */
@@ -86,6 +86,7 @@ public abstract class Scenario implements Serializable {
         this.timekeeper = new Timekeeper(this);
         this.setupScenario();
         this.addObserver(new AdobDistributedState());
+        this.invariants = List.of(new AgreementPredicate(this), new DeadlockPredicate(this), new BoundedLivenessPredicate(this));
 
         // this must be the last line in the constructor
         this.schedule = schedule;
@@ -311,8 +312,6 @@ public abstract class Scenario implements Serializable {
     }
 
     private List<? extends FaultInjectionAction> getAvailableFaultInjectionAction() {
-        List<DeliverMessageAction> events = this.getAvailableDeliverMessageAction();
-
         return getQueuedEventsOfType(MutateMessageEvent.class)
                 .map(event -> FaultInjectionAction.builder()
                         .eventId(event.getEventId())
@@ -335,8 +334,6 @@ public abstract class Scenario implements Serializable {
                 .reduce(Stream::concat)
                 .orElseGet(Stream::empty)
                 .toList();
-
-        // TODO faults
     }
 
     /**

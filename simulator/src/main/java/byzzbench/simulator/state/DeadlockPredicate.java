@@ -3,14 +3,20 @@ package byzzbench.simulator.state;
 import byzzbench.simulator.Scenario;
 import byzzbench.simulator.ScenarioPredicate;
 import byzzbench.simulator.transport.Event;
+import lombok.extern.java.Log;
 
 /**
  * Predicate that checks if the scenario satisfies the liveness property.
  */
-public class LivenessPredicate implements ScenarioPredicate {
+@Log
+public class DeadlockPredicate extends ScenarioPredicate {
+    public DeadlockPredicate(Scenario scenario) {
+        super(scenario);
+    }
+
     @Override
     public String getId() {
-        return "Liveness";
+        return "Deadlock";
     }
 
     @Override
@@ -22,7 +28,7 @@ public class LivenessPredicate implements ScenarioPredicate {
 
         boolean hasQueuedEvents = !(scenarioExecutor.getTransport().getEventsInState(Event.Status.QUEUED).isEmpty());
         if (!hasQueuedEvents) {
-            System.out.println("LivenessPredicate: No events in the QUEUED state");
+            log.info("LivenessPredicate: No events in the QUEUED state");
         }
         return hasQueuedEvents;
     }

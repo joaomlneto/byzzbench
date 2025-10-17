@@ -4,12 +4,15 @@ import byzzbench.simulator.Replica;
 import byzzbench.simulator.Scenario;
 import byzzbench.simulator.ScenarioPredicate;
 
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 
-public class AgreementPredicate implements ScenarioPredicate {
+public class AgreementPredicate extends ScenarioPredicate {
+    public AgreementPredicate(Scenario scenario) {
+        super(scenario);
+    }
+
     @Override
     public String getId() {
         return "Agreement";
@@ -41,7 +44,7 @@ public class AgreementPredicate implements ScenarioPredicate {
                     }
                     if (commitLog.get(i).equals(commitLog.get(j))) {
                         System.out.println("Replica " + replica.getId() + " has duplicate entries at indices " + i + " and " + j);
-                        return false; 
+                        return false;
                     }
                 }
             }
@@ -56,7 +59,7 @@ public class AgreementPredicate implements ScenarioPredicate {
                     .filter(Objects::nonNull)
                     .distinct()
                     .toList();
-            
+
             if (distinctIthEntries.size() > 1) {
                 System.out.println("AgreementPredicate: Disagreement at index " + i);
                 System.out.println("REPLICAS:");

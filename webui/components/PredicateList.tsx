@@ -1,27 +1,24 @@
 "use client";
 
 import { useGetScenarioPredicates } from "@/lib/byzzbench-client";
-import { Badge, Group } from "@mantine/core";
-import React, { useMemo } from "react";
+import { Badge, Group, Tooltip } from "@mantine/core";
+import React from "react";
 
 export type PredicateListProps = {
   scenarioId: number;
 };
 
 export const PredicateList = ({ scenarioId }: PredicateListProps) => {
-  const predicatesQuery = useGetScenarioPredicates(scenarioId);
-
-  const predicates = useMemo(
-    () => predicatesQuery?.data?.data ?? {},
-    [predicatesQuery?.data?.data],
-  );
+  const { data } = useGetScenarioPredicates(scenarioId);
 
   return (
     <Group p="sm">
-      {Object.entries(predicates).map(([name, isSatisfied]) => (
-        <Badge key={name} color={isSatisfied ? "green" : "red"}>
-          {name}
-        </Badge>
+      {data?.data.map((predicate) => (
+        <Tooltip key={predicate.id} label={predicate.explanation}>
+          <Badge color={predicate.satisfied ? "green" : "red"}>
+            {predicate.id}
+          </Badge>
+        </Tooltip>
       ))}
     </Group>
   );
