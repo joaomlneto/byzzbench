@@ -1,12 +1,14 @@
 package byzzbench.simulator.domain;
 
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
 import lombok.extern.jackson.Jacksonized;
 
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -41,5 +43,6 @@ public class ScenarioParameters implements Serializable {
     /**
      * List of faults to be injected in the scenario.
      */
-    private List<String> faults;
+    @Builder.Default
+    private List<String> faults = new ArrayList<>();
 }
