@@ -1,5 +1,7 @@
 package byzzbench.simulator.protocols.tendermint;
 
+import byzzbench.simulator.domain.ScenarioParameters;
+import byzzbench.simulator.domain.Schedule;
 import byzzbench.simulator.exploration_strategy.ExplorationStrategy;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -35,7 +37,9 @@ public class TendermintReplicaTest {
         nodeIds.add("C");
         nodeIds.add("D");
 
-        TendermintScenarioExecutor tendermintScenarioExecutor = new TendermintScenarioExecutor(explorationStrategy);
+        ScenarioParameters params = ScenarioParameters.builder().randomSeed(1L).build();
+        Schedule schedule = new Schedule(params);
+        TendermintScenarioExecutor tendermintScenarioExecutor = new TendermintScenarioExecutor(schedule);
         replicaA = new TendermintReplica(replicaAId, nodeIds, tendermintScenarioExecutor);
         replicaB = new TendermintReplica(replicaBId, nodeIds, tendermintScenarioExecutor);
         replicaC = new TendermintReplica(replicaCId, nodeIds, tendermintScenarioExecutor);
