@@ -359,7 +359,7 @@ public abstract class Scenario implements Serializable {
 
         // sample f replicas to be faulty at start
         List<String> replicaIds = new ArrayList<>(this.getReplicas().keySet());
-        Collections.shuffle(replicaIds);
+        Collections.shuffle(replicaIds, this.random);
         int f = this.maxFaultyReplicas();
         for (int i = 0; i < f; i++) {
             this.markReplicaFaulty(replicaIds.get(i));
