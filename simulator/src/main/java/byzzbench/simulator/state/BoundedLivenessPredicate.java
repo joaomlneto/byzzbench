@@ -2,6 +2,7 @@ package byzzbench.simulator.state;
 
 import byzzbench.simulator.*;
 import byzzbench.simulator.faults.Fault;
+import byzzbench.simulator.service.ApplicationContextProvider;
 import byzzbench.simulator.transport.Event;
 import byzzbench.simulator.transport.MutateMessageEventPayload;
 import byzzbench.simulator.transport.TimeoutEvent;
@@ -15,11 +16,6 @@ import java.io.Serializable;
  */
 @Log
 public class BoundedLivenessPredicate extends ScenarioPredicate implements ScenarioObserver, TransportObserver, ReplicaObserver {
-    /**
-     * Maximum number of events to wait for a value to be committed by a majority of correct nodes.
-     */
-    public final int LENGTH = 10;
-
     /**
      * The offset index of the GST event in the schedule
      */
@@ -72,19 +68,15 @@ public class BoundedLivenessPredicate extends ScenarioPredicate implements Scena
 
         long eventsSinceGst = eventsSinceGst(scenario);
 
-        System.out.println("GST reached? " + this.gstReached);
-        System.out.println("#Events: " + (scenario.getSchedule().getLength()));
-        System.out.println("GST Index: " + this.gstEventIndex);
-        System.out.println("Events since GST: " + eventsSinceGst);
-
         // Check if we have exceeded the allowed number of events since GST
-        if (eventsSinceGst > LENGTH) {
-            this.explanation = String.format("Liveness violated: %d events since GST without a committed value (max allowed: %d)", eventsSinceGst, LENGTH);
+        int gstGracePeriod = ApplicationContextProvider.getConfig().getGstGracePeriod();
+        if (eventsSinceGst > gstGracePeriod) {
+            this.explanation = String.format("Liveness violated: %d events since GST without a committed value (max allowed: %d)", eventsSinceGst, gstGracePeriod);
             return false;
         }
 
         // Otherwise, the scenario is considered live... for now
-        this.explanation = String.format("Grace period: %d events since GST (max allowed: %d)", eventsSinceGst, LENGTH);
+        this.explanation = String.format("Grace period: %d events since GST (max allowed: %d)", eventsSinceGst, gstGracePeriod);
         return true;
     }
 
@@ -154,7 +146,7 @@ public class BoundedLivenessPredicate extends ScenarioPredicate implements Scena
 
     @Override
     public void onGlobalStabilizationTime() {
-        log.info("GST Reached at event index: " + this.getScenario().getSchedule().getLength());
+        log.fine("GST Reached at event index: " + this.getScenario().getSchedule().getLength());
         this.gstReached = true;
         this.gstEventIndex = this.getScenario().getSchedule().getLength();
     }

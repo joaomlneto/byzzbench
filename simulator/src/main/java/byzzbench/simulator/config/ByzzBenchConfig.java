@@ -40,6 +40,12 @@ public class ByzzBenchConfig {
      */
     private List<CampaignConfig> campaigns = new ArrayList<>();
 
+    /**
+     * After GST, how many additional actions to wait for before checking liveness.
+     * FIXME: This should be per-scenario, not global.
+     */
+    private int gstGracePeriod = 10;
+
     public enum SaveScheduleMode {
         /**
          * Save all schedules in the database.
