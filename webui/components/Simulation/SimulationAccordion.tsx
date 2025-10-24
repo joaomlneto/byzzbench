@@ -2,6 +2,7 @@
 
 import { ScenarioActionList, StrategyActionList } from "@/components/Action";
 import { DoSchedulerActionIcon } from "@/components/ActionIcon";
+import { DroppedMessagesList } from "@/components/Events";
 import { ScenarioFaultsList } from "@/components/FaultsList";
 import { NodeList } from "@/components/NodeList";
 import { PredicateList } from "@/components/PredicateList";
@@ -125,6 +126,12 @@ export const SimulationAccordion = ({
         <Accordion.Control>Nodes</Accordion.Control>
         <Accordion.Panel>
           <NodeList scenarioId={scenarioId} />
+        </Accordion.Panel>
+      </Accordion.Item>
+      <Accordion.Item key="dropped-messages" value="dropped-messages">
+        <Accordion.Control>Dropped Messages</Accordion.Control>
+        <Accordion.Panel>
+          <DroppedMessagesList scenarioId={scenarioId} />
         </Accordion.Panel>
       </Accordion.Item>
       {/*<Accordion.Item key="adob" value="adob">

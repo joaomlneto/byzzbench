@@ -51,9 +51,9 @@ public class Transport {
      * Map of automatic fault id to the {@link Fault} object. This is used to
      * apply faulty behaviors automatically  to the system whenever their predicate is satisfied.
      */
-    @JsonIgnore
-    @Getter(onMethod_ = {@Synchronized})
-    private final SortedMap<String, Fault> automaticFaults = new TreeMap<>();
+    //@JsonIgnore
+    //@Getter(onMethod_ = {@Synchronized})
+    //private final SortedMap<String, Fault> automaticFaults = new TreeMap<>();
 
     /**
      * Map of network fault id to the {@link Fault} object. This is used to
@@ -104,7 +104,8 @@ public class Transport {
      */
     public synchronized void addFault(Fault fault, boolean triggerAutomatically) {
         if (triggerAutomatically) {
-            this.automaticFaults.put(fault.getId(), fault);
+            throw new UnsupportedOperationException("Automatic faults are not supported anymore!");
+            //this.automaticFaults.put(fault.getId(), fault);
         } else {
             this.networkFaults.put(fault.getId(), fault);
         }
@@ -169,9 +170,10 @@ public class Transport {
         // notify observers
         this.observers.forEach(o -> o.onEventAdded(event));
 
-        // apply automatic faults
+        // FIXME: old behavior - apply automatic faults. delete me!
+        /*
         this.automaticFaults.values()
-                .forEach(f -> f.testAndAccept(new ScenarioContext(this.scenario, event)));
+                .forEach(f -> f.testAndAccept(new ScenarioContext(this.scenario, event)));*/
 
         // notify observers
         this.getObservers().forEach(o -> o.onEventAdded(event));
@@ -186,6 +188,8 @@ public class Transport {
      */
     public synchronized void multicast(Node sender, SortedSet<String> recipients,
                                        MessagePayload payload) {
+        this.observers.forEach(o -> o.onMulticast(sender, recipients, payload));
+
         for (String recipient : recipients) {
             long messageId = this.eventSeqNum.getAndIncrement();
             MessageEvent messageEvent = MessageEvent.builder()
@@ -470,6 +474,18 @@ public class Transport {
                         t.getNodeId().equals(node.getId()) &&
                         t.getStatus() == Event.Status.QUEUED)
                 .map(Event::getEventId)
+                .toList();
+    }
+
+    /**
+     * Gets all queued messages in the transport layer.
+     *
+     * @return A list of queued message events.
+     */
+    public synchronized List<MessageEvent> getQueuedMessages() {
+        return this.getEventsInState(Event.Status.QUEUED).stream()
+                .filter(MessageEvent.class::isInstance)
+                .map(MessageEvent.class::cast)
                 .toList();
     }
 

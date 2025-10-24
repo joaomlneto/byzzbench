@@ -14,10 +14,7 @@ export const TimeoutActionCard = ({
 }: TimeoutActionCardProps) => {
   return (
     <Card p={2} {...otherProps}>
-      <NodeStateNavLink
-        label={`${action.actionId}: Timeout Node ${action.nodeId}`}
-        data={action}
-      />
+      <NodeStateNavLink label={`Timeout Node ${action.nodeId}`} data={action} />
     </Card>
   );
 };

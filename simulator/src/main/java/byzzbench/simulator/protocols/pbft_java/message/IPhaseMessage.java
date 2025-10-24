@@ -1,12 +1,12 @@
 package byzzbench.simulator.protocols.pbft_java.message;
 
+import byzzbench.simulator.exploration_strategy.byzzfuzz.MessageWithByzzFuzzRoundInfo;
 import byzzbench.simulator.transport.MessagePayload;
-import byzzbench.simulator.transport.messages.MessageWithRound;
 
 /**
  * Superclass for all messages that are part of the regular PBFT protocol phases.
  */
-public abstract class IPhaseMessage extends MessagePayload implements MessageWithRound {
+public abstract class IPhaseMessage extends MessagePayload implements MessageWithByzzFuzzRoundInfo {
     /**
      * Get the view number of the message.
      *

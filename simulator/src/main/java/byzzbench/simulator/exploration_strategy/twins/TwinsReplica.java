@@ -1,9 +1,9 @@
 package byzzbench.simulator.exploration_strategy.twins;
 
 import byzzbench.simulator.Replica;
+import byzzbench.simulator.exploration_strategy.byzzfuzz.MessageWithByzzFuzzRoundInfo;
 import byzzbench.simulator.state.TotalOrderCommitLog;
 import byzzbench.simulator.transport.MessagePayload;
-import byzzbench.simulator.transport.messages.MessageWithRound;
 import byzzbench.simulator.utils.StirlingNumberSecondKind;
 import lombok.Getter;
 import lombok.extern.java.Log;
@@ -136,9 +136,9 @@ public class TwinsReplica extends Replica {
      */
     public List<Replica> getInternalReplicasHandlingMessage(String sender, MessagePayload message) {
         List<String> partition;
-        if (message instanceof MessageWithRound messageWithRound) {
+        if (message instanceof MessageWithByzzFuzzRoundInfo messageWithByzzFuzzRoundInfo) {
             // If the message has a round number, use the partition for that round
-            partition = this.twinsTransport.getReplicaRoundPartition(sender, messageWithRound.getRound());
+            partition = this.twinsTransport.getReplicaRoundPartition(sender, messageWithByzzFuzzRoundInfo.getRound());
         } else {
             // Default to the default partition
             // If the sender is not in *any* partition, default to delivering to all internal replicas

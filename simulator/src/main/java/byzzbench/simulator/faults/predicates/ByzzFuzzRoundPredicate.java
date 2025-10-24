@@ -1,19 +1,20 @@
 package byzzbench.simulator.faults.predicates;
 
+import byzzbench.simulator.exploration_strategy.byzzfuzz.MessageWithByzzFuzzRoundInfo;
 import byzzbench.simulator.faults.FaultPredicate;
 import byzzbench.simulator.faults.ScenarioContext;
 import byzzbench.simulator.transport.Event;
 import byzzbench.simulator.transport.MessageEvent;
-import byzzbench.simulator.transport.messages.MessageWithRound;
 import lombok.RequiredArgsConstructor;
 
 import java.util.Optional;
 
 /**
- * Predicate that checks if the round of a message matches a given round.
+ * Predicate that checks if the round of a message matches a given round
+ * to be used as a precondition for fault injection in the ByzzFuzz algorithm.
  */
 @RequiredArgsConstructor
-public class MessageRoundPredicate implements FaultPredicate {
+public class ByzzFuzzRoundPredicate implements FaultPredicate {
     private final long round;
 
     @Override
@@ -38,7 +39,7 @@ public class MessageRoundPredicate implements FaultPredicate {
             return false;
         }
 
-        return message.getPayload() instanceof MessageWithRound roundMessage
+        return message.getPayload() instanceof MessageWithByzzFuzzRoundInfo roundMessage
                 && roundMessage.getRound() == round;
     }
 }

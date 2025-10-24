@@ -10,8 +10,6 @@ import byzzbench.simulator.exploration_strategy.ExplorationStrategy;
 import byzzbench.simulator.repository.CampaignRepository;
 import byzzbench.simulator.state.DeadlockPredicate;
 import byzzbench.simulator.state.ErroredPredicate;
-import byzzbench.simulator.transport.Event;
-import byzzbench.simulator.transport.messages.MessageWithRound;
 import jakarta.annotation.PostConstruct;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -183,7 +181,7 @@ public class CampaignService {
         public void run() {
             try {
                 // initialize the exploration_strategy with the scenario
-                explorationStrategy.initializeScenarioIfNotYetDone(currentScenario);
+                explorationStrategy.ensureScenarioInitialized(currentScenario);
 
                 // main scheduling loop
                 while (true) {
@@ -223,12 +221,13 @@ public class CampaignService {
                     //log.info("Should check termination: " + shouldCheckTermination);
 
                     if (shouldCheckTermination) {
+                        /*
                         OptionalLong maxDeliveredRound = currentScenario.getTransport()
                                 .getEventsInState(Event.Status.DELIVERED)
                                 .stream()
                                 .filter(MessageWithRound.class::isInstance)
                                 .map(MessageWithRound.class::cast)
-                                .mapToLong(MessageWithRound::getRound)
+                                .mapToLong(MessageWithRound::getByzzFuzzRound)
                                 .max();
 
                         OptionalLong minQueuedRound = currentScenario.getTransport()
@@ -236,16 +235,16 @@ public class CampaignService {
                                 .stream()
                                 .filter(MessageWithRound.class::isInstance)
                                 .map(MessageWithRound.class::cast)
-                                .mapToLong(MessageWithRound::getRound)
+                                .mapToLong(MessageWithRound::getByzzFuzzRound)
                                 .min();
                         long currentRound = minQueuedRound.orElse(maxDeliveredRound.orElse(0));
-
+*/
                         //log.info("Current round: " + currentRound);
                         //log.info("Max round: " + maxDeliveredRound.orElse(0));
                         //log.info("Min round: " + this.getCampaign().getTermination().getMinRounds());
 
                         if (numEvents >= this.getCampaign().getTermination().getMinEvents()
-                                && currentRound >= this.getCampaign().getTermination().getMinRounds()) {
+                            /*&& currentRound >= this.getCampaign().getTermination().getMinRounds()*/) {
                             log.info("Reached min # of events or rounds for this run, terminating. . .");
                             this.result = ScenarioExecutionResult.CORRECT;
                             this.finalizeSchedule(currentScenario, Collections.emptySet());

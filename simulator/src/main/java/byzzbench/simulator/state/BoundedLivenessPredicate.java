@@ -3,13 +3,11 @@ package byzzbench.simulator.state;
 import byzzbench.simulator.*;
 import byzzbench.simulator.faults.Fault;
 import byzzbench.simulator.service.ApplicationContextProvider;
-import byzzbench.simulator.transport.Event;
-import byzzbench.simulator.transport.MutateMessageEventPayload;
-import byzzbench.simulator.transport.TimeoutEvent;
-import byzzbench.simulator.transport.TransportObserver;
+import byzzbench.simulator.transport.*;
 import lombok.extern.java.Log;
 
 import java.io.Serializable;
+import java.util.SortedSet;
 
 /**
  * Predicate that checks if the scenario satisfies the liveness property.
@@ -106,6 +104,11 @@ public class BoundedLivenessPredicate extends ScenarioPredicate implements Scena
 
     @Override
     public void onClientAdded(Client client) {
+        // no action needed
+    }
+
+    @Override
+    public void onMulticast(Node sender, SortedSet<String> recipients, MessagePayload payload) {
         // no action needed
     }
 

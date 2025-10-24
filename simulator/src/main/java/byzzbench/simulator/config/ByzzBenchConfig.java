@@ -6,6 +6,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
 import org.springframework.validation.annotation.Validated;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -66,7 +67,7 @@ public class ByzzBenchConfig {
      * A fault is identified by a predicate and a behavior.
      */
     @Data
-    public final class FaultConfig {
+    public final class FaultConfig implements Serializable {
         private final PredicateConfig predicate;
         private final BehaviorConfig behavior;
     }
@@ -75,7 +76,7 @@ public class ByzzBenchConfig {
      * Configuration for a predicate.
      */
     @Data
-    public final class PredicateConfig {
+    public final class PredicateConfig implements Serializable {
         private final String id;
         private final Map<String, String> params;
     }
@@ -84,7 +85,7 @@ public class ByzzBenchConfig {
      * Configuration for a behavior.
      */
     @Data
-    public final class BehaviorConfig {
+    public final class BehaviorConfig implements Serializable {
         private final String id;
         private final Map<String, String> params;
     }

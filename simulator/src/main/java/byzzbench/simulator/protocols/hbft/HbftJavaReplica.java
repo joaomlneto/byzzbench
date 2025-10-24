@@ -331,6 +331,7 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
         this.messageLog.appendPanic(panic, panic.getClientId());
         if (/* signedBy.equals(panic.getClientId()) ||   this.messageLog.checkPanics(this.tolerance) && */ this.getId().equals(this.getPrimaryId())) {
             CheckpointMessage checkpoint = new CheckpointIMessage(
+                    this.getViewNumber(),
                     this.speculativeHistory.getGreatestSeqNumber(),
                     this.digest(this.speculativeHistory),
                     this.getId(),
@@ -659,6 +660,7 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
                  */
                 if (seqNumber % 2 == 0 && this.getId().equals(this.getPrimaryId())) {
                     CheckpointMessage checkpoint = new CheckpointIMessage(
+                            this.getViewNumber(),
                             seqNumber,
                             this.digest(this.speculativeHistory),
                             this.getId(),
@@ -777,6 +779,7 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
                 // Upon receiving a checkpoint the replica gets out of disgruntled state
                 //this.disgruntled = false;
                 CheckpointMessage checkpointII = new CheckpointIIMessage(
+                        this.getViewNumber(),
                         checkpoint.getLastSeqNumber(),
                         this.digest(this.speculativeHistory),
                         this.getId(),
@@ -799,12 +802,12 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
                     long largestSeq = Math.max(this.seqCounter.get(), checkpoint.getLastSeqNumber());
                     this.seqCounter.set(largestSeq);
                     CheckpointMessage checkpointIII = new CheckpointIIIMessage(
+                            this.getViewNumber(),
                             checkpoint.getLastSeqNumber(),
                             this.digest(this.speculativeHistory),
                             this.getId(),
                             this.speculativeHistory
                     );
-
                     // I add it to the log as the sendCheckpoint doesnt include self
                     messageLog.appendCheckpoint(checkpointIII, this.tolerance, this.speculativeHistory, this.getViewNumber());
                     this.sendCheckpoint(checkpointIII);
@@ -932,6 +935,7 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
         //this.seqCounter.set(history.getGreatestSeqNumber());
 
         CheckpointMessage checkpoint = new CheckpointIMessage(
+                this.getViewNumber(),
                 history.getGreatestSeqNumber(),
                 this.digest(history),
                 this.getLeaderId(),

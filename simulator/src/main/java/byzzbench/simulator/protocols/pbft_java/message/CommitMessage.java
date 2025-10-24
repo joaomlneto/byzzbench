@@ -17,4 +17,5 @@ public class CommitMessage extends IPhaseMessage {
     public String getType() {
         return "COMMIT";
     }
+
 }

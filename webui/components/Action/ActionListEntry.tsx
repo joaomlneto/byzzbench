@@ -4,6 +4,8 @@ import {
   FaultInjectionAction,
   TriggerTimeoutAction,
 } from "@/lib/byzzbench-client";
+import { JsonInput } from "@mantine/core";
+import { IconBolt } from "@tabler/icons-react";
 import React from "react";
 
 export type ActionListEntryProps = {
@@ -37,6 +39,22 @@ export const ActionListEntry = ({
         <NodeMailboxEntry
           scenarioId={scenarioId}
           messageId={timeoutAction.timeoutEventId!}
+        />
+      </div>
+    );
+  }
+
+  if (action.type === "FaultInjectionAction") {
+    const faultInjectionAction = action as FaultInjectionAction;
+    return (
+      <div>
+        <IconBolt size={16} /> {faultInjectionAction.faultBehaviorId} (
+        {faultInjectionAction.eventId})
+        <JsonInput
+          readOnly
+          autosize
+          maxRows={5}
+          value={JSON.stringify(faultInjectionAction.payload, null, 2)}
         />
       </div>
     );

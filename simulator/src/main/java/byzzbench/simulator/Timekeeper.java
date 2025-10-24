@@ -1,16 +1,14 @@
 package byzzbench.simulator;
 
 import byzzbench.simulator.faults.Fault;
-import byzzbench.simulator.transport.Event;
-import byzzbench.simulator.transport.MutateMessageEventPayload;
-import byzzbench.simulator.transport.TimeoutEvent;
-import byzzbench.simulator.transport.TransportObserver;
+import byzzbench.simulator.transport.*;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import java.io.Serializable;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.SortedMap;
+import java.util.SortedSet;
 import java.util.TreeMap;
 
 /**
@@ -61,6 +59,11 @@ public class Timekeeper implements Serializable, TransportObserver {
      */
     public Instant getTime(Node node) {
         return times.computeIfAbsent(node.getId(), k -> Instant.ofEpochMilli(0));
+    }
+
+    @Override
+    public void onMulticast(Node sender, SortedSet<String> recipients, MessagePayload payload) {
+        // nothing to do
     }
 
     @Override

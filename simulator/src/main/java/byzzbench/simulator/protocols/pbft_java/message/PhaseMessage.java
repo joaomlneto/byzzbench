@@ -7,7 +7,7 @@ import lombok.With;
 @Data
 @EqualsAndHashCode(callSuper = true)
 @With
-public class PhaseMessage extends IPhaseMessage {
+public abstract class PhaseMessage extends IPhaseMessage {
     private final long viewNumber;
     private final long sequenceNumber;
     private final byte[] digest;

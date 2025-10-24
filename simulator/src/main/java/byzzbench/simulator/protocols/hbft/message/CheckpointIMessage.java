@@ -1,24 +1,25 @@
 package byzzbench.simulator.protocols.hbft.message;
 
-import java.util.Map;
-import java.util.SortedMap;
-
 import byzzbench.simulator.protocols.hbft.SpeculativeHistory;
 import lombok.Data;
 import lombok.With;
 
+import java.util.Map;
+import java.util.SortedMap;
+
 @Data
 @With
 public class CheckpointIMessage extends CheckpointMessage {
+    private final long viewNumber;
     private final long lastSeqNumber;
     // Digest of speculative execution history
     private final byte[] digest;
     private final String replicaId;
-    /* 
+    /*
      * Probably non-standard implementation.
      * As of hbft 4.2 the CHECKPOINT message do not include
      * the speculative history, only the digest.
-     * 
+     *
      * However, the paper mentions multiple times that,
      * the checkpoint sub-protocol should fix inconsistencies
      * only way for a replica to adjust its history with the checkpoint's
@@ -45,24 +46,24 @@ public class CheckpointIMessage extends CheckpointMessage {
                 return true;
             }
             if (this.history == null || checkpoint.history == null) {
-                return false; 
+                return false;
             }
 
 
             SortedMap<Long, RequestMessage> otherReqs = checkpoint.getHistory().getRequests();
             SortedMap<Long, RequestMessage> thisReqs = this.getHistory().getRequests();
-            
+
             if (thisReqs == null && otherReqs == null) {
                 return true;
             }
             if (thisReqs == null || otherReqs == null) {
                 return false; // Only one is null
             }
-    
+
             if (thisReqs.size() != otherReqs.size()) {
                 return false; // Different sizes
             }
-    
+
             for (Long key : thisReqs.keySet()) {
                 if (!otherReqs.containsKey(key) || !otherReqs.get(key).equals(thisReqs.get(key))) {
                     return false;

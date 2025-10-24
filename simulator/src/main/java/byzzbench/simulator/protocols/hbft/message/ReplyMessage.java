@@ -1,19 +1,18 @@
 package byzzbench.simulator.protocols.hbft.message;
 
-import byzzbench.simulator.transport.MessagePayload;
+import byzzbench.simulator.exploration_strategy.byzzfuzz.MessageWithByzzFuzzRoundInfo;
 import byzzbench.simulator.protocols.hbft.SpeculativeHistory;
+import byzzbench.simulator.transport.MessagePayload;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.With;
 
 import java.io.Serializable;
 
-import byzzbench.simulator.transport.messages.MessageWithRound;
-
 @Data
 @EqualsAndHashCode(callSuper = true)
 @With
-public class ReplyMessage extends MessagePayload implements MessageWithRound{
+public class ReplyMessage extends MessagePayload implements MessageWithByzzFuzzRoundInfo {
     private final long viewNumber;
     private final long timestamp;
     private final long sequenceNumber;

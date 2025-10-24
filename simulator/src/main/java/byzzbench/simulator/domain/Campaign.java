@@ -2,6 +2,7 @@ package byzzbench.simulator.domain;
 
 import byzzbench.simulator.config.CampaignConfig;
 import byzzbench.simulator.config.TerminationConfig;
+import byzzbench.simulator.exploration_strategy.ExplorationStrategyParameters;
 import byzzbench.simulator.utils.NonNull;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
@@ -40,6 +41,11 @@ public class Campaign implements Serializable {
      * The unique identifier of the exploration strategy used to generate scenarios for this campaign.
      */
     private String explorationStrategyId;
+
+    /**
+     * The parameters for the exploration strategy
+     */
+    private ExplorationStrategyParameters explorationStrategyParameters;
 
     /**
      * A random number generator initialized with the initial random seed.

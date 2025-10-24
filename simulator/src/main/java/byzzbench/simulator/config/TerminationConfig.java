@@ -2,11 +2,13 @@ package byzzbench.simulator.config;
 
 import lombok.Data;
 
+import java.io.Serializable;
+
 /**
  * Configuration for the termination
  */
 @Data
-public class TerminationConfig {
+public class TerminationConfig implements Serializable {
     /**
      * The minimum number of events to run before termination. 0 means no minimum.
      */

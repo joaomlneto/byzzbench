@@ -25,6 +25,11 @@ public class PrecommitMessage extends GenericMessage {
     }
 
     @Override
+    public long getViewNumber() {
+        throw new UnsupportedOperationException("To do");
+    }
+
+    @Override
     public long getRound() {
         return totalSeq + sequence + 3;
     }

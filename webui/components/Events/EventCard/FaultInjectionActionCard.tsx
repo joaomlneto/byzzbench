@@ -14,10 +14,7 @@ export const FaultInjectionActionCard = ({
 }: FaultInjectionActionCardProps) => {
   return (
     <Card p={2} {...otherProps}>
-      <NodeStateNavLink
-        label={`${action.actionId}: Mutate Message`}
-        data={action}
-      />
+      <NodeStateNavLink label={`Mutate Message`} data={action} />
     </Card>
   );
 };

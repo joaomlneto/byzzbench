@@ -10,6 +10,7 @@ import byzzbench.simulator.faults.Fault;
 import byzzbench.simulator.transport.Event;
 import byzzbench.simulator.transport.MessageEvent;
 import byzzbench.simulator.transport.TimeoutEvent;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
@@ -44,6 +45,7 @@ public abstract class ExplorationStrategy {
     /**
      * Set of scenarios that have been initialized
      */
+    @JsonIgnore
     private final Set<Scenario> initializedScenarios = new HashSet<>();
 
     /**
@@ -56,7 +58,7 @@ public abstract class ExplorationStrategy {
      *
      * @param scenario the scenario to ensure is initialized
      */
-    public void initializeScenarioIfNotYetDone(Scenario scenario) {
+    public void ensureScenarioInitialized(Scenario scenario) {
         if (!initializedScenarios.contains(scenario)) {
             this.initializeScenario(scenario);
             initializedScenarios.add(scenario);
@@ -263,9 +265,9 @@ public abstract class ExplorationStrategy {
     }
 
     /**
-     * Returns all available actions (deliver message, trigger timeout) in the scenario
+     * Returns all available actions (queued messages, timeouts and faults) in the scenario
      *
-     * @param scenario The scenario
+     * @param scenario The scenario to get the available actions for
      * @return The list of available actions
      */
     public List<Action> getAvailableActions(Scenario scenario) {

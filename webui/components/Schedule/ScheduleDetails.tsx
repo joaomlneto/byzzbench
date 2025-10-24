@@ -94,9 +94,7 @@ export const ScheduleDetails = ({
             />
             {schedule.actions
               ?.slice(start, end)
-              .map((action) => (
-                <ActionCard action={action} key={action.actionId} />
-              ))}
+              .map((action, i) => <ActionCard action={action} key={i} />)}
           </>
         )}
       </Card.Section>

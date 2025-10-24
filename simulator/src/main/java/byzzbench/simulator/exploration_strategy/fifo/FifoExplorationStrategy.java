@@ -11,6 +11,7 @@ import byzzbench.simulator.transport.MessageEvent;
 import org.springframework.stereotype.Component;
 
 import java.util.Comparator;
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -33,7 +34,32 @@ public class FifoExplorationStrategy extends ExplorationStrategy {
     }
 
     @Override
+    public List<Action> getAvailableActions(Scenario scenario) {
+        List<Action> actions = super.getAvailableActions(scenario);
+
+        // filter for DeliverMessageAction
+        List<DeliverMessageAction> queuedMessageActions = actions.stream()
+                .filter(DeliverMessageAction.class::isInstance)
+                .map(DeliverMessageAction.class::cast)
+                .toList();
+
+        // if there are queued messages, only return the first of those actions!
+        if (!queuedMessageActions.isEmpty()) {
+            DeliverMessageAction firstAction = queuedMessageActions.stream()
+                    .min(Comparator.comparingLong(DeliverMessageAction::getMessageEventId))
+                    .get();
+            return List.of(firstAction);
+        }
+
+        // otherwise, return all actions (which may include timeouts)
+        // TODO: return only the first timeout action as well?
+        return actions;
+    }
+
+    @Override
     public Optional<Action> scheduleNext(Scenario scenario) {
+        // FIXME: rewrite this method using getAvailableActions();
+
         // Get the next event
         Optional<Event> event =
                 scenario.getTransport()

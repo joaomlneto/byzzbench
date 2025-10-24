@@ -17,4 +17,5 @@ public class PrepareMessage extends IPhaseMessage {
     public String getType() {
         return "PREPARE";
     }
+
 }

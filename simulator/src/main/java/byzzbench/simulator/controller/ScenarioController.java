@@ -250,19 +250,6 @@ public class ScenarioController {
                 .collect(Collectors.toCollection(TreeSet::new));
     }
 
-    @GetMapping("/scenarios/{scenarioId}/automatic-faults")
-    public SortedSet<String> getAutomaticFaults(@PathVariable long scenarioId) {
-        return scenarioService.getScenarioById(scenarioId).getTransport().getAutomaticFaults().keySet()
-                .stream()
-                .sorted()
-                .collect(Collectors.toCollection(TreeSet::new));
-    }
-
-    @DeleteMapping("/scenarios/{scenarioId}/automatic-faults")
-    public void deleteAutomaticFaults(@PathVariable long scenarioId) {
-        scenarioService.getScenarioById(scenarioId).getTransport().getAutomaticFaults().clear();
-    }
-
     @GetMapping("/scenarios/{scenarioId}/enabled-network-faults")
     public SortedSet<String> getEnabledNetworkFaults(@PathVariable long scenarioId) {
         return scenarioService.getScenarioById(scenarioId)
@@ -276,11 +263,6 @@ public class ScenarioController {
     @GetMapping("/scenarios/{scenarioId}/network-faults/{faultId}")
     public Fault getNetworkFault(@PathVariable long scenarioId, @PathVariable String faultId) {
         return scenarioService.getScenarioById(scenarioId).getTransport().getNetworkFault(faultId);
-    }
-
-    @GetMapping("/scenarios/{scenarioId}/automatic-faults/{faultId}")
-    public Fault getAutomaticFault(@PathVariable long scenarioId, @PathVariable String faultId) {
-        return scenarioService.getScenarioById(scenarioId).getTransport().getAutomaticFaults().get(faultId);
     }
 
     @PostMapping("/scenarios/{scenarioId}/network-fault/{faultId}")

@@ -1,8 +1,6 @@
 package byzzbench.simulator.protocols.fab2.messages;
 
-import byzzbench.simulator.protocols.pbft_java.message.IPhaseMessage;
 import byzzbench.simulator.transport.MessagePayload;
-import byzzbench.simulator.transport.messages.MessageWithRound;
 import lombok.*;
 
 @AllArgsConstructor

@@ -6,6 +6,7 @@ import lombok.Getter;
 import lombok.experimental.SuperBuilder;
 
 import java.util.List;
+import java.util.Map;
 
 @Getter
 @SuperBuilder
@@ -14,4 +15,6 @@ public class ByzzFuzzScenarioStrategyData extends ScenarioStrategyData {
     private final int numRoundsWithNetworkFaults;
     private final int numRoundsWithFaults;
     private final List<Fault> faults;
+    private final Map<String, ByzzFuzzRoundInfo> roundInfos;
+    private final Map<String, Long> replicaRounds;
 }

@@ -1,3 +1,5 @@
+"use client";
+
 import { ScenarioAside } from "@/components/Scenario";
 import { SimulationAccordion } from "@/components/Simulation";
 import { Container, Stack, Title } from "@mantine/core";

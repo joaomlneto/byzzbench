@@ -5,6 +5,8 @@ import byzzbench.simulator.Replica;
 import byzzbench.simulator.Scenario;
 import byzzbench.simulator.domain.ScenarioParameters;
 import byzzbench.simulator.domain.Schedule;
+import byzzbench.simulator.exploration_strategy.byzzfuzz.ByzzFuzzRoundInfoOracle;
+import byzzbench.simulator.exploration_strategy.byzzfuzz.ByzzFuzzScenario;
 import lombok.extern.java.Log;
 
 import java.time.Duration;
@@ -14,8 +16,9 @@ import java.time.Duration;
  * of the PBFT protocol in Java.
  */
 @Log
-public class PbftJavaScenario extends Scenario {
+public class PbftJavaScenario extends Scenario implements ByzzFuzzScenario {
     private final int numReplicas = 4;
+    private final PbftJavaByzzFuzzRoundInfoOracle roundInfoOracle;
 
     /**
      * Creates a new scenario with the given unique identifier and exploration_strategy.
@@ -24,6 +27,7 @@ public class PbftJavaScenario extends Scenario {
      */
     public PbftJavaScenario(Schedule schedule) {
         super(schedule);
+        roundInfoOracle = new PbftJavaByzzFuzzRoundInfoOracle(this);
     }
 
     @Override
@@ -72,5 +76,10 @@ public class PbftJavaScenario extends Scenario {
     @Override
     public Class<? extends Client> getClientClass() {
         return PbftClient.class;
+    }
+
+    @Override
+    public ByzzFuzzRoundInfoOracle getRoundInfoOracle() {
+        return this.roundInfoOracle;
     }
 }
