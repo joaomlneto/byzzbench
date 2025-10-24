@@ -96,22 +96,6 @@ public class CampaignService {
     public class CampaignRunner implements Runnable {
         private final Campaign campaign;
 
-        /**
-         * Number of terminated scenarios (bug found)
-         */
-        private long numTerm = 0;
-
-        // statistics
-        /**
-         * Number of maxed out scenarios (no bugs found, reached max steps)
-         */
-        private long numMaxedOut = 0;
-
-        /**
-         * Number of errored scenarios (simulation error)
-         */
-        private long numErr = 0;
-
         @Override
         public void run() {
             log.info(String.format("Starting campaign %d with %d scenarios%n",
@@ -122,10 +106,6 @@ public class CampaignService {
                 String explorationStrategyId = campaign.getExplorationStrategyId();
                 ExplorationStrategy explorationStrategy = explorationStrategyService.getExplorationStrategy(explorationStrategyId);
 
-                this.numTerm = 0;
-                this.numMaxedOut = 0;
-                this.numErr = 0;
-
                 // run the scenario until the stop flag is set
                 for (int i = 0; running && i < numScenarios; i++) {
                     log.info(String.format("Running scenario %d/%d%n", i + 1, numScenarios));
@@ -135,19 +115,13 @@ public class CampaignService {
 
                     ScenarioRunner r = new ScenarioRunner(campaign, scenario, explorationStrategy);
                     r.run();
-                    ScenarioExecutionResult result = r.getResult();
-                    switch (result) {
-                        case CORRECT -> numMaxedOut++;
-                        case TERMINATED -> numTerm++;
-                        case ERRORED -> numErr++;
-                    }
                 }
             } catch (Exception e) {
                 log.severe("Error running campaign: " + e);
                 e.printStackTrace();
             } finally {
                 log.info(String.format("Campaign %d finished: %d terminated, %d maxed out, %d errored%n",
-                        campaign.getCampaignId(), numTerm, numMaxedOut, numErr));
+                        campaign.getCampaignId(), this.campaign.getNumTerm(), this.campaign.getNumMaxedOut(), this.campaign.getNumErr()));
                 running = false;
             }
 
@@ -257,6 +231,9 @@ public class CampaignService {
                 e.printStackTrace();
                 this.finalizeSchedule(currentScenario, Set.of(new ErroredPredicate(currentScenario)));
                 this.result = ScenarioExecutionResult.ERRORED;
+            } finally {
+                this.campaign.processScenarioResult(this.result);
+                campaignRepository.save(campaign);
             }
         }
     }

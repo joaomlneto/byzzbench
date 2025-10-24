@@ -3,6 +3,7 @@ package byzzbench.simulator.domain;
 import byzzbench.simulator.config.CampaignConfig;
 import byzzbench.simulator.config.TerminationConfig;
 import byzzbench.simulator.exploration_strategy.ExplorationStrategyParameters;
+import byzzbench.simulator.service.CampaignService;
 import byzzbench.simulator.utils.NonNull;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
@@ -86,6 +87,21 @@ public class Campaign implements Serializable {
     private TerminationConfig termination;
 
     /**
+     * How many schedules were aborted due to correctness violations (invariant violations)
+     */
+    private long numTerm = 0;
+
+    /**
+     * How many schedules were aborted due to execution errors (implementation issues)
+     */
+    private long numErr = 0;
+
+    /**
+     * How many schedules were finished due to max length (OK)
+     */
+    private long numMaxedOut = 0;
+
+    /**
      * Create a campaign from a campaign configuration.
      *
      * @param config the campaign configuration
@@ -127,5 +143,18 @@ public class Campaign implements Serializable {
                 .scenarioId(this.scenarioId)
                 // TODO set other parameters from campaign configuration
                 .build();
+    }
+
+    /**
+     * Process the result of a given scenario
+     *
+     * @param result the result
+     */
+    public void processScenarioResult(CampaignService.ScenarioExecutionResult result) {
+        switch (result) {
+            case CampaignService.ScenarioExecutionResult.CORRECT -> numMaxedOut++;
+            case CampaignService.ScenarioExecutionResult.TERMINATED -> numTerm++;
+            case CampaignService.ScenarioExecutionResult.ERRORED -> numErr++;
+        }
     }
 }
