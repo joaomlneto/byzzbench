@@ -1,4 +1,4 @@
-FROM node:20.19.1-alpine AS nodejs-base
+FROM node:22.21.0-alpine AS nodejs-base
 
 # Generate the OpenAPI docs and build the Java application
 FROM gradle:8 AS java-builder
