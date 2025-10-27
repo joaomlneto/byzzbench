@@ -1,6 +1,5 @@
 package byzzbench.simulator.config;
 
-import byzzbench.simulator.exploration_strategy.ExplorationStrategyParameters;
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
@@ -31,10 +30,6 @@ public class ByzzBenchConfig {
      * Policy for saving schedules in the database.
      */
     private SaveScheduleMode saveSchedules = SaveScheduleMode.ALL;
-    /**
-     * Scheduler parameters.
-     */
-    private ExplorationStrategyParameters scheduler = new ExplorationStrategyParameters();
 
     /**
      * List of campaign configurations to run at startup.

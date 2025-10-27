@@ -54,6 +54,40 @@ public abstract class ExplorationStrategy {
     protected Random rand = new Random(1L); // FIXME: seed
 
     /**
+     * The weight assigned to the action of delivering a message within the exploration strategy.
+     * This value is used to prioritize or influence the likelihood of delivering a message
+     * relative to other possible actions in the simulation
+     */
+    private int deliverMessageWeight = 0;
+
+    /**
+     * Weight assigned to the action of delivering a timeout event within the exploration strategy.
+     */
+    private int deliverTimeoutWeight = 0;
+
+    /**
+     * Weight assigned to the action of dropping a message.
+     */
+    private int dropMessageWeight = 0;
+
+    /**
+     * The maximum number of messages that can be dropped during the execution of the exploration
+     * strategy.
+     */
+    private int maxDropMessages = 0;
+
+    /**
+     * Weight assigned to the action of mutating a message.
+     */
+    private int mutateMessageWeight = 0;
+
+    /**
+     * The maximum number of messages that can be mutated during the execution of the exploration
+     * strategy.
+     */
+    private int maxMutateMessages = 0;
+
+    /**
      * Initializes the scenario if it has not yet been initialized.
      *
      * @param scenario the scenario to ensure is initialized
@@ -79,6 +113,13 @@ public abstract class ExplorationStrategy {
      * @param parameters The JSON object containing the parameters for the exploration_strategy.
      */
     public final void loadParameters(ExplorationStrategyParameters parameters) {
+        this.rand = new Random(parameters.getRandomSeed());
+        this.deliverMessageWeight = parameters.getDeliverMessageWeight();
+        this.deliverTimeoutWeight = parameters.getDeliverTimeoutWeight();
+        this.dropMessageWeight = parameters.getDropMessageWeight();
+        this.maxDropMessages = parameters.getMaxDropMessages();
+        this.mutateMessageWeight = parameters.getMutateMessageWeight();
+        this.maxMutateMessages = parameters.getMaxMutateMessages();
         this.loadSchedulerParameters(parameters);
     }
 
@@ -222,24 +263,6 @@ public abstract class ExplorationStrategy {
     }
 
     /**
-     * Returns the weight of delivering a message
-     *
-     * @return The weight of delivering a message
-     */
-    public int deliverMessageWeight() {
-        return config.getScheduler().getDeliverMessageWeight();
-    }
-
-    /**
-     * Returns the weight of triggering a timeout
-     *
-     * @return The weight of triggering a timeout
-     */
-    public int deliverTimeoutWeight() {
-        return config.getScheduler().getDeliverTimeoutWeight();
-    }
-
-    /**
      * Returns the weight of delivering a request from a client
      *
      * @return The weight of delivering a request from a client
@@ -250,8 +273,8 @@ public abstract class ExplorationStrategy {
             return 0;
         }
 
-        int remaining = remainingDropMessages.computeIfAbsent(scenario, s -> config.getScheduler().getMaxDropMessages());
-        return remaining > 0 ? config.getScheduler().getDropMessageWeight() : 0;
+        int remaining = remainingDropMessages.computeIfAbsent(scenario, s -> this.getMaxDropMessages());
+        return remaining > 0 ? this.getDropMessageWeight() : 0;
     }
 
     /**
@@ -260,8 +283,8 @@ public abstract class ExplorationStrategy {
      * @return The weight of mutating and delivering a message
      */
     public int mutateMessageWeight(Scenario scenario) {
-        int remaining = remainingMutateMessages.computeIfAbsent(scenario, s -> config.getScheduler().getMaxMutateMessages());
-        return remaining > 0 ? config.getScheduler().getMutateMessageWeight() : 0;
+        int remaining = remainingMutateMessages.computeIfAbsent(scenario, s -> this.getMaxMutateMessages());
+        return remaining > 0 ? this.getMutateMessageWeight() : 0;
     }
 
     /**
@@ -285,8 +308,8 @@ public abstract class ExplorationStrategy {
      */
     public ScenarioStrategyData getScenarioStrategyData(Scenario scenario) {
         return ScenarioStrategyData.builder()
-                .remainingDropMessages(this.getConfig().getScheduler().getMaxDropMessages())
-                .remainingMutateMessages(this.getConfig().getScheduler().getMaxMutateMessages())
+                .remainingDropMessages(this.getMaxDropMessages())
+                .remainingMutateMessages(this.getMaxMutateMessages())
                 .initializedByStrategy(this.getInitializedScenarios().contains(scenario))
                 .build();
     }

@@ -2,6 +2,7 @@ package byzzbench.simulator.service;
 
 import byzzbench.simulator.config.ByzzBenchConfig;
 import byzzbench.simulator.exploration_strategy.ExplorationStrategy;
+import byzzbench.simulator.exploration_strategy.ExplorationStrategyParameters;
 import byzzbench.simulator.utils.NonNull;
 import org.springframework.stereotype.Service;
 
@@ -19,7 +20,8 @@ public class ExplorationStrategyService {
                 throw new IllegalArgumentException("Duplicate exploration_strategy id: " + explorationStrategy.getId());
             }
             explorationStrategies.put(explorationStrategy.getId().toLowerCase(), explorationStrategy);
-            explorationStrategy.loadParameters(config.getScheduler());
+            // FIXME
+            explorationStrategy.loadParameters(new ExplorationStrategyParameters());
         }
     }
 

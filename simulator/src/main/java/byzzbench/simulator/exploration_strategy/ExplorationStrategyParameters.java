@@ -1,5 +1,6 @@
 package byzzbench.simulator.exploration_strategy;
 
+import byzzbench.simulator.ExecutionMode;
 import byzzbench.simulator.config.ByzzBenchConfig;
 import lombok.Data;
 
@@ -12,6 +13,8 @@ import java.util.Map;
 @Data
 public class ExplorationStrategyParameters implements Serializable {
     private String id;
+    private ExecutionMode executionMode;
+    private long randomSeed;
     private int maxMutationsPerMessage = 2;
     private int maxDropMessages = 0;
     private int maxMutateMessages = 0;

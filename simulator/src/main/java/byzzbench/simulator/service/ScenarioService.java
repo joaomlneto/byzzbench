@@ -3,6 +3,7 @@ package byzzbench.simulator.service;
 import byzzbench.simulator.Scenario;
 import byzzbench.simulator.config.ByzzBenchConfig;
 import byzzbench.simulator.domain.Action;
+import byzzbench.simulator.domain.Campaign;
 import byzzbench.simulator.domain.ScenarioParameters;
 import byzzbench.simulator.domain.Schedule;
 import byzzbench.simulator.repository.ScheduleRepository;
@@ -101,12 +102,14 @@ public class ScenarioService {
      * Generate a scenario from parameters.
      *
      * @param parameters the parameters that describe the scenario to generate
+     * @param campaign   the campaign this scenario belongs to
      * @return the generated scenario
      * @throws IllegalArgumentException if the scenario id is unknown
      * @throws IllegalStateException    if the schedule is already materialized
      */
-    public synchronized Scenario generateScenario(ScenarioParameters parameters) {
+    public synchronized Scenario generateScenario(ScenarioParameters parameters, Campaign campaign) {
         Schedule schedule = new Schedule(parameters);
+        schedule.setCampaign(campaign);
         scheduleRepository.save(schedule);
         return this.generateScenario(schedule);
     }

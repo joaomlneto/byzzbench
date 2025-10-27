@@ -9,10 +9,11 @@ import byzzbench.simulator.exploration_strategy.ExplorationStrategyParameters;
 import byzzbench.simulator.exploration_strategy.ScenarioStrategyData;
 import byzzbench.simulator.exploration_strategy.random.RandomExplorationStrategy;
 import byzzbench.simulator.faults.Fault;
-import byzzbench.simulator.faults.FaultFactory;
 import byzzbench.simulator.faults.ScenarioContext;
-import byzzbench.simulator.faults.factories.ByzzFuzzScenarioFaultFactory;
+import byzzbench.simulator.faults.faults.ByzzFuzzNetworkFault;
+import byzzbench.simulator.faults.faults.ByzzFuzzProcessFault;
 import byzzbench.simulator.transport.Event;
+import byzzbench.simulator.utils.SetSubsets;
 import lombok.Getter;
 import lombok.extern.java.Log;
 import org.springframework.stereotype.Component;
@@ -95,9 +96,11 @@ public class ByzzFuzzExplorationStrategy extends RandomExplorationStrategy {
             throw new UnsupportedOperationException("Scenario is not a ByzzFuzzScenario");
         }
 
+        ExplorationStrategyParameters config = scenario.getSchedule().getCampaign().getExplorationStrategyParameters();
+
         return this.scenarioData.computeIfAbsent(scenario, s -> ByzzFuzzScenarioStrategyData.builder()
-                .remainingDropMessages(this.getConfig().getScheduler().getMaxDropMessages())
-                .remainingMutateMessages(this.getConfig().getScheduler().getMaxMutateMessages())
+                .remainingDropMessages(config.getMaxDropMessages())
+                .remainingMutateMessages(config.getMaxMutateMessages())
                 .initializedByStrategy(this.getInitializedScenarios().contains(scenario))
                 .numRoundsWithProcessFaults(this.getNumRoundsWithProcessFaults())
                 .numRoundsWithNetworkFaults(this.getNumRoundsWithNetworkFaults())
@@ -114,15 +117,44 @@ public class ByzzFuzzExplorationStrategy extends RandomExplorationStrategy {
             throw new UnsupportedOperationException("Scenario is not a ByzzFuzzScenario");
         }
 
-        // Generate round-aware small-scope mutations for the scenario
-        FaultFactory faultFactory = new ByzzFuzzScenarioFaultFactory();
-        ScenarioContext context = new ScenarioContext(scenario);
-        List<Fault> faults = faultFactory.generateFaults(context);
-        // FIXME: this is old behavior
-        //faults.forEach(fault -> scenario.getTransport().addFault(fault, true));
+        List<Fault> faults = new ArrayList<>();
+        ExplorationStrategyParameters config = scenario.getSchedule().getCampaign().getExplorationStrategyParameters();
 
+        // get exploration_strategy params
+        int c = Integer.parseInt(config.getParams().get("numRoundsWithProcessFaults"));
+        int d = Integer.parseInt(config.getParams().get("numRoundsWithNetworkFaults"));
+        int r = Integer.parseInt(config.getParams().get("numRoundsWithFaults"));
+        Set<String> replicaIds = scenario.getReplicas().keySet();
+        Set<String> faultyReplicaIds = scenario.getFaultyReplicaIds();
+
+        // Create network faults
+        for (int i = 1; i <= d; i++) {
+            int round = rand.nextInt(r) + 1;
+            Set<String> partition = SetSubsets.getRandomNonEmptySubset(replicaIds);
+            Fault networkFault = new ByzzFuzzNetworkFault(partition, round);
+            faults.add(networkFault);
+        }
+
+        // Create process faults
+        for (int i = 1; i <= c; i++) {
+            int round = rand.nextInt(r) + 1;
+            String sender = faultyReplicaIds.stream().skip(rand.nextInt(faultyReplicaIds.size())).findFirst().orElseThrow();
+            Set<String> recipientIds = SetSubsets.getRandomNonEmptySubset(replicaIds);
+
+            // generate process fault
+            Fault processFault = new ByzzFuzzProcessFault(recipientIds, sender, round);
+            faults.add(processFault);
+        }
+
+        // Faults
         log.fine("ByzzFuzz initialized scenario with " + faults.size() + " faults.");
-        this.getScenarioData(scenario).getFaults().addAll(faults);
+
+        this.scenarioData.put(scenario, ByzzFuzzScenarioStrategyData.builder()
+                .numRoundsWithProcessFaults(c)
+                .numRoundsWithNetworkFaults(d)
+                .numRoundsWithFaults(r)
+                .faults(faults)
+                .build());
     }
 
     @Override

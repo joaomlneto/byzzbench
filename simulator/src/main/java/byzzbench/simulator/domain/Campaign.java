@@ -46,6 +46,7 @@ public class Campaign implements Serializable {
     /**
      * The parameters for the exploration strategy
      */
+    @Column(length = 2048)
     private ExplorationStrategyParameters explorationStrategyParameters;
 
     /**
@@ -120,6 +121,7 @@ public class Campaign implements Serializable {
         campaign.setNumScenarios(config.getNumScenarios());
         campaign.setRandom(new Random(config.getInitialRandomSeed()));
         campaign.setTermination(config.getTermination());
+        campaign.setExplorationStrategyParameters(config.getExplorationStrategyParameters());
         return campaign;
     }
 

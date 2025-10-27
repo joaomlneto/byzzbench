@@ -20,7 +20,7 @@ spring:
     #driver-class-name: org.postgresql.Driver
   jpa:
     generate-ddl: true
-    show-sql: true
+    #show-sql: true # Uncomment to see SQL statements
     defer-datasource-initialization: true
     database-platform: org.hibernate.dialect.H2Dialect
     #database-platform: org.hibernate.dialect.PostgreSQLDialect
@@ -42,45 +42,64 @@ byzzbench:
   removeCompletedSimulations: false # Whether to remove completed simulations.
   saveSchedules: all # which schedules to save? 'all', 'buggy' or 'none'.
 
-  scheduler:
-    id: "byzzfuzz" # The ID of the exploration_strategy to use
-    executionMode: sync # async (default, any message delivered) or sync (communication-closure hypothesis, FIFO)
-    maxDropMessages: 0 # Maximum number of messages to drop per scenario
-    maxMutateMessages: 0 # Maximum number of messages to mutate per scenario
-    deliverTimeoutWeight: 1 # The weight for exploration_strategy to trigger a timeout
-    deliverMessageWeight: 99 # The weight for exploration_strategy to deliver a message
-    dropMessageWeight: 0 # The weight for exploration_strategy to drop a message
-    mutateMessageWeight: 0 # The weight for exploration_strategy to mutate a message
-    params: # additional parameters for the exploration_strategy
-      # ByzzFuzz
-      numRoundsWithProcessFaults: 2
-      numRoundsWithNetworkFaults: 1
-      numRoundsWithFaults: 10
-      # Twins
-      numReplicas: 1
-      numTwinsPerReplica: 2
-      numRounds: 5
-
   campaigns:
     - initialRandomSeed: 123
-      numScenarios: 3
+      numScenarios: 10
       scenarioParameters:
         scenarioId: byzzbench.simulator.protocols.pbft_java.PbftJavaScenario
         numReplicas: 4
         numClients: 1
       explorationStrategyId: byzzfuzz
+      explorationStrategyParameters:
+        id: "byzzfuzz" # The ID of the exploration_strategy to use
+        executionMode: sync # async (default, any message delivered) or sync (communication-closure hypothesis, FIFO)
+        maxDropMessages: 0 # Maximum number of messages to drop per scenario
+        maxMutateMessages: 0 # Maximum number of messages to mutate per scenario
+        deliverTimeoutWeight: 1 # The weight for exploration_strategy to trigger a timeout
+        deliverMessageWeight: 99 # The weight for exploration_strategy to deliver a message
+        dropMessageWeight: 0 # The weight for exploration_strategy to drop a message
+        mutateMessageWeight: 0 # The weight for exploration_strategy to mutate a message
+        params: # additional parameters for the exploration_strategy
+          # ByzzFuzz
+          numRoundsWithProcessFaults: 0
+          numRoundsWithNetworkFaults: 3
+          numRoundsWithFaults: 3
+          # Twins
+          numReplicas: 1
+          numTwinsPerReplica: 2
+          numRounds: 5
       termination:
-        minEvents: 10
+        minEvents: 0 #10
         minRounds: 0
         samplingFrequency: 1
+        gstGracePeriod: 100
     - initialRandomSeed: 456
-      numScenarios: 2
+      numScenarios: 0
       scenarioParameters:
         scenarioId: byzzbench.simulator.protocols.hbft.HbftJavaScenario
         numReplicas: 4
         numClients: 1
-      explorationStrategyId: random
+      explorationStrategyId: byzzfuzz
+      explorationStrategyParameters:
+        id: "byzzfuzz"
+        executionMode: sync
+        maxDropMessages: 0
+        maxMutateMessages: 0
+        deliverTimeoutWeight: 1
+        deliverMessageWeight: 1
+        dropMessageWeight: 0
+        mutateMessageWeight: 0
+        params:
+          # ByzzFuzz
+          numRoundsWithProcessFaults: 0
+          numRoundsWithNetworkFaults: 3
+          numRoundsWithFaults: 3
+          # Twins
+          numReplicas: 1
+          numTwinsPerReplica: 2
+          numRounds: 5
       termination:
         minEvents: 10
         minRounds: 0
         samplingFrequency: 1
+        gstGracePeriod: 100

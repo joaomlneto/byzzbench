@@ -61,8 +61,8 @@ public class RandomExplorationStrategy extends ExplorationStrategy {
         List<MessageEvent> messageEvents = availableEvents.stream().filter(MessageEvent.class::isInstance).map(MessageEvent.class::cast).toList();
         List<MessageEvent> mutateableMessageEvents = messageEvents.stream().filter(msg -> faultyReplicaIds.contains(msg.getSenderId())).toList();
 
-        int timeoutWeight = timeoutEvents.size() * this.deliverTimeoutWeight();
-        int deliverMessageWeight = messageEvents.size() * this.deliverMessageWeight();
+        int timeoutWeight = timeoutEvents.size() * this.getDeliverTimeoutWeight();
+        int deliverMessageWeight = messageEvents.size() * this.getDeliverMessageWeight();
         int dropMessageWeight = (messageEvents.size() * this.dropMessageWeight(scenario));
         int mutateMessageWeight = (mutateableMessageEvents.size() * this.mutateMessageWeight(scenario));
         int dieRoll = this.getRand().nextInt(timeoutWeight + deliverMessageWeight
