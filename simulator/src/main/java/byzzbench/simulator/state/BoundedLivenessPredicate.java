@@ -2,7 +2,6 @@ package byzzbench.simulator.state;
 
 import byzzbench.simulator.*;
 import byzzbench.simulator.faults.Fault;
-import byzzbench.simulator.service.ApplicationContextProvider;
 import byzzbench.simulator.transport.*;
 import lombok.extern.java.Log;
 
@@ -67,7 +66,7 @@ public class BoundedLivenessPredicate extends ScenarioPredicate implements Scena
         long eventsSinceGst = eventsSinceGst(scenario);
 
         // Check if we have exceeded the allowed number of events since GST
-        int gstGracePeriod = ApplicationContextProvider.getConfig().getGstGracePeriod();
+        long gstGracePeriod = scenario.getSchedule().getCampaign().getTermination().getGstGracePeriod();
         if (eventsSinceGst > gstGracePeriod) {
             this.explanation = String.format("Liveness violated: %d events since GST without a committed value (max allowed: %d)", eventsSinceGst, gstGracePeriod);
             return false;
