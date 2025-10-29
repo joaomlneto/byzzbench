@@ -7,7 +7,7 @@ import lombok.Data;
  * A base fault implementation that provides a name, predicate, and behavior.
  */
 @Data
-public class BaseFault implements Fault {
+public class BaseFault extends Fault {
     private final String id;
     @JsonIgnore
     private final FaultPredicate predicate;

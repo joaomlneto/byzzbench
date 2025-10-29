@@ -13,7 +13,7 @@ import lombok.ToString;
 @Getter
 @ToString
 @RequiredArgsConstructor
-public class HealNetworkFault implements Fault {
+public class HealNetworkFault extends Fault {
     public String getId() {
         return "HealNetwork";
     }

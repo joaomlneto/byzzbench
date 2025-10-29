@@ -1,15 +1,11 @@
 package byzzbench.simulator.utils;
 
-import java.util.HashSet;
-import java.util.Random;
-import java.util.Set;
+import java.util.*;
 
 /**
  * Utility class for generating subsets of a set
  */
 public class SetSubsets {
-    private static final Random rand = new Random();
-
     private SetSubsets() {
         // Utility class - cannot be instantiated
     }
@@ -21,8 +17,8 @@ public class SetSubsets {
      * @param <T> The type of the elements in the set
      * @return A collection of all possible subsets of the input set
      */
-    public static <T> Set<Set<T>> getSubsets(Set<T> set) {
-        Set<Set<T>> allSubsets = new HashSet<>();
+    public static <T extends Comparable> List<SortedSet<T>> getSubsets(SortedSet<T> set) {
+        List<SortedSet<T>> allSubsets = new ArrayList<>();
 
         int max = 1 << set.size(); // 2^n
 
@@ -41,8 +37,8 @@ public class SetSubsets {
      * @param <T>   The type of the elements in the set
      * @return The subset of the input set
      */
-    public static <T> Set<T> getSubset(Set<T> set, int index) {
-        Set<T> subset = new HashSet<>();
+    public static <T extends Comparable> SortedSet<T> getSubset(SortedSet<T> set, int index) {
+        SortedSet<T> subset = new TreeSet<>();
         int i = 0;
         for (T element : set) {
             if ((index & (1 << i)) > 0) {
@@ -60,7 +56,7 @@ public class SetSubsets {
      * @param <T> The type of the elements in the set
      * @return A random subset of the input set
      */
-    public static <T> Set<T> getRandomSubset(Set<T> set) {
+    public static <T extends Comparable> SortedSet<T> getRandomSubset(SortedSet<T> set, Random rand) {
         // generate random number between 0 and 2^n
         int random = rand.nextInt(1 << set.size());
         return getSubset(set, random);
@@ -73,7 +69,7 @@ public class SetSubsets {
      * @param <T> The type of the elements in the set
      * @return A random subset of the input set
      */
-    public static <T> Set<T> getRandomNonEmptySubset(Set<T> set) {
+    public static <T extends Comparable> SortedSet<T> getRandomNonEmptySubset(SortedSet<T> set, Random rand) {
         // generate random number between 0 and 2^n
         int random = rand.nextInt(1 << set.size() - 1) + 1;
         return getSubset(set, random);

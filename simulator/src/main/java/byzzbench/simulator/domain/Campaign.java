@@ -2,8 +2,11 @@ package byzzbench.simulator.domain;
 
 import byzzbench.simulator.config.CampaignConfig;
 import byzzbench.simulator.config.TerminationConfig;
+import byzzbench.simulator.exploration_strategy.ExplorationStrategy;
 import byzzbench.simulator.exploration_strategy.ExplorationStrategyParameters;
+import byzzbench.simulator.service.ApplicationContextProvider;
 import byzzbench.simulator.service.CampaignService;
+import byzzbench.simulator.service.ExplorationStrategyService;
 import byzzbench.simulator.utils.NonNull;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
@@ -37,11 +40,6 @@ public class Campaign implements Serializable {
      * The unique identifier of the scenario factory used to generate scenarios for this campaign.
      */
     private String scenarioId;
-
-    /**
-     * The unique identifier of the exploration strategy used to generate scenarios for this campaign.
-     */
-    private String explorationStrategyId;
 
     /**
      * The parameters for the exploration strategy
@@ -103,6 +101,13 @@ public class Campaign implements Serializable {
     private long numMaxedOut = 0;
 
     /**
+     * The exploration strategy instance for this campaign
+     */
+    @Transient
+    @JsonIgnore
+    private transient ExplorationStrategy explorationStrategy;
+
+    /**
      * Create a campaign from a campaign configuration.
      *
      * @param config the campaign configuration
@@ -117,7 +122,6 @@ public class Campaign implements Serializable {
         Campaign campaign = new Campaign();
         campaign.setInitialRandomSeed(config.getInitialRandomSeed());
         campaign.setScenarioId(config.getScenarioParameters().getScenarioId());
-        campaign.setExplorationStrategyId(config.getExplorationStrategyId());
         campaign.setNumScenarios(config.getNumScenarios());
         campaign.setRandom(new Random(config.getInitialRandomSeed()));
         campaign.setTermination(config.getTermination());
@@ -158,5 +162,27 @@ public class Campaign implements Serializable {
             case CampaignService.ScenarioExecutionResult.TERMINATED -> numTerm++;
             case CampaignService.ScenarioExecutionResult.ERRORED -> numErr++;
         }
+    }
+
+    /**
+     * The unique name for the exploration strategy instance for this campaign
+     *
+     * @return the unique identifier for the exploration strategy instance
+     */
+    public String getExplorationStrategyInstanceId() {
+        return "campaign-" + getCampaignId();
+    }
+
+    /**
+     * Retrieve the exploration strategy used for deciding actions on scenarios in the campaign
+     *
+     * @return the exploration strategy instance
+     */
+    public ExplorationStrategy getExplorationStrategy() {
+        if (this.explorationStrategy == null) {
+            ExplorationStrategyService explorationStrategyService = ApplicationContextProvider.getExplorationStrategyService();
+            this.explorationStrategy = explorationStrategyService.createExplorationStrategy(this);
+        }
+        return this.explorationStrategy;
     }
 }

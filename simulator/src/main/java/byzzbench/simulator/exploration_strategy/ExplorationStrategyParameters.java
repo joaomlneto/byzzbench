@@ -12,7 +12,7 @@ import java.util.Map;
 
 @Data
 public class ExplorationStrategyParameters implements Serializable {
-    private String id;
+    private String explorationStrategyId;
     private ExecutionMode executionMode;
     private long randomSeed;
     private int maxMutationsPerMessage = 2;

@@ -14,6 +14,7 @@ import jakarta.annotation.PostConstruct;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.java.Log;
+import org.springframework.context.annotation.DependsOn;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
@@ -23,6 +24,7 @@ import java.util.concurrent.Executors;
 @Service
 @RequiredArgsConstructor
 @Log
+@DependsOn("explorationStrategyService")
 public class CampaignService {
     private final ExecutorService executor = Executors.newFixedThreadPool(1);
     private final ByzzBenchConfig byzzBenchConfig;
@@ -103,8 +105,7 @@ public class CampaignService {
             boolean running = true;
             try {
                 long numScenarios = campaign.getNumScenarios();
-                String explorationStrategyId = campaign.getExplorationStrategyId();
-                ExplorationStrategy explorationStrategy = explorationStrategyService.getExplorationStrategy(explorationStrategyId);
+                ExplorationStrategy explorationStrategy = campaign.getExplorationStrategy();
 
                 // run the scenario until the stop flag is set
                 for (int i = 0; running && i < numScenarios; i++) {
@@ -212,7 +213,8 @@ public class CampaignService {
                                 .mapToLong(MessageWithRound::getByzzFuzzRound)
                                 .min();
                         long currentRound = minQueuedRound.orElse(maxDeliveredRound.orElse(0));
-*/
+                        */
+                        
                         //log.info("Current round: " + currentRound);
                         //log.info("Max round: " + maxDeliveredRound.orElse(0));
                         //log.info("Min round: " + this.getCampaign().getTermination().getMinRounds());

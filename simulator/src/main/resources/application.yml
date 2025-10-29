@@ -42,16 +42,25 @@ byzzbench:
   removeCompletedSimulations: false # Whether to remove completed simulations.
   saveSchedules: all # which schedules to save? 'all', 'buggy' or 'none'.
 
+  explorationStrategies:
+    byzzfuzz:
+      explorationStrategyId: byzzbench.simulator.exploration_strategy.byzzfuzz.ByzzFuzzExplorationStrategy
+    fifo:
+      explorationStrategyId: byzzbench.simulator.exploration_strategy.fifo.FifoExplorationStrategy
+    random:
+      explorationStrategyId: byzzbench.simulator.exploration_strategy.random.RandomExplorationStrategy
+    twins:
+      explorationStrategyId: byzzbench.simulator.exploration_strategy.twins.TwinsExplorationStrategy
+
   campaigns:
     - initialRandomSeed: 123
-      numScenarios: 10
+      numScenarios: 1
       scenarioParameters:
         scenarioId: byzzbench.simulator.protocols.pbft_java.PbftJavaScenario
         numReplicas: 4
         numClients: 1
-      explorationStrategyId: byzzfuzz
       explorationStrategyParameters:
-        id: "byzzfuzz" # The ID of the exploration_strategy to use
+        explorationStrategyId: byzzbench.simulator.exploration_strategy.byzzfuzz.ByzzFuzzExplorationStrategy # The ID of the exploration strategy to use
         executionMode: sync # async (default, any message delivered) or sync (communication-closure hypothesis, FIFO)
         maxDropMessages: 0 # Maximum number of messages to drop per scenario
         maxMutateMessages: 0 # Maximum number of messages to mutate per scenario
@@ -59,6 +68,7 @@ byzzbench:
         deliverMessageWeight: 99 # The weight for exploration_strategy to deliver a message
         dropMessageWeight: 0 # The weight for exploration_strategy to drop a message
         mutateMessageWeight: 0 # The weight for exploration_strategy to mutate a message
+        randomSeed: 123123
         params: # additional parameters for the exploration_strategy
           # ByzzFuzz
           numRoundsWithProcessFaults: 0
@@ -69,7 +79,7 @@ byzzbench:
           numTwinsPerReplica: 2
           numRounds: 5
       termination:
-        minEvents: 0 #10
+        minEvents: 10
         minRounds: 0
         samplingFrequency: 1
         gstGracePeriod: 100
@@ -79,9 +89,8 @@ byzzbench:
         scenarioId: byzzbench.simulator.protocols.hbft.HbftJavaScenario
         numReplicas: 4
         numClients: 1
-      explorationStrategyId: byzzfuzz
       explorationStrategyParameters:
-        id: "byzzfuzz"
+        explorationStrategyId: byzzbench.simulator.exploration_strategy.byzzfuzz.ByzzFuzzExplorationStrategy
         executionMode: sync
         maxDropMessages: 0
         maxMutateMessages: 0
@@ -89,6 +98,7 @@ byzzbench:
         deliverMessageWeight: 1
         dropMessageWeight: 0
         mutateMessageWeight: 0
+        randomSeed: 456456
         params:
           # ByzzFuzz
           numRoundsWithProcessFaults: 0

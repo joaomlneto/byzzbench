@@ -1,7 +1,6 @@
 package byzzbench.simulator.exploration_strategy.fifo;
 
 import byzzbench.simulator.Scenario;
-import byzzbench.simulator.config.ByzzBenchConfig;
 import byzzbench.simulator.domain.Action;
 import byzzbench.simulator.domain.DeliverMessageAction;
 import byzzbench.simulator.exploration_strategy.ExplorationStrategy;
@@ -19,15 +18,6 @@ import java.util.Optional;
  */
 @Component
 public class FifoExplorationStrategy extends ExplorationStrategy {
-    public FifoExplorationStrategy(ByzzBenchConfig config) {
-        super(config);
-    }
-
-    @Override
-    public String getId() {
-        return "FIFO";
-    }
-
     @Override
     public void initializeScenario(Scenario scenario) {
         // no initialization needed

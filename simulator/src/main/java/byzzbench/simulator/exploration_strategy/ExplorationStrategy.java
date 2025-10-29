@@ -1,7 +1,6 @@
 package byzzbench.simulator.exploration_strategy;
 
 import byzzbench.simulator.Scenario;
-import byzzbench.simulator.config.ByzzBenchConfig;
 import byzzbench.simulator.domain.Action;
 import byzzbench.simulator.domain.DeliverMessageAction;
 import byzzbench.simulator.domain.FaultInjectionAction;
@@ -28,31 +27,26 @@ public abstract class ExplorationStrategy {
      * The remaining number of drop messages for each scenario.
      * If the number of remaining drop messages is 0, the exploration_strategy will not drop messages.
      */
+    @JsonIgnore
     protected final Map<Scenario, Integer> remainingDropMessages = new HashMap<>();
 
     /**
      * The remaining number of mutate messages for each scenario.
      * If the number of remaining mutate messages is 0, the exploration_strategy will not mutate messages.
      */
+    @JsonIgnore
     protected final Map<Scenario, Integer> remainingMutateMessages = new HashMap<>();
-
-    /**
-     * ByzzBench configuration
-     */
-    @Getter
-    private final ByzzBenchConfig config;
 
     /**
      * Set of scenarios that have been initialized
      */
     @JsonIgnore
     private final Set<Scenario> initializedScenarios = new HashSet<>();
-
+    public long randomSeed;
     /**
      * Random number generator
      */
-    protected Random rand = new Random(1L); // FIXME: seed
-
+    private Random rand;
     /**
      * The weight assigned to the action of delivering a message within the exploration strategy.
      * This value is used to prioritize or influence the likelihood of delivering a message
@@ -113,6 +107,8 @@ public abstract class ExplorationStrategy {
      * @param parameters The JSON object containing the parameters for the exploration_strategy.
      */
     public final void loadParameters(ExplorationStrategyParameters parameters) {
+        System.out.println("Creating Random with seed: " + parameters.getRandomSeed());
+        this.randomSeed = parameters.getRandomSeed();
         this.rand = new Random(parameters.getRandomSeed());
         this.deliverMessageWeight = parameters.getDeliverMessageWeight();
         this.deliverTimeoutWeight = parameters.getDeliverTimeoutWeight();
@@ -122,13 +118,6 @@ public abstract class ExplorationStrategy {
         this.maxMutateMessages = parameters.getMaxMutateMessages();
         this.loadSchedulerParameters(parameters);
     }
-
-    /**
-     * Get the ID of the Scheduler
-     *
-     * @return The ID of the Scheduler
-     */
-    public abstract String getId();
 
     /**
      * Schedules the next event to be delivered.
@@ -220,11 +209,10 @@ public abstract class ExplorationStrategy {
                 if (!getQueuedMessageEvents(scenario).isEmpty()) {
                     return Collections.emptyList();
                 }
-
                 // get the set of replica IDs with messages in their mailbox
-                Set<String> replicasWithQueuedMessagesInMailbox = getQueuedMessageEvents(scenario).stream()
+                SortedSet<String> replicasWithQueuedMessagesInMailbox = getQueuedMessageEvents(scenario).stream()
                         .map(MessageEvent::getRecipientId)
-                        .collect(Collectors.toSet());
+                        .collect(Collectors.toCollection(TreeSet::new));
                 // return only timeouts for replicas without messages in their mailbox
                 return firstTimeoutForEachReplica.values().stream()
                         .filter(event -> !replicasWithQueuedMessagesInMailbox.contains(event.getRecipientId()))

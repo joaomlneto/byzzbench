@@ -1,7 +1,6 @@
 package byzzbench.simulator.exploration_strategy.random;
 
 import byzzbench.simulator.Scenario;
-import byzzbench.simulator.config.ByzzBenchConfig;
 import byzzbench.simulator.domain.Action;
 import byzzbench.simulator.domain.DeliverMessageAction;
 import byzzbench.simulator.domain.FaultInjectionAction;
@@ -26,17 +25,8 @@ import java.util.SortedSet;
 @Component
 @Log
 public class RandomExplorationStrategy extends ExplorationStrategy {
-    public RandomExplorationStrategy(ByzzBenchConfig config) {
-        super(config);
-    }
-
     public <T> T getRandomElement(List<T> list) {
         return list.get(this.getRand().nextInt(list.size()));
-    }
-
-    @Override
-    public String getId() {
-        return "Random";
     }
 
     @Override

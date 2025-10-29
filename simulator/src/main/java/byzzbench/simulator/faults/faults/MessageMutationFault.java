@@ -12,7 +12,6 @@ import lombok.ToString;
 
 import java.io.Serializable;
 import java.util.Collection;
-import java.util.Comparator;
 import java.util.Optional;
 
 /**
@@ -23,7 +22,7 @@ import java.util.Optional;
 @ToString
 @RequiredArgsConstructor
 @EqualsAndHashCode
-public abstract class MessageMutationFault implements Fault, Comparable<MessageMutationFault> {
+public abstract class MessageMutationFault extends Fault {
     @NonNull
     private final String id;
     @NonNull
@@ -57,11 +56,5 @@ public abstract class MessageMutationFault implements Fault, Comparable<MessageM
         return event.isPresent()
                 && event.get() instanceof MessageEvent messageEvent
                 && canMutate(messageEvent.getPayload());
-    }
-
-    @Override
-    public int compareTo(MessageMutationFault other) {
-        return Comparator.comparing(MessageMutationFault::getId)
-                .compare(this, other);
     }
 }

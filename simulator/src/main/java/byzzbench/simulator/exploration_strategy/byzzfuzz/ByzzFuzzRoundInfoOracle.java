@@ -4,6 +4,7 @@ import byzzbench.simulator.Node;
 import byzzbench.simulator.Scenario;
 import byzzbench.simulator.faults.Fault;
 import byzzbench.simulator.transport.*;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Getter;
 
 import java.util.HashMap;
@@ -16,6 +17,7 @@ import java.util.SortedSet;
  */
 @Getter
 public abstract class ByzzFuzzRoundInfoOracle implements TransportObserver {
+    @JsonIgnore
     private final Scenario scenario;
     private final Map<String, ByzzFuzzRoundInfo> replicasRoundInfo = new HashMap<>();
     private final Map<String, Long> replicaRounds = new HashMap<>();

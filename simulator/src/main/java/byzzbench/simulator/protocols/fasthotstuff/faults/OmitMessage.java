@@ -8,7 +8,7 @@ import byzzbench.simulator.transport.MessageEvent;
 
 import java.util.Optional;
 
-public class OmitMessage implements Fault {
+public class OmitMessage extends Fault {
     private final int round;
     private final String sender;
     private final Class<?> messageType;

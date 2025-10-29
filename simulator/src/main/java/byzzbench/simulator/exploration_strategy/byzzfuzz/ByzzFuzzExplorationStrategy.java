@@ -1,7 +1,6 @@
 package byzzbench.simulator.exploration_strategy.byzzfuzz;
 
 import byzzbench.simulator.Scenario;
-import byzzbench.simulator.config.ByzzBenchConfig;
 import byzzbench.simulator.domain.Action;
 import byzzbench.simulator.domain.DeliverMessageAction;
 import byzzbench.simulator.domain.FaultInjectionAction;
@@ -36,51 +35,38 @@ public class ByzzFuzzExplorationStrategy extends RandomExplorationStrategy {
     private final Map<Scenario, ByzzFuzzScenarioStrategyData> scenarioData = new HashMap<>();
 
     /**
-     * Small-scope mutations to be applied to protocol messages
-     */
-    private final List<Fault> mutations = new ArrayList<>();
-    /**
      * Number of protocol rounds with process faults
      */
     @Getter
     private int numRoundsWithProcessFaults = 1;
+
     /**
      * Number of protocol rounds with network faults
      */
     @Getter
     private int numRoundsWithNetworkFaults = 1;
+
     /**
      * Number of protocol rounds among which the faults will be injected
      */
     @Getter
     private int numRoundsWithFaults = 3;
 
-    public ByzzFuzzExplorationStrategy(ByzzBenchConfig config) {
-        super(config);
-    }
-
-    @Override
-    public String getId() {
-        return "ByzzFuzz";
-    }
-
     @Override
     public void loadSchedulerParameters(ExplorationStrategyParameters parameters) {
-        System.out.println("Loading ByzzFuzz parameters:");
-
-        if (parameters != null) {
-            System.out.println(parameters);
+        if (parameters == null) {
+            throw new IllegalArgumentException("parameters are null");
         }
 
-        if (parameters != null && parameters.getParams().containsKey("numRoundsWithProcessFaults")) {
+        if (parameters.getParams().containsKey("numRoundsWithProcessFaults")) {
             this.numRoundsWithProcessFaults = Integer.parseInt(parameters.getParams().get("numRoundsWithProcessFaults"));
         }
 
-        if (parameters != null && parameters.getParams().containsKey("numRoundsWithNetworkFaults")) {
+        if (parameters.getParams().containsKey("numRoundsWithNetworkFaults")) {
             this.numRoundsWithNetworkFaults = Integer.parseInt(parameters.getParams().get("numRoundsWithNetworkFaults"));
         }
 
-        if (parameters != null && parameters.getParams().containsKey("numRoundsWithFaults")) {
+        if (parameters.getParams().containsKey("numRoundsWithFaults")) {
             this.numRoundsWithFaults = Integer.parseInt(parameters.getParams().get("numRoundsWithFaults"));
         }
     }
@@ -92,54 +78,54 @@ public class ByzzFuzzExplorationStrategy extends RandomExplorationStrategy {
      * @return the scenario-specific strategy data
      */
     public ByzzFuzzScenarioStrategyData getScenarioData(Scenario scenario) {
-        if (!(scenario instanceof ByzzFuzzScenario byzzFuzzScenario)) {
-            throw new UnsupportedOperationException("Scenario is not a ByzzFuzzScenario");
-        }
-
-        ExplorationStrategyParameters config = scenario.getSchedule().getCampaign().getExplorationStrategyParameters();
-
-        return this.scenarioData.computeIfAbsent(scenario, s -> ByzzFuzzScenarioStrategyData.builder()
-                .remainingDropMessages(config.getMaxDropMessages())
-                .remainingMutateMessages(config.getMaxMutateMessages())
-                .initializedByStrategy(this.getInitializedScenarios().contains(scenario))
-                .numRoundsWithProcessFaults(this.getNumRoundsWithProcessFaults())
-                .numRoundsWithNetworkFaults(this.getNumRoundsWithNetworkFaults())
-                .numRoundsWithFaults(this.getNumRoundsWithFaults())
-                .faults(new ArrayList<>())
-                .replicaRounds(byzzFuzzScenario.getRoundInfoOracle().getReplicaRounds())
-                .roundInfos(byzzFuzzScenario.getRoundInfoOracle().getReplicasRoundInfo())
-                .build());
+        this.ensureScenarioInitialized(scenario);
+        return this.scenarioData.get(scenario);
     }
 
     @Override
     public void initializeScenario(Scenario scenario) {
+        if (this.scenarioData.containsKey(scenario)) {
+            return;
+        }
+
         if (!(scenario instanceof ByzzFuzzScenario)) {
             throw new UnsupportedOperationException("Scenario is not a ByzzFuzzScenario");
         }
 
-        List<Fault> faults = new ArrayList<>();
+        // Try to read parameters from the schedule/campaign; if unavailable, skip fault generation
         ExplorationStrategyParameters config = scenario.getSchedule().getCampaign().getExplorationStrategyParameters();
+        if (config == null || config.getParams() == null
+                || !config.getParams().containsKey("numRoundsWithProcessFaults")
+                || !config.getParams().containsKey("numRoundsWithNetworkFaults")
+                || !config.getParams().containsKey("numRoundsWithFaults")) {
+            log.fine("ByzzFuzz initializeScenario: no campaign parameters found; skipping factory fault generation.");
+            return;
+        }
+
+        List<Fault> faults = new ArrayList<>();
 
         // get exploration_strategy params
         int c = Integer.parseInt(config.getParams().get("numRoundsWithProcessFaults"));
         int d = Integer.parseInt(config.getParams().get("numRoundsWithNetworkFaults"));
         int r = Integer.parseInt(config.getParams().get("numRoundsWithFaults"));
-        Set<String> replicaIds = scenario.getReplicas().keySet();
-        Set<String> faultyReplicaIds = scenario.getFaultyReplicaIds();
+        SortedSet<String> replicaIds = new TreeSet<>(scenario.getReplicas().keySet());
+        SortedSet<String> faultyReplicaIds = new TreeSet<>(scenario.getFaultyReplicaIds());
+
+        System.out.println("First random int: " + this.getRand().nextInt());
 
         // Create network faults
         for (int i = 1; i <= d; i++) {
-            int round = rand.nextInt(r) + 1;
-            Set<String> partition = SetSubsets.getRandomNonEmptySubset(replicaIds);
+            int round = this.getRand().nextInt(r) + 1;
+            Set<String> partition = SetSubsets.getRandomNonEmptySubset(replicaIds, this.getRand());
             Fault networkFault = new ByzzFuzzNetworkFault(partition, round);
             faults.add(networkFault);
         }
 
         // Create process faults
         for (int i = 1; i <= c; i++) {
-            int round = rand.nextInt(r) + 1;
-            String sender = faultyReplicaIds.stream().skip(rand.nextInt(faultyReplicaIds.size())).findFirst().orElseThrow();
-            Set<String> recipientIds = SetSubsets.getRandomNonEmptySubset(replicaIds);
+            int round = this.getRand().nextInt(r) + 1;
+            String sender = faultyReplicaIds.stream().skip(this.getRand().nextInt(faultyReplicaIds.size())).findFirst().orElseThrow();
+            Set<String> recipientIds = SetSubsets.getRandomNonEmptySubset(replicaIds, this.getRand());
 
             // generate process fault
             Fault processFault = new ByzzFuzzProcessFault(recipientIds, sender, round);
@@ -204,6 +190,7 @@ public class ByzzFuzzExplorationStrategy extends RandomExplorationStrategy {
                 }
             }
         }
+        // TODO: finish this
 
         return super.getAvailableActions(scenario).stream().filter(a -> !(a instanceof FaultInjectionAction)).toList();
     }

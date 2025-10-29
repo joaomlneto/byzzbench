@@ -2,7 +2,6 @@ package byzzbench.simulator.exploration_strategy.twins;
 
 import byzzbench.simulator.Replica;
 import byzzbench.simulator.Scenario;
-import byzzbench.simulator.config.ByzzBenchConfig;
 import byzzbench.simulator.exploration_strategy.ExplorationStrategyParameters;
 import byzzbench.simulator.exploration_strategy.random.RandomExplorationStrategy;
 import lombok.Getter;
@@ -27,15 +26,6 @@ public class TwinsExplorationStrategy extends RandomExplorationStrategy {
      * Scenario-specific strategy data
      */
     private final Map<Scenario, TwinsScenarioStrategyData> scenarioData = new HashMap<>();
-
-    public TwinsExplorationStrategy(ByzzBenchConfig config) {
-        super(config);
-    }
-
-    @Override
-    public String getId() {
-        return "Twins";
-    }
 
     @Override
     public void initializeScenario(Scenario scenario) {

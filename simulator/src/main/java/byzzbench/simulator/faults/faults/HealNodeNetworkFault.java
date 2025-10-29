@@ -14,7 +14,7 @@ import lombok.ToString;
 @Getter
 @ToString
 @RequiredArgsConstructor
-public class HealNodeNetworkFault implements Fault {
+public class HealNodeNetworkFault extends Fault {
     @NonNull
     private final String nodeId;
 
