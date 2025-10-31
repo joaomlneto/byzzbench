@@ -8,6 +8,7 @@ import org.springframework.validation.annotation.Validated;
 
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -40,7 +41,7 @@ public class ByzzBenchConfig {
     /**
      * Globally-available exploration strategies
      */
-    private Map<String, ExplorationStrategyParameters> explorationStrategies;
+    private Map<String, ExplorationStrategyParameters> explorationStrategies = new HashMap<>();
 
     public enum SaveScheduleMode {
         /**
