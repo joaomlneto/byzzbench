@@ -3,12 +3,14 @@ package byzzbench.simulator.exploration_strategy.byzzfuzz;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 
+import java.io.Serializable;
+
 /**
  * Class representing the round information for ByzzFuzz exploration strategy.
  */
 @Data
 @AllArgsConstructor
-public class ByzzFuzzRoundInfo implements Comparable<ByzzFuzzRoundInfo> {
+public class ByzzFuzzRoundInfo implements Serializable, Comparable<ByzzFuzzRoundInfo> {
     private long viewNumber;
     private long sequenceNumber;
     private int verbIndex;
