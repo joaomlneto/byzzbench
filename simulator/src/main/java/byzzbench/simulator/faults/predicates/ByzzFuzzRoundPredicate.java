@@ -1,5 +1,6 @@
 package byzzbench.simulator.faults.predicates;
 
+import byzzbench.simulator.exploration_strategy.byzzfuzz.ByzzFuzzRoundInfoOracle;
 import byzzbench.simulator.exploration_strategy.byzzfuzz.MessageWithByzzFuzzRoundInfo;
 import byzzbench.simulator.faults.FaultPredicate;
 import byzzbench.simulator.faults.ScenarioContext;
@@ -16,6 +17,7 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public class ByzzFuzzRoundPredicate implements FaultPredicate {
     private final long round;
+    private final ByzzFuzzRoundInfoOracle oracle;
 
     @Override
     public String getId() {
@@ -39,7 +41,12 @@ public class ByzzFuzzRoundPredicate implements FaultPredicate {
             return false;
         }
 
-        return message.getPayload() instanceof MessageWithByzzFuzzRoundInfo roundMessage
-                && roundMessage.getRound() == round;
+        if (!(message.getPayload() instanceof MessageWithByzzFuzzRoundInfo roundMessage)) {
+            return false;
+        }
+
+        long messageRound = this.oracle.getMessageRounds().getOrDefault(message.getEventId(), 0L);
+
+        return messageRound == round;
     }
 }

@@ -1,5 +1,6 @@
 package byzzbench.simulator.faults.faults;
 
+import byzzbench.simulator.exploration_strategy.byzzfuzz.ByzzFuzzRoundInfoOracle;
 import byzzbench.simulator.faults.BaseFault;
 import byzzbench.simulator.faults.behaviors.ByzzFuzzDropMessageBehavior;
 import byzzbench.simulator.faults.predicates.ANDPredicate;
@@ -20,11 +21,12 @@ public class ByzzFuzzNetworkFault extends BaseFault {
      *
      * @param partition The partition to create
      * @param round     The round during which to create the partition
+     * @param oracle    The oracle to query about the round number of a message
      */
-    public ByzzFuzzNetworkFault(Set<String> partition, int round) {
+    public ByzzFuzzNetworkFault(Set<String> partition, int round, ByzzFuzzRoundInfoOracle oracle) {
         super(
                 "byzzfuzznetworkfault-%d-%s".formatted(round, String.join("-", partition)),
-                new ANDPredicate(new IsBeforeGST(), new ByzzFuzzRoundPredicate(round)),
+                new ANDPredicate(new IsBeforeGST(), new ByzzFuzzRoundPredicate(round, oracle)),
                 new ByzzFuzzDropMessageBehavior(partition)
         );
     }
