@@ -113,7 +113,7 @@ public class CampaignService {
 
                     ScenarioParameters scenarioParams = campaign.generateScenarioParameters();
                     Scenario scenario = scenarioService.generateScenario(scenarioParams, this.campaign);
-
+                    explorationStrategy.ensureScenarioInitialized(scenario);
                     ScenarioRunner r = new ScenarioRunner(campaign, scenario, explorationStrategy);
                     r.run();
                 }
