@@ -70,7 +70,7 @@ public class CampaignService {
         for (var campaignConfig : byzzBenchConfig.getCampaigns()) {
             Campaign cfgCampaign = Campaign.fromConfig(campaignConfig);
             this.registerNewCampaign(cfgCampaign);
-            if (byzzBenchConfig.isAutostart()) {
+            if (byzzBenchConfig.isAutostart() && campaignConfig.isAutoStart()) {
                 this.runCampaign(cfgCampaign);
             }
         }

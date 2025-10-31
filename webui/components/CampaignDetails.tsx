@@ -3,7 +3,7 @@
 import { ScheduleCard } from "@/components/Schedule";
 import { useGetCampaign } from "@/lib/byzzbench-client";
 
-import { JsonInput, Stack } from "@mantine/core";
+import { JsonInput, Loader, Progress, Stack, Tooltip } from "@mantine/core";
 import React from "react";
 
 export type CampaignDetailsProps = {
@@ -11,15 +11,64 @@ export type CampaignDetailsProps = {
 };
 
 export const CampaignDetails = ({ campaignId }: CampaignDetailsProps) => {
-  const { data } = useGetCampaign(campaignId);
+  const { data, isLoading } = useGetCampaign(campaignId);
+
+  if (isLoading) {
+    return <Loader />;
+  }
+
+  if (!data) {
+    return "Error fetching campaign data";
+  }
 
   const createdAt = data?.data.createdAt
     ? new Date((data.data.createdAt as unknown as number) * 1000).toUTCString()
     : "N/A";
 
+  const numScenarios = data.data.numScenarios!;
+  const numBuggy = data.data.numTerm!;
+  const numErrored = data.data.numErr!;
+  const numCorrect = data.data.numMaxedOut!;
+
   return (
     <Stack gap="xs">
-      {data?.data.createdAt && <p>Created {createdAt}</p>}
+      <p>{data?.data.createdAt && <p>Created {createdAt}</p>}</p>
+      <Progress.Root size={40}>
+        <Tooltip label="Buggy - reached incorrect state">
+          <Progress.Section value={(numBuggy / numScenarios) * 100} color="red">
+            <Progress.Label>Buggy</Progress.Label>
+          </Progress.Section>
+        </Tooltip>
+
+        <Tooltip label="Errored - runtime exception">
+          <Progress.Section
+            value={(numErrored / numScenarios) * 100}
+            color="yellow"
+          >
+            <Progress.Label>Errored</Progress.Label>
+          </Progress.Section>
+        </Tooltip>
+
+        <Tooltip label="Correct (no issues found before cutoff)">
+          <Progress.Section
+            value={(numCorrect / numScenarios) * 100}
+            color="green"
+          >
+            <Progress.Label>Correct ({numCorrect})</Progress.Label>
+          </Progress.Section>
+        </Tooltip>
+
+        <Tooltip label="Not yet ran">
+          <Progress.Section
+            value={(numScenarios - numBuggy - numErrored - numCorrect) * 100}
+            color="grey"
+          >
+            <Progress.Label>
+              Not ran ({numScenarios - numBuggy - numErrored - numCorrect})
+            </Progress.Label>
+          </Progress.Section>
+        </Tooltip>
+      </Progress.Root>
       <JsonInput
         label="Campaign Details"
         value={JSON.stringify(

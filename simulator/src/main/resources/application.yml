@@ -53,7 +53,8 @@ byzzbench:
       explorationStrategyId: byzzbench.simulator.exploration_strategy.twins.TwinsExplorationStrategy
 
   campaigns:
-    - initialRandomSeed: 123
+    - autoStart: true
+      initialRandomSeed: 123
       numScenarios: 1
       scenarioParameters:
         scenarioId: byzzbench.simulator.protocols.pbft_java.PbftJavaScenario
@@ -83,8 +84,9 @@ byzzbench:
         minRounds: 0
         samplingFrequency: 1
         gstGracePeriod: 100
-    - initialRandomSeed: 456
-      numScenarios: 0
+    - autoStart: false
+      initialRandomSeed: 456
+      numScenarios: 1
       scenarioParameters:
         scenarioId: byzzbench.simulator.protocols.hbft.HbftJavaScenario
         numReplicas: 4
