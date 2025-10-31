@@ -1,7 +1,7 @@
 package byzzbench.simulator.protocols.pbft_java;
 
-import byzzbench.simulator.LeaderBasedProtocolReplica;
 import byzzbench.simulator.Scenario;
+import byzzbench.simulator.nodes.LeaderBasedProtocolReplica;
 import byzzbench.simulator.protocols.hbft.message.ClientRequestMessage;
 import byzzbench.simulator.protocols.pbft_java.message.*;
 import byzzbench.simulator.state.LogEntry;

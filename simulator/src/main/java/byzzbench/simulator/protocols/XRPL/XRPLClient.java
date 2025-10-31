@@ -1,7 +1,7 @@
 package byzzbench.simulator.protocols.XRPL;
 
-import byzzbench.simulator.Client;
 import byzzbench.simulator.Scenario;
+import byzzbench.simulator.nodes.Client;
 import byzzbench.simulator.transport.DefaultClientReplyPayload;
 import byzzbench.simulator.transport.DefaultClientRequestPayload;
 

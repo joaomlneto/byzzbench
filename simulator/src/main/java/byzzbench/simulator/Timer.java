@@ -1,5 +1,6 @@
 package byzzbench.simulator;
 
+import byzzbench.simulator.nodes.Replica;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Getter;
 import lombok.extern.java.Log;

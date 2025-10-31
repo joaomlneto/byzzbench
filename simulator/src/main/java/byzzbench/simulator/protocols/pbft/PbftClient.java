@@ -1,7 +1,7 @@
 package byzzbench.simulator.protocols.pbft;
 
-import byzzbench.simulator.Client;
 import byzzbench.simulator.Scenario;
+import byzzbench.simulator.nodes.Client;
 import byzzbench.simulator.protocols.pbft.message.RequestMessage;
 import byzzbench.simulator.transport.DefaultClientReplyPayload;
 import lombok.Getter;

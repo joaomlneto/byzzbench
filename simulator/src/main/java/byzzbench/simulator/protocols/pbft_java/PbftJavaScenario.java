@@ -1,12 +1,12 @@
 package byzzbench.simulator.protocols.pbft_java;
 
-import byzzbench.simulator.Client;
-import byzzbench.simulator.Replica;
 import byzzbench.simulator.Scenario;
 import byzzbench.simulator.domain.ScenarioParameters;
 import byzzbench.simulator.domain.Schedule;
 import byzzbench.simulator.exploration_strategy.byzzfuzz.ByzzFuzzRoundInfoOracle;
 import byzzbench.simulator.exploration_strategy.byzzfuzz.ByzzFuzzScenario;
+import byzzbench.simulator.nodes.Client;
+import byzzbench.simulator.nodes.Replica;
 import lombok.extern.java.Log;
 
 import java.time.Duration;

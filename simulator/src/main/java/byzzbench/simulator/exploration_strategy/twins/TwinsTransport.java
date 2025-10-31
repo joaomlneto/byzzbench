@@ -1,8 +1,8 @@
 package byzzbench.simulator.exploration_strategy.twins;
 
-import byzzbench.simulator.Node;
-import byzzbench.simulator.Replica;
 import byzzbench.simulator.exploration_strategy.byzzfuzz.MessageWithByzzFuzzRoundInfo;
+import byzzbench.simulator.nodes.Node;
+import byzzbench.simulator.nodes.Replica;
 import byzzbench.simulator.transport.MessagePayload;
 import byzzbench.simulator.transport.Transport;
 import lombok.Getter;

@@ -1,6 +1,6 @@
 package byzzbench.simulator.state;
 
-import byzzbench.simulator.Replica;
+import byzzbench.simulator.nodes.Replica;
 
 import java.io.Serializable;
 

@@ -1,7 +1,7 @@
 package byzzbench.simulator.exploration_strategy.twins;
 
-import byzzbench.simulator.Replica;
 import byzzbench.simulator.exploration_strategy.byzzfuzz.MessageWithByzzFuzzRoundInfo;
+import byzzbench.simulator.nodes.Replica;
 import byzzbench.simulator.state.TotalOrderCommitLog;
 import byzzbench.simulator.transport.MessagePayload;
 import byzzbench.simulator.utils.StirlingNumberSecondKind;

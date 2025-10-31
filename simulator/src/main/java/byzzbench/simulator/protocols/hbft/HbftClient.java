@@ -1,7 +1,7 @@
 package byzzbench.simulator.protocols.hbft;
 
-import byzzbench.simulator.Client;
 import byzzbench.simulator.Scenario;
+import byzzbench.simulator.nodes.Client;
 import byzzbench.simulator.protocols.hbft.message.*;
 import byzzbench.simulator.protocols.hbft.pojo.ClientReplyKey;
 import byzzbench.simulator.transport.DefaultClientReplyPayload;

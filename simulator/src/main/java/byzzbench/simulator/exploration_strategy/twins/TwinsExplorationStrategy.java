@@ -1,9 +1,9 @@
 package byzzbench.simulator.exploration_strategy.twins;
 
-import byzzbench.simulator.Replica;
 import byzzbench.simulator.Scenario;
 import byzzbench.simulator.exploration_strategy.ExplorationStrategyParameters;
 import byzzbench.simulator.exploration_strategy.random.RandomExplorationStrategy;
+import byzzbench.simulator.nodes.Replica;
 import lombok.Getter;
 import lombok.extern.java.Log;
 import org.springframework.stereotype.Component;

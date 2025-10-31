@@ -1,10 +1,10 @@
 package byzzbench.simulator.transport;
 
-import byzzbench.simulator.Client;
-import byzzbench.simulator.Node;
 import byzzbench.simulator.Scenario;
 import byzzbench.simulator.faults.Fault;
 import byzzbench.simulator.faults.ScenarioContext;
+import byzzbench.simulator.nodes.Client;
+import byzzbench.simulator.nodes.Node;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;

@@ -1,9 +1,9 @@
 package byzzbench.simulator.protocols.hbft.mutator;
 
-import byzzbench.simulator.Node;
 import byzzbench.simulator.faults.ScenarioContext;
 import byzzbench.simulator.faults.factories.MessageMutatorFactory;
 import byzzbench.simulator.faults.faults.MessageMutationFault;
+import byzzbench.simulator.nodes.Node;
 import byzzbench.simulator.protocols.hbft.HbftJavaReplica;
 import byzzbench.simulator.protocols.hbft.SpeculativeHistory;
 import byzzbench.simulator.protocols.hbft.message.CheckpointIIIMessage;

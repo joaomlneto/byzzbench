@@ -1,12 +1,12 @@
 package byzzbench.simulator.faults.factories;
 
-import byzzbench.simulator.Replica;
 import byzzbench.simulator.faults.Fault;
 import byzzbench.simulator.faults.FaultFactory;
 import byzzbench.simulator.faults.ScenarioContext;
 import byzzbench.simulator.faults.faults.HealNetworkFault;
 import byzzbench.simulator.faults.faults.HealNodeNetworkFault;
 import byzzbench.simulator.faults.faults.IsolateProcessNetworkFault;
+import byzzbench.simulator.nodes.Replica;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;

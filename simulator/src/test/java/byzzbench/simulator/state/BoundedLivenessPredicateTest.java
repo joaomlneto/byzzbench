@@ -1,9 +1,9 @@
 package byzzbench.simulator.state;
 
-import byzzbench.simulator.Client;
-import byzzbench.simulator.Replica;
 import byzzbench.simulator.Scenario;
 import byzzbench.simulator.domain.Schedule;
+import byzzbench.simulator.nodes.Client;
+import byzzbench.simulator.nodes.Replica;
 import byzzbench.simulator.transport.Event;
 import byzzbench.simulator.transport.MutateMessageEventPayload;
 import byzzbench.simulator.transport.TimeoutEvent;

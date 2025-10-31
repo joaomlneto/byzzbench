@@ -1,9 +1,9 @@
 package byzzbench.simulator.state.adob;
 
-import byzzbench.simulator.Client;
-import byzzbench.simulator.Replica;
-import byzzbench.simulator.ReplicaObserver;
 import byzzbench.simulator.ScenarioObserver;
+import byzzbench.simulator.nodes.Client;
+import byzzbench.simulator.nodes.Replica;
+import byzzbench.simulator.nodes.ReplicaObserver;
 import byzzbench.simulator.versioning.VectorClock;
 import lombok.Getter;
 import lombok.Synchronized;

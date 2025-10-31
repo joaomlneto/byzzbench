@@ -1,6 +1,7 @@
 package byzzbench.simulator;
 
 import byzzbench.simulator.faults.Fault;
+import byzzbench.simulator.nodes.Node;
 import byzzbench.simulator.transport.*;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 

@@ -1,7 +1,7 @@
 package byzzbench.simulator.protocols.fab2;
 
-import byzzbench.simulator.Client;
 import byzzbench.simulator.Scenario;
+import byzzbench.simulator.nodes.Client;
 import byzzbench.simulator.protocols.fab.FastByzantineReplica;
 import byzzbench.simulator.protocols.fab.Role;
 import byzzbench.simulator.protocols.pbft.message.RequestMessage;

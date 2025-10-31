@@ -1,7 +1,7 @@
 package byzzbench.simulator.protocols.pbft_java;
 
-import byzzbench.simulator.Client;
 import byzzbench.simulator.Scenario;
+import byzzbench.simulator.nodes.Client;
 import byzzbench.simulator.transport.DefaultClientReplyPayload;
 import lombok.Getter;
 
