@@ -16,11 +16,12 @@ import java.util.SortedSet;
  * <a href="https://dl.acm.org/doi/10.1145/3586053">ByzzFuzz algorithm</a>
  */
 @Getter
-public abstract class ByzzFuzzRoundInfoOracle implements TransportObserver {
+public abstract class ByzzFuzzRoundInfoOracle implements Serializable, TransportObserver, ScenarioObserver {
     @JsonIgnore
     private final Scenario scenario;
     private final Map<String, ByzzFuzzRoundInfo> replicasRoundInfo = new HashMap<>();
     private final Map<String, Long> replicaRounds = new HashMap<>();
+    private final Map<Long, Long> messageRound = new HashMap<>();
 
     /**
      * Create a new ByzzFuzzRoundInfoOracle for the given scenario
@@ -193,7 +194,18 @@ public abstract class ByzzFuzzRoundInfoOracle implements TransportObserver {
 
     @Override
     public void onEventAdded(Event event) {
-        // Do nothing - this is covered 'onMulticast()'
+        // Check if it is a message
+        if (!(event instanceof MessageEvent messageEvent)) {
+            return;
+        }
+
+        // check if it is a message with round
+        if (!(messageEvent.getPayload() instanceof MessageWithByzzFuzzRoundInfo messageWithRoundInfo)) {
+            return;
+        }
+
+        // tag message with a round
+        this.messageRound.put(event.getEventId(), this.replicaRounds.get(messageEvent.getSenderId()));
     }
 
     @Override
@@ -265,4 +277,15 @@ public abstract class ByzzFuzzRoundInfoOracle implements TransportObserver {
      * @return The number of rounds
      */
     public abstract int numRoundsToProcessRequest();
+
+    @Override
+    public void onReplicaAdded(Replica replica) {
+        this.replicasRoundInfo.put(replica.getId(), new ByzzFuzzRoundInfo(0, 0, 0));
+        this.replicaRounds.put(replica.getId(), 0L);
+    }
+
+    @Override
+    public void onClientAdded(Client client) {
+        // do nothing
+    }
 }
