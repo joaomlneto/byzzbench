@@ -2,6 +2,7 @@ package byzzbench.simulator.transport;
 
 import lombok.Getter;
 
+import java.io.Serializable;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -10,7 +11,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * Nodes on different partitions cannot communicate with each other.
  * Nodes without partition IDs are in partition 0 and can communicate with each other.
  */
-public class Router {
+public class Router implements Serializable {
     public static final int DEFAULT_PARTITION = 0;
 
     /**
@@ -42,7 +43,6 @@ public class Router {
      * @param nodeIds The IDs of the nodes to isolate.
      */
     public void isolateNodes(String[] nodeIds) {
-        System.out.println("Isolating nodes: " + String.join(", ", nodeIds));
         int newPartition = getUnusedPartitionId();
         for (String nodeId : nodeIds) {
             this.partitions.put(nodeId, newPartition);
