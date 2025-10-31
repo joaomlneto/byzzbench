@@ -1,12 +1,16 @@
 package byzzbench.simulator.exploration_strategy.byzzfuzz;
 
 import byzzbench.simulator.Scenario;
+import byzzbench.simulator.ScenarioObserver;
 import byzzbench.simulator.faults.Fault;
+import byzzbench.simulator.nodes.Client;
 import byzzbench.simulator.nodes.Node;
+import byzzbench.simulator.nodes.Replica;
 import byzzbench.simulator.transport.*;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Getter;
 
+import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.SortedSet;
@@ -30,6 +34,7 @@ public abstract class ByzzFuzzRoundInfoOracle implements Serializable, Transport
      */
     public ByzzFuzzRoundInfoOracle(Scenario scenario) {
         this.scenario = scenario;
+        scenario.getReplicas().values().forEach(this::onReplicaAdded);
         scenario.getTransport().addObserver(this);
     }
 
