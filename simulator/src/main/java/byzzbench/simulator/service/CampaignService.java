@@ -111,7 +111,7 @@ public class CampaignService {
                 for (int i = 0; running && i < numScenarios; i++) {
                     log.info(String.format("Running scenario %d/%d%n", i + 1, numScenarios));
 
-                    ScenarioParameters scenarioParams = campaign.getScenarioParameters();
+                    ScenarioParameters scenarioParams = campaign.generateScenarioParameters();
                     Scenario scenario = scenarioService.generateScenario(scenarioParams, this.campaign);
 
                     ScenarioRunner r = new ScenarioRunner(campaign, scenario, explorationStrategy);

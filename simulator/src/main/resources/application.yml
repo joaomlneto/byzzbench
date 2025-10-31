@@ -73,14 +73,14 @@ byzzbench:
         params: # additional parameters for the exploration_strategy
           # ByzzFuzz
           numRoundsWithProcessFaults: 0
-          numRoundsWithNetworkFaults: 3
-          numRoundsWithFaults: 3
+          numRoundsWithNetworkFaults: 1
+          numRoundsWithFaults: 1
           # Twins
           numReplicas: 1
           numTwinsPerReplica: 2
           numRounds: 5
       termination:
-        minEvents: 10
+        minEvents: 0
         minRounds: 0
         samplingFrequency: 1
         gstGracePeriod: 100

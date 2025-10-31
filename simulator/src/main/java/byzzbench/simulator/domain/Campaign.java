@@ -37,9 +37,10 @@ public class Campaign implements Serializable {
     private long initialRandomSeed;
 
     /**
-     * The unique identifier of the scenario factory used to generate scenarios for this campaign.
+     * The parameters for the scenario
      */
-    private String scenarioId;
+    @Column(length = 2048)
+    private ScenarioParameters scenarioParameters;
 
     /**
      * The parameters for the exploration strategy
@@ -121,7 +122,7 @@ public class Campaign implements Serializable {
 
         Campaign campaign = new Campaign();
         campaign.setInitialRandomSeed(config.getInitialRandomSeed());
-        campaign.setScenarioId(config.getScenarioParameters().getScenarioId());
+        campaign.setScenarioParameters(config.getScenarioParameters());
         campaign.setNumScenarios(config.getNumScenarios());
         campaign.setRandom(new Random(config.getInitialRandomSeed()));
         campaign.setTermination(config.getTermination());
@@ -143,12 +144,8 @@ public class Campaign implements Serializable {
      *
      * @return the parameters for the next scenario
      */
-    public ScenarioParameters getScenarioParameters() {
-        return ScenarioParameters.builder()
-                .randomSeed(this.random.nextLong())
-                .scenarioId(this.scenarioId)
-                // TODO set other parameters from campaign configuration
-                .build();
+    public ScenarioParameters generateScenarioParameters() {
+        return this.getScenarioParameters().withRandomSeed(this.random.nextLong());
     }
 
     /**

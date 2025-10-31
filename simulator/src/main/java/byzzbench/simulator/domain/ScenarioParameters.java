@@ -1,9 +1,6 @@
 package byzzbench.simulator.domain;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 import lombok.experimental.SuperBuilder;
 import lombok.extern.jackson.Jacksonized;
 
@@ -19,6 +16,7 @@ import java.util.List;
 @Data
 @Jacksonized
 @SuperBuilder
+@With
 public class ScenarioParameters implements Serializable {
     /**
      * The unique identifier of the scenario.
