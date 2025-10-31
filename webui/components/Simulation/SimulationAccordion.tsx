@@ -84,6 +84,10 @@ export const SimulationAccordion = ({
                 replicas: undefined,
                 faults: undefined,
                 availableActions: undefined,
+                transport: {
+                  ...data?.data.transport,
+                  queuedMessages: undefined,
+                },
               },
               null,
               2,

@@ -142,7 +142,6 @@ public class CampaignService {
          */
         private void finalizeSchedule(Scenario scenario, Set<ScenarioPredicate> brokenInvariants) {
             scenario.getSchedule().finalizeSchedule(brokenInvariants);
-            scenario.getSchedule().setCampaign(this.campaign);
 
             // save the schedule according to the selected policy
             if ((byzzBenchConfig.getSaveSchedules() == ByzzBenchConfig.SaveScheduleMode.ALL) ||
@@ -214,7 +213,7 @@ public class CampaignService {
                                 .min();
                         long currentRound = minQueuedRound.orElse(maxDeliveredRound.orElse(0));
                         */
-                        
+
                         //log.info("Current round: " + currentRound);
                         //log.info("Max round: " + maxDeliveredRound.orElse(0));
                         //log.info("Min round: " + this.getCampaign().getTermination().getMinRounds());

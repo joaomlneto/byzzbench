@@ -6,8 +6,11 @@ import byzzbench.simulator.faults.faults.GlobalStabilizationTimeFault;
 import byzzbench.simulator.faults.faults.HealNodeNetworkFault;
 import byzzbench.simulator.faults.faults.IsolateProcessNetworkFault;
 import byzzbench.simulator.faults.faults.MessageMutationFault;
+import byzzbench.simulator.service.ApplicationContextProvider;
+import byzzbench.simulator.service.FaultsFactoryService;
 import byzzbench.simulator.state.AgreementPredicate;
-import byzzbench.simulator.state.LivenessPredicate;
+import byzzbench.simulator.state.BoundedLivenessPredicate;
+import byzzbench.simulator.state.DeadlockPredicate;
 import byzzbench.simulator.state.adob.AdobDistributedState;
 import byzzbench.simulator.transport.*;
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -223,12 +226,12 @@ public abstract class Scenario implements Serializable {
             //throw new UnsupportedOperationException("Not implemented");
         }
 
-        if (parameters.getFaults() != null) {
-            throw new UnsupportedOperationException("Not implemented");
-            //System.out.println("Faults: " + parameters.get("faults").toPrettyString());
+        if (!parameters.getFaults().isEmpty()) {
+            FaultsFactoryService faultsFactoryService = ApplicationContextProvider.getFaultsFactoryService();
             //ByzzFuzzScenarioFaultFactory faultFactory = new ByzzFuzzScenarioFaultFactory();
             //List<Fault> faults = faultFactory.generateFaults(new ScenarioContext(this));
             //faults.forEach(fault -> this.transport.addFault(fault, true));
+            throw new UnsupportedOperationException("Not implemented");
         }
 
         this.loadScenarioParameters(parameters);
@@ -455,10 +458,8 @@ public abstract class Scenario implements Serializable {
     public List<Fault> getFaults() {
         List<Fault> networkFaults = this.transport.getNetworkFaults().values().stream()
                 .toList();
-        List<Fault> transportFaults = this.transport.getAutomaticFaults().values().stream()
-                .toList();
         List<Fault> mutationFaults = new ArrayList<>(this.messageMutationFaults);
-        return Stream.of(networkFaults.stream(), transportFaults.stream(), mutationFaults.stream())
+        return Stream.of(networkFaults.stream(), mutationFaults.stream())
                 .reduce(Stream::concat)
                 .orElseGet(Stream::empty)
                 .toList();

@@ -16,7 +16,7 @@ export default async function Page({
     return "loading data";
   }
 
-  if (isNaN(Number(scenarioId))) {
+  if (Number.isNaN(scenarioId)) {
     return <Container p="xl">Invalid scenario ID: {scenarioId}</Container>;
   }
 
