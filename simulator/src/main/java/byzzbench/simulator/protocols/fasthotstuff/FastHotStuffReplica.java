@@ -1,7 +1,7 @@
 package byzzbench.simulator.protocols.fasthotstuff;
 
-import byzzbench.simulator.LeaderBasedProtocolReplica;
 import byzzbench.simulator.Scenario;
+import byzzbench.simulator.nodes.LeaderBasedProtocolReplica;
 import byzzbench.simulator.protocols.fasthotstuff.message.*;
 import byzzbench.simulator.state.TotalOrderCommitLog;
 import byzzbench.simulator.transport.MessagePayload;

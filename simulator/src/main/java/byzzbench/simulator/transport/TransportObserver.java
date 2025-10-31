@@ -1,7 +1,7 @@
 package byzzbench.simulator.transport;
 
-import byzzbench.simulator.Node;
 import byzzbench.simulator.faults.Fault;
+import byzzbench.simulator.nodes.Node;
 
 import java.util.SortedSet;
 

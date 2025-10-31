@@ -1,8 +1,8 @@
 package byzzbench.simulator.state;
 
-import byzzbench.simulator.Replica;
 import byzzbench.simulator.Scenario;
 import byzzbench.simulator.ScenarioPredicate;
+import byzzbench.simulator.nodes.Replica;
 
 import java.util.Collection;
 import java.util.List;

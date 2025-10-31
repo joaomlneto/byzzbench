@@ -1,7 +1,7 @@
 package byzzbench.simulator.protocols.faulty_safety;
 
-import byzzbench.simulator.Replica;
 import byzzbench.simulator.Scenario;
+import byzzbench.simulator.nodes.Replica;
 import byzzbench.simulator.state.SerializableLogEntry;
 import byzzbench.simulator.state.TotalOrderCommitLog;
 import byzzbench.simulator.transport.DefaultClientRequestPayload;

@@ -1,10 +1,10 @@
 package byzzbench.simulator.protocols.XRPL;
 
-import byzzbench.simulator.Client;
-import byzzbench.simulator.Replica;
 import byzzbench.simulator.Scenario;
 import byzzbench.simulator.domain.ScenarioParameters;
 import byzzbench.simulator.domain.Schedule;
+import byzzbench.simulator.nodes.Client;
+import byzzbench.simulator.nodes.Replica;
 import byzzbench.simulator.transport.DefaultClientRequestPayload;
 import lombok.extern.java.Log;
 

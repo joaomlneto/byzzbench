@@ -1,7 +1,7 @@
 package byzzbench.simulator.protocols.XRPL;
 
-import byzzbench.simulator.Replica;
 import byzzbench.simulator.Scenario;
+import byzzbench.simulator.nodes.Replica;
 import byzzbench.simulator.protocols.XRPL.messages.XRPLProposeMessage;
 import byzzbench.simulator.protocols.XRPL.messages.XRPLSubmitMessage;
 import byzzbench.simulator.protocols.XRPL.messages.XRPLTxMessage;

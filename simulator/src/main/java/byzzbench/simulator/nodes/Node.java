@@ -1,4 +1,4 @@
-package byzzbench.simulator;
+package byzzbench.simulator.nodes;
 
 import byzzbench.simulator.transport.MessagePayload;
 import byzzbench.simulator.transport.Transport;

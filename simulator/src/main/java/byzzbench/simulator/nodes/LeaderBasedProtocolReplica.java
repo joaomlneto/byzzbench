@@ -1,5 +1,6 @@
-package byzzbench.simulator;
+package byzzbench.simulator.nodes;
 
+import byzzbench.simulator.Scenario;
 import byzzbench.simulator.state.CommitLog;
 import byzzbench.simulator.transport.MessagePayload;
 import lombok.Getter;

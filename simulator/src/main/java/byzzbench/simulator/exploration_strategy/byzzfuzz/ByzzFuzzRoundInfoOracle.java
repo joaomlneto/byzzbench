@@ -1,8 +1,8 @@
 package byzzbench.simulator.exploration_strategy.byzzfuzz;
 
-import byzzbench.simulator.Node;
 import byzzbench.simulator.Scenario;
 import byzzbench.simulator.faults.Fault;
+import byzzbench.simulator.nodes.Node;
 import byzzbench.simulator.transport.*;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Getter;

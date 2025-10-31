@@ -1,4 +1,4 @@
-package byzzbench.simulator;
+package byzzbench.simulator.nodes;
 
 import java.io.Serializable;
 

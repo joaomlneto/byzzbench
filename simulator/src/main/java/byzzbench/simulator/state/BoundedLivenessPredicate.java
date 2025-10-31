@@ -1,7 +1,13 @@
 package byzzbench.simulator.state;
 
-import byzzbench.simulator.*;
+import byzzbench.simulator.Scenario;
+import byzzbench.simulator.ScenarioObserver;
+import byzzbench.simulator.ScenarioPredicate;
 import byzzbench.simulator.faults.Fault;
+import byzzbench.simulator.nodes.Client;
+import byzzbench.simulator.nodes.Node;
+import byzzbench.simulator.nodes.Replica;
+import byzzbench.simulator.nodes.ReplicaObserver;
 import byzzbench.simulator.transport.*;
 import lombok.extern.java.Log;
 

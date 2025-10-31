@@ -1,5 +1,6 @@
-package byzzbench.simulator;
+package byzzbench.simulator.nodes;
 
+import byzzbench.simulator.Scenario;
 import byzzbench.simulator.protocols.hbft.message.ClientRequestMessage;
 import byzzbench.simulator.transport.DefaultClientReplyPayload;
 import byzzbench.simulator.transport.MessagePayload;

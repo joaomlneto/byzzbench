@@ -1,7 +1,7 @@
 package byzzbench.simulator.protocols.faulty_liveness;
 
-import byzzbench.simulator.Replica;
 import byzzbench.simulator.Scenario;
+import byzzbench.simulator.nodes.Replica;
 import byzzbench.simulator.state.TotalOrderCommitLog;
 import byzzbench.simulator.transport.DefaultClientRequestPayload;
 import byzzbench.simulator.transport.MessagePayload;
