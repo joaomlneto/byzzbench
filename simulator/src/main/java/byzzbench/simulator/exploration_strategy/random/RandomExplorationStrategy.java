@@ -3,7 +3,6 @@ package byzzbench.simulator.exploration_strategy.random;
 import byzzbench.simulator.Scenario;
 import byzzbench.simulator.domain.Action;
 import byzzbench.simulator.domain.DeliverMessageAction;
-import byzzbench.simulator.domain.FaultInjectionAction;
 import byzzbench.simulator.domain.TriggerTimeoutAction;
 import byzzbench.simulator.exploration_strategy.ExplorationStrategy;
 import byzzbench.simulator.exploration_strategy.ExplorationStrategyParameters;
@@ -46,7 +45,6 @@ public class RandomExplorationStrategy extends ExplorationStrategy {
         }
 
         SortedSet<String> faultyReplicaIds = scenario.getFaultyReplicaIds();
-
         List<TimeoutEvent> timeoutEvents = this.getQueuedTimeoutEvents(scenario);
         List<MessageEvent> messageEvents = availableEvents.stream().filter(MessageEvent.class::isInstance).map(MessageEvent.class::cast).toList();
         List<MessageEvent> mutateableMessageEvents = messageEvents.stream().filter(msg -> faultyReplicaIds.contains(msg.getSenderId())).toList();
@@ -81,8 +79,9 @@ public class RandomExplorationStrategy extends ExplorationStrategy {
         if (dieRoll < 0) {
             Event message = getRandomElement(messageEvents);
             scenario.getTransport().dropEvent(message.getEventId());
-            Action decision = FaultInjectionAction.builder().faultBehaviorId("drop-message").eventId(message.getEventId()).build();
-            return Optional.of(decision);
+            /*Action decision = FaultInjectionAction.builder().faultBehaviorId("drop-message").eventId(message.getEventId()).build();
+            return Optional.of(decision);*/
+            throw new UnsupportedOperationException("not implemented yet!!!");
         }
 
         // check if we should mutate-and-deliver a message sent between nodes
@@ -101,8 +100,9 @@ public class RandomExplorationStrategy extends ExplorationStrategy {
                     getRandomElement(mutators));
             scenario.getTransport().deliverEvent(message.getEventId());
 
+            throw new UnsupportedOperationException("not implemented yet!!!");/*
             Action decision = FaultInjectionAction.builder().faultBehaviorId("mutate-and-deliver").eventId(message.getEventId()).build();
-            return Optional.of(decision);
+            return Optional.of(decision);*/
         }
 
         throw new IllegalStateException("This should never happen!");

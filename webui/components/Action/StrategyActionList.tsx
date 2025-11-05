@@ -15,10 +15,15 @@ export const StrategyActionList = ({
   return (
     <div>
       <ul>
-        {data?.data.map((action) => (
-          <li key={action.actionId}>
+        {data?.data.map((action, actionId) => (
+          <li key={actionId}>
             <div>
-              <ActionListEntry scenarioId={scenarioId} action={action} />
+              <ActionListEntry
+                scenarioId={scenarioId}
+                action={action}
+                actionId={actionId}
+                explorationStrategyId={strategyId}
+              />
             </div>
           </li>
         ))}

@@ -1,5 +1,6 @@
 package byzzbench.simulator.faults.faults;
 
+import byzzbench.simulator.domain.FaultInjectionAction;
 import byzzbench.simulator.faults.Fault;
 import byzzbench.simulator.faults.ScenarioContext;
 import byzzbench.simulator.transport.Router;
@@ -20,6 +21,11 @@ public class HealNetworkFault extends Fault {
 
     public String getName() {
         return "Heal Network";
+    }
+
+    @Override
+    public FaultInjectionAction toAction(ScenarioContext context) {
+        throw new UnsupportedOperationException("Not supported yet.");
     }
 
     /**

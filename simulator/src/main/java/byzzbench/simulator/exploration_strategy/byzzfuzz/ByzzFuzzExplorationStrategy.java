@@ -30,27 +30,32 @@ import java.util.*;
 @Getter
 public class ByzzFuzzExplorationStrategy extends RandomExplorationStrategy {
     /**
-     * Scenario-specific strategy data
+     * Scenario-specific oracle
      */
-    private final Map<Scenario, ByzzFuzzScenarioStrategyData> scenarioData = new HashMap<>();
+    private final Map<Scenario, ByzzFuzzRoundInfoOracle> scenarioOracle = new HashMap<>();
+
+    /**
+     * Scenario-specific faults
+     */
+    private final Map<Scenario, List<Fault>> scenarioFaults = new HashMap<>();
 
     /**
      * Number of protocol rounds with process faults
      */
     @Getter
-    private int numRoundsWithProcessFaults = 1;
+    private int numRoundsWithProcessFaults;
 
     /**
      * Number of protocol rounds with network faults
      */
     @Getter
-    private int numRoundsWithNetworkFaults = 1;
+    private int numRoundsWithNetworkFaults;
 
     /**
      * Number of protocol rounds among which the faults will be injected
      */
     @Getter
-    private int numRoundsWithFaults = 3;
+    private int numRoundsWithFaults;
 
     @Override
     public void loadSchedulerParameters(ExplorationStrategyParameters parameters) {
@@ -71,24 +76,9 @@ public class ByzzFuzzExplorationStrategy extends RandomExplorationStrategy {
         }
     }
 
-    /**
-     * Get or create scenario-specific strategy data
-     *
-     * @param scenario the scenario
-     * @return the scenario-specific strategy data
-     */
-    public ByzzFuzzScenarioStrategyData getScenarioData(Scenario scenario) {
-        this.ensureScenarioInitialized(scenario);
-        return this.scenarioData.get(scenario);
-    }
-
     @Override
     public void initializeScenario(Scenario scenario) {
-        if (this.scenarioData.containsKey(scenario)) {
-            return;
-        }
-
-        if (!(scenario instanceof ByzzFuzzScenario)) {
+        if (!(scenario instanceof ByzzFuzzScenario byzzFuzzScenario)) {
             throw new UnsupportedOperationException("Scenario is not a ByzzFuzzScenario");
         }
 
@@ -99,48 +89,39 @@ public class ByzzFuzzExplorationStrategy extends RandomExplorationStrategy {
                 || !config.getParams().containsKey("numRoundsWithNetworkFaults")
                 || !config.getParams().containsKey("numRoundsWithFaults")) {
             log.fine("ByzzFuzz initializeScenario: no campaign parameters found; skipping factory fault generation.");
-            return;
+            throw new IllegalArgumentException("Incorrect parameters!!");
         }
 
-        List<Fault> faults = new ArrayList<>();
-
-        // get exploration_strategy params
+        // get exploration strategy params
+        ByzzFuzzRoundInfoOracle oracle = byzzFuzzScenario.getRoundInfoOracle();
         int c = Integer.parseInt(config.getParams().get("numRoundsWithProcessFaults"));
         int d = Integer.parseInt(config.getParams().get("numRoundsWithNetworkFaults"));
         int r = Integer.parseInt(config.getParams().get("numRoundsWithFaults"));
         SortedSet<String> replicaIds = new TreeSet<>(scenario.getReplicas().keySet());
         SortedSet<String> faultyReplicaIds = new TreeSet<>(scenario.getFaultyReplicaIds());
-
-        System.out.println("First random int: " + this.getRand().nextInt());
+        List<Fault> faults = new ArrayList<>();
 
         // Create network faults
-        for (int i = 1; i <= d; i++) {
+        for (int i = 0; i < d; i++) {
             int round = this.getRand().nextInt(r) + 1;
             Set<String> partition = SetSubsets.getRandomNonEmptySubset(replicaIds, this.getRand());
-            Fault networkFault = new ByzzFuzzNetworkFault(partition, round);
+            Fault networkFault = new ByzzFuzzNetworkFault(partition, round, oracle);
             faults.add(networkFault);
         }
 
         // Create process faults
-        for (int i = 1; i <= c; i++) {
+        for (int i = 0; i < c; i++) {
             int round = this.getRand().nextInt(r) + 1;
             String sender = faultyReplicaIds.stream().skip(this.getRand().nextInt(faultyReplicaIds.size())).findFirst().orElseThrow();
             Set<String> recipientIds = SetSubsets.getRandomNonEmptySubset(replicaIds, this.getRand());
-
-            // generate process fault
             Fault processFault = new ByzzFuzzProcessFault(recipientIds, sender, round);
             faults.add(processFault);
         }
 
         // Faults
-        log.fine("ByzzFuzz initialized scenario with " + faults.size() + " faults.");
-
-        this.scenarioData.put(scenario, ByzzFuzzScenarioStrategyData.builder()
-                .numRoundsWithProcessFaults(c)
-                .numRoundsWithNetworkFaults(d)
-                .numRoundsWithFaults(r)
-                .faults(faults)
-                .build());
+        log.info("ByzzFuzz initialized scenario with " + faults.size() + " faults.");
+        this.scenarioOracle.put(scenario, oracle);
+        this.scenarioFaults.put(scenario, faults);
     }
 
     @Override
@@ -156,7 +137,7 @@ public class ByzzFuzzExplorationStrategy extends RandomExplorationStrategy {
             return action;
         }
 
-        List<Fault> faults = this.getScenarioData(scenario).getFaults();
+        List<Fault> faults = this.scenarioFaults.get(scenario);
         Event messageEvent = scenario.getTransport().getEvent(deliverAction.getMessageEventId());
         ScenarioContext context = new ScenarioContext(scenario, messageEvent);
 
@@ -179,35 +160,38 @@ public class ByzzFuzzExplorationStrategy extends RandomExplorationStrategy {
         this.ensureScenarioInitialized(scenario);
 
         // if some of the existing network faults can be applied to a queued message, do it!
-        List<Fault> faults = this.getScenarioData(scenario).getFaults();
+        List<Fault> faults = this.scenarioFaults.get(scenario);
 
         // if one of the faults can be applied to the message, apply it
         for (Event messageEvent : this.getQueuedMessageEvents(scenario)) {
             ScenarioContext context = new ScenarioContext(scenario, messageEvent);
             for (Fault fault : faults) {
+                System.out.println("checking if " + fault.getId() + " can be applied to event " + messageEvent.getEventId());
                 if (fault.test(context)) {
-                    return List.of(FaultInjectionAction.fromEvent(fault));
+                    System.out.println("yes!");
+                    System.out.println(fault);
+                    return List.of(fault.toAction(context));
                 }
             }
         }
-        // TODO: finish this
 
-        return super.getAvailableActions(scenario).stream().filter(a -> !(a instanceof FaultInjectionAction)).toList();
+
+        return super.getAvailableActions(scenario)
+                .stream()
+                .filter(a -> !(a instanceof FaultInjectionAction))
+                .toList();
     }
 
     @Override
     public ScenarioStrategyData getScenarioStrategyData(Scenario scenario) {
-        ByzzFuzzScenarioStrategyData data = this.getScenarioData(scenario);
         return ByzzFuzzScenarioStrategyData.builder()
-                .remainingDropMessages(data.getRemainingDropMessages())
-                .remainingMutateMessages(data.getRemainingMutateMessages())
+                .remainingDropMessages(super.getScenarioStrategyData(scenario).getRemainingDropMessages())
+                .remainingMutateMessages(super.getScenarioStrategyData(scenario).getRemainingMutateMessages())
                 .initializedByStrategy(this.getInitializedScenarios().contains(scenario))
-                .numRoundsWithProcessFaults(data.getNumRoundsWithProcessFaults())
-                .numRoundsWithNetworkFaults(data.getNumRoundsWithNetworkFaults())
-                .numRoundsWithFaults(data.getNumRoundsWithFaults())
-                .faults(data.getFaults())
-                .roundInfos(data.getRoundInfos())
-                .replicaRounds(data.getReplicaRounds())
+                .roundInfos(this.scenarioOracle.get(scenario).getReplicasRoundInfo())
+                .replicaRounds(this.scenarioOracle.get(scenario).getReplicaRounds())
+                .faults(this.scenarioFaults.get(scenario))
+                .messageRound(this.scenarioOracle.get(scenario).getMessageRounds())
                 .build();
     }
 }

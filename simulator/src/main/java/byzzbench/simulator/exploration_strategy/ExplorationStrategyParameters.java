@@ -1,7 +1,7 @@
 package byzzbench.simulator.exploration_strategy;
 
 import byzzbench.simulator.ExecutionMode;
-import byzzbench.simulator.config.ByzzBenchConfig;
+import byzzbench.simulator.config.FaultConfig;
 import lombok.Data;
 
 import java.io.Serializable;
@@ -23,7 +23,7 @@ public class ExplorationStrategyParameters implements Serializable {
     private int dropMessageWeight = 0;
     private int mutateMessageWeight = 0;
     private transient Map<String, String> params = new HashMap<>();
-    private List<ByzzBenchConfig.FaultConfig> faults = new ArrayList<>();
-    private transient List<ByzzBenchConfig.FaultConfig> mutations = new ArrayList<>();
+    private List<FaultConfig> faults = new ArrayList<>();
+    private transient List<FaultConfig> mutations = new ArrayList<>();
 
 }

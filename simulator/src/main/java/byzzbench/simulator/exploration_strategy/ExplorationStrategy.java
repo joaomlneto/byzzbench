@@ -3,9 +3,9 @@ package byzzbench.simulator.exploration_strategy;
 import byzzbench.simulator.Scenario;
 import byzzbench.simulator.domain.Action;
 import byzzbench.simulator.domain.DeliverMessageAction;
-import byzzbench.simulator.domain.FaultInjectionAction;
 import byzzbench.simulator.domain.TriggerTimeoutAction;
 import byzzbench.simulator.faults.Fault;
+import byzzbench.simulator.faults.ScenarioContext;
 import byzzbench.simulator.transport.Event;
 import byzzbench.simulator.transport.MessageEvent;
 import byzzbench.simulator.transport.TimeoutEvent;
@@ -282,9 +282,10 @@ public abstract class ExplorationStrategy {
      * @return The list of available actions
      */
     public List<Action> getAvailableActions(Scenario scenario) {
+        ScenarioContext context = new ScenarioContext(scenario);
         Stream<Action> messageEvents = this.getQueuedMessageEvents(scenario).stream().map(DeliverMessageAction::fromEvent);
         Stream<Action> timeoutEvents = this.getQueuedTimeoutEvents(scenario).stream().map(TriggerTimeoutAction::fromEvent);
-        Stream<Action> faultEvents = this.getEnabledFaultActions(scenario).stream().map(FaultInjectionAction::fromEvent);
+        Stream<Action> faultEvents = this.getEnabledFaultActions(scenario).stream().map(fault -> fault.toAction(context));
         return Stream.concat(Stream.concat(messageEvents, timeoutEvents), faultEvents).toList();
     }
 

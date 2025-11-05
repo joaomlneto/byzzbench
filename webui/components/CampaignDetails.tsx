@@ -1,9 +1,17 @@
 "use client";
 
 import { ScheduleCard } from "@/components/Schedule";
+import { SchedulerState } from "@/components/Scheduler";
 import { useGetCampaign } from "@/lib/byzzbench-client";
 
-import { JsonInput, Loader, Progress, Stack, Tooltip } from "@mantine/core";
+import {
+  JsonInput,
+  Loader,
+  Progress,
+  Stack,
+  Title,
+  Tooltip,
+} from "@mantine/core";
 import React from "react";
 
 export type CampaignDetailsProps = {
@@ -87,6 +95,12 @@ export const CampaignDetails = ({ campaignId }: CampaignDetailsProps) => {
       {data?.data.scheduleIds.map((scheduleId) => (
         <ScheduleCard key={scheduleId} scheduleId={scheduleId} />
       ))}
+      <Title order={1}>Exploration Strategy</Title>
+      {data?.data.explorationStrategyInstanceId && (
+        <SchedulerState
+          schedulerId={data?.data.explorationStrategyInstanceId}
+        />
+      )}
     </Stack>
   );
 };

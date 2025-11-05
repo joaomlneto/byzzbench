@@ -1,5 +1,6 @@
 package byzzbench.simulator.faults.faults;
 
+import byzzbench.simulator.domain.FaultInjectionAction;
 import byzzbench.simulator.faults.Fault;
 import byzzbench.simulator.faults.ScenarioContext;
 import byzzbench.simulator.transport.Event;
@@ -56,5 +57,10 @@ public abstract class MessageMutationFault extends Fault {
         return event.isPresent()
                 && event.get() instanceof MessageEvent messageEvent
                 && canMutate(messageEvent.getPayload());
+    }
+
+    @Override
+    public FaultInjectionAction toAction(ScenarioContext context) {
+        throw new UnsupportedOperationException("not yet implemented!");
     }
 }

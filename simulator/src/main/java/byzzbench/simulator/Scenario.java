@@ -319,10 +319,10 @@ public abstract class Scenario implements Serializable {
 
     private List<? extends FaultInjectionAction> getAvailableFaultInjectionAction() {
         return getQueuedEventsOfType(MutateMessageEvent.class)
+                .map(mutateMessageEvent -> mutateMessageEvent)
                 .map(event -> FaultInjectionAction.builder()
-                        .eventId(event.getEventId())
-                        .faultBehaviorId("TODO - not implemented yet!")
-                        .payload(event.getPayload())
+                        //.eventId(event.getEventId())
+                        //.faultBehaviorId("TODO - not implemented yet!")
                         .build())
                 .toList();
     }

@@ -1,5 +1,6 @@
 package byzzbench.simulator.faults.behaviors;
 
+import byzzbench.simulator.domain.FaultInjectionAction;
 import byzzbench.simulator.faults.FaultBehavior;
 import byzzbench.simulator.faults.ScenarioContext;
 import byzzbench.simulator.faults.faults.MessageMutationFault;
@@ -23,8 +24,6 @@ import java.util.Random;
 @Log
 @Component
 public class MutateMessageBehavior implements FaultBehavior {
-    private static final Random rand = new Random();
-
     @Override
     public String getId() {
         return "mutatemessage";
@@ -33,6 +32,11 @@ public class MutateMessageBehavior implements FaultBehavior {
     @Override
     public String getName() {
         return "Apply random mutation";
+    }
+
+    @Override
+    public FaultInjectionAction toAction(ScenarioContext context) {
+        throw new UnsupportedOperationException("Not supported yet.");
     }
 
     @Override
@@ -62,7 +66,8 @@ public class MutateMessageBehavior implements FaultBehavior {
             return;
         }
 
-        // apply the random mutator
+        // apply the random mutator - use the scenario Random number generator!!
+        Random rand = context.getScenario().getRandom();
         MessageMutationFault mutator = mutators.get(rand.nextInt(mutators.size()));
 
         // apply the mutation if the message is queued

@@ -59,29 +59,10 @@ public class ByzzBenchConfig {
     }
 
     /**
-     * Configuration for a fault or mutation.
-     * A fault is identified by a predicate and a behavior.
-     */
-    @Data
-    public final class FaultConfig implements Serializable {
-        private final PredicateConfig predicate;
-        private final BehaviorConfig behavior;
-    }
-
-    /**
      * Configuration for a predicate.
      */
     @Data
     public final class PredicateConfig implements Serializable {
-        private final String id;
-        private final Map<String, String> params;
-    }
-
-    /**
-     * Configuration for a behavior.
-     */
-    @Data
-    public final class BehaviorConfig implements Serializable {
         private final String id;
         private final Map<String, String> params;
     }

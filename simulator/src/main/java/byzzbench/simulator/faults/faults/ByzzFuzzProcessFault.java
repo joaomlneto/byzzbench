@@ -1,6 +1,5 @@
 package byzzbench.simulator.faults.faults;
 
-import byzzbench.simulator.exploration_strategy.byzzfuzz.ByzzFuzzRoundInfoOracle;
 import byzzbench.simulator.faults.BaseFault;
 import byzzbench.simulator.faults.behaviors.MutateMessageBehavior;
 import byzzbench.simulator.faults.predicates.ByzzFuzzRoundPredicate;
@@ -22,10 +21,10 @@ public class ByzzFuzzProcessFault extends BaseFault {
      * @param sender     The sender of the message
      * @param round      The round during which to create the fault
      */
-    public ByzzFuzzProcessFault(Set<String> recipients, String sender, int round, ByzzFuzzRoundInfoOracle oracle) {
+    public ByzzFuzzProcessFault(Set<String> recipients, String sender, int round) {
         super(
                 "byzzfuzzprocessfault-%d-%s-%s".formatted(round, sender, String.join("-", recipients)),
-                new ByzzFuzzRoundPredicate(round, oracle)
+                new ByzzFuzzRoundPredicate(round)
                         .and(new MessageSenderHasIdPredicate(sender))
                         .and(new MessageRecipientHasIdPredicate(recipients)),
                 new MutateMessageBehavior()

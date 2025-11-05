@@ -1,5 +1,6 @@
 package byzzbench.simulator.transport;
 
+import byzzbench.simulator.faults.behaviors.MutateMessageBehavior;
 import byzzbench.simulator.utils.NonNull;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -8,6 +9,7 @@ import lombok.experimental.SuperBuilder;
 
 import java.io.Serializable;
 import java.time.Instant;
+import java.util.List;
 
 @EqualsAndHashCode(callSuper = true)
 @Data
@@ -37,4 +39,9 @@ public abstract class BaseMessageEvent<T extends Serializable> extends Event imp
      */
     @NonNull
     private T payload;
+
+    /**
+     * List of mutations to be applied to the message.
+     */
+    private List<MutateMessageBehavior> mutations;
 }

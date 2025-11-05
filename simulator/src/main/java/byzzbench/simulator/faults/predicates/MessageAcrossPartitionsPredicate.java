@@ -1,24 +1,22 @@
-package byzzbench.simulator.faults.behaviors;
+package byzzbench.simulator.faults.predicates;
 
-import byzzbench.simulator.domain.Action;
-import byzzbench.simulator.domain.DropMessageAction;
-import byzzbench.simulator.faults.FaultBehavior;
+import byzzbench.simulator.faults.FaultPredicate;
 import byzzbench.simulator.faults.ScenarioContext;
+import byzzbench.simulator.transport.Event;
+import byzzbench.simulator.transport.MessageEvent;
 import byzzbench.simulator.transport.Router;
-import lombok.extern.java.Log;
 
 import java.util.Collection;
 
-@Log
-public class ByzzFuzzDropMessageBehavior implements FaultBehavior {
+/**
+ * Checks whether the message is crossing partitions
+ */
+public class MessageAcrossPartitionsPredicate implements FaultPredicate {
     /**
      * Router helper to determine if two nodes are connected
      */
     Router router = new Router();
 
-    /**
-     * Memoized name of the fault
-     */
     String name;
 
     /**
@@ -26,7 +24,7 @@ public class ByzzFuzzDropMessageBehavior implements FaultBehavior {
      *
      * @param partitions A list of partitions to create
      */
-    public ByzzFuzzDropMessageBehavior(String[][] partitions) {
+    public MessageAcrossPartitionsPredicate(String[][] partitions) {
         for (String[] partition : partitions) {
             router.isolateNodes(partition);
         }
@@ -37,7 +35,7 @@ public class ByzzFuzzDropMessageBehavior implements FaultBehavior {
      *
      * @param partition A single partition to create
      */
-    public ByzzFuzzDropMessageBehavior(String[] partition) {
+    public MessageAcrossPartitionsPredicate(String[] partition) {
         this(new String[][]{partition});
     }
 
@@ -46,7 +44,7 @@ public class ByzzFuzzDropMessageBehavior implements FaultBehavior {
      *
      * @param partition A single partition to create
      */
-    public ByzzFuzzDropMessageBehavior(Collection<String> partition) {
+    public MessageAcrossPartitionsPredicate(Collection<String> partition) {
         this(partition.toArray(new String[0]));
     }
 
@@ -55,13 +53,13 @@ public class ByzzFuzzDropMessageBehavior implements FaultBehavior {
      *
      * @param partition The ID of the node to isolate
      */
-    public ByzzFuzzDropMessageBehavior(String partition) {
+    public MessageAcrossPartitionsPredicate(String partition) {
         this(new String[]{partition});
     }
 
     @Override
     public String getId() {
-        return "createnetworkpartitions-%s".formatted(this.router.getReversePartitionsMapping());
+        return "acrossnetworkpartitions-%s".formatted(this.router.getReversePartitionsMapping());
     }
 
     @Override
@@ -77,14 +75,15 @@ public class ByzzFuzzDropMessageBehavior implements FaultBehavior {
     }
 
     @Override
-    public Action toAction(ScenarioContext context) {
-        return DropMessageAction.builder()
-                .eventId(context.getEvent().orElseThrow().getEventId())
-                .build();
-    }
+    public boolean test(ScenarioContext scenarioContext) {
+        Event e = scenarioContext.getEvent().orElseThrow();
 
-    @Override
-    public void accept(ScenarioContext context) {
-        throw new UnsupportedOperationException("THIS SHOULD BE REMOVED - USE ACTIONS INSTEAD!");
+        if (!(e instanceof MessageEvent messageEvent)) {
+            return false;
+        }
+
+        String sender = messageEvent.getSenderId();
+        String recipient = messageEvent.getRecipientId();
+        return !router.haveConnectivity(sender, recipient);
     }
 }

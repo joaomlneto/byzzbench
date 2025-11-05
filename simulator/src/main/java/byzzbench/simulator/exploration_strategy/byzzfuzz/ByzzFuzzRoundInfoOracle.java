@@ -21,11 +21,23 @@ import java.util.SortedSet;
  */
 @Getter
 public abstract class ByzzFuzzRoundInfoOracle implements Serializable, TransportObserver, ScenarioObserver {
+    /**
+     * The scenario that this instance belongs to
+     */
     @JsonIgnore
     private final Scenario scenario;
+    /**
+     * Map of replica IDs to metadata to compute their round info
+     */
     private final Map<String, ByzzFuzzRoundInfo> replicasRoundInfo = new HashMap<>();
+    /**
+     * Map of replica IDs to their current estimated round
+     */
     private final Map<String, Long> replicaRounds = new HashMap<>();
-    private final Map<Long, Long> messageRound = new HashMap<>();
+    /**
+     * Map of message IDs to their round numbers
+     */
+    private final Map<Long, Long> messageRounds = new HashMap<>();
 
     /**
      * Create a new ByzzFuzzRoundInfoOracle for the given scenario
@@ -131,14 +143,18 @@ public abstract class ByzzFuzzRoundInfoOracle implements Serializable, Transport
 
     @Override
     public void onMulticast(Node sender, SortedSet<String> recipients, MessagePayload payload) {
+        System.out.println("ByzzFuzzRoundInfoOracle#onMulticast");
+        System.out.println("payload: " + payload);
         // ensure the message is MessageWithByzzFuzzRoundInfo
         if (!(payload instanceof MessageWithByzzFuzzRoundInfo messageWithRoundInfo)) {
+            System.out.println("not a message with byzzfuzz round info");
             return;
         }
         String senderReplicaId = sender.getId();
 
         // ensure the sender is a replica
         if (!isReplica(senderReplicaId)) {
+            System.out.println("sender is not a replica");
             return;
         }
 
@@ -161,6 +177,8 @@ public abstract class ByzzFuzzRoundInfoOracle implements Serializable, Transport
 
         // Replica multicasted a message to other replicas
         if (sentToReplicas) {
+            System.out.println("sent to replicas!!");
+            System.out.println("verb index: " + messageRoundInfo.getVerbIndex());
             // if verb index is zero, skip
             if (messageRoundInfo.getVerbIndex() == 0) {
                 return;
@@ -172,6 +190,7 @@ public abstract class ByzzFuzzRoundInfoOracle implements Serializable, Transport
 
         // Replica sent a message to clients
         if (sentToClient) {
+            System.out.println("sent to client!!");
             this.replicaRounds.put(senderReplicaId, currentReplicaRound + 1);
             ByzzFuzzRoundInfo replicaRoundInfo = this.getReplicaRoundInfo(senderReplicaId);
             ByzzFuzzRoundInfo afterReplyRoundInfo = new ByzzFuzzRoundInfo(
@@ -204,13 +223,8 @@ public abstract class ByzzFuzzRoundInfoOracle implements Serializable, Transport
             return;
         }
 
-        // check if it is a message with round
-        if (!(messageEvent.getPayload() instanceof MessageWithByzzFuzzRoundInfo messageWithRoundInfo)) {
-            return;
-        }
-
         // tag message with a round
-        this.messageRound.put(event.getEventId(), this.replicaRounds.get(messageEvent.getSenderId()));
+        this.messageRounds.put(messageEvent.getEventId(), this.replicaRounds.get(messageEvent.getSenderId()));
     }
 
     @Override
@@ -225,6 +239,7 @@ public abstract class ByzzFuzzRoundInfoOracle implements Serializable, Transport
 
     @Override
     public void onEventDelivered(Event event) {
+        System.out.println("ByzzFuzzRoundInfoOracle#onEventDelivered");
         // ensure it is a message
         if (!(event instanceof MessageEvent messageEvent)) {
             return;

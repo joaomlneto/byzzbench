@@ -1,5 +1,6 @@
 package byzzbench.simulator.faults.faults;
 
+import byzzbench.simulator.domain.FaultInjectionAction;
 import byzzbench.simulator.faults.Fault;
 import byzzbench.simulator.faults.ScenarioContext;
 import byzzbench.simulator.transport.Router;
@@ -47,5 +48,10 @@ public class HealNodeNetworkFault extends Fault {
     public void accept(ScenarioContext state) {
         Router router = state.getScenario().getTransport().getRouter();
         router.healNode(nodeId);
+    }
+
+    @Override
+    public FaultInjectionAction toAction(ScenarioContext context) {
+        throw new UnsupportedOperationException("Not supported yet.");
     }
 }

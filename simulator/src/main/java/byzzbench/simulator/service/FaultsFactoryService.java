@@ -1,20 +1,35 @@
 package byzzbench.simulator.service;
 
+import byzzbench.simulator.config.FaultBehaviorConfig;
 import byzzbench.simulator.faults.Fault;
 import byzzbench.simulator.faults.FaultBehavior;
 import byzzbench.simulator.faults.FaultFactory;
 import byzzbench.simulator.faults.FaultPredicate;
 import byzzbench.simulator.faults.faults.MessageMutationFault;
+import jakarta.annotation.PostConstruct;
+import lombok.extern.java.Log;
+import org.springframework.beans.factory.config.BeanDefinition;
+import org.springframework.context.annotation.ClassPathScanningCandidateComponentProvider;
+import org.springframework.context.annotation.DependsOn;
+import org.springframework.core.type.filter.AssignableTypeFilter;
 import org.springframework.stereotype.Service;
 
 import java.io.Serializable;
+import java.lang.reflect.Constructor;
 import java.util.*;
 
 /**
  * Registry of fault behaviors.
  */
 @Service
+@Log
+@DependsOn("applicationContextProvider")
 public class FaultsFactoryService {
+    /**
+     * Map of fault behavior classnames to their respective classes
+     */
+    private final SortedMap<String, Class<FaultBehavior>> faultBehaviorClasses = new TreeMap<>();
+
     /**
      * Map of fault predicates by id.
      */
@@ -80,8 +95,8 @@ public class FaultsFactoryService {
         // populate message mutators (fault behaviors specifically applied to events) by input class
         faultBehaviors
                 .stream()
-                .filter(faultBehavior -> faultBehavior instanceof MessageMutationFault)
-                .map(faultBehavior -> (MessageMutationFault) faultBehavior)
+                .filter(MessageMutationFault.class::isInstance)
+                .map(MessageMutationFault.class::cast)
                 .forEach(faultBehavior -> {
                     for (Class<? extends Serializable> inputClass : faultBehavior.getInputClasses()) {
                         faultBehaviorsByInputClass
@@ -92,11 +107,67 @@ public class FaultsFactoryService {
 
     }
 
+    @PostConstruct
+    public void onStartup() {
+        ClassPathScanningCandidateComponentProvider provider =
+                new ClassPathScanningCandidateComponentProvider(false);
+        provider.addIncludeFilter(new AssignableTypeFilter(FaultBehavior.class));
+        Set<BeanDefinition> components = provider.findCandidateComponents("byzzbench");
+        components.forEach(bd -> {
+            try {
+                log.info("Found fault behavior class: " + bd.getBeanClassName());
+                Class<?> cls = Class.forName(bd.getBeanClassName());
+                faultBehaviorClasses.put(bd.getBeanClassName(), (Class<FaultBehavior>) cls);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        });
+    }
+
     public FaultBehavior getFaultBehavior(String faultBehaviorId) {
         FaultBehavior faultBehavior = faultBehaviors.get(faultBehaviorId);
         if (faultBehavior == null) {
             throw new IllegalArgumentException("Unknown fault behavior id: " + faultBehaviorId);
         }
+
         return faultBehavior;
+    }
+
+    /**
+     * Create a fault behavior from a configuration
+     *
+     * @param faultBehaviorConfig the configuration to generate a fault behavior
+     * @return the fault behavior instance
+     */
+    public FaultBehavior createFaultBehavior(FaultBehaviorConfig faultBehaviorConfig) {
+        try {
+            // find the fault behavior class by its id
+            Class<? extends FaultBehavior> faultBehaviorClass = this.faultBehaviorClasses.get(faultBehaviorConfig.getFaultBehaviorId());
+
+            // if not found, throw an exception
+            if (faultBehaviorClass == null) {
+                log.severe("Unknown fault behavior: " + faultBehaviorConfig.getFaultBehaviorId());
+                log.severe("Available fault behaviors:");
+                for (String explorationStrategyClassname : faultBehaviorClasses.keySet()) {
+                    log.severe("- " + explorationStrategyClassname);
+                }
+                throw new IllegalArgumentException("Unknown fault behavior id: " + faultBehaviorConfig.getFaultBehaviorId());
+            }
+
+            // instantiate the exploration strategy and initialize it with the schedule parameters
+            Class[] constructorParams = new Class[]{};
+            Constructor<? extends FaultBehavior> cons = faultBehaviorClass.getConstructor(constructorParams);
+            FaultBehavior faultBehavior = cons.newInstance();
+
+            return faultBehavior;
+        } catch (Exception e) {
+            log.severe("Requested fault behavior: " + faultBehaviorConfig.getFaultBehaviorId());
+            log.severe("Failed to generate fault behavior: " + e.getMessage());
+            log.severe("Available fault behaviors:");
+            for (String faultBehaviorClassname : faultBehaviorClasses.keySet()) {
+                log.severe("- " + faultBehaviorClassname);
+            }
+            throw new RuntimeException(e);
+        }
     }
 }

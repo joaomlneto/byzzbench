@@ -1,0 +1,66 @@
+package byzzbench.simulator.faults.behaviors;
+
+import byzzbench.simulator.config.FaultBehaviorConfig;
+import byzzbench.simulator.domain.FaultInjectionAction;
+import byzzbench.simulator.faults.FaultBehavior;
+import byzzbench.simulator.faults.ScenarioContext;
+import byzzbench.simulator.transport.Event;
+import byzzbench.simulator.transport.MessageEvent;
+import lombok.extern.java.Log;
+
+import java.util.Map;
+import java.util.Optional;
+
+/**
+ * Drops a specific message
+ */
+@Log
+public class DropMessageBehavior implements FaultBehavior {
+    private final long eventId;
+
+    public DropMessageBehavior(long eventId) {
+        this.eventId = eventId;
+    }
+
+    @Override
+    public String getId() {
+        return "drop-message";
+    }
+
+    @Override
+    public String getName() {
+        return "drop message";
+    }
+
+    @Override
+    public FaultInjectionAction toAction(ScenarioContext context) {
+        return new FaultInjectionAction(FaultBehaviorConfig.builder()
+                .faultBehaviorId(getClass().getCanonicalName())
+                .params(Map.of("eventId", String.valueOf(this.eventId)))
+                .build());
+    }
+
+    @Override
+    public void accept(ScenarioContext context) {
+        Optional<Event> event = context.getEvent();
+
+        if (event.isEmpty()) {
+            log.warning("No event to mutate");
+            return;
+        }
+
+        Event e = event.get();
+
+        if (!(e instanceof MessageEvent messageEvent)) {
+            log.warning("Event is not a message event");
+            return;
+        }
+
+        // otherwise, drop the message: the sender and recipient are in different partitions
+        if (messageEvent.getStatus() != Event.Status.QUEUED) {
+            throw new IllegalStateException("cannot drop message, as it is not in queued state");
+        }
+
+        context.getScenario().getTransport().dropEvent(e.getEventId());
+    }
+}

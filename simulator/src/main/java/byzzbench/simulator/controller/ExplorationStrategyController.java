@@ -83,6 +83,27 @@ public class ExplorationStrategyController {
     }
 
     /**
+     * Execute a specific action in the scenario
+     *
+     * @param schedulerId The ID of the exploration strategy to use.
+     * @param scenarioId  The ID of the scenario to use.
+     * @param actionId    The ID (index) of the action to use.
+     * @return The action that was executed.
+     */
+    @PostMapping("/schedulers/{schedulerId}/scenario/{scenarioId}/execute/{actionId}")
+    public Action executeSpecificSchedulerAction(@NonNull @PathVariable("schedulerId") String schedulerId,
+                                                 @NonNull @PathVariable("scenarioId") Long scenarioId,
+                                                 @NonNull @PathVariable("actionId") Integer actionId) {
+        ExplorationStrategy explorationStrategy = explorationStrategyService.getExplorationStrategy(schedulerId);
+        Scenario scenario = scenarioService.getScenarioById(scenarioId);
+        List<Action> actions = explorationStrategy.getAvailableActions(scenario);
+        Action action = Optional.of(actions.get(actionId)).orElseThrow();
+        System.out.println("ACTION TO BE EXECUTED: " + action);
+        action.accept(scenario);
+        return action;
+    }
+
+    /**
      * Get the currently selected exploration strategy
      *
      * @return Data about

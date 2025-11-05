@@ -1,5 +1,6 @@
 package byzzbench.simulator.faults;
 
+import byzzbench.simulator.domain.Action;
 import byzzbench.simulator.utils.NonNull;
 
 import java.io.Serializable;
@@ -11,4 +12,7 @@ public interface FaultBehavior extends Consumer<ScenarioContext>, Serializable {
 
     @NonNull
     String getName();
+
+    @NonNull
+    Action toAction(ScenarioContext context);
 }

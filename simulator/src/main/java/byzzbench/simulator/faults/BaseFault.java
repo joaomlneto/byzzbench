@@ -1,5 +1,6 @@
 package byzzbench.simulator.faults;
 
+import byzzbench.simulator.domain.Action;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Data;
 
@@ -16,6 +17,11 @@ public class BaseFault extends Fault {
 
     public String getName() {
         return behavior.getName() + " when " + predicate.getName();
+    }
+
+    @Override
+    public Action toAction(ScenarioContext context) {
+        return this.behavior.toAction(context);
     }
 
     @Override
