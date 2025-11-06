@@ -25,7 +25,7 @@ public class OmitMessage extends Fault {
         return false;
     }
 
-    @Override
+    @Deprecated
     public void accept(ScenarioContext ctx) {
         Optional<Event> e = ctx.getEvent();
 

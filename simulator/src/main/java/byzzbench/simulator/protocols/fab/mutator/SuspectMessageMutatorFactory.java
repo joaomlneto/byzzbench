@@ -23,7 +23,7 @@ public class SuspectMessageMutatorFactory extends MessageMutatorFactory {
                         "Increment Suspect Number",
                         List.of(SuspectMessage.class)
                 ) {
-                    @Override
+                    @Deprecated
                     public void accept(ScenarioContext serializable) {
                         Optional<Event> event = serializable.getEvent();
 
@@ -52,7 +52,7 @@ public class SuspectMessageMutatorFactory extends MessageMutatorFactory {
                         "Decrement Suspect Number",
                         List.of(SuspectMessage.class)
                 ) {
-                    @Override
+                    @Deprecated
                     public void accept(ScenarioContext serializable) {
                         Optional<Event> event = serializable.getEvent();
                         if (event.isEmpty()) {

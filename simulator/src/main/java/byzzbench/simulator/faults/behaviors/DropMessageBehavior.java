@@ -40,7 +40,7 @@ public class DropMessageBehavior implements FaultBehavior {
                 .build());
     }
 
-    @Override
+    @Deprecated
     public void accept(ScenarioContext context) {
         Optional<Event> event = context.getEvent();
 

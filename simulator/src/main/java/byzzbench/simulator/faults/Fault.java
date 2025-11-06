@@ -1,5 +1,6 @@
 package byzzbench.simulator.faults;
 
+import byzzbench.simulator.domain.Action;
 import byzzbench.simulator.utils.NonNull;
 
 import java.io.Serializable;
@@ -39,14 +40,6 @@ public abstract class Fault implements Predicate<ScenarioContext>, FaultBehavior
     public abstract boolean test(ScenarioContext state);
 
     /**
-     * Applies a fault to the state of the system
-     *
-     * @param state the state of the system
-     */
-    @Override
-    public abstract void accept(ScenarioContext state);
-
-    /**
      * Checks if the fault can be applied to the given state and applies it if it can
      *
      * @param state the state of the system
@@ -54,7 +47,8 @@ public abstract class Fault implements Predicate<ScenarioContext>, FaultBehavior
      */
     public boolean testAndAccept(ScenarioContext state) {
         if (test(state)) {
-            accept(state);
+            Action action = this.toAction(state);
+            action.accept(state.getScenario());
             return true;
         }
         return false;

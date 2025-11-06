@@ -24,7 +24,7 @@ public class SatisfiedMessageMutatorFactory extends MessageMutatorFactory {
                         "Increment Satisfied Number",
                         List.of(SatisfiedMessage.class)
                 ) {
-                    @Override
+                    @Deprecated
                     public void accept(ScenarioContext serializable) {
                         Optional<Event> event = serializable.getEvent();
 
@@ -54,7 +54,7 @@ public class SatisfiedMessageMutatorFactory extends MessageMutatorFactory {
                         "Decrement Satisfied Number",
                         List.of(SatisfiedMessage.class)
                 ) {
-                    @Override
+                    @Deprecated
                     public void accept(ScenarioContext serializable) {
                         Optional<Event> event = serializable.getEvent();
 

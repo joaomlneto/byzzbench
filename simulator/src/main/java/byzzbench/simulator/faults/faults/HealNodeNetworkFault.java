@@ -44,7 +44,7 @@ public class HealNodeNetworkFault extends Fault {
      *
      * @param state the input argument
      */
-    @Override
+    @Deprecated
     public void accept(ScenarioContext state) {
         Router router = state.getScenario().getTransport().getRouter();
         router.healNode(nodeId);

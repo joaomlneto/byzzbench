@@ -22,7 +22,7 @@ public class ReplyMessageMutatorFactory extends MessageMutatorFactory {
     public List<MessageMutationFault> mutators() {
         return List.of(
                 new MessageMutationFault("hbft-reply-view-inc", "Increment View Number", List.of(ReplyMessage.class)) {
-                    @Override
+                    @Deprecated
                     public void accept(ScenarioContext serializable) {
                         Optional<Event> event = serializable.getEvent();
                         if (event.isEmpty()) {
@@ -40,7 +40,7 @@ public class ReplyMessageMutatorFactory extends MessageMutatorFactory {
                     }
                 },
                 new MessageMutationFault("hbft-reply-view-dec", "Decrement View Number", List.of(ReplyMessage.class)) {
-                    @Override
+                    @Deprecated
                     public void accept(ScenarioContext serializable) {
                         Optional<Event> event = serializable.getEvent();
                         if (event.isEmpty()) {
@@ -58,7 +58,7 @@ public class ReplyMessageMutatorFactory extends MessageMutatorFactory {
                     }
                 },
                 new MessageMutationFault("hbft-reply-seq-inc", "Increment Sequence Number", List.of(ReplyMessage.class)) {
-                    @Override
+                    @Deprecated
                     public void accept(ScenarioContext serializable) {
                         Optional<Event> event = serializable.getEvent();
                         if (event.isEmpty()) {
@@ -77,7 +77,7 @@ public class ReplyMessageMutatorFactory extends MessageMutatorFactory {
                     }
                 },
                 new MessageMutationFault("hbft-reply-sec-dec", "Decrement Sequence Number", List.of(ReplyMessage.class)) {
-                    @Override
+                    @Deprecated
                     public void accept(ScenarioContext serializable) {
                         Optional<Event> event = serializable.getEvent();
                         if (event.isEmpty()) {
@@ -95,7 +95,7 @@ public class ReplyMessageMutatorFactory extends MessageMutatorFactory {
                     }
                 },
                 new MessageMutationFault("hbft-reply-timestamp-inc", "Increment timestamp", List.of(ReplyMessage.class)) {
-                    @Override
+                    @Deprecated
                     public void accept(ScenarioContext serializable) {
                         Optional<Event> event = serializable.getEvent();
                         if (event.isEmpty()) {
@@ -113,7 +113,7 @@ public class ReplyMessageMutatorFactory extends MessageMutatorFactory {
                     }
                 },
                 new MessageMutationFault("hbft-reply-timestamp-dec", "Decrement timestamp", List.of(ReplyMessage.class)) {
-                    @Override
+                    @Deprecated
                     public void accept(ScenarioContext serializable) {
                         Optional<Event> event = serializable.getEvent();
                         if (event.isEmpty()) {

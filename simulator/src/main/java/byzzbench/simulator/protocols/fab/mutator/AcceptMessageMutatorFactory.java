@@ -25,7 +25,7 @@ public class AcceptMessageMutatorFactory extends MessageMutatorFactory {
                         "Increment Accept Number",
                         List.of(AcceptMessage.class)
                 ) {
-                    @Override
+                    @Deprecated
                     public void accept(ScenarioContext serializable) {
                         Optional<Event> event = serializable.getEvent();
 
@@ -55,7 +55,7 @@ public class AcceptMessageMutatorFactory extends MessageMutatorFactory {
                         "Decrement Accept Number",
                         List.of(AcceptMessage.class)
                 ) {
-                    @Override
+                    @Deprecated
                     public void accept(ScenarioContext serializable) {
                         Optional<Event> event = serializable.getEvent();
                         if (event.isEmpty()) {

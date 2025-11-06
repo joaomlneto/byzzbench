@@ -23,7 +23,7 @@ public class CommitMessageMutatorFactory extends MessageMutatorFactory {
     public List<MessageMutationFault> mutators() {
         return List.of(
                 new MessageMutationFault("hbft-commit-view-inc", "Increment View Number", List.of(CommitMessage.class)) {
-                    @Override
+                    @Deprecated
                     public void accept(ScenarioContext serializable) {
                         Optional<Event> event = serializable.getEvent();
                         if (event.isEmpty()) {
@@ -41,7 +41,7 @@ public class CommitMessageMutatorFactory extends MessageMutatorFactory {
                     }
                 },
                 new MessageMutationFault("hbft-commit-view-dec", "Decrement View Number", List.of(CommitMessage.class)) {
-                    @Override
+                    @Deprecated
                     public void accept(ScenarioContext serializable) {
                         Optional<Event> event = serializable.getEvent();
                         if (event.isEmpty()) {
@@ -59,7 +59,7 @@ public class CommitMessageMutatorFactory extends MessageMutatorFactory {
                     }
                 },
                 new MessageMutationFault("hbft-commit-seq-inc", "Increment Sequence Number", List.of(CommitMessage.class)) {
-                    @Override
+                    @Deprecated
                     public void accept(ScenarioContext serializable) {
                         Optional<Event> event = serializable.getEvent();
                         if (event.isEmpty()) {
@@ -78,7 +78,7 @@ public class CommitMessageMutatorFactory extends MessageMutatorFactory {
                     }
                 },
                 new MessageMutationFault("hbft-commit-sec-dec", "Decrement Sequence Number", List.of(CommitMessage.class)) {
-                    @Override
+                    @Deprecated
                     public void accept(ScenarioContext serializable) {
                         Optional<Event> event = serializable.getEvent();
                         if (event.isEmpty()) {
@@ -96,7 +96,7 @@ public class CommitMessageMutatorFactory extends MessageMutatorFactory {
                     }
                 },
                 new MessageMutationFault("hbft-commit-different-digest", "Change digest", List.of(CommitMessage.class)) {
-                    @Override
+                    @Deprecated
                     public void accept(ScenarioContext serializable) {
                         Optional<Event> event = serializable.getEvent();
                         if (event.isEmpty()) {
@@ -116,7 +116,7 @@ public class CommitMessageMutatorFactory extends MessageMutatorFactory {
                     }
                 },
                 new MessageMutationFault("hbft-commit-remove-last-request-from-history", "Remove last request from history", List.of(CommitMessage.class)) {
-                    @Override
+                    @Deprecated
                     public void accept(ScenarioContext serializable) {
                         Optional<Event> event = serializable.getEvent();
                         if (event.isEmpty()) {

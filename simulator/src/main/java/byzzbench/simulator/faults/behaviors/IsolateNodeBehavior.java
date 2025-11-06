@@ -34,7 +34,7 @@ public class IsolateNodeBehavior implements FaultBehavior {
                 .build();
     }
 
-    @Override
+    @Deprecated
     public void accept(ScenarioContext context) {
         Router router = context.getScenario().getTransport().getRouter();
         router.isolateNode(nodeId);

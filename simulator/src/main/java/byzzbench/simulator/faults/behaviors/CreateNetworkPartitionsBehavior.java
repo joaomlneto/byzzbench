@@ -67,7 +67,7 @@ public class CreateNetworkPartitionsBehavior implements FaultBehavior {
         throw new UnsupportedOperationException("Not supported yet.");
     }
 
-    @Override
+    @Deprecated
     public void accept(ScenarioContext context) {
         Router router = context.getScenario().getTransport().getRouter();
         for (String[] partition : partitions) {

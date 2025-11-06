@@ -22,7 +22,7 @@ public class PrepareMessageMutatorFactory extends MessageMutatorFactory {
     public List<MessageMutationFault> mutators() {
         return List.of(
                 new MessageMutationFault("hbft-prepare-view-inc", "Increment View Number", List.of(PrepareMessage.class)) {
-                    @Override
+                    @Deprecated
                     public void accept(ScenarioContext serializable) {
                         Optional<Event> event = serializable.getEvent();
                         if (event.isEmpty()) {
@@ -40,7 +40,7 @@ public class PrepareMessageMutatorFactory extends MessageMutatorFactory {
                     }
                 },
                 new MessageMutationFault("hbft-prepare-view-dec", "Decrement View Number", List.of(PrepareMessage.class)) {
-                    @Override
+                    @Deprecated
                     public void accept(ScenarioContext serializable) {
                         Optional<Event> event = serializable.getEvent();
                         if (event.isEmpty()) {
@@ -58,7 +58,7 @@ public class PrepareMessageMutatorFactory extends MessageMutatorFactory {
                     }
                 },
                 new MessageMutationFault("hbft-prepare-seq-inc", "Increment Sequence Number", List.of(PrepareMessage.class)) {
-                    @Override
+                    @Deprecated
                     public void accept(ScenarioContext serializable) {
                         Optional<Event> event = serializable.getEvent();
                         if (event.isEmpty()) {
@@ -77,7 +77,7 @@ public class PrepareMessageMutatorFactory extends MessageMutatorFactory {
                     }
                 },
                 new MessageMutationFault("hbft-prepare-sec-dec", "Decrement Sequence Number", List.of(PrepareMessage.class)) {
-                    @Override
+                    @Deprecated
                     public void accept(ScenarioContext serializable) {
                         Optional<Event> event = serializable.getEvent();
                         if (event.isEmpty()) {
@@ -95,7 +95,7 @@ public class PrepareMessageMutatorFactory extends MessageMutatorFactory {
                     }
                 },
                 new MessageMutationFault("hbft-prepare-different-digest", "Change digest", List.of(PrepareMessage.class)) {
-                    @Override
+                    @Deprecated
                     public void accept(ScenarioContext serializable) {
                         Optional<Event> event = serializable.getEvent();
                         if (event.isEmpty()) {

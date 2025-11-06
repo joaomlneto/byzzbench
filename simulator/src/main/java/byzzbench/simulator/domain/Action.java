@@ -25,6 +25,7 @@ import java.util.function.Consumer;
         @JsonSubTypes.Type(value = DeliverMessageAction.class, name = "DeliverMessageAction"),
         @JsonSubTypes.Type(value = FaultInjectionAction.class, name = "FaultInjectionAction"),
         @JsonSubTypes.Type(value = TriggerTimeoutAction.class, name = "TriggerTimeoutAction"),
+        @JsonSubTypes.Type(value = CorruptInFlightMessageAction.class, name = "CorruptInFlightMessageAction"),
 })
 public abstract class Action implements Consumer<Scenario>, Serializable {
     @Id
@@ -38,4 +39,12 @@ public abstract class Action implements Consumer<Scenario>, Serializable {
     @Convert(converter = ScheduleJsonConverter.class)
     @JsonIgnore
     private Schedule schedule;
+
+    /**
+     * Applies the specific (deterministic) action to the scenario
+     *
+     * @param scenario the scenario
+     */
+    @Override
+    public abstract void accept(Scenario scenario);
 }

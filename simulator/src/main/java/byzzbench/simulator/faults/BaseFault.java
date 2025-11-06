@@ -29,8 +29,7 @@ public class BaseFault extends Fault {
         return predicate.test(state);
     }
 
-    @Override
     public void accept(ScenarioContext state) {
-        behavior.accept(state);
+        behavior.toAction(state).accept(state.getScenario());
     }
 }

@@ -22,7 +22,7 @@ public class GlobalStabilizationTimeBehavior implements FaultBehavior {
         return FaultInjectionAction.builder().payload(config).build();
     }
 
-    @Override
+    @Deprecated
     public void accept(ScenarioContext ctx) {
         ctx.getScenario().getTransport().globalStabilizationTime();
     }

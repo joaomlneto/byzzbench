@@ -83,7 +83,7 @@ public class ByzzFuzzDropMessageBehavior implements FaultBehavior {
                 .build();
     }
 
-    @Override
+    @Deprecated
     public void accept(ScenarioContext context) {
         throw new UnsupportedOperationException("THIS SHOULD BE REMOVED - USE ACTIONS INSTEAD!");
     }

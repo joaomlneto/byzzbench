@@ -24,7 +24,7 @@ public class PbftPrepareMessageMutatorFactory extends MessageMutatorFactory {
                         "pbft-prepare-view-inc",
                         "Increment View Number",
                         List.of(PrepareMessage.class)) {
-                    @Override
+                    @Deprecated
                     public void accept(ScenarioContext serializable) {
                         Optional<Event> event = serializable.getEvent();
                         if (event.isEmpty()) {
@@ -45,7 +45,7 @@ public class PbftPrepareMessageMutatorFactory extends MessageMutatorFactory {
                         "pbft-prepare-view-dec",
                         "Decrement View Number",
                         List.of(PrepareMessage.class)) {
-                    @Override
+                    @Deprecated
                     public void accept(ScenarioContext serializable) {
                         Optional<Event> event = serializable.getEvent();
                         if (event.isEmpty()) {
@@ -66,7 +66,7 @@ public class PbftPrepareMessageMutatorFactory extends MessageMutatorFactory {
                         "pbft-prepare-seq-inc",
                         "Increment Sequence Number",
                         List.of(PrepareMessage.class)) {
-                    @Override
+                    @Deprecated
                     public void accept(ScenarioContext serializable) {
                         Optional<Event> event = serializable.getEvent();
                         if (event.isEmpty()) {
@@ -87,7 +87,7 @@ public class PbftPrepareMessageMutatorFactory extends MessageMutatorFactory {
                         "pbft-prepare-seq-dec",
                         "Decrement Sequence Number",
                         List.of(PrepareMessage.class)) {
-                    @Override
+                    @Deprecated
                     public void accept(ScenarioContext serializable) {
                         Optional<Event> event = serializable.getEvent();
                         if (event.isEmpty()) {
@@ -108,7 +108,7 @@ public class PbftPrepareMessageMutatorFactory extends MessageMutatorFactory {
                         "pbft-prepare-digest-modify",
                         "Modify digest",
                         List.of(PrepareMessage.class)) {
-                    @Override
+                    @Deprecated
                     public void accept(ScenarioContext serializable) {
                         Optional<Event> event = serializable.getEvent();
                         if (event.isEmpty()) {

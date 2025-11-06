@@ -39,7 +39,7 @@ public class MutateMessageBehavior implements FaultBehavior {
         throw new UnsupportedOperationException("Not supported yet.");
     }
 
-    @Override
+    @Deprecated
     public void accept(ScenarioContext context) {
         Optional<Event> event = context.getEvent();
 

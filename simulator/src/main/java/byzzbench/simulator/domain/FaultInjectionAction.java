@@ -27,8 +27,11 @@ public class FaultInjectionAction extends Action {
 
     @Override
     public void accept(Scenario scenario) {
+        ScenarioContext context = new ScenarioContext(scenario, scenario.getTransport().getEvent(Integer.parseInt(payload.getParams().get("eventId"))));
         FaultsFactoryService faultsFactoryService = ApplicationContextProvider.getFaultsFactoryService();
         FaultBehavior behavior = faultsFactoryService.createFaultBehavior(payload);
-        behavior.accept(new ScenarioContext(scenario, scenario.getTransport().getEvent(Integer.parseInt(payload.getParams().get("eventId")))));
+        Action action = behavior.toAction(context);
+        action.accept(scenario);
+        //behavior.accept(new ScenarioContext(scenario, scenario.getTransport().getEvent(Integer.parseInt(payload.getParams().get("eventId")))));
     }
 }

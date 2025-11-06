@@ -30,11 +30,6 @@ import java.util.*;
 @Getter
 public class ByzzFuzzExplorationStrategy extends RandomExplorationStrategy {
     /**
-     * Scenario-specific oracle
-     */
-    private final Map<Scenario, ByzzFuzzRoundInfoOracle> scenarioOracle = new HashMap<>();
-
-    /**
      * Scenario-specific faults
      */
     private final Map<Scenario, List<Fault>> scenarioFaults = new HashMap<>();
@@ -120,7 +115,6 @@ public class ByzzFuzzExplorationStrategy extends RandomExplorationStrategy {
 
         // Faults
         log.info("ByzzFuzz initialized scenario with " + faults.size() + " faults.");
-        this.scenarioOracle.put(scenario, oracle);
         this.scenarioFaults.put(scenario, faults);
     }
 
@@ -146,7 +140,7 @@ public class ByzzFuzzExplorationStrategy extends RandomExplorationStrategy {
             if (fault.test(context)) {
                 log.fine("ByzzFuzz applying fault " + fault.getName() + " to message event " + messageEvent.getEventId());
                 // apply the fault to the message event
-                fault.accept(context);
+                fault.toAction(context).accept(context.getScenario());
             }
         }
 
@@ -184,14 +178,18 @@ public class ByzzFuzzExplorationStrategy extends RandomExplorationStrategy {
 
     @Override
     public ScenarioStrategyData getScenarioStrategyData(Scenario scenario) {
+        if (!(scenario instanceof ByzzFuzzScenario byzzFuzzScenario)) {
+            throw new UnsupportedOperationException("Scenario is not a ByzzFuzzScenario");
+        }
+
         return ByzzFuzzScenarioStrategyData.builder()
                 .remainingDropMessages(super.getScenarioStrategyData(scenario).getRemainingDropMessages())
                 .remainingMutateMessages(super.getScenarioStrategyData(scenario).getRemainingMutateMessages())
                 .initializedByStrategy(this.getInitializedScenarios().contains(scenario))
-                .roundInfos(this.scenarioOracle.get(scenario).getReplicasRoundInfo())
-                .replicaRounds(this.scenarioOracle.get(scenario).getReplicaRounds())
+                .roundInfos(byzzFuzzScenario.getRoundInfoOracle().getReplicasRoundInfo())
+                .replicaRounds(byzzFuzzScenario.getRoundInfoOracle().getReplicaRounds())
                 .faults(this.scenarioFaults.get(scenario))
-                .messageRound(this.scenarioOracle.get(scenario).getMessageRounds())
+                .messageRound(byzzFuzzScenario.getRoundInfoOracle().getMessageRounds())
                 .build();
     }
 }

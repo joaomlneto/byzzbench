@@ -25,7 +25,7 @@ public class PbftViewChangeMessageMutatorFactory extends MessageMutatorFactory {
                         "pbft-viewchange-view-inc",
                         "Increment NewView Number",
                         List.of(ViewChangeMessage.class)) {
-                    @Override
+                    @Deprecated
                     public void accept(ScenarioContext serializable) {
                         Optional<Event> event = serializable.getEvent();
                         if (event.isEmpty()) {
@@ -46,7 +46,7 @@ public class PbftViewChangeMessageMutatorFactory extends MessageMutatorFactory {
                         "pbft-viewchange-view-dec",
                         "Decrement NewView Number",
                         List.of(ViewChangeMessage.class)) {
-                    @Override
+                    @Deprecated
                     public void accept(ScenarioContext serializable) {
                         Optional<Event> event = serializable.getEvent();
                         if (event.isEmpty()) {
@@ -67,7 +67,7 @@ public class PbftViewChangeMessageMutatorFactory extends MessageMutatorFactory {
                         "pbft-viewchange-seq-inc",
                         "Increment Last Sequence Number",
                         List.of(ViewChangeMessage.class)) {
-                    @Override
+                    @Deprecated
                     public void accept(ScenarioContext serializable) {
                         Optional<Event> event = serializable.getEvent();
                         if (event.isEmpty()) {
@@ -88,7 +88,7 @@ public class PbftViewChangeMessageMutatorFactory extends MessageMutatorFactory {
                         "pbft-viewchange-seq-dec",
                         "Decrement Last Sequence Number",
                         List.of(ViewChangeMessage.class)) {
-                    @Override
+                    @Deprecated
                     public void accept(ScenarioContext serializable) {
                         Optional<Event> event = serializable.getEvent();
                         if (event.isEmpty()) {
@@ -109,7 +109,7 @@ public class PbftViewChangeMessageMutatorFactory extends MessageMutatorFactory {
                         "pbft-viewchange-checkpoint-proofs-empty",
                         "Empty checkpoint proofs",
                         List.of(ViewChangeMessage.class)) {
-                    @Override
+                    @Deprecated
                     public void accept(ScenarioContext serializable) {
                         Optional<Event> event = serializable.getEvent();
                         if (event.isEmpty()) {
@@ -130,7 +130,7 @@ public class PbftViewChangeMessageMutatorFactory extends MessageMutatorFactory {
                         "pbft-viewchange-prepared-proofs-empty",
                         "Empty prepared proofs",
                         List.of(ViewChangeMessage.class)) {
-                    @Override
+                    @Deprecated
                     public void accept(ScenarioContext serializable) {
                         Optional<Event> event = serializable.getEvent();
                         if (event.isEmpty()) {

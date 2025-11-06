@@ -24,7 +24,7 @@ public class PbftCommitMessageMutatorFactory extends MessageMutatorFactory {
                         "pbft-commit-view-inc",
                         "Increment View Number",
                         List.of(CommitMessage.class)) {
-                    @Override
+                    @Deprecated
                     public void accept(ScenarioContext serializable) {
                         Optional<Event> event = serializable.getEvent();
                         if (event.isEmpty()) {
@@ -45,7 +45,7 @@ public class PbftCommitMessageMutatorFactory extends MessageMutatorFactory {
                         "pbft-commit-view-dec",
                         "Decrement View Number",
                         List.of(CommitMessage.class)) {
-                    @Override
+                    @Deprecated
                     public void accept(ScenarioContext serializable) {
                         Optional<Event> event = serializable.getEvent();
                         if (event.isEmpty()) {
@@ -66,7 +66,7 @@ public class PbftCommitMessageMutatorFactory extends MessageMutatorFactory {
                         "pbft-commit-seq-inc",
                         "Increment Sequence Number",
                         List.of(CommitMessage.class)) {
-                    @Override
+                    @Deprecated
                     public void accept(ScenarioContext serializable) {
                         Optional<Event> event = serializable.getEvent();
                         if (event.isEmpty()) {
@@ -87,7 +87,7 @@ public class PbftCommitMessageMutatorFactory extends MessageMutatorFactory {
                         "pbft-commit-seq-dec",
                         "Decrement Sequence Number",
                         List.of(CommitMessage.class)) {
-                    @Override
+                    @Deprecated
                     public void accept(ScenarioContext serializable) {
                         Optional<Event> event = serializable.getEvent();
                         if (event.isEmpty()) {
@@ -108,7 +108,7 @@ public class PbftCommitMessageMutatorFactory extends MessageMutatorFactory {
                         "pbft-commit-digest-modify",
                         "Mutate digest",
                         List.of(CommitMessage.class)) {
-                    @Override
+                    @Deprecated
                     public void accept(ScenarioContext serializable) {
                         Optional<Event> event = serializable.getEvent();
                         if (event.isEmpty()) {
@@ -129,7 +129,7 @@ public class PbftCommitMessageMutatorFactory extends MessageMutatorFactory {
                         "pbft-commit-request-replicaid-invalid",
                         "Mutate replica ID",
                         List.of(CommitMessage.class)) {
-                    @Override
+                    @Deprecated
                     public void accept(ScenarioContext serializable) {
                         Optional<Event> event = serializable.getEvent();
                         if (event.isEmpty()) {

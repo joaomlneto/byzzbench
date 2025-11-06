@@ -338,7 +338,7 @@ public class Transport {
         }
 
         // apply the mutation
-        fault.accept(input);
+        fault.toAction(input).accept(this.scenario);
         scenario.markReplicaFaulty(m.getSenderId());
 
         // create a new event for the mutation
@@ -376,7 +376,7 @@ public class Transport {
         }
 
         // apply the fault
-        fault.accept(input);
+        fault.toAction(this.scenario).accept(this.scenario);
 
         // create a new event for the fault and append it to the schedule
         GenericFaultEvent faultEvent = GenericFaultEvent.builder()

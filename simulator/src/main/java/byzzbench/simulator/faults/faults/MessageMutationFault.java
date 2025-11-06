@@ -1,10 +1,12 @@
 package byzzbench.simulator.faults.faults;
 
-import byzzbench.simulator.domain.FaultInjectionAction;
+import byzzbench.simulator.domain.Action;
+import byzzbench.simulator.domain.CorruptInFlightMessageAction;
 import byzzbench.simulator.faults.Fault;
 import byzzbench.simulator.faults.ScenarioContext;
 import byzzbench.simulator.transport.Event;
 import byzzbench.simulator.transport.MessageEvent;
+import byzzbench.simulator.transport.MessagePayload;
 import byzzbench.simulator.utils.NonNull;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
@@ -14,6 +16,7 @@ import lombok.ToString;
 import java.io.Serializable;
 import java.util.Collection;
 import java.util.Optional;
+import java.util.function.UnaryOperator;
 
 /**
  * Abstract class for mutating {@link MessageEvent}.
@@ -30,6 +33,9 @@ public abstract class MessageMutationFault extends Fault {
     private final String name;
     @NonNull
     private final Collection<Class<? extends Serializable>> inputClasses;
+
+    private String fieldName;
+    private UnaryOperator<MessagePayload> transformFunction;
 
     /**
      * Checks if this mutator can be applied to the target class
@@ -60,7 +66,28 @@ public abstract class MessageMutationFault extends Fault {
     }
 
     @Override
-    public FaultInjectionAction toAction(ScenarioContext context) {
+    public Action toAction(ScenarioContext context) {
+        // confirm event exists
+        if (context.getEvent().isEmpty()) {
+            throw new IllegalStateException("Cannot mutate an empty fault");
+        }
+
+        Event event = context.getEvent().get();
+
+        // confirm event is a message
+        if (!(event instanceof MessageEvent messageEvent)) {
+            throw new IllegalStateException("Cannot mutate an empty fault");
+        }
+
+        CorruptInFlightMessageAction action = new CorruptInFlightMessageAction();
+        action.setMessageId(event.getEventId());
+        action.setFieldName(this.fieldName);
+        action.setTransformFunction(this.transformFunction);
+
+        return action;
+    }
+
+    public void accept(ScenarioContext context) {
         throw new UnsupportedOperationException("not yet implemented!");
     }
 }
