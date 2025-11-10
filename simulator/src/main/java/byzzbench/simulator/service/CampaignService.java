@@ -179,8 +179,8 @@ public class CampaignService {
                     }
 
                     long numEvents = currentScenario.getSchedule().getActions().size();
-                    long terminationSamplingFreq = this.getCampaign().getTermination().getSamplingFrequency();
-                    boolean shouldCheckTermination = (numEvents % terminationSamplingFreq) == 0;
+                    //long terminationSamplingFreq = this.getCampaign().getTermination().getSamplingFrequency();
+                    boolean shouldCheckTermination = true;//(numEvents % terminationSamplingFreq) == 0;
 
                     // if the invariants do not hold, terminate the run
                     if (!currentScenario.invariantsHold()) {
