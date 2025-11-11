@@ -3,6 +3,8 @@ package byzzbench.simulator.protocols.hbft;
 import byzzbench.simulator.Scenario;
 import byzzbench.simulator.domain.ScenarioParameters;
 import byzzbench.simulator.domain.Schedule;
+import byzzbench.simulator.exploration_strategy.byzzfuzz.ByzzFuzzRoundInfoOracle;
+import byzzbench.simulator.exploration_strategy.byzzfuzz.ByzzFuzzScenario;
 import byzzbench.simulator.nodes.Client;
 import byzzbench.simulator.nodes.Replica;
 import lombok.Getter;
@@ -13,12 +15,14 @@ import java.util.TreeSet;
 
 @Getter
 @Log
-public class HbftJavaScenario extends Scenario {
+public class HbftJavaScenario extends Scenario implements ByzzFuzzScenario {
     private final int NUM_NODES = 4;
+    private final HbftJavaByzzFuzzRoundInfoOracle roundInfoOracle;
     private SortedSet<String> nodeIds;
 
     public HbftJavaScenario(Schedule schedule) {
         super(schedule);
+        this.roundInfoOracle = new HbftJavaByzzFuzzRoundInfoOracle(this);
     }
 
     @Override
@@ -89,5 +93,10 @@ public class HbftJavaScenario extends Scenario {
     @Override
     public Class<? extends Client> getClientClass() {
         return HbftClient.class;
+    }
+
+    @Override
+    public ByzzFuzzRoundInfoOracle getRoundInfoOracle() {
+        return this.roundInfoOracle;
     }
 }
