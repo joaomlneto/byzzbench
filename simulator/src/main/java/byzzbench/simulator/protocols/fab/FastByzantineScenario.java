@@ -3,6 +3,8 @@ package byzzbench.simulator.protocols.fab;
 import byzzbench.simulator.Scenario;
 import byzzbench.simulator.domain.ScenarioParameters;
 import byzzbench.simulator.domain.Schedule;
+import byzzbench.simulator.exploration_strategy.byzzfuzz.ByzzFuzzRoundInfoOracle;
+import byzzbench.simulator.exploration_strategy.byzzfuzz.ByzzFuzzScenario;
 import byzzbench.simulator.nodes.Client;
 import byzzbench.simulator.nodes.Replica;
 import byzzbench.simulator.transport.Transport;
@@ -16,10 +18,12 @@ import java.util.TreeSet;
  * Single-shot implementation of the <a href="https://ieeexplore.ieee.org/document/1467815">Fast Byzantine Paxos (FaB Paxos)</a> protocol.
  */
 @Log
-public class FastByzantineScenario extends Scenario {
+public class FastByzantineScenario extends Scenario implements ByzzFuzzScenario {
+    private final FastByzantineByzzFuzzRoundInfoOracle roundInfoOracle;
 
     public FastByzantineScenario(Schedule schedule) {
         super(schedule);
+        this.roundInfoOracle = new FastByzantineByzzFuzzRoundInfoOracle(this);
     }
 
     /**
@@ -357,4 +361,8 @@ public class FastByzantineScenario extends Scenario {
         return FastByzantineClient.class;
     }
 
+    @Override
+    public ByzzFuzzRoundInfoOracle getRoundInfoOracle() {
+        return this.roundInfoOracle;
+    }
 }
