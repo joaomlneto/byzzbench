@@ -2,6 +2,7 @@ package byzzbench.simulator.exploration_strategy.random;
 
 import byzzbench.simulator.Scenario;
 import byzzbench.simulator.domain.Action;
+import byzzbench.simulator.domain.DeliverMessageAction;
 import byzzbench.simulator.exploration_strategy.ExplorationStrategy;
 import byzzbench.simulator.exploration_strategy.ExplorationStrategyParameters;
 import lombok.extern.java.Log;
@@ -37,6 +38,16 @@ public class RandomExplorationStrategy extends ExplorationStrategy {
 
         Action action = getRandomElement(actions);
         action.accept(scenario);
+
+        // update metadata
+        switch (action) {
+            case DeliverMessageAction ignored -> {
+                this.remainingDropMessages.compute(scenario, (k, v) -> v != null && v > 0 ? v - 1 : 0);
+            }
+            default -> {
+            }
+        }
+
         return Optional.of(action);
 
         /*
