@@ -101,7 +101,7 @@ public class HbftClient extends Client {
 
     private void broadcastRequest(long timestamp, String requestId) {
         MessagePayload payload = new ClientRequestMessage(timestamp, requestId);
-        SortedSet<String> replicaIds = getScenario().getTransport().getNodeIds();
+        SortedSet<String> replicaIds = getScenario().getReplicaIds(this);
         getScenario().getTransport().multicast(this, replicaIds, payload);
     }
 
