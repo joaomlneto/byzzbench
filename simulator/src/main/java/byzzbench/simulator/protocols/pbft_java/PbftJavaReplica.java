@@ -744,6 +744,7 @@ public class PbftJavaReplica<O extends Serializable, R extends Serializable> ext
             case PrepareMessage prepare -> recvPrepare(prepare);
             case CommitMessage commit -> recvCommit(commit);
             case ViewChangeMessage viewChange -> recvViewChange(viewChange);
+            case NewViewMessage newView -> recvNewView(newView);
             case null, default -> throw new IllegalArgumentException("Unknown message type: " + m);
         }
     }
