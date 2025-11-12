@@ -2,21 +2,13 @@ package byzzbench.simulator.exploration_strategy.random;
 
 import byzzbench.simulator.Scenario;
 import byzzbench.simulator.domain.Action;
-import byzzbench.simulator.domain.DeliverMessageAction;
-import byzzbench.simulator.domain.TriggerTimeoutAction;
 import byzzbench.simulator.exploration_strategy.ExplorationStrategy;
 import byzzbench.simulator.exploration_strategy.ExplorationStrategyParameters;
-import byzzbench.simulator.faults.faults.MessageMutationFault;
-import byzzbench.simulator.service.ApplicationContextProvider;
-import byzzbench.simulator.transport.Event;
-import byzzbench.simulator.transport.MessageEvent;
-import byzzbench.simulator.transport.TimeoutEvent;
 import lombok.extern.java.Log;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.SortedSet;
 
 /**
  * A exploration_strategy that randomly selects events to deliver, drop, mutate or timeout.
@@ -36,6 +28,18 @@ public class RandomExplorationStrategy extends ExplorationStrategy {
     @Override
     public synchronized Optional<Action> scheduleNext(Scenario scenario) {
         List<Action> actions = this.getAvailableActions(scenario);
+
+        // pick a random action
+        if (actions.isEmpty()) {
+            log.warning("No available actions!");
+            return Optional.empty();
+        }
+
+        Action action = getRandomElement(actions);
+        action.accept(scenario);
+        return Optional.of(action);
+
+        /*
 
         // Get a random event
         List<Event> availableEvents = scenario.getTransport().getEventsInState(Event.Status.QUEUED);
@@ -80,8 +84,8 @@ public class RandomExplorationStrategy extends ExplorationStrategy {
         if (dieRoll < 0) {
             Event message = getRandomElement(messageEvents);
             scenario.getTransport().dropEvent(message.getEventId());
-            /*Action decision = FaultInjectionAction.builder().faultBehaviorId("drop-message").eventId(message.getEventId()).build();
-            return Optional.of(decision);*/
+            //Action decision = FaultInjectionAction.builder().faultBehaviorId("drop-message").eventId(message.getEventId()).build();
+            //return Optional.of(decision);
             throw new UnsupportedOperationException("not implemented yet!!!");
         }
 
@@ -101,12 +105,12 @@ public class RandomExplorationStrategy extends ExplorationStrategy {
                     getRandomElement(mutators));
             scenario.getTransport().deliverEvent(message.getEventId());
 
-            throw new UnsupportedOperationException("not implemented yet!!!");/*
-            Action decision = FaultInjectionAction.builder().faultBehaviorId("mutate-and-deliver").eventId(message.getEventId()).build();
-            return Optional.of(decision);*/
-        }
+            throw new UnsupportedOperationException("not implemented yet!!!");
+            //Action decision = FaultInjectionAction.builder().faultBehaviorId("mutate-and-deliver").eventId(message.getEventId()).build();
+            //return Optional.of(decision);
+        }*/
 
-        throw new IllegalStateException("This should never happen!");
+        //throw new IllegalStateException("This should never happen!");
     }
 
     @Override

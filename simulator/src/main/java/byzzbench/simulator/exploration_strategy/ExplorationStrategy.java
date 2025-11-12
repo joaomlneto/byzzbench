@@ -315,10 +315,10 @@ public abstract class ExplorationStrategy {
     public List<Action> getAvailableActions(Scenario scenario) {
         ScenarioContext context = new ScenarioContext(scenario);
         Stream<? extends Action> messageEvents = getAvailableDeliverMessageActions(scenario);
-        Stream<? extends Action> dropMessages = getAvailableDropMessageActions(scenario);
+        //Stream<? extends Action> dropMessages = getAvailableDropMessageActions(scenario);
         Stream<? extends Action> timeoutEvents = getAvailableTimeoutActions(scenario);
         Stream<Action> faultEvents = this.getEnabledFaultActions(scenario).stream().map(fault -> fault.toAction(context));
-        return Stream.concat(Stream.concat(Stream.concat(messageEvents, dropMessages), timeoutEvents), faultEvents).toList();
+        return Stream.concat(Stream.concat(messageEvents, timeoutEvents), faultEvents).toList();
     }
 
     /**
