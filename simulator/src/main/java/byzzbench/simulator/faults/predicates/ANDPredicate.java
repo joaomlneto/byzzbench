@@ -21,9 +21,10 @@ public class ANDPredicate implements FaultPredicate {
 
     @Override
     public String getName() {
+        final String glue = " AND ";
         return predicates.stream()
                 .map(FaultPredicate::getName)
-                .reduce("", (a, b) -> a + " AND " + b);
+                .reduce("", (a, b) -> a + glue + b).substring(glue.length());
     }
 
     @Override
