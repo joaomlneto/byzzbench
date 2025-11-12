@@ -3,6 +3,7 @@ package byzzbench.simulator.exploration_strategy;
 import byzzbench.simulator.Scenario;
 import byzzbench.simulator.domain.Action;
 import byzzbench.simulator.domain.DeliverMessageAction;
+import byzzbench.simulator.domain.DropMessageAction;
 import byzzbench.simulator.domain.TriggerTimeoutAction;
 import byzzbench.simulator.faults.Fault;
 import byzzbench.simulator.faults.ScenarioContext;
@@ -276,17 +277,48 @@ public abstract class ExplorationStrategy {
     }
 
     /**
-     * Returns all available actions (queued messages, timeouts and faults) in the scenario
+     * Returns actions for all messages that can be delivered in the scenario
+     *
+     * @param scenario the scenario to get the available actions for
+     * @return the list of available actions
+     */
+    public Stream<DeliverMessageAction> getAvailableDeliverMessageActions(Scenario scenario) {
+        return this.getQueuedMessageEvents(scenario).stream().map(DeliverMessageAction::fromEvent);
+    }
+
+    /**
+     * Returns actions for all messages that can be delivered in the scenario
+     *
+     * @param scenario the scenario to get the available actions for
+     * @return the list of available actions
+     */
+    public Stream<DropMessageAction> getAvailableDropMessageActions(Scenario scenario) {
+        return this.getQueuedMessageEvents(scenario).stream().map(DropMessageAction::fromEvent);
+    }
+
+    /**
+     * Returns actions for all messages that can be delivered in the scenario
+     *
+     * @param scenario the scenario to get the available actions for
+     * @return the list of available actions
+     */
+    public Stream<TriggerTimeoutAction> getAvailableTimeoutActions(Scenario scenario) {
+        return this.getQueuedTimeoutEvents(scenario).stream().map(TriggerTimeoutAction::fromEvent);
+    }
+
+    /**
+     * Returns all available actions (deliver/drop message, timeouts and faults) in the scenario
      *
      * @param scenario The scenario to get the available actions for
      * @return The list of available actions
      */
     public List<Action> getAvailableActions(Scenario scenario) {
         ScenarioContext context = new ScenarioContext(scenario);
-        Stream<Action> messageEvents = this.getQueuedMessageEvents(scenario).stream().map(DeliverMessageAction::fromEvent);
-        Stream<Action> timeoutEvents = this.getQueuedTimeoutEvents(scenario).stream().map(TriggerTimeoutAction::fromEvent);
+        Stream<? extends Action> messageEvents = getAvailableDeliverMessageActions(scenario);
+        Stream<? extends Action> dropMessages = getAvailableDropMessageActions(scenario);
+        Stream<? extends Action> timeoutEvents = getAvailableTimeoutActions(scenario);
         Stream<Action> faultEvents = this.getEnabledFaultActions(scenario).stream().map(fault -> fault.toAction(context));
-        return Stream.concat(Stream.concat(messageEvents, timeoutEvents), faultEvents).toList();
+        return Stream.concat(Stream.concat(Stream.concat(messageEvents, dropMessages), timeoutEvents), faultEvents).toList();
     }
 
     /**

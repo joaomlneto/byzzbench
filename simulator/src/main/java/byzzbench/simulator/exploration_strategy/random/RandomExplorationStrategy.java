@@ -35,6 +35,8 @@ public class RandomExplorationStrategy extends ExplorationStrategy {
 
     @Override
     public synchronized Optional<Action> scheduleNext(Scenario scenario) {
+        List<Action> actions = this.getAvailableActions(scenario);
+
         // Get a random event
         List<Event> availableEvents = scenario.getTransport().getEventsInState(Event.Status.QUEUED);
 
@@ -53,8 +55,7 @@ public class RandomExplorationStrategy extends ExplorationStrategy {
         int deliverMessageWeight = messageEvents.size() * this.getDeliverMessageWeight();
         int dropMessageWeight = (messageEvents.size() * this.dropMessageWeight(scenario));
         int mutateMessageWeight = (mutateableMessageEvents.size() * this.mutateMessageWeight(scenario));
-        int dieRoll = this.getRand().nextInt(timeoutWeight + deliverMessageWeight
-                + dropMessageWeight + mutateMessageWeight);
+        int dieRoll = this.getRand().nextInt(timeoutWeight + deliverMessageWeight + dropMessageWeight + mutateMessageWeight);
 
         // check if we should trigger a timeout
         dieRoll -= timeoutWeight;

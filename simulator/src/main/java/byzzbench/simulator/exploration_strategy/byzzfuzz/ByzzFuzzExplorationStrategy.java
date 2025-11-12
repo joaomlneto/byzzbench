@@ -3,6 +3,7 @@ package byzzbench.simulator.exploration_strategy.byzzfuzz;
 import byzzbench.simulator.Scenario;
 import byzzbench.simulator.domain.Action;
 import byzzbench.simulator.domain.DeliverMessageAction;
+import byzzbench.simulator.domain.DropMessageAction;
 import byzzbench.simulator.domain.FaultInjectionAction;
 import byzzbench.simulator.exploration_strategy.ExplorationStrategyParameters;
 import byzzbench.simulator.exploration_strategy.ScenarioStrategyData;
@@ -18,6 +19,7 @@ import lombok.extern.java.Log;
 import org.springframework.stereotype.Component;
 
 import java.util.*;
+import java.util.stream.Stream;
 
 /**
  * The ByzzFuzz exploration_strategy from "Randomized Testing of Byzantine Fault Tolerant Algorithms" by
@@ -174,6 +176,12 @@ public class ByzzFuzzExplorationStrategy extends RandomExplorationStrategy {
                 .stream()
                 .filter(a -> !(a instanceof FaultInjectionAction))
                 .toList();
+    }
+
+    @Override
+    public Stream<DropMessageAction> getAvailableDropMessageActions(Scenario scenario) {
+        // ByzzFuzz drops messages via round-based partitions (see faults)
+        return Stream.empty();
     }
 
     @Override
