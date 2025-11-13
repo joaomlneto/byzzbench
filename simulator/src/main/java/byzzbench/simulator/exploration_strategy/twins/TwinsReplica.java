@@ -28,7 +28,7 @@ public class TwinsReplica extends Replica {
      * The list of replicas that are part of this Twins replica.
      */
     private final ArrayList<Replica> replicas = new ArrayList<>();
-    Random rand = new Random();
+    Random rand;
 
     /**
      * Create a new Twins replica.
@@ -39,6 +39,7 @@ public class TwinsReplica extends Replica {
      */
     public TwinsReplica(Replica replica, int numTwins, int numRounds) {
         super(replica.getId(), replica.getScenario(), new TotalOrderCommitLog());
+        this.rand = new Random(replica.getScenario().getRandom().nextLong());
 
         // Sanity check: must have at least 2 twins
         if (numTwins < 2) {

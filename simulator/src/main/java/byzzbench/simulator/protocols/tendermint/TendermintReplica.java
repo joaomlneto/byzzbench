@@ -24,7 +24,6 @@ public class TendermintReplica extends LeaderBasedProtocolReplica {
     private final Map<String, Integer> votingPower = new HashMap<>();
     private final MessageLog messageLog;
     private final SortedSet<Pair<Long, Long>> hasBroadcasted = new TreeSet<>();
-    public Random rand = new Random(2137L);
     // Blockchain height: the current index of the chain being decided
     private long height;
     // Sequence: the current sequence within the height, where multiple sequences might be needed to finalize a block
@@ -194,7 +193,7 @@ public class TendermintReplica extends LeaderBasedProtocolReplica {
         }
 
         // Shuffle the indices to randomize the execution order
-        Collections.shuffle(trueIndices, rand);
+        Collections.shuffle(trueIndices, getScenario().getRandom());
 
 
         // Execute each rule in the randomized order
@@ -428,7 +427,7 @@ public class TendermintReplica extends LeaderBasedProtocolReplica {
         }
 
         // Shuffle the indices to randomize the execution order
-        Collections.shuffle(trueIndices, rand);
+        Collections.shuffle(trueIndices, getScenario().getRandom());
 
 
         // Execute each rule in the randomized order
@@ -561,7 +560,7 @@ public class TendermintReplica extends LeaderBasedProtocolReplica {
         }
 
         // Shuffle the indices to randomize the execution order
-        Collections.shuffle(trueIndices, rand);
+        Collections.shuffle(trueIndices, getScenario().getRandom());
 
 
         // Execute each rule in the randomized order
