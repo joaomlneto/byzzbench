@@ -20,6 +20,11 @@ public class CampaignConfig implements Serializable {
     private boolean autoStart;
 
     /**
+     * A human-readable name for the campaign
+     */
+    private String name;
+
+    /**
      * The initial random seed, from which to seed each scenario
      */
     private long initialRandomSeed;

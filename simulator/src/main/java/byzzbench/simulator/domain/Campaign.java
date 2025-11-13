@@ -37,6 +37,11 @@ public class Campaign implements Serializable {
     private long initialRandomSeed;
 
     /**
+     * A human-readable name for the campaign
+     */
+    private String name;
+
+    /**
      * The parameters for the scenario
      */
     @Column(length = 2048)
@@ -121,6 +126,7 @@ public class Campaign implements Serializable {
         }
 
         Campaign campaign = new Campaign();
+        campaign.setName(config.getName());
         campaign.setInitialRandomSeed(config.getInitialRandomSeed());
         campaign.setScenarioParameters(config.getScenarioParameters());
         campaign.setNumScenarios(config.getNumScenarios());

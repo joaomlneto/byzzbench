@@ -1,6 +1,7 @@
 "use client";
 
 import { SchedulerAnchor } from "@/components/Anchor";
+import { CampaignNameText } from "@/components/Campaign/CampaignNameText";
 import { ScheduleCard } from "@/components/Schedule";
 import {
   useGetCampaigns,
@@ -38,7 +39,8 @@ export default function Home() {
             {campaignIds?.data.map((campaignId) => (
               <li key={campaignId}>
                 <Anchor component={Link} href={`/campaigns/${campaignId}`}>
-                  Campaign {campaignId}
+                  <CampaignNameText span campaignId={campaignId} /> (
+                  {campaignId})
                 </Anchor>
               </li>
             ))}
