@@ -1,22 +1,18 @@
 package byzzbench.simulator.domain;
 
 import byzzbench.simulator.Scenario;
-import byzzbench.simulator.transport.BaseMessageEvent;
+import byzzbench.simulator.faults.ScenarioContext;
+import byzzbench.simulator.faults.faults.MessageMutationFault;
+import byzzbench.simulator.service.ApplicationContextProvider;
+import byzzbench.simulator.service.MessageMutatorService;
 import byzzbench.simulator.transport.Event;
-import byzzbench.simulator.transport.MessagePayload;
 import byzzbench.simulator.utils.NonNull;
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.Entity;
-import jakarta.persistence.Transient;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
 import lombok.experimental.SuperBuilder;
-
-import java.lang.reflect.Field;
-import java.util.Objects;
-import java.util.function.UnaryOperator;
 
 /**
  * Action that corrupts a field within the payload of a message currently in-flight.
@@ -37,18 +33,24 @@ public class CorruptInFlightMessageAction extends Action {
     private long messageId;
 
     /**
-     * Name of the field within the payload to modify. Supports dot-notation for nested fields (e.g., "header.nonce").
+     * The ID of the mutator to be applied
      */
-    @NonNull
-    private String fieldName;
+    private String mutatorId;
 
-    /**
-     * Transformation function to apply to the current field value. Not persisted/serialized.
-     */
-    @Transient
-    @JsonIgnore
-    private UnaryOperator<MessagePayload> transformFunction;
+    @Override
+    public void accept(Scenario scenario) {
+        MessageMutatorService messageMutatorService = ApplicationContextProvider.getMessageMutatorService();
+        MessageMutationFault fault = messageMutatorService.getMutator(mutatorId);
 
+        System.out.println("Applying mutator " + mutatorId + " to message " + messageId);
+
+        Event e = scenario.getTransport().getEvent(this.messageId);
+        ScenarioContext context = new ScenarioContext(scenario, e);
+
+        fault.accept(context);
+    }
+
+    /*
     private static Field findField(Class<?> clazz, String name) {
         Class<?> c = clazz;
         while (c != null && c != Object.class) {
@@ -114,5 +116,5 @@ public class CorruptInFlightMessageAction extends Action {
         } catch (IllegalAccessException e) {
             throw new RuntimeException("Unable to mutate field '" + leafFieldName + "'", e);
         }
-    }
+    }*/
 }
