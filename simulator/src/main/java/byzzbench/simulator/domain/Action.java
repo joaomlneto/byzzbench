@@ -25,7 +25,7 @@ import java.util.function.Consumer;
         @JsonSubTypes.Type(value = DeliverMessageAction.class, name = "DeliverMessageAction"),
         @JsonSubTypes.Type(value = FaultInjectionAction.class, name = "FaultInjectionAction"),
         @JsonSubTypes.Type(value = TriggerTimeoutAction.class, name = "TriggerTimeoutAction"),
-        @JsonSubTypes.Type(value = CorruptInFlightMessageAction.class, name = "CorruptInFlightMessageAction"),
+        @JsonSubTypes.Type(value = MutateMessageAction.class, name = "CorruptInFlightMessageAction"),
 })
 public abstract class Action implements Consumer<Scenario>, Serializable {
     @Id

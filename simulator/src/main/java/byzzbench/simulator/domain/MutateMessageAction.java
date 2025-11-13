@@ -13,6 +13,7 @@ import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
 import lombok.experimental.SuperBuilder;
+import lombok.extern.java.Log;
 
 /**
  * Action that corrupts a field within the payload of a message currently in-flight.
@@ -25,7 +26,8 @@ import lombok.experimental.SuperBuilder;
 @SuperBuilder
 @ToString(callSuper = true)
 @NoArgsConstructor
-public class CorruptInFlightMessageAction extends Action {
+@Log
+public class MutateMessageAction extends Action {
     /**
      * The unique identifier of the message event to mutate (i.e., {@link Event#getEventId()}).
      */
@@ -41,12 +43,9 @@ public class CorruptInFlightMessageAction extends Action {
     public void accept(Scenario scenario) {
         MessageMutatorService messageMutatorService = ApplicationContextProvider.getMessageMutatorService();
         MessageMutationFault fault = messageMutatorService.getMutator(mutatorId);
-
-        System.out.println("Applying mutator " + mutatorId + " to message " + messageId);
-
+        log.info("Applying mutator " + mutatorId + " to message " + messageId);
         Event e = scenario.getTransport().getEvent(this.messageId);
         ScenarioContext context = new ScenarioContext(scenario, e);
-
         fault.accept(context);
     }
 
