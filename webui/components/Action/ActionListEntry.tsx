@@ -1,6 +1,8 @@
+import { CorruptInFlightMessageActionEntry } from "@/components/Action/CorruptInFlightMessageActionEntry";
 import { FaultInjectionActionListEntry } from "@/components/Action/FaultnjectionActionListEntry";
 import { NodeMailboxEntry } from "@/components/Events";
 import {
+  CorruptInFlightMessageAction,
   DeliverMessageAction,
   FaultInjectionAction,
   TriggerTimeoutAction,
@@ -64,6 +66,18 @@ export const ActionListEntry = ({
     return (
       <FaultInjectionActionListEntry
         action={faultInjectionAction}
+        scenarioId={scenarioId}
+        actionId={actionId}
+        explorationStrategyId={explorationStrategyId}
+      />
+    );
+  }
+
+  if (action.type === "CorruptInFlightMessageAction") {
+    const corruptAction = action as CorruptInFlightMessageAction;
+    return (
+      <CorruptInFlightMessageActionEntry
+        action={corruptAction}
         scenarioId={scenarioId}
         actionId={actionId}
         explorationStrategyId={explorationStrategyId}
