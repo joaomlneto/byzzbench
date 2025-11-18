@@ -14,19 +14,22 @@ import java.time.Instant;
 @With
 public class ReplyMessage extends MessagePayload implements ClientReply {
     private final Serializable requestId;
+
     private final long viewNumber;
+
+    @EqualsAndHashCode.Exclude
     private final Instant timestamp;
+
     private final String clientId;
+
+    @EqualsAndHashCode.Exclude
     private final String replicaId;
+
     private final Serializable result;
 
     @Override
     public String getType() {
         return "REPLY";
-    }
-
-    public Serializable getRequestId() {
-        return this.requestId;
     }
 
     @Override

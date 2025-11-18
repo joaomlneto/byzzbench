@@ -78,9 +78,14 @@ public class Schedule implements Serializable {
         this.parameters = parameters;
     }
 
+    /**
+     * Appends an event to the schedule, converting it to the corresponding action.
+     *
+     * @param event the event to append.
+     */
     public void appendEvent(Event event) {
         switch (event) {
-            case MessageEvent messageEvent -> appendAction(DeliverMessageAction.builder()
+            case MessageEvent messageEvent -> actions.add(DeliverMessageAction.builder()
                     .messageEventId(event.getEventId())
                     .recipientId(messageEvent.getRecipientId())
                     .senderId(messageEvent.getSenderId())
@@ -88,7 +93,7 @@ public class Schedule implements Serializable {
                     .payload(messageEvent.getPayload())
                     .schedule(this)
                     .build());
-            case TimeoutEvent timeoutEvent -> appendAction(TriggerTimeoutAction.builder()
+            case TimeoutEvent timeoutEvent -> actions.add(TriggerTimeoutAction.builder()
                     .timeoutEventId(timeoutEvent.getEventId())
                     .timeout(timeoutEvent.getTimeout())
                     .schedule(this)
@@ -98,15 +103,6 @@ public class Schedule implements Serializable {
                     .build());
             default -> throw new IllegalArgumentException("Unsupported event type: " + event.getClass().getName());
         }
-    }
-
-    /**
-     * Appends the given action to the schedule.
-     *
-     * @param action the action to append.
-     */
-    public void appendAction(Action action) {
-        actions.add(action);
     }
 
     /**
