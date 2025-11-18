@@ -2,10 +2,10 @@ package byzzbench.simulator.protocols.fab2;
 
 import byzzbench.simulator.Scenario;
 import byzzbench.simulator.nodes.Client;
+import byzzbench.simulator.nodes.ClientReply;
 import byzzbench.simulator.protocols.fab.FastByzantineReplica;
 import byzzbench.simulator.protocols.fab.Role;
 import byzzbench.simulator.protocols.pbft.message.RequestMessage;
-import byzzbench.simulator.transport.DefaultClientReplyPayload;
 import byzzbench.simulator.transport.MessagePayload;
 import lombok.extern.java.Log;
 
@@ -122,7 +122,7 @@ FastByzantineClient extends Client {
     }
 
     @Override
-    public boolean isRequestCompleted(DefaultClientReplyPayload message) {
+    public boolean isRequestCompleted(ClientReply message) {
         Scenario s = this.getScenario();
 
         long matchingReplies = this.getReplies().get(message.getRequestId()).stream().filter(

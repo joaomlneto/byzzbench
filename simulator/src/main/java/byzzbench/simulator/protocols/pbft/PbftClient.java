@@ -2,8 +2,8 @@ package byzzbench.simulator.protocols.pbft;
 
 import byzzbench.simulator.Scenario;
 import byzzbench.simulator.nodes.Client;
+import byzzbench.simulator.nodes.ClientReply;
 import byzzbench.simulator.protocols.pbft.message.RequestMessage;
-import byzzbench.simulator.transport.DefaultClientReplyPayload;
 import lombok.Getter;
 
 import java.io.Serializable;
@@ -30,7 +30,7 @@ public class PbftClient extends Client {
     }
 
     @Override
-    public boolean isRequestCompleted(DefaultClientReplyPayload message) {
+    public boolean isRequestCompleted(ClientReply message) {
         Serializable requestId = message.getRequestId();
 
         // Get the number of matching replies for the request ID

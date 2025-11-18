@@ -1,13 +1,10 @@
 package byzzbench.simulator.faults.behaviors;
 
-import byzzbench.simulator.config.FaultBehaviorConfig;
 import byzzbench.simulator.domain.FaultInjectionAction;
 import byzzbench.simulator.faults.FaultBehavior;
 import byzzbench.simulator.faults.ScenarioContext;
 import byzzbench.simulator.transport.Router;
 import lombok.RequiredArgsConstructor;
-
-import java.util.Map;
 
 @RequiredArgsConstructor
 public class IsolateNodeBehavior implements FaultBehavior {
@@ -25,13 +22,7 @@ public class IsolateNodeBehavior implements FaultBehavior {
 
     @Override
     public FaultInjectionAction toAction(ScenarioContext context) {
-        FaultBehaviorConfig config = FaultBehaviorConfig.builder()
-                .faultBehaviorId(getClass().getCanonicalName())
-                .params(Map.of("nodeId", this.nodeId))
-                .build();
-        return FaultInjectionAction.builder()
-                .payload(config)
-                .build();
+        throw new UnsupportedOperationException("Not implemented yet");
     }
 
     @Deprecated

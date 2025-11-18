@@ -93,7 +93,9 @@ public class PbftJavaReplica<O extends Serializable, R extends Serializable> ext
     public void handleRequestTimeout(ReplicaRequestKey key) {
         LinearBackoff backoff = this.timeouts.get(key);
         if (backoff == null) {
-            throw new IllegalStateException("No timer for this request?");
+            log.info(this.getId() + " " + this.timeouts.size() + " active timers:");
+            this.timeouts.keySet().forEach(k -> System.out.println("Active request timer: " + k));
+            throw new IllegalStateException(this.getId() + " found no timer for request " + key);
             //return Duration.ZERO;
         }
 
@@ -492,7 +494,13 @@ public class PbftJavaReplica<O extends Serializable, R extends Serializable> ext
                     messageLog.completeTicket(key, currentViewNumber, seqNumber);
                     this.sendReply(clientId, timestamp, reply);
 
-                    this.timeouts.remove(key);
+                    log.info(this.getId() + " " + this.timeouts.size() + " active timers:");
+                    this.timeouts.keySet().forEach(k -> System.out.println("Active request timer: " + k));
+
+                    if (this.timeouts.containsKey(key)) {
+                        this.timeouts.get(key).stop();
+                        this.timeouts.remove(key);
+                    }
                 }
 
                 /*

@@ -2,9 +2,9 @@ package byzzbench.simulator.protocols.hbft;
 
 import byzzbench.simulator.Scenario;
 import byzzbench.simulator.nodes.Client;
+import byzzbench.simulator.nodes.ClientReply;
 import byzzbench.simulator.protocols.hbft.message.*;
 import byzzbench.simulator.protocols.hbft.pojo.ClientReplyKey;
-import byzzbench.simulator.transport.DefaultClientReplyPayload;
 import byzzbench.simulator.transport.MessagePayload;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Getter;
@@ -136,7 +136,7 @@ public class HbftClient extends Client {
     }
 
     @Override
-    public boolean isRequestCompleted(DefaultClientReplyPayload message) {
+    public boolean isRequestCompleted(ClientReply message) {
         // we use custom logic. this should not be called!
         throw new UnsupportedOperationException("isRequestCompleted is not supported in HbftClient");
     }

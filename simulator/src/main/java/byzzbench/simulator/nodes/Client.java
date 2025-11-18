@@ -2,7 +2,6 @@ package byzzbench.simulator.nodes;
 
 import byzzbench.simulator.Scenario;
 import byzzbench.simulator.protocols.hbft.message.ClientRequestMessage;
-import byzzbench.simulator.transport.DefaultClientReplyPayload;
 import byzzbench.simulator.transport.MessagePayload;
 import byzzbench.simulator.transport.Transport;
 import byzzbench.simulator.utils.NonNull;
@@ -29,6 +28,11 @@ public abstract class Client extends Node implements Serializable {
      * The set of request IDs that have been completed by the client.
      */
     protected final Set<Serializable> completedRequests = new HashSet<>();
+
+    /**
+     * The set of request IDs that have been issued by the client
+     */
+    protected final Set<Serializable> issuedRequests = new HashSet<>();
 
     /**
      * The scenario object that this client belongs to.
@@ -101,7 +105,9 @@ public abstract class Client extends Node implements Serializable {
      * Issue a new request, and send it to a random replica in the system.
      */
     public void sendRequest() {
-        this.sendRequest(generateRequestId(), getRandomRecipientId());
+        String requestId = generateRequestId();
+        this.issuedRequests.add(requestId);
+        this.sendRequest(requestId, getRandomRecipientId());
     }
 
     /**
@@ -128,11 +134,12 @@ public abstract class Client extends Node implements Serializable {
      */
     public void handleMessage(String senderId, MessagePayload message) {
         // check if the message is a valid reply payload
-        if (!(message instanceof DefaultClientReplyPayload reply)) {
+        if (!(message instanceof ClientReply reply)) {
             throw new IllegalArgumentException("Invalid reply type");
         }
 
         // add the reply to the replies map for the request ID
+        System.out.println("Client " + this.getId() + " received reply for request " + reply.getRequestId() + " from " + senderId + ": " + reply.getReply());
         this.replies.computeIfAbsent(reply.getRequestId(), k -> new ArrayList<>())
                 .add(reply.getReply());
 
@@ -150,7 +157,7 @@ public abstract class Client extends Node implements Serializable {
      * @param message the latest message payload received by the client
      * @return true if the request is now completed, false otherwise
      */
-    public abstract boolean isRequestCompleted(DefaultClientReplyPayload message);
+    public abstract boolean isRequestCompleted(ClientReply message);
 
     /**
      * Marks a request as completed by the client.

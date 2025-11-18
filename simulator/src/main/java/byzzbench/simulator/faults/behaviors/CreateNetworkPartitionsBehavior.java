@@ -1,6 +1,6 @@
 package byzzbench.simulator.faults.behaviors;
 
-import byzzbench.simulator.domain.FaultInjectionAction;
+import byzzbench.simulator.domain.Action;
 import byzzbench.simulator.faults.FaultBehavior;
 import byzzbench.simulator.faults.ScenarioContext;
 import byzzbench.simulator.transport.Router;
@@ -63,7 +63,7 @@ public class CreateNetworkPartitionsBehavior implements FaultBehavior {
     }
 
     @Override
-    public FaultInjectionAction toAction(ScenarioContext context) {
+    public Action toAction(ScenarioContext context) {
         throw new UnsupportedOperationException("Not supported yet.");
     }
 

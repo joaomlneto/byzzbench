@@ -54,7 +54,6 @@ public class CampaignController {
      */
     @GetMapping("/campaigns/{campaignId}/name")
     public String getCampaignName(@PathVariable Long campaignId) {
-        log.info("Fetching campaign with id: " + campaignId);
         return campaignRepository.findById(campaignId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Campaign not found"))
                 .getName();
@@ -68,7 +67,6 @@ public class CampaignController {
      */
     @GetMapping("/campaigns/{campaignId}")
     public Campaign getCampaign(@PathVariable Long campaignId) {
-        log.info("Fetching campaign with id: " + campaignId);
         return campaignRepository.findById(campaignId).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Campaign not found"));
     }
 

@@ -2,7 +2,7 @@ package byzzbench.simulator.protocols.XRPL;
 
 import byzzbench.simulator.Scenario;
 import byzzbench.simulator.nodes.Client;
-import byzzbench.simulator.transport.DefaultClientReplyPayload;
+import byzzbench.simulator.nodes.ClientReply;
 import byzzbench.simulator.transport.DefaultClientRequestPayload;
 
 public class XRPLClient extends Client {
@@ -11,7 +11,7 @@ public class XRPLClient extends Client {
     }
 
     @Override
-    public boolean isRequestCompleted(DefaultClientReplyPayload message) {
+    public boolean isRequestCompleted(ClientReply message) {
         return true;
     }
 

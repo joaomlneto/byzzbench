@@ -2,7 +2,7 @@ package byzzbench.simulator.protocols.pbft_java;
 
 import byzzbench.simulator.Scenario;
 import byzzbench.simulator.nodes.Client;
-import byzzbench.simulator.transport.DefaultClientReplyPayload;
+import byzzbench.simulator.nodes.ClientReply;
 import lombok.Getter;
 
 import java.io.Serializable;
@@ -14,7 +14,7 @@ public class PbftClient extends Client {
     }
 
     @Override
-    public boolean isRequestCompleted(DefaultClientReplyPayload message) {
+    public boolean isRequestCompleted(ClientReply message) {
         Serializable requestId = message.getRequestId();
 
         // Get the number of matching replies for the request ID
@@ -28,6 +28,10 @@ public class PbftClient extends Client {
         // In PBFT: n = 3f+1, therefore f = (n-1)/3
         // Client waits for f+1 matching replies before accepting the result
         // So we need at least (n-1)/3 + 1 matching replies!
-        return matchingReplies >= ((numReplicas - 1) / 3) + 1;
+        boolean isCompleted = matchingReplies >= ((numReplicas - 1) / 3) + 1;
+
+        System.out.println("Is request " + requestId + " completed? " + isCompleted + " (matchingReplies: " + matchingReplies + ", numReplicas: " + numReplicas + ")");
+
+        return isCompleted;
     }
 }

@@ -74,4 +74,8 @@ public class LinearBackoff {
             this.startTime = this.replica.getCurrentTime();
         }
     }
+
+    public void stop() {
+        this.timer.stop();
+    }
 }

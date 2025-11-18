@@ -1,14 +1,12 @@
 package byzzbench.simulator.faults.behaviors;
 
-import byzzbench.simulator.config.FaultBehaviorConfig;
-import byzzbench.simulator.domain.FaultInjectionAction;
+import byzzbench.simulator.domain.DropMessageAction;
 import byzzbench.simulator.faults.FaultBehavior;
 import byzzbench.simulator.faults.ScenarioContext;
 import byzzbench.simulator.transport.Event;
 import byzzbench.simulator.transport.MessageEvent;
 import lombok.extern.java.Log;
 
-import java.util.Map;
 import java.util.Optional;
 
 /**
@@ -33,11 +31,22 @@ public class DropMessageBehavior implements FaultBehavior {
     }
 
     @Override
-    public FaultInjectionAction toAction(ScenarioContext context) {
-        return new FaultInjectionAction(FaultBehaviorConfig.builder()
-                .faultBehaviorId(getClass().getCanonicalName())
-                .params(Map.of("eventId", String.valueOf(this.eventId)))
-                .build());
+    public DropMessageAction toAction(ScenarioContext context) {
+        Optional<Event> event = context.getEvent();
+
+        if (event.isEmpty()) {
+            log.warning("No event to mutate");
+            throw new IllegalStateException("No event to mutate");
+        }
+
+        Event e = event.get();
+
+        if (!(e instanceof MessageEvent messageEvent)) {
+            log.warning("Event is not a message event");
+            throw new IllegalStateException("Event is not a message event");
+        }
+
+        return DropMessageAction.fromEvent(messageEvent);
     }
 
     @Deprecated

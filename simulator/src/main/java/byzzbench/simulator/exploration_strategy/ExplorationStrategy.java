@@ -182,7 +182,7 @@ public abstract class ExplorationStrategy {
      */
     public List<Fault> getEnabledFaultActions(Scenario scenario) {
         List<Fault> faults = new ArrayList<>();
-        faults.addAll(scenario.getTransport().getEnabledNetworkFaults());
+        //faults.addAll(scenario.getTransport().getEnabledNetworkFaults());
         faults.addAll(scenario.getMessageMutationFaults());
         return faults;
     }
