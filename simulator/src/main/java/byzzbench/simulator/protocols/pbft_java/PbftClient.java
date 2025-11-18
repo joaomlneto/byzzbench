@@ -30,7 +30,7 @@ public class PbftClient extends Client {
         // So we need at least (n-1)/3 + 1 matching replies!
         boolean isCompleted = matchingReplies >= ((numReplicas - 1) / 3) + 1;
 
-        System.out.println("Is request " + requestId + " completed? " + isCompleted + " (matchingReplies: " + matchingReplies + ", numReplicas: " + numReplicas + ")");
+        System.out.println(this.getId() + " - Is request " + requestId + " completed? " + isCompleted + " (matchingReplies: " + matchingReplies + ", numReplicas: " + numReplicas + ")");
 
         return isCompleted;
     }

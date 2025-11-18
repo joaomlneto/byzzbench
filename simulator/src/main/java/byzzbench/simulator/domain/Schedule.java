@@ -92,6 +92,9 @@ public class Schedule implements Serializable {
                     .timeoutEventId(timeoutEvent.getEventId())
                     .timeout(timeoutEvent.getTimeout())
                     .schedule(this)
+                    .nodeId(timeoutEvent.getNodeId())
+                    .description(timeoutEvent.getDescription())
+                    .expiresAt(timeoutEvent.getExpiresAt())
                     .build());
             default -> throw new IllegalArgumentException("Unsupported event type: " + event.getClass().getName());
         }
