@@ -71,6 +71,7 @@ public class DeliverMessageAction extends Action {
 
     @Override
     public void accept(Scenario scenario) {
-        scenario.getTransport().deliverEvent(this.messageEventId, false);
+        scenario.getTransport().deliverEvent(this.messageEventId, true);
+
     }
 }

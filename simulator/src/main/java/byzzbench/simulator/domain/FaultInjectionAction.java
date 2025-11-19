@@ -47,7 +47,7 @@ public class FaultInjectionAction extends Action {
         Event e = scenario.getTransport().getEvent(this.messageId);
         ScenarioContext context = new ScenarioContext(scenario, e);
         fault.accept(context);
-        scenario.getTransport().deliverEvent(e.getEventId());
+        scenario.getTransport().deliverEvent(e.getEventId(), true);
     }
 
     /*

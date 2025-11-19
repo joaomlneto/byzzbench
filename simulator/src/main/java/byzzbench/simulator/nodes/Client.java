@@ -1,7 +1,6 @@
 package byzzbench.simulator.nodes;
 
 import byzzbench.simulator.Scenario;
-import byzzbench.simulator.protocols.hbft.message.ClientRequestMessage;
 import byzzbench.simulator.transport.MessagePayload;
 import byzzbench.simulator.transport.Transport;
 import byzzbench.simulator.utils.NonNull;
@@ -114,7 +113,7 @@ public abstract class Client extends Node implements Serializable {
      * Sends a request to a given replica in the system.
      */
     public void sendRequest(String requestId, String recipientId) {
-        MessagePayload payload = new ClientRequestMessage(this.getCurrentTime().toEpochMilli(), requestId);
+        MessagePayload payload = new ClientRequestMessage(requestId, this.getCurrentTime().toEpochMilli(), requestId);
         this.getScenario().getTransport().sendMessage(this, payload, recipientId);
         this.setTimeout(String.format("Request %s", requestId), this::retransmitRequest, this.timeout);
     }

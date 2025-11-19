@@ -1,6 +1,5 @@
-package byzzbench.simulator.protocols.hbft.message;
+package byzzbench.simulator.nodes;
 
-import byzzbench.simulator.nodes.ClientRequest;
 import byzzbench.simulator.transport.MessagePayload;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -10,16 +9,12 @@ import java.io.Serializable;
 @Data
 @EqualsAndHashCode(callSuper = true)
 public class ClientRequestMessage extends MessagePayload implements ClientRequest {
+    private final Serializable requestId;
     private final long timestamp;
     private final Serializable operation;
 
     @Override
     public String getType() {
-        return "ClientRequest";
-    }
-
-    @Override
-    public Serializable getRequestId() {
-        return this.timestamp;
+        return "Client Request";
     }
 }

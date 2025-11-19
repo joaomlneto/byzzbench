@@ -65,6 +65,6 @@ public class TriggerTimeoutAction extends Action {
 
     @Override
     public void accept(Scenario scenario) {
-        scenario.getTransport().deliverEvent(this.timeoutEventId, false);
+        scenario.getTransport().deliverEvent(this.timeoutEventId, true);
     }
 }

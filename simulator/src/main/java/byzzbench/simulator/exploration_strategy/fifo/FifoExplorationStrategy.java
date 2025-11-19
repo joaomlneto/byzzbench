@@ -59,7 +59,7 @@ public class FifoExplorationStrategy extends ExplorationStrategy {
                         .min(Comparator.comparingLong(Event::getEventId));
 
         if (event.isPresent()) {
-            scenario.getTransport().deliverEvent(event.get().getEventId());
+            scenario.getTransport().deliverEvent(event.get().getEventId(), true);
             Action decision = DeliverMessageAction.builder().messageEventId(event.get().getEventId()).build();
             return Optional.of(decision);
         } else {

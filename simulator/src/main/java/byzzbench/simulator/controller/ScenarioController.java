@@ -400,7 +400,7 @@ public class ScenarioController {
      */
     @PostMapping("/scenarios/{scenarioId}/event/{eventId}/deliver")
     public void deliverMessage(@PathVariable long scenarioId, @PathVariable Long eventId) throws Exception {
-        scenarioService.getScenarioById(scenarioId).getTransport().deliverEvent(eventId);
+        scenarioService.getScenarioById(scenarioId).getTransport().deliverEvent(eventId, true);
     }
 
     /**
