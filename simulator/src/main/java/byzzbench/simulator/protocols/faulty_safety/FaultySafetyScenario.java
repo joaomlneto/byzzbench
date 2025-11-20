@@ -54,8 +54,7 @@ public class FaultySafetyScenario extends Scenario {
 
     @Override
     public int maxFaultyReplicas(int n) {
-        // this is a faulty_safety protocol, so anything goes
-        return n;
+        return 0;
     }
 
     @Override

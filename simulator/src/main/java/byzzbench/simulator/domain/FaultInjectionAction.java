@@ -41,11 +41,12 @@ public class FaultInjectionAction extends Action {
 
     @Override
     public void accept(Scenario scenario) {
-        MessageMutatorService messageMutatorService = ApplicationContextProvider.getMessageMutatorService();
-        MessageMutationFault fault = messageMutatorService.getMutator(mutatorId);
-        log.info("Applying mutator " + mutatorId + " to message " + messageId);
         Event e = scenario.getTransport().getEvent(this.messageId);
         ScenarioContext context = new ScenarioContext(scenario, e);
+
+        log.info("Applying mutator " + mutatorId + " to message " + messageId);
+        MessageMutatorService messageMutatorService = ApplicationContextProvider.getMessageMutatorService();
+        MessageMutationFault fault = messageMutatorService.getMutator(mutatorId);
         fault.accept(context);
 
         scenario.getSchedule().appendAction(this);

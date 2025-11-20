@@ -207,6 +207,10 @@ public class Transport {
         }
     }
 
+    public synchronized void deliverEvent(long eventId) {
+        this.deliverEvent(eventId, true);
+    }
+
     public synchronized void deliverEvent(long eventId, boolean addToSchedule) {
         Event e = this.getEvents().get(eventId);
 
