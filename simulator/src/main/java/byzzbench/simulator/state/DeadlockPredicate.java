@@ -21,11 +21,6 @@ public class DeadlockPredicate extends ScenarioPredicate {
 
     @Override
     public boolean test(Scenario scenarioExecutor) {
-        // If we are before GST, the scenario is considered live
-        if (!scenarioExecutor.getTransport().isGlobalStabilizationTime()) {
-            return true;
-        }
-
         boolean hasQueuedEvents = !(scenarioExecutor.getTransport().getEventsInState(Event.Status.QUEUED).isEmpty());
         if (!hasQueuedEvents) {
             log.info("LivenessPredicate: No events in the QUEUED state");
