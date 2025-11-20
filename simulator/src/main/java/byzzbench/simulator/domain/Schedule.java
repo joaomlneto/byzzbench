@@ -106,6 +106,16 @@ public class Schedule implements Serializable {
     }
 
     /**
+     * Appends an action to the schedule.
+     *
+     * @param action the action to append.
+     */
+    public void appendAction(Action action) {
+        action.setSchedule(this);
+        this.actions.add(action);
+    }
+
+    /**
      * Marks the schedule as read-only, with the given broken invariants.
      *
      * @param brokenInvariants the set of broken invariants.
