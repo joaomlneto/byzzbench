@@ -432,11 +432,9 @@ public class MessageLog implements Serializable {
          */
         this.viewChanges.remove(newViewNumber);
 
-        for (TicketKey key : this.tickets.keySet()) {
-            if (key.getViewNumber() != newViewNumber) {
-                this.tickets.remove(key);
-            }
-        }
+        // Remove all tickets that do not belong to the new view using removeIf
+        // This safely mutates the backing map via its keySet view.
+        this.tickets.keySet().removeIf(key -> key.getViewNumber() != newViewNumber);
     }
 
     public boolean acceptNewView(NewViewMessage newView) {
