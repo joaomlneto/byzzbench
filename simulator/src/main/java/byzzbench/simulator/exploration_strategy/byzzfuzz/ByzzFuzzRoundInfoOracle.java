@@ -9,6 +9,7 @@ import byzzbench.simulator.nodes.Replica;
 import byzzbench.simulator.transport.*;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Getter;
+import lombok.extern.java.Log;
 
 import java.io.Serializable;
 import java.util.HashMap;
@@ -20,6 +21,7 @@ import java.util.SortedSet;
  * <a href="https://dl.acm.org/doi/10.1145/3586053">ByzzFuzz algorithm</a>
  */
 @Getter
+@Log
 public abstract class ByzzFuzzRoundInfoOracle implements Serializable, TransportObserver, ScenarioObserver {
     /**
      * The scenario that this instance belongs to
