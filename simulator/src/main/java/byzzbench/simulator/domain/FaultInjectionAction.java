@@ -24,7 +24,7 @@ import lombok.extern.java.Log;
 @EqualsAndHashCode(callSuper = true)
 @Data
 @SuperBuilder
-@ToString
+@ToString(callSuper = true)
 @NoArgsConstructor
 @Log
 public class FaultInjectionAction extends Action {

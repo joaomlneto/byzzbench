@@ -9,6 +9,7 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import jakarta.persistence.*;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.ToString;
 import lombok.experimental.SuperBuilder;
 
 import java.io.Serializable;
@@ -27,6 +28,7 @@ import java.util.function.Consumer;
         @JsonSubTypes.Type(value = TriggerTimeoutAction.class, name = "TriggerTimeoutAction"),
         @JsonSubTypes.Type(value = FaultInjectionAction.class, name = "CorruptInFlightMessageAction"),
 })
+@ToString
 public abstract class Action implements Consumer<Scenario>, Serializable {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -38,6 +40,7 @@ public abstract class Action implements Consumer<Scenario>, Serializable {
     //@JoinColumn(name = "schedule_id")
     @Convert(converter = ScheduleJsonConverter.class)
     @JsonIgnore
+    @ToString.Exclude
     private Schedule schedule;
 
     /**
