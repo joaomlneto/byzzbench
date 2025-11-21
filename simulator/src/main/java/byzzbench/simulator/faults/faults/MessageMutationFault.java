@@ -1,12 +1,11 @@
 package byzzbench.simulator.faults.faults;
 
 import byzzbench.simulator.domain.Action;
-import byzzbench.simulator.domain.CorruptInFlightMessageAction;
+import byzzbench.simulator.domain.FaultInjectionAction;
 import byzzbench.simulator.faults.Fault;
 import byzzbench.simulator.faults.ScenarioContext;
 import byzzbench.simulator.transport.Event;
 import byzzbench.simulator.transport.MessageEvent;
-import byzzbench.simulator.transport.MessagePayload;
 import byzzbench.simulator.utils.NonNull;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
@@ -16,7 +15,6 @@ import lombok.ToString;
 import java.io.Serializable;
 import java.util.Collection;
 import java.util.Optional;
-import java.util.function.UnaryOperator;
 
 /**
  * Abstract class for mutating {@link MessageEvent}.
@@ -25,7 +23,7 @@ import java.util.function.UnaryOperator;
 @Getter
 @ToString
 @RequiredArgsConstructor
-@EqualsAndHashCode
+@EqualsAndHashCode(callSuper = true)
 public abstract class MessageMutationFault extends Fault {
     @NonNull
     private final String id;
@@ -34,8 +32,15 @@ public abstract class MessageMutationFault extends Fault {
     @NonNull
     private final Collection<Class<? extends Serializable>> inputClasses;
 
-    private String fieldName;
-    private UnaryOperator<MessagePayload> transformFunction;
+    /**
+     * The field to be modified
+     */
+    //private final String fieldName;
+
+    /**
+     * The function that specifies how to modify the field
+     */
+    //private final UnaryOperator<MessagePayload> transformFunction;
 
     /**
      * Checks if this mutator can be applied to the target class
@@ -79,12 +84,12 @@ public abstract class MessageMutationFault extends Fault {
             throw new IllegalStateException("Cannot mutate an empty fault");
         }
 
-        CorruptInFlightMessageAction action = new CorruptInFlightMessageAction();
+        FaultInjectionAction action = new FaultInjectionAction();
         action.setMessageId(event.getEventId());
-        action.setFieldName(this.fieldName);
-        action.setTransformFunction(this.transformFunction);
-
-        return action;
+        throw new UnsupportedOperationException("not yet implemented!");
+        //action.setFieldName(this.fieldName);
+        //action.setTransformFunction(this.transformFunction);
+        //return action;
     }
 
     public void accept(ScenarioContext context) {
