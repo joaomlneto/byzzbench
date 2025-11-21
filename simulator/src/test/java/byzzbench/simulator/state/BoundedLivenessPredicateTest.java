@@ -1,7 +1,9 @@
 package byzzbench.simulator.state;
 
 import byzzbench.simulator.Scenario;
+import byzzbench.simulator.config.TerminationConfig;
 import byzzbench.simulator.domain.Schedule;
+import byzzbench.simulator.domain.Campaign;
 import byzzbench.simulator.nodes.Client;
 import byzzbench.simulator.nodes.Replica;
 import byzzbench.simulator.transport.Event;
@@ -47,6 +49,13 @@ class BoundedLivenessPredicateTest {
         // Setup default mock behavior
         when(mockScenario.getTransport()).thenReturn(mockTransport);
         when(mockScenario.getSchedule()).thenReturn(mockSchedule);
+
+        // Configure a Campaign with a valid TerminationConfig (gstGracePeriod=10)
+        TerminationConfig terminationConfig = new TerminationConfig();
+        terminationConfig.setGstGracePeriod(10);
+        Campaign campaign = new Campaign();
+        campaign.setTermination(terminationConfig);
+        when(mockSchedule.getCampaign()).thenReturn(campaign);
 
         NavigableMap<String, Replica> replicasMap = new TreeMap<>();
         for (int i = 0; i < 4; i++) {
