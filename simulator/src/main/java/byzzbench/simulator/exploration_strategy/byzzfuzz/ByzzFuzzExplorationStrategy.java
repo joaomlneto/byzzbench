@@ -4,7 +4,6 @@ import byzzbench.simulator.Scenario;
 import byzzbench.simulator.domain.Action;
 import byzzbench.simulator.domain.DeliverMessageAction;
 import byzzbench.simulator.domain.DropMessageAction;
-import byzzbench.simulator.domain.FaultInjectionAction;
 import byzzbench.simulator.exploration_strategy.ExplorationStrategyParameters;
 import byzzbench.simulator.exploration_strategy.ScenarioStrategyData;
 import byzzbench.simulator.exploration_strategy.random.RandomExplorationStrategy;
@@ -35,6 +34,11 @@ public class ByzzFuzzExplorationStrategy extends RandomExplorationStrategy {
      * Scenario-specific faults
      */
     private final Map<Scenario, List<Fault>> scenarioFaults = new HashMap<>();
+
+    /**
+     * Counter of mutated messages per scenario
+     */
+    private final Map<Scenario, Map<Long, Long>> scenarioMutatedMessages = new HashMap<>();
 
     /**
      * Number of protocol rounds with process faults
@@ -162,26 +166,27 @@ public class ByzzFuzzExplorationStrategy extends RandomExplorationStrategy {
         for (Event messageEvent : this.getQueuedMessageEvents(scenario)) {
             ScenarioContext context = new ScenarioContext(scenario, messageEvent);
             for (Fault fault : faults) {
-                System.out.println("checking if " + fault.getId() + " can be applied to event " + messageEvent.getEventId());
+                System.out.println("can " + fault.getId() + " be applied to event " + messageEvent.getEventId() + ": " + fault.test(context));
                 if (fault.test(context)) {
-                    System.out.println("yes!");
-                    System.out.println(fault);
                     return List.of(fault.toAction(context));
                 }
             }
         }
 
-
-        return super.getAvailableActions(scenario)
-                .stream()
-                .filter(a -> !(a instanceof FaultInjectionAction))
-                .toList();
+        // otherwise, return the available actions from the random exploration strategy
+        return super.getAvailableActions(scenario);
     }
 
     @Override
     public Stream<DropMessageAction> getAvailableDropMessageActions(Scenario scenario) {
         // ByzzFuzz drops messages via round-based partitions (see faults)
         return Stream.empty();
+    }
+
+    @Override
+    public List<Fault> getEnabledFaultActions(Scenario scenario) {
+        // ByzzFuzz decides faults at initiatlization time, and checks if some are enabled in getAvailableActions()
+        return List.of();
     }
 
     @Override
