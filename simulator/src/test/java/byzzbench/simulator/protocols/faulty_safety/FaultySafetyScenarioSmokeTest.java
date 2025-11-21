@@ -3,6 +3,7 @@ package byzzbench.simulator.protocols.faulty_safety;
 import byzzbench.simulator.Scenario;
 import byzzbench.simulator.domain.ScenarioParameters;
 import byzzbench.simulator.domain.Schedule;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -11,8 +12,10 @@ import static org.junit.jupiter.api.Assertions.*;
  * Simple smoke test: instantiate the PbftJavaScenario, deliver events 1..4,
  * and assert that no correctness predicates are violated.
  */
+@DisplayName("Faulty-Safety: Scenario smoke tests")
 public class FaultySafetyScenarioSmokeTest {
     @Test
+    @DisplayName("Scenario starts with all invariants satisfied")
     void scenarioIsCorrectAtStart() {
         // Build deterministic parameters to ensure reproducibility
         ScenarioParameters params = ScenarioParameters.builder()
@@ -32,6 +35,7 @@ public class FaultySafetyScenarioSmokeTest {
     }
 
     @Test
+    @DisplayName("Delivering requests in different orders violates Agreement invariant")
     void deliveringClientRequestsInDifferentOrdersViolatesAgreement() {
         // Build deterministic parameters to ensure reproducibility
         ScenarioParameters params = ScenarioParameters.builder()
@@ -59,6 +63,7 @@ public class FaultySafetyScenarioSmokeTest {
     }
 
     @Test
+    @DisplayName("Delivering requests in the same order preserves invariants")
     void deliveringClientRequestsInSameOrderWorks() {
         // Build deterministic parameters to ensure reproducibility
         ScenarioParameters params = ScenarioParameters.builder()

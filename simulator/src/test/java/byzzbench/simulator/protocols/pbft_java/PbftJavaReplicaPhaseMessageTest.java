@@ -7,6 +7,7 @@ import byzzbench.simulator.protocols.pbft_java.message.PrePrepareMessage;
 import byzzbench.simulator.protocols.pbft_java.message.PrepareMessage;
 import byzzbench.simulator.protocols.pbft_java.message.RequestMessage;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.InOrder;
 import org.mockito.Mockito;
@@ -22,6 +23,7 @@ import static org.mockito.Mockito.*;
  * Tests covering PBFT phase messages handling (PrePrepare/Prepare/Commit)
  * for PbftJavaReplica, focusing on verification rules and actions.
  */
+@DisplayName("PBFT: Phase message handling (PrePrepare/Prepare/Commit)")
 public class PbftJavaReplicaPhaseMessageTest {
 
     private PbftJavaReplica<Serializable, Serializable> replica;
@@ -53,6 +55,7 @@ public class PbftJavaReplicaPhaseMessageTest {
 
     // 1) disgruntled: rejects all PrePrepare/Prepare/Commit
     @Test
+    @DisplayName("Disgruntled replica rejects all PrePrepare/Prepare/Commit messages")
     void disgruntledReplica_rejectsAllPhaseMessages() {
         replica.setDisgruntled(true);
 
@@ -84,6 +87,7 @@ public class PbftJavaReplicaPhaseMessageTest {
 
     // 2) reject when view number mismatches
     @Test
+    @DisplayName("Rejects phase messages when view number mismatches")
     void rejectsPhaseMessages_withMismatchedView() {
         doCallRealMethod().when(replica).recvPrePrepare(any());
         doCallRealMethod().when(replica).recvPrepare(any());
@@ -105,6 +109,7 @@ public class PbftJavaReplicaPhaseMessageTest {
 
     // 3) reject when not between watermarks
     @Test
+    @DisplayName("Rejects phase messages when outside watermarks")
     void rejectsPhaseMessages_outsideWatermarks() {
         doCallRealMethod().when(replica).recvPrePrepare(any());
         doCallRealMethod().when(replica).recvPrepare(any());
@@ -129,6 +134,7 @@ public class PbftJavaReplicaPhaseMessageTest {
 
     // 4) pre-prepare acceptance rules
     @Test
+    @DisplayName("Accepts PrePrepare with no prior or matching digest; broadcasts Prepare and appends both")
     void acceptsPrePrepare_whenNoPriorOrMatchingDigest_andBroadcastsPrepare_andAppendsBoth() {
         doCallRealMethod().when(replica).recvPrePrepare(any());
 
@@ -175,6 +181,7 @@ public class PbftJavaReplicaPhaseMessageTest {
     }
 
     @Test
+    @DisplayName("Rejects PrePrepare when existing digest differs")
     void rejectsPrePrepare_whenExistingDigestDiffers() {
         doCallRealMethod().when(replica).recvPrePrepare(any());
 

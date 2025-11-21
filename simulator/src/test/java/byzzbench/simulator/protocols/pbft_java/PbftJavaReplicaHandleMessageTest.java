@@ -6,6 +6,7 @@ import byzzbench.simulator.protocols.hbft.message.ClientRequestMessage;
 import byzzbench.simulator.protocols.pbft_java.message.*;
 import byzzbench.simulator.transport.MessagePayload;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
@@ -23,6 +24,7 @@ import static org.mockito.Mockito.*;
  * Test suite for PbftJavaReplica.handleMessage() ensuring messages are
  * dispatched to the correct handler methods following PBFT roles.
  */
+@DisplayName("PBFT: handleMessage dispatch and request processing")
 public class PbftJavaReplicaHandleMessageTest {
 
     /**
@@ -75,6 +77,7 @@ public class PbftJavaReplicaHandleMessageTest {
     }
 
     @Test
+    @DisplayName("Dispatches ClientRequestMessage to handleClientRequest")
     void dispatchesClientRequestMessage() {
         ClientRequestMessage crm = Mockito.mock(ClientRequestMessage.class);
         when(crm.getOperation()).thenReturn("op");
@@ -83,6 +86,7 @@ public class PbftJavaReplicaHandleMessageTest {
     }
 
     @Test
+    @DisplayName("Dispatches RequestMessage to recvRequest")
     void dispatchesRequestMessage() {
         RequestMessage req = Mockito.mock(RequestMessage.class);
         replica.handleMessage("sender-X", req);
@@ -90,6 +94,7 @@ public class PbftJavaReplicaHandleMessageTest {
     }
 
     @Test
+    @DisplayName("Dispatches PrePrepareMessage to recvPrePrepare")
     void dispatchesPrePrepareMessage() {
         PrePrepareMessage pp = Mockito.mock(PrePrepareMessage.class);
         replica.handleMessage("B", pp);
@@ -97,6 +102,7 @@ public class PbftJavaReplicaHandleMessageTest {
     }
 
     @Test
+    @DisplayName("Dispatches PrepareMessage to recvPrepare")
     void dispatchesPrepareMessage() {
         PrepareMessage prepare = Mockito.mock(PrepareMessage.class);
         replica.handleMessage("C", prepare);
@@ -104,6 +110,7 @@ public class PbftJavaReplicaHandleMessageTest {
     }
 
     @Test
+    @DisplayName("Dispatches CommitMessage to recvCommit")
     void dispatchesCommitMessage() {
         CommitMessage commit = Mockito.mock(CommitMessage.class);
         replica.handleMessage("D", commit);
@@ -111,6 +118,7 @@ public class PbftJavaReplicaHandleMessageTest {
     }
 
     @Test
+    @DisplayName("Dispatches ViewChangeMessage to recvViewChange")
     void dispatchesViewChangeMessage() {
         ViewChangeMessage vc = Mockito.mock(ViewChangeMessage.class);
         replica.handleMessage("B", vc);
@@ -118,6 +126,7 @@ public class PbftJavaReplicaHandleMessageTest {
     }
 
     @Test
+    @DisplayName("Dispatches NewViewMessage to recvNewView")
     void dispatchesNewViewMessage() {
         NewViewMessage nv = Mockito.mock(NewViewMessage.class);
         replica.handleMessage("B", nv);
@@ -125,6 +134,7 @@ public class PbftJavaReplicaHandleMessageTest {
     }
 
     @Test
+    @DisplayName("Throws on null or unknown payload type")
     void throwsOnNullOrUnknownPayload() {
         assertThrows(IllegalArgumentException.class, () -> replica.handleMessage("any", null));
         assertThrows(IllegalArgumentException.class, () -> replica.handleMessage("any", new DummyPayload()));
@@ -133,6 +143,7 @@ public class PbftJavaReplicaHandleMessageTest {
     // ================= Additional tests for RequestMessage logic/state =================
 
     @Test
+    @DisplayName("Cached ticket: resends reply; no timer and no new ticket")
     void requestWithCachedTicket_resendsReply_andDoesNotStartTimerOrCreateTicket() {
         // Arrange
         Instant ts = Instant.now();
@@ -167,6 +178,7 @@ public class PbftJavaReplicaHandleMessageTest {
     }
 
     @Test
+    @DisplayName("Non-primary: starts timer and forwards request to primary only")
     void nonPrimary_receivesRequest_startsTimer_andForwardsToPrimary_only() {
         // Arrange
         Instant ts = Instant.now();
@@ -199,6 +211,7 @@ public class PbftJavaReplicaHandleMessageTest {
     }
 
     @Test
+    @DisplayName("Primary: starts timer, creates ticket, broadcasts PrePrepare, and appends")
     void primary_processesRequest_startsTimer_createsTicket_broadcastsPrePrepare_andAppendsToTicket() {
         // Arrange
         Instant ts = Instant.now();

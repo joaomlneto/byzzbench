@@ -4,6 +4,7 @@ import byzzbench.simulator.domain.ScenarioParameters;
 import byzzbench.simulator.domain.Schedule;
 import byzzbench.simulator.exploration_strategy.ExplorationStrategy;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -12,6 +13,7 @@ import java.util.SortedSet;
 import java.util.TreeSet;
 
 @SpringBootTest
+@DisplayName("Tendermint: replica basics")
 public class TendermintReplicaTest {
 
     private final int tolerance = 1;
@@ -22,6 +24,7 @@ public class TendermintReplicaTest {
     private TendermintReplica replicaD;
 
     @Test
+    @DisplayName("Context and replica initialization runs without errors")
     void test() {
     }
 
@@ -52,6 +55,7 @@ public class TendermintReplicaTest {
     }
 
     @Test
+    @DisplayName("Handle proposal (placeholder)")
     void testHandleProposal() {
 //        TendermintReplica spyReplica = Mockito.spy(replicaA);
 //        RequestMessage request = new RequestMessage("123", 0, "C0");

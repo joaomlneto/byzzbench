@@ -13,6 +13,7 @@ import byzzbench.simulator.exploration_strategy.random.RandomExplorationStrategy
 import byzzbench.simulator.protocols.pbft_java.PbftJavaScenario;
 import byzzbench.simulator.transport.Event;
 import byzzbench.simulator.transport.MessageEvent;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.springframework.context.ApplicationContext;
@@ -28,6 +29,7 @@ import static org.mockito.Mockito.when;
  * - Round number inference via the ByzzFuzz round oracle
  * - Exclusivity: when a fault is enabled, only that fault action is exposed
  */
+@DisplayName("ByzzFuzz exploration strategy")
 public class ByzzFuzzExplorationStrategyTest {
 
     private Schedule buildScheduleWithCampaign(long seed, Map<String, String> params) {
@@ -102,6 +104,7 @@ public class ByzzFuzzExplorationStrategyTest {
     }
 
     @Test
+    @DisplayName("Network faults are applied exclusively and round is inferred")
     void networkFaultsAreAppliedAndExclusive_andRoundIsInferred() {
         // Configure ByzzFuzz to have only network faults targeting a single round (round=1)
         Map<String, String> params = Map.of(
@@ -147,6 +150,7 @@ public class ByzzFuzzExplorationStrategyTest {
     }
 
     @Test
+    @DisplayName("Process faults use round oracle and are exclusive when enabled")
     void processFaultsAreAppliedBasedOnRoundOracle_andExclusive() {
         // Configure ByzzFuzz to have only process faults at round 1
         Map<String, String> params = Map.of(

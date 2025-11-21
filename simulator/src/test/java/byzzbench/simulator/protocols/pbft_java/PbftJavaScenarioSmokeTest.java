@@ -2,6 +2,7 @@ package byzzbench.simulator.protocols.pbft_java;
 
 import byzzbench.simulator.domain.ScenarioParameters;
 import byzzbench.simulator.domain.Schedule;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -10,8 +11,10 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * Simple smoke test: instantiate the PbftJavaScenario, deliver events 1..4,
  * and assert that no correctness predicates are violated.
  */
+@DisplayName("PBFT: Scenario smoke test")
 public class PbftJavaScenarioSmokeTest {
     @Test
+    @DisplayName("Delivering first three messages does not violate invariants")
     void deliveringFirstThreeMessagesDoNotViolateInvariants() {
         // Build deterministic parameters to ensure reproducibility
         ScenarioParameters params = ScenarioParameters.builder()
