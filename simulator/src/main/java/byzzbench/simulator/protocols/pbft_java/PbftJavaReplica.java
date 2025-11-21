@@ -1,8 +1,8 @@
 package byzzbench.simulator.protocols.pbft_java;
 
 import byzzbench.simulator.Scenario;
+import byzzbench.simulator.nodes.ClientRequest;
 import byzzbench.simulator.nodes.LeaderBasedProtocolReplica;
-import byzzbench.simulator.protocols.hbft.message.ClientRequestMessage;
 import byzzbench.simulator.protocols.pbft_java.message.*;
 import byzzbench.simulator.state.LogEntry;
 import byzzbench.simulator.state.SerializableLogEntry;
@@ -93,9 +93,11 @@ public class PbftJavaReplica<O extends Serializable, R extends Serializable> ext
     public void handleRequestTimeout(ReplicaRequestKey key) {
         LinearBackoff backoff = this.timeouts.get(key);
         if (backoff == null) {
+            log.warning(this.getId() + " found no timer for request " + key);
             log.info(this.getId() + " " + this.timeouts.size() + " active timers:");
             this.timeouts.keySet().forEach(k -> System.out.println("Active request timer: " + k));
-            throw new IllegalStateException(this.getId() + " found no timer for request " + key);
+            return;
+            //throw new IllegalStateException(this.getId() + " found no timer for request " + key);
             //return Duration.ZERO;
         }
 
@@ -152,6 +154,7 @@ public class PbftJavaReplica<O extends Serializable, R extends Serializable> ext
             RequestMessage request = ticket.getRequest();
             Instant timestamp = request.getTimestamp();
             ReplyMessage reply = new ReplyMessage(
+                    ticket.getRequest().getOperation(),
                     viewNumber,
                     timestamp,
                     clientId,
@@ -193,6 +196,10 @@ public class PbftJavaReplica<O extends Serializable, R extends Serializable> ext
         // Start the timer for this request per PBFT 4.4
         this.timeouts.computeIfAbsent(key, k ->
                 new LinearBackoff(this, this.getViewNumber(), this.timeout, String.format("Request %s", k), () -> this.handleRequestTimeout(key)));
+
+        // print keys in timeouts
+        log.info(this.getId() + " " + this.timeouts.size() + " active timers:");
+        this.timeouts.keySet().forEach(k -> System.out.println("Active request timer: " + k));
 
         String primaryId = this.getRoundRobinPrimaryId();
 
@@ -484,6 +491,7 @@ public class PbftJavaReplica<O extends Serializable, R extends Serializable> ext
                     String clientId = request.getClientId();
                     Instant timestamp = request.getTimestamp();
                     ReplyMessage reply = new ReplyMessage(
+                            ticket.getRequest().getOperation(),
                             currentViewNumber,
                             timestamp,
                             clientId,
@@ -580,7 +588,7 @@ public class PbftJavaReplica<O extends Serializable, R extends Serializable> ext
     public void sendCheckpoint(CheckpointMessage checkpoint) {
         // PBFT 4.3 - Multicast checkpoint
         // FIXME: not implemented
-        //this.broadcastMessage(checkpoint);
+        this.broadcastMessage(checkpoint);
     }
 
     /**
@@ -746,13 +754,16 @@ public class PbftJavaReplica<O extends Serializable, R extends Serializable> ext
     @Override
     public void handleMessage(String sender, MessagePayload m) {
         switch (m) {
-            case ClientRequestMessage clientRequest -> handleClientRequest(sender, clientRequest.getOperation());
+            // Accept any client request payload implementing the common interface,
+            // regardless of the concrete message class/source package.
+            case ClientRequest clientRequest -> handleClientRequest(sender, clientRequest.getOperation());
             case RequestMessage request -> recvRequest(request);
             case PrePrepareMessage prePrepare -> recvPrePrepare(prePrepare);
             case PrepareMessage prepare -> recvPrepare(prepare);
             case CommitMessage commit -> recvCommit(commit);
             case ViewChangeMessage viewChange -> recvViewChange(viewChange);
             case NewViewMessage newView -> recvNewView(newView);
+            case CheckpointMessage checkpoint -> recvCheckpoint(checkpoint);
             case null, default -> throw new IllegalArgumentException("Unknown message type: " + m);
         }
     }
