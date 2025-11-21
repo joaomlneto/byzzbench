@@ -24,7 +24,7 @@ import lombok.extern.java.Log;
 @EqualsAndHashCode(callSuper = true)
 @Data
 @SuperBuilder
-@ToString(callSuper = true)
+@ToString
 @NoArgsConstructor
 @Log
 public class FaultInjectionAction extends Action {
@@ -37,6 +37,7 @@ public class FaultInjectionAction extends Action {
     /**
      * The ID of the mutator to be applied
      */
+    @NonNull
     private String mutatorId;
 
     @Override
