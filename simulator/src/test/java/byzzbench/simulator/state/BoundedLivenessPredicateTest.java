@@ -2,8 +2,8 @@ package byzzbench.simulator.state;
 
 import byzzbench.simulator.Scenario;
 import byzzbench.simulator.config.TerminationConfig;
-import byzzbench.simulator.domain.Schedule;
 import byzzbench.simulator.domain.Campaign;
+import byzzbench.simulator.domain.Schedule;
 import byzzbench.simulator.nodes.Client;
 import byzzbench.simulator.nodes.Replica;
 import byzzbench.simulator.transport.Event;
@@ -158,12 +158,12 @@ class BoundedLivenessPredicateTest {
         when(mockSchedule.getLength()).thenReturn(5);
         predicate.onGlobalStabilizationTime();
 
-        // Move to event 15 (exactly 10 events after GST, at LENGTH boundary)
-        when(mockSchedule.getLength()).thenReturn(15);
+        // Move to event 15 (exactly 10 events after GST, just before the LENGTH boundary)
+        when(mockSchedule.getLength()).thenReturn(14);
         boolean result = predicate.test(mockScenario);
 
         assertTrue(result);
-        assertTrue(predicate.getExplanation().contains("Grace period: 10 events since GST"));
+        assertTrue(predicate.getExplanation().contains("Grace period: 9 events since GST"));
     }
 
     @Test
@@ -174,11 +174,11 @@ class BoundedLivenessPredicateTest {
         predicate.onGlobalStabilizationTime();
 
         // Move to event 16 (11 events after GST, exceeding LENGTH of 10)
-        when(mockSchedule.getLength()).thenReturn(16);
+        when(mockSchedule.getLength()).thenReturn(15);
         boolean result = predicate.test(mockScenario);
 
         assertFalse(result);
-        assertTrue(predicate.getExplanation().contains("Liveness violated: 11 events since GST"));
+        assertTrue(predicate.getExplanation().contains("Liveness violated: 10 events since GST"));
     }
 
     @Test

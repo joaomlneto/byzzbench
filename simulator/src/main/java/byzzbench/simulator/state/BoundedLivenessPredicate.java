@@ -73,7 +73,7 @@ public class BoundedLivenessPredicate extends ScenarioPredicate implements Scena
 
         // Check if we have exceeded the allowed number of events since GST
         long gstGracePeriod = scenario.getSchedule().getCampaign().getTermination().getGstGracePeriod();
-        if (eventsSinceGst > gstGracePeriod) {
+        if (eventsSinceGst >= gstGracePeriod) {
             this.explanation = String.format("Liveness violated: %d events since GST without a committed value (max allowed: %d)", eventsSinceGst, gstGracePeriod);
             return false;
         }
