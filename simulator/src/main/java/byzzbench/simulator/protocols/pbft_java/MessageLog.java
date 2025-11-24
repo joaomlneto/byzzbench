@@ -83,18 +83,8 @@ public class MessageLog implements Serializable {
          * A stable checkpoint then allows the water marks to slide over to
          * the checkpoint < x <= checkpoint + watermarkInterval per PBFT 4.3.
          */
-        for (Map.Entry<ReplicaRequestKey, Ticket<?, ?>> entry : this.ticketCache.entrySet()) {
-            Ticket<?, ?> ticket = entry.getValue();
-            if (ticket.getSeqNumber() <= checkpoint) {
-                this.ticketCache.remove(entry.getKey());
-            }
-        }
-
-        for (Long seqNumber : this.checkpoints.keySet()) {
-            if (seqNumber < checkpoint) {
-                this.checkpoints.remove(seqNumber);
-            }
-        }
+        this.ticketCache.entrySet().removeIf(entry -> entry.getValue().getSeqNumber() <= checkpoint);
+        this.checkpoints.keySet().removeIf(seqNumber -> seqNumber < checkpoint);
 
         this.highWaterMark = checkpoint + this.watermarkInterval;
         this.lowWaterMark = checkpoint;
