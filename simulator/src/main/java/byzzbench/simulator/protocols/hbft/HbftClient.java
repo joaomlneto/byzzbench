@@ -12,6 +12,7 @@ import lombok.Getter;
 import java.io.Serializable;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.time.Instant;
 import java.util.*;
 
 
@@ -53,7 +54,7 @@ public class HbftClient extends Client {
     /**
      * The sent requests by timestamp.
      */
-    private final SortedMap<Long, String> sentRequestsByTimestamp = new TreeMap<>();
+    private final SortedMap<Instant, String> sentRequestsByTimestamp = new TreeMap<>();
 
     /**
      * timeouts
@@ -70,7 +71,7 @@ public class HbftClient extends Client {
     @Override
     public void sendRequest() {
         String requestId = String.format("%s/%d", getId(), getRequestSequenceNumber().incrementAndGet());
-        long timestamp = this.getCurrentTime().toEpochMilli();
+        Instant timestamp = this.getCurrentTime();
         RequestMessage request = new RequestMessage(requestId, timestamp, getId());
         this.sentRequests.put(getRequestSequenceNumber().get(), request);
         this.sentRequestsByTimestamp.put(timestamp, requestId);
@@ -87,7 +88,7 @@ public class HbftClient extends Client {
             String requestId = String.format("%s/%d", getId(), getRequestSequenceNumber().get());
             // Based on hBFT 4.1 it uses the identical request
             // TODO: It probably should not be the same timestamp
-            long timestamp = this.sentRequests.get(getRequestSequenceNumber().get()).getTimestamp();
+            Instant timestamp = this.sentRequests.get(getRequestSequenceNumber().get()).getTimestamp();
             this.broadcastRequest(timestamp, requestId);
         } else if (this.shouldPanic(tolerance)) {
             RequestMessage message = this.sentRequests.get(getRequestSequenceNumber().get());
@@ -99,7 +100,7 @@ public class HbftClient extends Client {
         timeouts.put(getRequestSequenceNumber().get(), timeoutId);
     }
 
-    private void broadcastRequest(long timestamp, String requestId) {
+    private void broadcastRequest(Instant timestamp, String requestId) {
         MessagePayload payload = new ClientRequestMessage(timestamp, requestId);
         SortedSet<String> replicaIds = getScenario().getReplicaIds(this);
         getScenario().getTransport().multicast(this, replicaIds, payload);

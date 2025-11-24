@@ -9,6 +9,7 @@ import byzzbench.simulator.transport.MessageEvent;
 import lombok.ToString;
 import org.springframework.stereotype.Component;
 
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Optional;
 
@@ -107,7 +108,7 @@ public class ReplyMessageMutatorFactory extends MessageMutatorFactory {
                         if (!(messageEvent.getPayload() instanceof ReplyMessage message)) {
                             throw invalidMessageTypeException;
                         }
-                        ReplyMessage mutatedMessage = message.withTimestamp(message.getTimestamp() + 1);
+                        ReplyMessage mutatedMessage = message.withTimestamp(message.getTimestamp().plus(1, ChronoUnit.MILLIS));
                         mutatedMessage.sign(message.getSignedBy());
                         messageEvent.setPayload(mutatedMessage);
                     }
@@ -125,7 +126,7 @@ public class ReplyMessageMutatorFactory extends MessageMutatorFactory {
                         if (!(messageEvent.getPayload() instanceof ReplyMessage message)) {
                             throw invalidMessageTypeException;
                         }
-                        ReplyMessage mutatedMessage = message.withTimestamp(message.getTimestamp() - 1);
+                        ReplyMessage mutatedMessage = message.withTimestamp(message.getTimestamp().minus(1, ChronoUnit.MILLIS));
                         mutatedMessage.sign(message.getSignedBy());
                         messageEvent.setPayload(mutatedMessage);
                     }

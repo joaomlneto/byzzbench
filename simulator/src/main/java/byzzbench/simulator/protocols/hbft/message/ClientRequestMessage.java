@@ -6,11 +6,12 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 
 import java.io.Serializable;
+import java.time.Instant;
 
 @Data
 @EqualsAndHashCode(callSuper = true)
 public class ClientRequestMessage extends MessagePayload implements ClientRequest {
-    private final long timestamp;
+    private final Instant timestamp;
     private final Serializable operation;
 
     @Override
@@ -20,6 +21,6 @@ public class ClientRequestMessage extends MessagePayload implements ClientReques
 
     @Override
     public Serializable getRequestId() {
-        return this.timestamp;
+        return this.timestamp.toEpochMilli();
     }
 }

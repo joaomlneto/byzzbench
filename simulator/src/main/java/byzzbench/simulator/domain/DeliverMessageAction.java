@@ -6,6 +6,7 @@ import byzzbench.simulator.transport.MessagePayload;
 import byzzbench.simulator.utils.NonNull;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.Transient;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
@@ -50,7 +51,7 @@ public class DeliverMessageAction extends Action {
      */
     @NonNull
     @Column(columnDefinition = "bytea")
-    //@Convert(converter = MessagePayloadJsonConverter.class)
+    @Transient // Marked as Transient to avoid JPA persistence issues
     private MessagePayload payload;
 
     /**

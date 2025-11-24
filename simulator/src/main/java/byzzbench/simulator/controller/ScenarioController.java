@@ -11,6 +11,7 @@ import byzzbench.simulator.nodes.Node;
 import byzzbench.simulator.nodes.Replica;
 import byzzbench.simulator.service.MessageMutatorService;
 import byzzbench.simulator.service.ScenarioService;
+import byzzbench.simulator.state.CommitLog;
 import byzzbench.simulator.state.adob.AdobCache;
 import byzzbench.simulator.state.adob.AdobDistributedState;
 import byzzbench.simulator.transport.Event;
@@ -138,6 +139,12 @@ public class ScenarioController {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Client not found");
         }
         return replicas.get(replicaId);
+    }
+
+    @GetMapping("/scenarios/{scenarioId}/commits")
+    public List<CommitLog> getScenarioCommits(@PathVariable long scenarioId) {
+        NavigableMap<String, Replica> replicas = scenarioService.getScenarioById(scenarioId).getReplicas();
+        return replicas.values().stream().map(Replica::getCommitLog).toList();
     }
 
     /**

@@ -18,6 +18,7 @@ import lombok.extern.java.Log;
 
 import java.io.Serializable;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -118,7 +119,7 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
         ticket.getResult().thenAccept(result -> {
             long viewNumber = ticket.getViewNumber();
             RequestMessage request = ticket.getRequest();
-            long timestamp = request.getTimestamp();
+            Instant timestamp = request.getTimestamp();
             long sequenceNumber = ticket.getSeqNumber();
 
             // Also possbile option
@@ -140,8 +141,8 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
 
     private void recvRequest(RequestMessage request, boolean wasRequestBuffered) {
         String clientId = request.getClientId();
-        long timestamp = request.getTimestamp();
-        logger.writeLog(String.format("REQUEST from %s to %s with (timestamp: %d, request: %s)", clientId, this.getId(), timestamp, request.getOperation()));
+        Instant timestamp = request.getTimestamp();
+        logger.writeLog(String.format("REQUEST from %s to %s with (timestamp: %d, request: %s)", clientId, this.getId(), timestamp.toEpochMilli(), request.getOperation()));
 
         /*
          * At this stage, the request does not have a sequence number yet.
@@ -495,7 +496,7 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
         Serializable result = new SerializableLogEntry(operation);
 
         String clientId = request.getClientId();
-        long timestamp = request.getTimestamp();
+        Instant timestamp = request.getTimestamp();
 
         // we have the set the local seqNumber to the prepare's sequence number
         this.seqCounter.set(seqNumber);
@@ -579,7 +580,7 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
                     Serializable result = new SerializableLogEntry(operation);
 
                     String clientId = request.getClientId();
-                    long timestamp = request.getTimestamp();
+                    Instant timestamp = request.getTimestamp();
 
                     if (this.seqCounter.get() + 1 == seqNumber) {
                         this.seqCounter.set(seqNumber);
@@ -633,7 +634,7 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
                 logger.writeLog("Request " + request.toString());
                 if (request != null && !request.equals(this.speculativeHistory.getHistory().get(seqNumber))) {
                     String clientId = request.getClientId();
-                    long timestamp = request.getTimestamp();
+                    Instant timestamp = request.getTimestamp();
 
                     //System.out.println("Called from tryAdvanceState()");
                     // Add operation to commitLog
@@ -698,7 +699,7 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
      * @param currentViewNumber the current view number.
      * @param seqNumber         the sequence number of the request.
      */
-    private boolean replied(String clientId, long timestamp, long currentViewNumber, long seqNumber) {
+    private boolean replied(String clientId, Instant timestamp, long currentViewNumber, long seqNumber) {
         ReplicaRequestKey key = new ReplicaRequestKey(clientId, timestamp);
         Ticket<O, R> cachedTicket = messageLog.getTicketFromCache(key);
         if (cachedTicket != null) {
@@ -871,7 +872,7 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
                 //System.out.println("Called from adjustHistory()");
                 Serializable result = this.compute(seqNumber, new SerializableLogEntry(operation));
 
-                long timestamp = requests.get(seqNumber).getTimestamp();
+                Instant timestamp = requests.get(seqNumber).getTimestamp();
                 String clientId = requests.get(seqNumber).getClientId();
 
                 ReplyMessage reply = new ReplyMessage(
@@ -1138,7 +1139,7 @@ public class HbftJavaReplica<O extends Serializable, R extends Serializable> ext
         Serializable result = this.compute(seqNumber, new SerializableLogEntry(operation));
 
         String clientId = request.getClientId();
-        long timestamp = request.getTimestamp();
+        Instant timestamp = request.getTimestamp();
 
         // we have the set the local seqNumber to the prepare's sequence number
         // this.seqCounter.set(seqNumber);

@@ -18,7 +18,7 @@ public class FaultyDeadlockClient extends Client {
 
     @Override
     public void sendRequest(String requestId, String recipientId) {
-        MessagePayload payload = new ClientRequestMessage(requestId, this.getCurrentTime().toEpochMilli(), requestId);
+        MessagePayload payload = new ClientRequestMessage(requestId, this.getCurrentTime(), requestId);
         this.getScenario().getTransport().sendMessage(this, payload, recipientId);
 
         // same as default client but with no retransmission

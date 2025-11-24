@@ -5,13 +5,14 @@ import lombok.Data;
 import lombok.With;
 
 import java.io.Serializable;
+import java.time.Instant;
 import java.util.Objects;
 
 @Data
 @With
 public class RequestMessage extends MessagePayload {
     private final Serializable operation;
-    private final long timestamp;
+    private final Instant timestamp;
     private final String clientId;
 
     @Override
@@ -26,7 +27,7 @@ public class RequestMessage extends MessagePayload {
                     && this.timestamp == message.getTimestamp()
                     && this.clientId.equals(message.getClientId());
         }
-        
+
         return false;
     }
 
