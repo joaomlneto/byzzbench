@@ -746,8 +746,8 @@ public class PbftJavaReplica<O extends Serializable, R extends Serializable> ext
         return operation;
     }
 
-    public void handleClientRequest(String clientId, Serializable request) {
-        RequestMessage m = new RequestMessage(request, this.getCurrentTime(), clientId);
+    public void handleClientRequest(String clientId, ClientRequest request) {
+        RequestMessage m = new RequestMessage(request.getOperation(), request.getTimestamp(), clientId);
         this.recvRequest(m);
     }
 
@@ -756,7 +756,7 @@ public class PbftJavaReplica<O extends Serializable, R extends Serializable> ext
         switch (m) {
             // Accept any client request payload implementing the common interface,
             // regardless of the concrete message class/source package.
-            case ClientRequest clientRequest -> handleClientRequest(sender, clientRequest.getOperation());
+            case ClientRequest clientRequest -> handleClientRequest(sender, clientRequest);
             case RequestMessage request -> recvRequest(request);
             case PrePrepareMessage prePrepare -> recvPrePrepare(prePrepare);
             case PrepareMessage prepare -> recvPrepare(prepare);

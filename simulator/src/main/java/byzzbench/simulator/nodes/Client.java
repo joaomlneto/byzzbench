@@ -12,6 +12,7 @@ import lombok.extern.java.Log;
 
 import java.io.Serializable;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -55,6 +56,12 @@ public abstract class Client extends Node implements Serializable {
      * The replies received by the client for each request ID.
      */
     private final Map<Serializable, List<Serializable>> replies = new HashMap<>();
+
+    /**
+     * The original timestamp for each requestId as first sent by this client.
+     * Ensures that retransmissions preserve the original timestamp.
+     */
+    private final Map<Serializable, Instant> requestTimestamps = new HashMap<>();
 
     /**
      * The timeout duration for the client to wait for a reply.
@@ -113,7 +120,8 @@ public abstract class Client extends Node implements Serializable {
      * Sends a request to a given replica in the system.
      */
     public void sendRequest(String requestId, String recipientId) {
-        MessagePayload payload = new ClientRequestMessage(requestId, this.getCurrentTime().toEpochMilli(), requestId);
+        Instant originalTs = this.requestTimestamps.computeIfAbsent(requestId, k -> this.getCurrentTime());
+        MessagePayload payload = new ClientRequestMessage(requestId, originalTs, requestId);
         this.getScenario().getTransport().sendMessage(this, payload, recipientId);
         this.setTimeout(String.format("Request %s", requestId), this::retransmitRequest, this.timeout);
     }
@@ -166,6 +174,23 @@ public abstract class Client extends Node implements Serializable {
     protected void markRequestAsCompleted(Serializable requestId) {
         this.completedRequests.add(requestId);
         log.info(String.format("Request %s completed by client %s", requestId, this.getId()));
+
+        // Stop retransmissions for this request (timer was named "Request <id>")
+        try {
+            this.clearTimeout(String.format("Request %s", requestId));
+        } catch (Exception ignored) {
+            // Best-effort: timer may already be cleared
+        }
+
+        // Optional: drop stored replies for the completed request to avoid growth
+        this.getReplies().remove(requestId);
+
+        // Drop stored timestamp for this completed request to avoid growth
+        this.requestTimestamps.remove(requestId);
+
+        // Immediately issue the next request as per PBFT client behavior
+        // where clients pipeline sequential requests once the previous completes.
+        this.sendRequest();
     }
 
 }
