@@ -159,6 +159,14 @@ public class CampaignService {
 
                 // main scheduling loop
                 while (true) {
+                    // if reached max actions, trigger GST
+                    if (!currentScenario.getTransport().isGlobalStabilizationTime()
+                            && currentScenario.getSchedule().getActions().size() >= campaign.getTermination().getMinEvents()) {
+                        log.info("Reached max actions before GST, triggering GST. . .");
+                        currentScenario.getTransport().globalStabilizationTime();
+                        continue;
+                    }
+
                     Optional<Action> decision = explorationStrategy.scheduleNext(currentScenario);
                     log.info("Decision: " + decision);
 
@@ -218,7 +226,7 @@ public class CampaignService {
                         //log.info("Max round: " + maxDeliveredRound.orElse(0));
                         //log.info("Min round: " + this.getCampaign().getTermination().getMinRounds());
 
-                        if (numEvents >= this.getCampaign().getTermination().getMinEvents()
+                        if (numEvents >= this.getCampaign().getTermination().getMinEvents() + this.getCampaign().getTermination().getGstGracePeriod() + 1
                             /*&& currentRound >= this.getCampaign().getTermination().getMinRounds()*/) {
                             log.info("Reached min # of events or rounds for this run, terminating. . .");
                             this.result = ScenarioExecutionResult.CORRECT;
