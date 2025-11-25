@@ -42,13 +42,13 @@ export const CampaignDetails = ({ campaignId }: CampaignDetailsProps) => {
     <Stack gap="xs">
       <p>{data?.data.createdAt && <p>Created {createdAt}</p>}</p>
       <Progress.Root size={40}>
-        <Tooltip label="Buggy - reached incorrect state">
+        <Tooltip label={`Buggy - reached incorrect state - ${numBuggy}`}>
           <Progress.Section value={(numBuggy / numScenarios) * 100} color="red">
             <Progress.Label>Buggy</Progress.Label>
           </Progress.Section>
         </Tooltip>
 
-        <Tooltip label="Errored - runtime exception">
+        <Tooltip label={`Errored - runtime exception - ${numErrored}`}>
           <Progress.Section
             value={(numErrored / numScenarios) * 100}
             color="yellow"
@@ -57,7 +57,9 @@ export const CampaignDetails = ({ campaignId }: CampaignDetailsProps) => {
           </Progress.Section>
         </Tooltip>
 
-        <Tooltip label="Correct (no issues found before cutoff)">
+        <Tooltip
+          label={`Correct (no issues found before cutoff) - ${numCorrect}`}
+        >
           <Progress.Section
             value={(numCorrect / numScenarios) * 100}
             color="green"
@@ -66,9 +68,15 @@ export const CampaignDetails = ({ campaignId }: CampaignDetailsProps) => {
           </Progress.Section>
         </Tooltip>
 
-        <Tooltip label="Not yet ran">
+        <Tooltip
+          label={`Not yet ran - ${numScenarios - numBuggy - numErrored - numCorrect}`}
+        >
           <Progress.Section
-            value={(numScenarios - numBuggy - numErrored - numCorrect) * 100}
+            value={
+              ((numScenarios - numBuggy - numErrored - numCorrect) /
+                numScenarios) *
+              100
+            }
             color="grey"
           >
             <Progress.Label>

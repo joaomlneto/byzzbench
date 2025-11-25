@@ -1,12 +1,20 @@
 "use client";
 
 import { useGetSchedule } from "@/lib/byzzbench-client";
-import { Anchor, Badge, Card, Group, Tooltip } from "@mantine/core";
+import {
+  Anchor,
+  Badge,
+  Card,
+  Group,
+  NumberFormatter,
+  Tooltip,
+} from "@mantine/core";
 import {
   IconBolt,
   IconBug,
   IconCircleCheck,
-  IconRuler,
+  IconClock,
+  IconMessage,
 } from "@tabler/icons-react";
 
 export type ScheduleCardProps = {
@@ -26,23 +34,47 @@ export const ScheduleCard = ({ scheduleId }: ScheduleCardProps) => {
             Schedule {scheduleId}
           </Anchor>
           <Group>
-            <Tooltip label="Schedule length">
+            <Tooltip label="Messages delivered">
               <Badge>
                 <Group gap="xs">
-                  <IconRuler size={12} />
-                  {data?.data.actions.length}
+                  <IconMessage size={12} />
+                  <NumberFormatter
+                    value={
+                      data?.data.actions.filter(
+                        (action) => action.type == "DeliverMessageAction",
+                      ).length
+                    }
+                  />
                 </Group>
               </Badge>
             </Tooltip>
-            <Tooltip label="Number of faults">
+            <Tooltip label="Timeouts triggered">
+              <Badge color="blue">
+                <Group gap="xs">
+                  <IconClock size={12} />
+                  <NumberFormatter
+                    value={
+                      data?.data.actions.filter(
+                        (action) => action.type == "TriggerTimeoutAction",
+                      ).length
+                    }
+                  />
+                </Group>
+              </Badge>
+            </Tooltip>
+            <Tooltip label="Faults injected">
               <Badge color="yellow">
                 <Group gap="xs">
                   <IconBolt size={12} />
-                  {
-                    data?.data.actions.filter(
-                      (action) => action.type !== "DeliverMessageAction",
-                    ).length
-                  }
+                  <NumberFormatter
+                    value={
+                      data?.data.actions.filter(
+                        (action) =>
+                          action.type !== "DeliverMessageAction" &&
+                          action.type !== "TriggerTimeoutAction",
+                      ).length
+                    }
+                  />
                 </Group>
               </Badge>
             </Tooltip>
