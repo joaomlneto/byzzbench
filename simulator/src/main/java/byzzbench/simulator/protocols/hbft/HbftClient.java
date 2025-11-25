@@ -5,6 +5,7 @@ import byzzbench.simulator.nodes.Client;
 import byzzbench.simulator.nodes.ClientReply;
 import byzzbench.simulator.protocols.hbft.message.*;
 import byzzbench.simulator.protocols.hbft.pojo.ClientReplyKey;
+import byzzbench.simulator.transport.DefaultClientReplyPayload;
 import byzzbench.simulator.transport.MessagePayload;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Getter;
@@ -112,11 +113,19 @@ public class HbftClient extends Client {
      * @param senderId The ID of the sender of the reply.
      * @param payload  The payload received by the client.
      */
+    @Override
     public void handleMessage(String senderId, MessagePayload payload) {
-        if (!(payload instanceof ClientReplyMessage clientReplyMessage)) {
+        //System.out.printf("Client %s received %s from %s: %s%n", getId(), payload.getClass().getCanonicalName(), senderId, payload.getType());
+        
+        if (!(payload instanceof DefaultClientReplyPayload clientReplyMessage)) {
             return;
         }
-        ReplyMessage reply = clientReplyMessage.getReply();
+
+        if (!(clientReplyMessage.getReply() instanceof ClientReplyMessage replyMessage)) {
+            return;
+        }
+
+        ReplyMessage reply = replyMessage.getReply();
         ClientReplyKey key = new ClientReplyKey(reply.getResult().toString(), reply.getSequenceNumber());
         // Default is for testing only
         String currRequest = this.sentRequestsByTimestamp.getOrDefault(reply.getTimestamp(), "C/0");
@@ -128,7 +137,7 @@ public class HbftClient extends Client {
          * If the client received 2f + 1 correct replies,
          * and the request has not been completed yet.
          */
-        if (this.completedReplies(clientReplyMessage.getTolerance())
+        if (this.completedReplies(replyMessage.getTolerance())
                 && !this.completedRequests.contains(key)) {
             this.completedRequests.add(key);
             this.clearTimeout(this.timeouts.get(getRequestSequenceNumber().get()));
