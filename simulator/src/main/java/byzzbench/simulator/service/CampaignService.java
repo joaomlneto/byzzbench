@@ -135,7 +135,7 @@ public class CampaignService {
         private final Campaign campaign;
         private final Scenario currentScenario;
         private final ExplorationStrategy explorationStrategy;
-        private ScenarioExecutionResult result;
+        private ScenarioExecutionResult result = ScenarioExecutionResult.ERRORED;
 
         /**
          * FIXME: saving schedule according to selected policy logic should be in the {@link ScenarioService}
