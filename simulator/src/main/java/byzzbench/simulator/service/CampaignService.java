@@ -226,7 +226,7 @@ public class CampaignService {
                         //log.info("Max round: " + maxDeliveredRound.orElse(0));
                         //log.info("Min round: " + this.getCampaign().getTermination().getMinRounds());
 
-                        if (numEvents >= this.getCampaign().getTermination().getMinEvents() + this.getCampaign().getTermination().getGstGracePeriod() + 1
+                        if (numEvents >= this.getCampaign().getTermination().getMinEvents() + this.getCampaign().getTermination().getGstGracePeriod()
                             /*&& currentRound >= this.getCampaign().getTermination().getMinRounds()*/) {
                             log.info("Reached min # of events or rounds for this run, terminating. . .");
                             this.result = ScenarioExecutionResult.CORRECT;
