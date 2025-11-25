@@ -17,6 +17,7 @@ export const SchedulerScenarioMetadata = ({
       value={JSON.stringify(data?.data, null, 2)}
       label="Strategy Metadata"
       autosize
+      maxRows={20}
       readOnly
       {...otherProps}
     />

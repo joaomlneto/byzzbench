@@ -91,6 +91,7 @@ public abstract class Client extends Node implements Serializable {
     }
 
     @Override
+    @JsonIgnore
     public Transport getTransport() {
         return this.scenario.getTransport();
     }

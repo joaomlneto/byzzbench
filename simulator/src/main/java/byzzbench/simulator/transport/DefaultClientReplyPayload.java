@@ -17,6 +17,6 @@ public class DefaultClientReplyPayload extends MessagePayload implements ClientR
 
     @Override
     public String getType() {
-        return "DefaultClientRequest";
+        return "DefaultClientReplyPayload";
     }
 }
