@@ -154,7 +154,7 @@ public class Schedule implements Serializable {
     public int getLength() {
         // count only deliver messages
         return this.actions.stream()
-                .filter(action -> action instanceof DeliverMessageAction)
+                .filter(DeliverMessageAction.class::isInstance)
                 .toList()
                 .size();
     }
