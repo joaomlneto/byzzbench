@@ -136,7 +136,7 @@ class ScenarioRunnerTest {
         assertTrue(gst.get(), "Global Stabilization Time should have been triggered");
 
         // And the total number of actions should be minEvents + gstGracePeriod
-        assertEquals(minEvents + gstGrace, schedule.getActions().size(),
+        assertEquals(minEvents + gstGrace, schedule.getLength(),
                 "ScenarioRunner should execute minEvents, then after GST execute gstGracePeriod additional steps");
     }
 }

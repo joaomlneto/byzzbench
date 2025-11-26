@@ -10,6 +10,6 @@ public class PbftTerminationPredicate extends ScenarioPredicate {
 
     @Override
     public boolean test(Scenario scenario) {
-        return scenario.getSchedule().getActions().size() > 100;
+        return scenario.getSchedule().getLength() > 100;
     }
 }

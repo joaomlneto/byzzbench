@@ -40,7 +40,7 @@ export const CampaignDetails = ({ campaignId }: CampaignDetailsProps) => {
 
   return (
     <Stack gap="xs">
-      <p>{data?.data.createdAt && <p>Created {createdAt}</p>}</p>
+      {data?.data.createdAt && <p>Created {createdAt}</p>}
       <Progress.Root size={40}>
         <Tooltip label={`Buggy - reached incorrect state - ${numBuggy}`}>
           <Progress.Section value={(numBuggy / numScenarios) * 100} color="red">

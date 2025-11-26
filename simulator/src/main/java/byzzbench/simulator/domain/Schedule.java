@@ -152,7 +152,11 @@ public class Schedule implements Serializable {
      * @return the length of the schedule.
      */
     public int getLength() {
-        return this.actions.size();
+        // count only deliver messages
+        return this.actions.stream()
+                .filter(action -> action instanceof DeliverMessageAction)
+                .toList()
+                .size();
     }
 
     public boolean isMaterialized() {
