@@ -59,6 +59,7 @@ public class DropMessageAction extends Action {
 
         // otherwise, drop the message: the sender and recipient are in different partitions
         if (event.getStatus() == Event.Status.QUEUED) {
+            scenario.getSchedule().appendAction(this);
             scenario.getTransport().dropEvent(event.getEventId());
         }
     }
