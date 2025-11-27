@@ -1,32 +1,34 @@
-"use client";
-
 import { ScenarioAside } from "@/components/Scenario";
 import { SimulationAccordion } from "@/components/Simulation";
 import { Container, Stack, Title } from "@mantine/core";
 import React from "react";
 
-export default async function Page({
+// This is a Server Component (no 'use client'), which can render Client Components below.
+export default function Page({
   params,
 }: {
-  params: Promise<{ slug: string }>;
+  params: { slug: string };
 }) {
-  const { slug: scenarioId } = await params;
+  const scenarioIdStr = params?.slug ?? "";
+  const scenarioIdNum = Number(scenarioIdStr);
 
-  if (!scenarioId) {
-    return "loading data";
+  if (!scenarioIdStr) {
+    return <Container p="xl">Loading scenario...</Container>;
   }
 
-  if (Number.isNaN(scenarioId)) {
-    return <Container p="xl">Invalid scenario ID: {scenarioId}</Container>;
+  if (Number.isNaN(scenarioIdNum)) {
+    return (
+      <Container p="xl">Invalid scenario ID: {scenarioIdStr}</Container>
+    );
   }
 
   return (
     <Container p="xl">
-      <Title order={1}>Scenario {scenarioId}</Title>
+      <Title order={1}>Scenario {scenarioIdNum}</Title>
       <Stack gap="md">
-        <SimulationAccordion scenarioId={Number(scenarioId)} />
+        <SimulationAccordion scenarioId={scenarioIdNum} />
       </Stack>
-      <ScenarioAside scenarioId={Number(scenarioId)} />
+      <ScenarioAside scenarioId={scenarioIdNum} />
     </Container>
   );
 }
