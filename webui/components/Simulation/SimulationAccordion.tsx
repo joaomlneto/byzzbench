@@ -6,7 +6,10 @@ import { DroppedMessagesList } from "@/components/Events";
 import { ScenarioFaultsList } from "@/components/FaultsList";
 import { NodeList } from "@/components/NodeList";
 import { PredicateList } from "@/components/PredicateList";
-import { ShowMailboxesSwitch } from "@/components/Scenario";
+import {
+  ScenarioCommitLogSummary,
+  ShowMailboxesSwitch,
+} from "@/components/Scenario";
 import { SchedulerScenarioMetadata } from "@/components/Scheduler";
 import { useGetScenario } from "@/lib/byzzbench-client";
 import {
@@ -64,6 +67,12 @@ export const SimulationAccordion = ({
           </Anchor>
         )}
       </Group>
+      <Accordion.Item key="commits" value="commits">
+        <Accordion.Control>Commit Log Summary</Accordion.Control>
+        <Accordion.Panel>
+          <ScenarioCommitLogSummary scenarioId={scenarioId} />
+        </Accordion.Panel>
+      </Accordion.Item>
       <Accordion.Item key="parameters" value="parameters">
         <Accordion.Control>Scenario Info</Accordion.Control>
         <Accordion.Panel>

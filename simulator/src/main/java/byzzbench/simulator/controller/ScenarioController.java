@@ -142,9 +142,16 @@ public class ScenarioController {
     }
 
     @GetMapping("/scenarios/{scenarioId}/commits")
-    public List<CommitLog> getScenarioCommits(@PathVariable long scenarioId) {
+    public Map<String, CommitLog> getScenarioCommits(@PathVariable long scenarioId) {
         NavigableMap<String, Replica> replicas = scenarioService.getScenarioById(scenarioId).getReplicas();
-        return replicas.values().stream().map(Replica::getCommitLog).toList();
+        // return a map of replica IDs to each replica's commit log
+        return replicas.values().stream()
+                .collect(Collectors.toMap(
+                        Replica::getId,
+                        Replica::getCommitLog,
+                        (a, b) -> a,
+                        TreeMap::new
+                ));
     }
 
     /**

@@ -4,11 +4,7 @@ import { Container, Stack, Title } from "@mantine/core";
 import React from "react";
 
 // This is a Server Component (no 'use client'), which can render Client Components below.
-export default function Page({
-  params,
-}: {
-  params: { slug: string };
-}) {
+export default function Page({ params }: { params: { slug: string } }) {
   const scenarioIdStr = params?.slug ?? "";
   const scenarioIdNum = Number(scenarioIdStr);
 
@@ -17,9 +13,7 @@ export default function Page({
   }
 
   if (Number.isNaN(scenarioIdNum)) {
-    return (
-      <Container p="xl">Invalid scenario ID: {scenarioIdStr}</Container>
-    );
+    return <Container p="xl">Invalid scenario ID: {scenarioIdStr}</Container>;
   }
 
   return (
