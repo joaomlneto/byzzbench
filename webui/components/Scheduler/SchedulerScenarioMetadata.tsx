@@ -1,5 +1,7 @@
+import { NodeStateNavLink } from "@/components/NodeStateNavLink";
 import { useGetScenarioStrategyData } from "@/lib/byzzbench-client";
 import { JsonInput, JsonInputProps } from "@mantine/core";
+import React from "react";
 
 export type SchedulerScenarioMetadataProps = Omit<JsonInputProps, "value"> & {
   schedulerId: string;
@@ -13,13 +15,20 @@ export const SchedulerScenarioMetadata = ({
 }: SchedulerScenarioMetadataProps) => {
   const { data } = useGetScenarioStrategyData(schedulerId, scenarioId);
   return (
-    <JsonInput
-      value={JSON.stringify(data?.data, null, 2)}
-      label="Strategy Metadata"
-      autosize
-      maxRows={20}
-      readOnly
-      {...otherProps}
-    />
+    <>
+      <div>
+        <NodeStateNavLink label={`State`} data={data?.data} opened />
+      </div>
+      {false && (
+        <JsonInput
+          value={JSON.stringify(data?.data, null, 2)}
+          label="Strategy Metadata"
+          autosize
+          maxRows={20}
+          readOnly
+          {...otherProps}
+        />
+      )}
+    </>
   );
 };

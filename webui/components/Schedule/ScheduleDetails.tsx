@@ -8,13 +8,12 @@ import {
   Group,
   JsonInput,
   Pagination,
+  Switch,
   Title,
   Tooltip,
 } from "@mantine/core";
 import { usePagination } from "@mantine/hooks";
-import { useQueryClient } from "@tanstack/react-query";
-import { useRouter } from "next/navigation";
-import React from "react";
+import React, { useMemo, useState } from "react";
 import { ScheduleMenu } from "./ScheduleMenu";
 
 export type ScheduleDetailsProps = {
@@ -42,9 +41,18 @@ export const ScheduleDetails = ({
   entriesPerPage = ENTRIES_PER_PAGE,
   schedule,
 }: ScheduleDetailsProps) => {
-  const queryClient = useQueryClient();
-  const router = useRouter();
-  const numPages = Math.ceil((schedule.actions?.length ?? 0) / entriesPerPage);
+  const [hideDelivered, setHideDelivered] = useState(false);
+
+  const actions = useMemo(() => {
+    if (hideDelivered) {
+      return schedule.actions?.filter(
+        (action) => action.type !== "DeliverMessageAction",
+      );
+    }
+    return schedule.actions;
+  }, [hideDelivered, schedule.actions]);
+
+  const numPages = Math.ceil((actions?.length ?? 0) / entriesPerPage);
   const pagination = usePagination({ total: numPages, initialPage: 1 });
   const start = (pagination.active - 1) * entriesPerPage;
   const end = start + entriesPerPage;
@@ -59,10 +67,15 @@ export const ScheduleDetails = ({
               {schedule.scheduleId} - {title}
             </Title>
           )}
+          <Switch
+            checked={hideDelivered}
+            onChange={(e) => setHideDelivered(e.currentTarget.checked)}
+            label={"hide messages"}
+          />
           {!hideScenario && (
             <>
               <Tooltip label="Length of the schedule">
-                <Badge variant="white">{schedule.actions?.length}</Badge>
+                <Badge variant="white">{actions?.length}</Badge>
               </Tooltip>
               {schedule.brokenInvariants?.map((invariant) => (
                 <Tooltip
@@ -92,7 +105,7 @@ export const ScheduleDetails = ({
               siblings={3}
               boundaries={2}
             />
-            {schedule.actions
+            {actions
               ?.slice(start, end)
               .map((action, i) => <ActionCard action={action} key={i} />)}
           </>

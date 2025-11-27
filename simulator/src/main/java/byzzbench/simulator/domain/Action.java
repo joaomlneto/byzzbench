@@ -23,6 +23,7 @@ import java.util.function.Consumer;
 @NoArgsConstructor
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "type", visible = true)
 @JsonSubTypes({
+        @JsonSubTypes.Type(value = DropMessageAction.class, name = "DropMessageAction"),
         @JsonSubTypes.Type(value = DeliverMessageAction.class, name = "DeliverMessageAction"),
         @JsonSubTypes.Type(value = FaultInjectionAction.class, name = "FaultInjectionAction"),
         @JsonSubTypes.Type(value = TriggerTimeoutAction.class, name = "TriggerTimeoutAction"),
