@@ -1,7 +1,7 @@
 "use client";
 
 import { materializeSchedule, Schedule } from "@/lib/byzzbench-client";
-import { ActionIcon, Burger, Menu, Title } from "@mantine/core";
+import { Burger, Menu, Title } from "@mantine/core";
 import { openContextModal } from "@mantine/modals";
 import { useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
@@ -18,9 +18,7 @@ export const ScheduleMenu = ({ title, schedule }: ScheduleMenuProps) => {
   return (
     <Menu>
       <Menu.Target>
-        <ActionIcon variant="subtle">
-          <Burger size={16} />
-        </ActionIcon>
+        <Burger size={16} component="span" />
       </Menu.Target>
       <Menu.Dropdown>
         <Menu.Item
