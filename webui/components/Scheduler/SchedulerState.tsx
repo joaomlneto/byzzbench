@@ -1,7 +1,9 @@
 "use client";
 
+import { NodeStateNavLink } from "@/components/NodeStateNavLink";
 import { useGetScheduler } from "@/lib/byzzbench-client";
-import { JsonInput, JsonInputProps } from "@mantine/core";
+import { JsonInputProps } from "@mantine/core";
+import React from "react";
 
 export type SchedulerStateProps = JsonInputProps & {
   schedulerId: string;
@@ -16,11 +18,10 @@ export const SchedulerState = ({
   const state = { ...data?.data, config: undefined };
 
   return (
-    <JsonInput
-      value={JSON.stringify(state, null, 2)}
-      readOnly
-      autosize
-      {...otherProps}
+    <NodeStateNavLink
+      label={`Exploration Strategy Metadata`}
+      data={state}
+      opened
     />
   );
 };

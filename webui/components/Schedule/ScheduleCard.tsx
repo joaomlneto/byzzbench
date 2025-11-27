@@ -19,12 +19,19 @@ import {
 
 export type ScheduleCardProps = {
   scheduleId: number;
+  /**
+   * When true, this card will not render if the schedule is correct (i.e., not buggy).
+   */
+  hideIfCorrect?: boolean;
 };
 
-export const ScheduleCard = ({ scheduleId }: ScheduleCardProps) => {
+export const ScheduleCard = ({ scheduleId, hideIfCorrect }: ScheduleCardProps) => {
   const { data } = useGetSchedule(scheduleId);
 
   const isBuggy = (data?.data.brokenInvariants ?? []).length > 0;
+
+  // Optionally hide correct schedules
+  if (hideIfCorrect && !isBuggy) return null;
 
   return (
     <Card withBorder>

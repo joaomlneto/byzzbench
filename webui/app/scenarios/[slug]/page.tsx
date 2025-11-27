@@ -1,9 +1,8 @@
-import { ScenarioAside } from "@/components/Scenario";
-import { SimulationAccordion } from "@/components/Simulation";
-import { Container, Stack, Title } from "@mantine/core";
+import { ScenarioDebugger } from "@/components/Scenario/ScenarioDebugger";
+import { Container, Title } from "@mantine/core";
 import React from "react";
 
-// This is a Server Component (no 'use client'), which can render Client Components below.
+// Server Component entry for the new scenario debugger page
 export default function Page({ params }: { params: { slug: string } }) {
   const scenarioIdStr = params?.slug ?? "";
   const scenarioIdNum = Number(scenarioIdStr);
@@ -17,12 +16,11 @@ export default function Page({ params }: { params: { slug: string } }) {
   }
 
   return (
-    <Container p="xl">
-      <Title order={1}>Scenario {scenarioIdNum}</Title>
-      <Stack gap="md">
-        <SimulationAccordion scenarioId={scenarioIdNum} />
-      </Stack>
-      <ScenarioAside scenarioId={scenarioIdNum} />
+    <Container fluid p="md">
+      <Title order={1} mb="md">
+        Scenario {scenarioIdNum}
+      </Title>
+      <ScenarioDebugger scenarioId={scenarioIdNum} />
     </Container>
   );
 }

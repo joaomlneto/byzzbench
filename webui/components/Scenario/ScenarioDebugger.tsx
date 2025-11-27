@@ -1,6 +1,18 @@
 "use client";
 
-import React from "react";
+import { ScenarioActionList, StrategyActionList } from "@/components/Action";
+import { DoSchedulerActionIcon } from "@/components/ActionIcon";
+import { DroppedMessagesList } from "@/components/Events";
+import { ScenarioFaultsList } from "@/components/FaultsList";
+import { NodeList } from "@/components/NodeList";
+import { PredicateList } from "@/components/PredicateList";
+import {
+  ScenarioCommitLogSummary,
+  ShowMailboxesSwitch,
+} from "@/components/Scenario";
+import { ScheduleDetails } from "@/components/Schedule";
+import { SchedulerScenarioMetadata } from "@/components/Scheduler";
+import { useGetScenario, useGetSchedule } from "@/lib/byzzbench-client";
 import {
   Anchor,
   Badge,
@@ -14,16 +26,7 @@ import {
   Title,
 } from "@mantine/core";
 import Link from "next/link";
-import { useGetScenario, useGetSchedule } from "@/lib/byzzbench-client";
-import { PredicateList } from "@/components/PredicateList";
-import { ShowMailboxesSwitch } from "@/components/Scenario";
-import { NodeList } from "@/components/NodeList";
-import { DroppedMessagesList } from "@/components/Events";
-import { ScenarioFaultsList } from "@/components/FaultsList";
-import { ScenarioActionList, StrategyActionList } from "@/components/Action";
-import { DoSchedulerActionIcon } from "@/components/ActionIcon";
-import { SchedulerScenarioMetadata } from "@/components/Scheduler";
-import { ScheduleDetails } from "@/components/Schedule";
+import React from "react";
 
 export type ScenarioDebuggerProps = {
   scenarioId: number;
@@ -54,14 +57,20 @@ export const ScenarioDebugger = ({ scenarioId }: ScenarioDebuggerProps) => {
               </Title>
               {scenario?.scheduleId && (
                 <Badge variant="light" color="blue">
-                  <Anchor component={Link} href={`/schedules/${scenario.scheduleId}`}>
+                  <Anchor
+                    component={Link}
+                    href={`/schedules/${scenario.scheduleId}`}
+                  >
                     Schedule {scenario.scheduleId}
                   </Anchor>
                 </Badge>
               )}
               {scenario?.campaignId && (
                 <Badge variant="light" color="grape">
-                  <Anchor component={Link} href={`/campaigns/${scenario.campaignId}`}>
+                  <Anchor
+                    component={Link}
+                    href={`/campaigns/${scenario.campaignId}`}
+                  >
                     Campaign {scenario.campaignId}
                   </Anchor>
                 </Badge>
@@ -72,6 +81,8 @@ export const ScenarioDebugger = ({ scenarioId }: ScenarioDebuggerProps) => {
               <PredicateList scenarioId={scenarioId} />
               <ShowMailboxesSwitch />
             </Group>
+
+            <ScenarioCommitLogSummary scenarioId={scenarioId} />
           </Stack>
         </Card.Section>
       </Card>

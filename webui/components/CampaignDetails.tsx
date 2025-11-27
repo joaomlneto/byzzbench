@@ -1,18 +1,12 @@
 "use client";
 
+import { NodeStateNavLink } from "@/components/NodeStateNavLink";
 import { ScheduleCard } from "@/components/Schedule";
 import { SchedulerState } from "@/components/Scheduler";
 import { useGetCampaign } from "@/lib/byzzbench-client";
 
-import {
-  JsonInput,
-  Loader,
-  Progress,
-  Stack,
-  Title,
-  Tooltip,
-} from "@mantine/core";
-import React from "react";
+import { Group, Loader, Progress, Stack, Switch, Tooltip } from "@mantine/core";
+import React, { useState } from "react";
 
 export type CampaignDetailsProps = {
   campaignId: number;
@@ -20,6 +14,7 @@ export type CampaignDetailsProps = {
 
 export const CampaignDetails = ({ campaignId }: CampaignDetailsProps) => {
   const { data, isLoading } = useGetCampaign(campaignId);
+  const [hideCorrect, setHideCorrect] = useState(true);
 
   if (isLoading) {
     return <Loader />;
@@ -85,30 +80,35 @@ export const CampaignDetails = ({ campaignId }: CampaignDetailsProps) => {
           </Progress.Section>
         </Tooltip>
       </Progress.Root>
-      <JsonInput
-        label="Campaign Details"
-        value={JSON.stringify(
-          {
-            ...data?.data,
-            campaignId: undefined,
-            scheduleIds: undefined,
-            createdAt: undefined,
-          },
-          null,
-          2,
-        )}
-        readOnly
-        autosize
+      <NodeStateNavLink
+        label={`Campaign Details`}
+        data={{
+          ...data?.data,
+          campaignId: undefined,
+          scheduleIds: undefined,
+          createdAt: undefined,
+        }}
+        opened
       />
-      {data?.data.scheduleIds.map((scheduleId) => (
-        <ScheduleCard key={scheduleId} scheduleId={scheduleId} />
-      ))}
-      <Title order={1}>Exploration Strategy</Title>
       {data?.data.explorationStrategyInstanceId && (
         <SchedulerState
           schedulerId={data?.data.explorationStrategyInstanceId}
         />
       )}
+      <Group justify="flex-end">
+        <Switch
+          checked={hideCorrect}
+          onChange={(e) => setHideCorrect(e.currentTarget.checked)}
+          label="Show only buggy schedules"
+        />
+      </Group>
+      {data?.data.scheduleIds.map((scheduleId) => (
+        <ScheduleCard
+          key={scheduleId}
+          scheduleId={scheduleId}
+          hideIfCorrect={hideCorrect}
+        />
+      ))}
     </Stack>
   );
 };
