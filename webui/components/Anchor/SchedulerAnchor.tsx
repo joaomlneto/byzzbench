@@ -12,10 +12,11 @@ export type SchedulerAnchorProps = PropsWithChildren<
 
 export const SchedulerAnchor = ({
   children,
-  ...props
+  schedulerId,
+  ...rest
 }: SchedulerAnchorProps) => {
   return (
-    <BaseAnchor href={`/schedulers/${props.schedulerId}`} {...props}>
+    <BaseAnchor href={`/schedulers/${schedulerId}`} {...rest}>
       {children}
     </BaseAnchor>
   );
