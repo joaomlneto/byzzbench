@@ -34,7 +34,10 @@ function hashColor(input: string) {
 }
 
 // Attempt to extract a value for a given absolute index from various possible shapes
-function extractValueAtIndex(log: CommitLog | undefined, index: number): unknown {
+function extractValueAtIndex(
+  log: CommitLog | undefined,
+  index: number,
+): unknown {
   if (!log) return undefined;
   const anyLog: any = log as any;
   const lowest = anyLog?.lowestSequenceNumber ?? 0;
@@ -101,17 +104,18 @@ function Square({
     <Tooltip label={title} withArrow>
       <div
         style={{
-          width: rem(12),
-          height: rem(12),
+          width: rem(20),
+          height: rem(20),
           background: empty ? "transparent" : color,
-          borderRadius: 2,
+          borderRadius: 4,
           border: empty
             ? "1px solid rgba(0,0,0,0.3)"
             : conflict
-            ? "2px solid rgba(230, 57, 70, 0.95)" // red border to highlight mismatch
-            : "1px solid rgba(0,0,0,0.1)",
+              ? "2px solid rgba(230, 57, 70, 0.95)" // red border to highlight mismatch
+              : "1px solid rgba(0,0,0,0.1)",
           boxSizing: "border-box",
-          boxShadow: conflict && !empty ? "0 0 0 1px rgba(230,57,70,0.4)" : undefined,
+          boxShadow:
+            conflict && !empty ? "0 0 0 1px rgba(230,57,70,0.4)" : undefined,
         }}
       />
     </Tooltip>
@@ -194,7 +198,7 @@ export const ScenarioCommitLogSummary = ({
   const faultyQuery = useGetScenarioFaultyReplicaIds(scenarioId);
   const commitsQuery = useGetScenarioCommits(scenarioId);
   const [page, setPage] = useState(1);
-  const pageSize = 25;
+  const pageSize = 40;
 
   const content = useMemo(() => {
     if (faultyQuery.isLoading || commitsQuery.isLoading) {
@@ -256,7 +260,8 @@ export const ScenarioCommitLogSummary = ({
         const length = log?.length ?? 0;
         const lowest = log?.lowestSequenceNumber ?? 0;
         const isEmpty = log?.empty || length === 0;
-        const highest = log?.highestSequenceNumber ?? (length ? lowest + length - 1 : -1);
+        const highest =
+          log?.highestSequenceNumber ?? (length ? lowest + length - 1 : -1);
         const present = !isEmpty && idx >= lowest && idx <= highest;
         if (!present) continue;
         const extracted = extractValueAtIndex(log, idx);

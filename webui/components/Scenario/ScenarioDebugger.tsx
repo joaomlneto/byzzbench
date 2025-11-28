@@ -47,7 +47,6 @@ export const ScenarioDebugger = ({ scenarioId }: ScenarioDebuggerProps) => {
 
   return (
     <Stack gap="md">
-      {/* Header */}
       <Card>
         <Card.Section p="md">
           <Stack gap="xs">

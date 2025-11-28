@@ -7,6 +7,7 @@ import {
   Card,
   Group,
   NumberFormatter,
+  Popover,
   Tooltip,
 } from "@mantine/core";
 import {
@@ -16,6 +17,7 @@ import {
   IconClock,
   IconMessage,
 } from "@tabler/icons-react";
+import React, { useMemo, useState } from "react";
 
 export type ScheduleCardProps = {
   scheduleId: number;
@@ -25,8 +27,38 @@ export type ScheduleCardProps = {
   hideIfCorrect?: boolean;
 };
 
-export const ScheduleCard = ({ scheduleId, hideIfCorrect }: ScheduleCardProps) => {
+export const ScheduleCard = ({
+  scheduleId,
+  hideIfCorrect,
+}: ScheduleCardProps) => {
   const { data } = useGetSchedule(scheduleId);
+  const [showFaults, setShowFaults] = useState(false);
+
+  const deliverMessageActions = useMemo(
+    () =>
+      (data?.data.actions ?? []).filter(
+        (action) => action.type === "DeliverMessageAction",
+      ),
+    [data?.data.actions],
+  );
+
+  const triggerTimeoutActions = useMemo(
+    () =>
+      (data?.data.actions ?? []).filter(
+        (action) => action.type === "TriggerTimeoutAction",
+      ),
+    [data?.data.actions],
+  );
+
+  const faultActions = useMemo(
+    () =>
+      (data?.data.actions ?? []).filter(
+        (action) =>
+          action.type !== "DeliverMessageAction" &&
+          action.type !== "TriggerTimeoutAction",
+      ),
+    [data?.data.actions],
+  );
 
   const isBuggy = (data?.data.brokenInvariants ?? []).length > 0;
 
@@ -45,13 +77,7 @@ export const ScheduleCard = ({ scheduleId, hideIfCorrect }: ScheduleCardProps) =
               <Badge>
                 <Group gap="xs">
                   <IconMessage size={12} />
-                  <NumberFormatter
-                    value={
-                      data?.data.actions.filter(
-                        (action) => action.type == "DeliverMessageAction",
-                      ).length
-                    }
-                  />
+                  <NumberFormatter value={deliverMessageActions.length} />
                 </Group>
               </Badge>
             </Tooltip>
@@ -59,32 +85,105 @@ export const ScheduleCard = ({ scheduleId, hideIfCorrect }: ScheduleCardProps) =
               <Badge color="blue">
                 <Group gap="xs">
                   <IconClock size={12} />
-                  <NumberFormatter
-                    value={
-                      data?.data.actions.filter(
-                        (action) => action.type == "TriggerTimeoutAction",
-                      ).length
-                    }
-                  />
+                  <NumberFormatter value={triggerTimeoutActions.length} />
                 </Group>
               </Badge>
             </Tooltip>
-            <Tooltip label="Faults injected">
-              <Badge color="yellow">
-                <Group gap="xs">
-                  <IconBolt size={12} />
-                  <NumberFormatter
-                    value={
-                      data?.data.actions.filter(
-                        (action) =>
-                          action.type !== "DeliverMessageAction" &&
-                          action.type !== "TriggerTimeoutAction",
-                      ).length
-                    }
-                  />
-                </Group>
-              </Badge>
-            </Tooltip>
+            <Popover withArrow shadow="md">
+              <Popover.Target>
+                <Tooltip
+                  label={
+                    showFaults ? (
+                      <div style={{ maxHeight: 240, overflowY: "auto" }}>
+                        {faultActions.map((action, idx) => {
+                          const base = `${idx + 1}. ${action.type}`;
+                          // Best-effort details for known fault types
+                          if (
+                            action.type === "FaultInjectionAction" &&
+                            (action as any).mutatorId
+                          ) {
+                            const m = (action as any).mutatorId as string;
+                            const mid = (action as any).messageId as
+                              | number
+                              | undefined;
+                            return (
+                              <div key={idx}>
+                                {base} – mutator: {m}
+                                {mid != null ? ` (message ${mid})` : ""}
+                              </div>
+                            );
+                          }
+                          if (
+                            action.type === "DropMessageAction" &&
+                            (action as any).messageId != null
+                          ) {
+                            return (
+                              <div key={idx}>
+                                {base} – message {(action as any).messageId}
+                              </div>
+                            );
+                          }
+                          return <div key={idx}>{base}</div>;
+                        })}
+                      </div>
+                    ) : (
+                      "Faults injected"
+                    )
+                  }
+                  withArrow
+                  withinPortal
+                >
+                  <Badge
+                    color="yellow"
+                    onMouseEnter={() => setShowFaults(true)}
+                    onMouseLeave={() => setShowFaults(false)}
+                  >
+                    <Group gap="xs">
+                      <IconBolt size={12} />
+                      <NumberFormatter
+                        value={
+                          data?.data.actions.filter(
+                            (action) =>
+                              action.type !== "DeliverMessageAction" &&
+                              action.type !== "TriggerTimeoutAction",
+                          ).length
+                        }
+                      />
+                    </Group>
+                  </Badge>
+                </Tooltip>
+              </Popover.Target>
+              <Popover.Dropdown>
+                {faultActions.map((action, idx) => {
+                  const base = `${idx + 1}. ${action.type}`;
+                  // Best-effort details for known fault types
+                  if (
+                    action.type === "FaultInjectionAction" &&
+                    (action as any).mutatorId
+                  ) {
+                    const m = (action as any).mutatorId as string;
+                    const mid = (action as any).messageId as number | undefined;
+                    return (
+                      <div key={idx}>
+                        {base} – mutator: {m}
+                        {mid != null ? ` (message ${mid})` : ""}
+                      </div>
+                    );
+                  }
+                  if (
+                    action.type === "DropMessageAction" &&
+                    (action as any).messageId != null
+                  ) {
+                    return (
+                      <div key={idx}>
+                        {base} – message {(action as any).messageId}
+                      </div>
+                    );
+                  }
+                  return <div key={idx}>{base}</div>;
+                })}
+              </Popover.Dropdown>
+            </Popover>
             {!isBuggy && (
               <div>
                 <Tooltip label="Correct schedule">
@@ -94,7 +193,20 @@ export const ScheduleCard = ({ scheduleId, hideIfCorrect }: ScheduleCardProps) =
             )}
             {isBuggy && (
               <div>
-                <Tooltip label="Buggy schedule">
+                <Tooltip
+                  label={
+                    <div style={{ maxHeight: 240, overflowY: "auto" }}>
+                      {(data?.data.brokenInvariants ?? []).map((inv, idx) => (
+                        <div key={inv.id ?? idx}>
+                          {idx + 1}. {inv.id ?? "Invariant"}
+                          {inv.explanation ? ` – ${inv.explanation}` : ""}
+                        </div>
+                      ))}
+                    </div>
+                  }
+                  withArrow
+                  withinPortal
+                >
                   <IconBug color="red" />
                 </Tooltip>
               </div>

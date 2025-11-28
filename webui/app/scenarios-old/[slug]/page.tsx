@@ -1,4 +1,3 @@
-import { ScenarioAside } from "@/components/Scenario";
 import { SimulationAccordion } from "@/components/Simulation";
 import { Container, Stack, Title } from "@mantine/core";
 import React from "react";
@@ -22,7 +21,6 @@ export default function Page({ params }: { params: { slug: string } }) {
       <Stack gap="md">
         <SimulationAccordion scenarioId={scenarioIdNum} />
       </Stack>
-      <ScenarioAside scenarioId={scenarioIdNum} />
     </Container>
   );
 }
