@@ -1,19 +1,55 @@
-FROM node:20.18.3-alpine AS nodejs-base
+# syntax=docker/dockerfile:1.6
+FROM node:24 AS nodejs-base
 
-# Generate the OpenAPI docs and build the Java application
-FROM gradle:8 AS java-builder
+# Generate the OpenAPI docs and build the Java application with better caching
+# Use a Gradle image that includes JDK 21 to align with runtime
+FROM gradle:8-jdk21 AS java-builder
 
 WORKDIR /app
-COPY . .
 
-RUN ./gradlew generateOpenApiDocs
-RUN ./gradlew build
+# 1) Copy only build configuration to cache dependency resolution
+COPY settings.gradle.kts ./
+COPY gradle.properties ./
+COPY gradlew ./
+COPY gradle/ ./gradle/
+COPY buildSrc/ ./buildSrc/
+COPY simulator/build.gradle.kts simulator/
+COPY utilities/build.gradle.kts utilities/
+
+# Ensure Gradle wrapper is executable (in case host permissions are not preserved)
+RUN chmod +x ./gradlew || true
+
+# 2) Warm up Gradle (cacheable layer)
+RUN --mount=type=cache,target=/home/gradle/.gradle/caches \
+    --mount=type=cache,target=/home/gradle/.gradle/wrapper \
+    ./gradlew --no-daemon --stacktrace help
+
+# 3) Now copy only sources (avoid copying the entire repo)
+COPY simulator/src ./simulator/src
+#COPY utilities/src ./utilities/src
+
+# 4) Build artifacts
+RUN --mount=type=cache,target=/home/gradle/.gradle/caches \
+    --mount=type=cache,target=/home/gradle/.gradle/wrapper \
+    ./gradlew --no-daemon generateOpenApiDocs
+
+RUN --mount=type=cache,target=/home/gradle/.gradle/caches \
+    --mount=type=cache,target=/home/gradle/.gradle/wrapper \
+    ./gradlew --no-daemon build
+
+# Export OpenAPI spec for the web UI build stage
 RUN cp ./simulator/build/openapi.json /openapi.json
+
+# Export Spring Boot fat JAR (copy to a stable path)
+# Try common patterns; fall back to the first JAR if needed
+RUN mkdir -p /simulator && \
+    JAR_PATH=$(find ./simulator/build/libs -type f -name "*.jar" ! -name "*-sources.jar" ! -name "*-javadoc.jar" | grep -E 'simulator-.*-all\.jar$|simulator-.*-fat\.jar$|simulator-.*\.jar$' | head -n 1) && \
+    cp "$JAR_PATH" /simulator-app.jar
 
 # Install dependencies only when needed
 FROM nodejs-base AS webui-deps
-# Check https://github.com/nodejs/docker-node/tree/b4117f9333da4138b03a546ec926ef50a31506c3#nodealpine to understand why libc6-compat might be needed.
-RUN apk add --no-cache libc6-compat
+## Check https://github.com/nodejs/docker-node/tree/b4117f9333da4138b03a546ec926ef50a31506c3#nodealpine to understand why libc6-compat might be needed.
+#RUN apk add --no-cache libc6-compat
 WORKDIR /app
 
 # Install dependencies based on the preferred package manager
