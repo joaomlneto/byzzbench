@@ -82,7 +82,7 @@ public class PbftJavaReplicaHandleMessageTest {
         ClientRequestMessage crm = Mockito.mock(ClientRequestMessage.class);
         when(crm.getOperation()).thenReturn("op");
         replica.handleMessage("client-1", crm);
-        verify(replica, times(1)).handleClientRequest(eq("client-1"), eq("op"));
+        verify(replica, times(1)).handleClientRequest(eq("client-1"), same(crm));
     }
 
     @Test
