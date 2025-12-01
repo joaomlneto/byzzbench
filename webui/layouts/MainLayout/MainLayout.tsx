@@ -26,7 +26,7 @@ export const MainLayout = ({ children }: PropsWithChildren) => {
           <ColorSchemeToggle />
           <Anchor component={Link} href="/">
             <ActionIcon>
-              <IconHome size="m" />
+              <IconHome />
             </ActionIcon>
           </Anchor>
           <ShowConfigActionIcon />
