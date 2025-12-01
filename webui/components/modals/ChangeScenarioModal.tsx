@@ -1,7 +1,7 @@
 "use client";
 
 import { useGetScenarios } from "@/lib/byzzbench-client";
-import { Button, JsonInput, Select, Stack } from "@mantine/core";
+import { Button, Select, Stack } from "@mantine/core";
 import { useForm } from "@mantine/form";
 import { type ContextModalProps } from "@mantine/modals";
 import { showNotification } from "@mantine/notifications";
@@ -75,19 +75,9 @@ export function ChangeScenarioModal({ innerProps }: ContextModalProps<{}>) {
     >
       <Stack gap="sm">
         <Select
-          data={scenarios.data?.data}
+          data={/*scenarios.data?.data*/ []}
           value={form.values.scenario}
           onChange={(value) => form.setFieldValue("scenario", value ?? "")}
-        />
-        <JsonInput
-          label="Params"
-          placeholder="Params"
-          minRows={10}
-          maxRows={30}
-          autosize
-          formatOnBlur
-          value={form.values.params}
-          onChange={(value) => form.setFieldValue("params", value)}
         />
         <Button type="submit">Change Scenario</Button>
       </Stack>

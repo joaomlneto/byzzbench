@@ -3,8 +3,13 @@ import { Container, Title } from "@mantine/core";
 import React from "react";
 
 // Server Component entry for the new scenario debugger page
-export default function Page({ params }: { params: { slug: string } }) {
-  const scenarioIdStr = params?.slug ?? "";
+export default async function Page({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}) {
+  const { slug } = await params;
+  const scenarioIdStr = slug ?? "";
   const scenarioIdNum = Number(scenarioIdStr);
 
   if (!scenarioIdStr) {

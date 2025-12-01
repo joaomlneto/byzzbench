@@ -18,6 +18,7 @@ export const ScenarioActionList = ({ scenarioId }: ScenarioActionListProps) => {
                 scenarioId={scenarioId}
                 action={action}
                 actionId={actionId}
+                explorationStrategyId={""}
               />
             </div>
           </li>

@@ -19,7 +19,7 @@ export const FaultInjectionActionListEntry = ({
 }: FaultInjectionActionListEntryProps) => {
   return (
     <div>
-      <IconBolt size={16} /> {action.faultBehaviorId} ({action.eventId})
+      <IconBolt size={16} /> {action.mutatorId} ({action.messageId})
       <PerformActionActionIcon
         scenarioId={scenarioId}
         actionId={actionId}

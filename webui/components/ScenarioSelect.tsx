@@ -11,7 +11,7 @@ export const ScenarioSelect = () => {
   const scenarios = useGetScenarios();
   return (
     <Select
-      data={scenarios.data?.data}
+      data={/*scenarios.data?.data*/ []}
       //value={currentScenarioId.data?.data}
       onChange={(value) => {
         // check if value is null

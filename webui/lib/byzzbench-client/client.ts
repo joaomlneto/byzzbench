@@ -10,6 +10,7 @@ import axios from "axios";
  * Subset of AxiosRequestConfig
  */
 export type RequestConfig<TData = unknown> = {
+  baseURL?: string;
   url?: string;
   method: "get" | "put" | "patch" | "post" | "delete";
   params?: unknown;
