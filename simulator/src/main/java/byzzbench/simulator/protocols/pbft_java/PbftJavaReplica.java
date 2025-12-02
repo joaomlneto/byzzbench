@@ -72,7 +72,6 @@ public class PbftJavaReplica<O extends Serializable, R extends Serializable> ext
 
     @Override
     public void initialize() {
-        System.out.println("Initializing replica " + this.getId());
         this.setView(1);
     }
 
@@ -588,7 +587,7 @@ public class PbftJavaReplica<O extends Serializable, R extends Serializable> ext
     public void sendCheckpoint(CheckpointMessage checkpoint) {
         // PBFT 4.3 - Multicast checkpoint
         // FIXME: not implemented
-        this.broadcastMessage(checkpoint);
+        //this.broadcastMessage(checkpoint);
     }
 
     /**
@@ -754,8 +753,6 @@ public class PbftJavaReplica<O extends Serializable, R extends Serializable> ext
     @Override
     public void handleMessage(String sender, MessagePayload m) {
         switch (m) {
-            // Accept any client request payload implementing the common interface,
-            // regardless of the concrete message class/source package.
             case ClientRequest clientRequest -> handleClientRequest(sender, clientRequest);
             case RequestMessage request -> recvRequest(request);
             case PrePrepareMessage prePrepare -> recvPrePrepare(prePrepare);

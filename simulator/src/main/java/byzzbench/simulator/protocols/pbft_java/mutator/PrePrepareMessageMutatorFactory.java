@@ -113,7 +113,8 @@ public class PrePrepareMessageMutatorFactory extends MessageMutatorFactory {
                         mutatedMessage.sign(message.getSignedBy());
                         messageEvent.setPayload(mutatedMessage);
                     }
-                },
+                }
+                /*,
                 new MessageMutationFault("pbft-preprepare-request-operation-modify", "Mutate request operation", List.of(PrePrepareMessage.class)) {
                     @Deprecated
                     public void accept(ScenarioContext serializable) {
@@ -131,7 +132,7 @@ public class PrePrepareMessageMutatorFactory extends MessageMutatorFactory {
                         mutatedMessage.sign(message.getSignedBy());
                         messageEvent.setPayload(mutatedMessage);
                     }
-                }
+                }*/
         );
     }
 }
