@@ -146,9 +146,15 @@ public class CampaignService {
             // save the schedule according to the selected policy
             if ((byzzBenchConfig.getSaveSchedules() == ByzzBenchConfig.SaveScheduleMode.ALL) ||
                     (byzzBenchConfig.getSaveSchedules() == ByzzBenchConfig.SaveScheduleMode.BUGGY
-                            && !brokenInvariants.isEmpty())) {
+                            && scenario.getSchedule().isBuggy())) {
                 scenarioService.storeSchedule(scenario.getSchedule().getScheduleId());
             }
+
+            // remove completed simulations from memory if configured to do so
+            if (byzzBenchConfig.isRemoveCompletedSimulations() && !scenario.getSchedule().isBuggy()) {
+                scenario.getSchedule().clearScenario();
+            }
+
         }
 
         @Override
@@ -161,7 +167,7 @@ public class CampaignService {
                 while (true) {
                     // if reached max actions, trigger GST
                     if (!currentScenario.getTransport().isGlobalStabilizationTime()
-                            && currentScenario.getSchedule().getActions().size() >= campaign.getTermination().getMinEvents()) {
+                            && currentScenario.getSchedule().getLength() >= campaign.getTermination().getMinEvents()) {
                         log.info("Reached max actions before GST, triggering GST. . .");
                         currentScenario.getTransport().globalStabilizationTime();
                         continue;
@@ -186,7 +192,7 @@ public class CampaignService {
                         break;
                     }
 
-                    long numEvents = currentScenario.getSchedule().getActions().size();
+                    long numEvents = currentScenario.getSchedule().getLength();
                     //long terminationSamplingFreq = this.getCampaign().getTermination().getSamplingFrequency();
                     boolean shouldCheckTermination = true;//(numEvents % terminationSamplingFreq) == 0;
 

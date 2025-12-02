@@ -399,7 +399,7 @@ public class Transport {
      */
     public synchronized long setTimeout(Node node, Runnable runnable,
                                         Duration timeout, String description) {
-        System.out.println("Setting timeout for " + node.getId() + " in " + timeout + "ms: " + description);
+        //System.out.println("Setting timeout for " + node.getId() + " in " + timeout + "ms: " + description);
         TimeoutEvent timeoutEvent = TimeoutEvent.builder()
                 .eventId(this.eventSeqNum.getAndIncrement())
                 .description(description)

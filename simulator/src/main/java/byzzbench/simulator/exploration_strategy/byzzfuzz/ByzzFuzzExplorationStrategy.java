@@ -132,8 +132,10 @@ public class ByzzFuzzExplorationStrategy extends RandomExplorationStrategy {
         // get next action from the random exploration strategy
         Optional<Action> action = super.scheduleNext(scenario);
 
+        //System.out.println("ByzzFuzz scheduleNext: action: " + action);
         // if we are not delivering a message, return the action
         if (action.isEmpty() || !(action.get() instanceof DeliverMessageAction deliverAction)) {
+            System.out.println("ByzzFuzz scheduleNext: returning action: " + action);
             return action;
         }
 
@@ -166,7 +168,7 @@ public class ByzzFuzzExplorationStrategy extends RandomExplorationStrategy {
         for (Event messageEvent : this.getQueuedMessageEvents(scenario)) {
             ScenarioContext context = new ScenarioContext(scenario, messageEvent);
             for (Fault fault : faults) {
-                System.out.println("can " + fault.getId() + " be applied to event " + messageEvent.getEventId() + ": " + fault.test(context));
+                //System.out.println("can " + fault.getId() + " be applied to event " + messageEvent.getEventId() + ": " + fault.test(context));
                 if (fault.test(context)) {
                     return List.of(fault.toAction(context));
                 }
