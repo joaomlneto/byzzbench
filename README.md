@@ -1,5 +1,7 @@
 # ByzzBench - a BFT Protocol Benchmarking Suite
 
+[Documentation Website](https://joaomlneto.github.io/byzzbench/)
+
 [![Build Docker Image](https://github.com/joaomlneto/byzzbench/actions/workflows/docker-build.yml/badge.svg)](https://github.com/joaomlneto/byzzbench/actions/workflows/docker-build.yml)
 
 > ByzzBench is a benchmark suite designed to evaluate the performance of testing algorithms in detecting bugs in
@@ -145,27 +147,3 @@ Then, to start the web server, run the following command:
 ```
 
 The UI should then be available at http://localhost:3000
-
-## Running Benchmarks
-
-We currently have the following protocols implemented:
-
-- ~~[PBFT](simulator/src/main/java/byzzbench/simulator/protocols/pbft/PbftReplica.java): The original PBFT protocol, as
-  described in
-  the [PBFT paper](https://www.microsoft.com/en-us/research/publication/practical-byzantine-fault-tolerance/);~~
-- [PBFT-Java](simulator/src/main/java/byzzbench/simulator/protocols/pbft_java/PbftReplica.java): A buggy implementation
-  of the PBFT protocol, ported from the [PBFT-Java repository](https://github.com/caojohnny/pbft-java);
-- [Fast-HotStuff](simulator/src/main/java/byzzbench/simulator/protocols/fasthotstuff/FastHotStuffReplica.java): An
-  unsuccessful attempt at improving the design of HotStuff, as described in
-  the [Fast-HotStuff paper](https://arxiv.org/abs/2010.11454);
-- [XRPL](simulator/src/main/java/byzzbench/simulator/protocols/xrpl/XRPLReplica.java): [XRP Ledger Consensus Protocol](https://xrpl.org/docs/concepts/consensus-protocol/consensus-research.html)
-  implementation;
-- *Your protocol here?* :-)
-
-## Documentation
-
-See additional documentation in the [docs](docs) directory.
-
-- [Implementing new BFT Protocols](docs/implementing-protocols.md)
-- [Reproducing Schedules](docs/reproducing-schedules.md)
-- [User Interface](docs/user-interface.md)
