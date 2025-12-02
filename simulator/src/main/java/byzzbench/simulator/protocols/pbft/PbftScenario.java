@@ -1,27 +1,31 @@
 package byzzbench.simulator.protocols.pbft;
 
-import byzzbench.simulator.BaseScenario;
-import byzzbench.simulator.Replica;
+import byzzbench.simulator.Scenario;
+import byzzbench.simulator.domain.ScenarioParameters;
+import byzzbench.simulator.domain.Schedule;
+import byzzbench.simulator.nodes.Client;
+import byzzbench.simulator.nodes.Replica;
 import byzzbench.simulator.protocols.pbft_java.MessageLog;
-import byzzbench.simulator.protocols.pbft_java.PbftTerminationPredicate;
-import byzzbench.simulator.scheduler.Scheduler;
-import com.fasterxml.jackson.databind.JsonNode;
 import lombok.extern.java.Log;
 
 import java.util.SortedSet;
 import java.util.TreeSet;
 
 @Log
-public class PbftScenario extends BaseScenario {
-    private static final int NUM_NODES = 4;
+public class PbftScenario extends Scenario {
+    private final int NUM_NODES = 4;
 
-    public PbftScenario(Scheduler scheduler) {
-        super("pbft", scheduler);
-        this.terminationCondition = new PbftTerminationPredicate();
+    /**
+     * Creates a new scenario from the given schedule.
+     *
+     * @param schedule The schedule for the scenario.
+     */
+    public PbftScenario(Schedule schedule) {
+        super(schedule);
     }
 
     @Override
-    public void loadScenarioParameters(JsonNode parameters) {
+    public void loadScenarioParameters(ScenarioParameters parameters) {
         // no parameters to load
     }
 
@@ -55,5 +59,15 @@ public class PbftScenario extends BaseScenario {
     @Override
     public int maxFaultyReplicas(int n) {
         return (n - 1) / 3;
+    }
+
+    @Override
+    public Class<? extends Replica> getReplicaClass() {
+        return PbftReplica.class;
+    }
+
+    @Override
+    public Class<? extends Client> getClientClass() {
+        return PbftClient.class;
     }
 }

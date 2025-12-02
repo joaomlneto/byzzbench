@@ -5,9 +5,31 @@ spring:
   jackson:
     mapper:
       sort-properties-alphabetically: true
-  devtools:
-    livereload:
-      enabled: false
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
+  datasource:
+    url: jdbc:h2:mem:byzzbench
+    username: sa
+    password:
+    driver-class-name: org.h2.Driver
+    #url: jdbc:postgresql://localhost:5432/byzzbench
+    #username: postgres
+    #password: byzzbench
+    #driver-class-name: org.postgresql.Driver
+  jpa:
+    generate-ddl: true
+    #show-sql: true # Uncomment to see SQL statements
+    defer-datasource-initialization: true
+    database-platform: org.hibernate.dialect.H2Dialect
+    #database-platform: org.hibernate.dialect.PostgreSQLDialect
+    hibernate:
+      ddl-auto: create
+  data:
+    rest:
+      base-path: "/jpa"
+
 springdoc:
   swagger-ui:
     path: /
@@ -16,38 +38,168 @@ springdoc:
 
 # ByzzBench configuration
 byzzbench:
-  autostart: true # Whether to start running scenarios automatically on startup
-  numScenarios: 1000
-  #outputPath: /tmp/byzzbench # The path to write the output to
-  outputSchedules: buggy # which schedules to write to file? one of 'all', 'buggy' or 'none'
+  autostart: true # Whether to start running a scenario campaign on startup.
+  removeCompletedSimulations: false # Whether to remove completed simulations.
+  saveSchedules: all # which schedules to save? 'all', 'buggy' or 'none'.
 
-  scheduler:
-    id: "byzzfuzz" # The ID of the scheduler to use
-    executionMode: sync # async (default, any message delivered) or sync (communication-closure hypothesis, FIFO)
-    maxDropMessages: 0 # Maximum number of messages to drop per scenario
-    maxMutateMessages: 0 # Maximum number of messages to mutate per scenario
-    deliverTimeoutWeight: 1 # The weight for scheduler to trigger a timeout
-    deliverMessageWeight: 99 # The weight for scheduler to deliver a message
-    deliverClientRequestWeight: 99 # The weight for scheduler to deliver a client request to a replica
-    dropMessageWeight: 0 # The weight for scheduler to drop a message
-    mutateMessageWeight: 0 # The weight for scheduler to mutate a message
-    params: # additional parameters for the scheduler
-      # ByzzFuzz
-      numRoundsWithProcessFaults: 2
-      numRoundsWithNetworkFaults: 1
-      numRoundsWithFaults: 10
-      # Twins
-      numReplicas: 1
-      numTwinsPerReplica: 2
-      numRounds: 5
+  #explorationStrategies:
+  #byzzfuzz:
+  #  explorationStrategyId: byzzbench.simulator.exploration_strategy.byzzfuzz.ByzzFuzzExplorationStrategy
+  #fifo:
+  #  explorationStrategyId: byzzbench.simulator.exploration_strategy.fifo.FifoExplorationStrategy
+  #random:
+  #  explorationStrategyId: byzzbench.simulator.exploration_strategy.random.RandomExplorationStrategy
+  #twins:
+  #  explorationStrategyId: byzzbench.simulator.exploration_strategy.twins.TwinsExplorationStrategy
 
-  scenario:
-    id: pbft-java
-    params:
-      replicas: 4
-    scheduledFaults:
-      factories: [ ]
-    termination: # Success condition for the scenario - terminates it when all conditions are met
-      minEvents: 500 # check if N events have been scheduled. If so, can terminate
-      minRounds: 5 # check if N rounds have elapsed. If so, can terminate
-      samplingFrequency: 1 # check if should terminate every N scheduler decisions
+  campaigns:
+    - autoStart: false
+      name: hBFT - ByzzFuzz
+      initialRandomSeed: 0
+      numScenarios: 5
+      scenarioParameters:
+        scenarioId: byzzbench.simulator.protocols.hbft.HbftJavaScenario
+        numReplicas: 4
+        numClients: 1
+      explorationStrategyParameters:
+        explorationStrategyId: byzzbench.simulator.exploration_strategy.byzzfuzz.ByzzFuzzExplorationStrategy # The ID of the exploration strategy to use
+        executionMode: sync # async (default, any message delivered) or sync (communication-closure hypothesis, FIFO)
+        maxDropMessages: 0 # Maximum number of messages to drop per scenario
+        maxMutateMessages: 0 # Maximum number of messages to mutate per scenario
+        deliverTimeoutWeight: 1 # The weight for exploration_strategy to trigger a timeout
+        deliverMessageWeight: 99 # The weight for exploration_strategy to deliver a message
+        dropMessageWeight: 0 # The weight for exploration_strategy to drop a message
+        mutateMessageWeight: 0 # The weight for exploration_strategy to mutate a message
+        randomSeed: 0
+        params: # additional parameters for the exploration_strategy
+          # ByzzFuzz
+          numRoundsWithProcessFaults: 1
+          numRoundsWithNetworkFaults: 2
+          numRoundsWithFaults: 8
+          # Twins
+          numReplicas: 1
+          numTwinsPerReplica: 2
+          numRounds: 5
+      termination:
+        minEvents: 0
+        gstGracePeriod: 1000
+    - autoStart: false
+      name: hBFT - Baseline
+      initialRandomSeed: 456
+      numScenarios: 1
+      scenarioParameters:
+        scenarioId: byzzbench.simulator.protocols.hbft.HbftJavaScenario
+        numReplicas: 4
+        numClients: 1
+      explorationStrategyParameters:
+        explorationStrategyId: byzzbench.simulator.exploration_strategy.byzzfuzz.ByzzFuzzExplorationStrategy
+        executionMode: sync
+        maxDropMessages: 0
+        maxMutateMessages: 0
+        deliverTimeoutWeight: 1
+        deliverMessageWeight: 1
+        dropMessageWeight: 0
+        mutateMessageWeight: 0
+        randomSeed: 456456
+        params:
+          # ByzzFuzz
+          numRoundsWithProcessFaults: 0
+          numRoundsWithNetworkFaults: 3
+          numRoundsWithFaults: 3
+          # Twins
+          numReplicas: 1
+          numTwinsPerReplica: 2
+          numRounds: 5
+      termination:
+        minEvents: 10
+        gstGracePeriod: 100
+    - autoStart: false
+      name: FMBC PBFT - Baseline
+      initialRandomSeed: 0
+      numScenarios: 10
+      scenarioParameters:
+        scenarioId: byzzbench.simulator.protocols.pbft_java.PbftJavaScenario
+        numReplicas: 4
+        numClients: 1
+      explorationStrategyParameters:
+        explorationStrategyId: byzzbench.simulator.exploration_strategy.random.RandomExplorationStrategy
+        executionMode: sync
+        maxDropMessages: 0
+        maxMutateMessages: 0
+        deliverTimeoutWeight: 1
+        deliverMessageWeight: 1
+        dropMessageWeight: 0
+        mutateMessageWeight: 0
+        randomSeed: 0
+        params:
+          # ByzzFuzz
+          numRoundsWithProcessFaults: 0
+          numRoundsWithNetworkFaults: 3
+          numRoundsWithFaults: 3
+          # Twins
+          numReplicas: 1
+          numTwinsPerReplica: 2
+          numRounds: 5
+      termination:
+        minEvents: 0
+        gstGracePeriod: 1000
+    - autoStart: true
+      name: FMBC PBFT - ByzzFuzz
+      initialRandomSeed: 0
+      numScenarios: 10
+      scenarioParameters:
+        scenarioId: byzzbench.simulator.protocols.pbft_java.PbftJavaScenario
+        numReplicas: 4
+        numClients: 1
+      explorationStrategyParameters:
+        explorationStrategyId: byzzbench.simulator.exploration_strategy.byzzfuzz.ByzzFuzzExplorationStrategy
+        executionMode: sync
+        maxDropMessages: 0
+        maxMutateMessages: 0
+        deliverTimeoutWeight: 1
+        deliverMessageWeight: 1
+        dropMessageWeight: 0
+        mutateMessageWeight: 0
+        randomSeed: 0
+        params:
+          # ByzzFuzz
+          numRoundsWithProcessFaults: 0
+          numRoundsWithNetworkFaults: 2
+          numRoundsWithFaults: 10
+          # Twins
+          numReplicas: 1
+          numTwinsPerReplica: 2
+          numRounds: 5
+      termination:
+        minEvents: 500
+        gstGracePeriod: 0
+    - autoStart: false
+      name: Faulty Safety test
+      initialRandomSeed: 0
+      numScenarios: 1
+      scenarioParameters:
+        scenarioId: byzzbench.simulator.protocols.faulty_deadlock.FaultyDeadlockScenario
+        numReplicas: 4
+        numClients: 2
+      explorationStrategyParameters:
+        explorationStrategyId: byzzbench.simulator.exploration_strategy.random.RandomExplorationStrategy
+        executionMode: sync
+        maxDropMessages: 0
+        maxMutateMessages: 0
+        deliverTimeoutWeight: 1
+        deliverMessageWeight: 1
+        dropMessageWeight: 0
+        mutateMessageWeight: 0
+        randomSeed: 0
+        params:
+          # ByzzFuzz
+          numRoundsWithProcessFaults: 1
+          numRoundsWithNetworkFaults: 3
+          numRoundsWithFaults: 10
+          # Twins
+          numReplicas: 1
+          numTwinsPerReplica: 2
+          numRounds: 5
+      termination:
+        minEvents: 0
+        gstGracePeriod: 500

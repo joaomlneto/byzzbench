@@ -1,5 +1,8 @@
 package byzzbench.simulator.protocols.hbft.message;
 
+import byzzbench.simulator.exploration_strategy.byzzfuzz.MessageWithByzzFuzzRoundInfo;
+import byzzbench.simulator.protocols.hbft.SpeculativeHistory;
+import byzzbench.simulator.protocols.hbft.utils.Checkpoint;
 import byzzbench.simulator.transport.MessagePayload;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -7,14 +10,10 @@ import lombok.With;
 
 import java.util.SortedMap;
 
-import byzzbench.simulator.protocols.hbft.SpeculativeHistory;
-import byzzbench.simulator.protocols.hbft.utils.Checkpoint;
-import byzzbench.simulator.transport.messages.MessageWithRound;
-
 @Data
 @EqualsAndHashCode(callSuper = true)
 @With
-public class ViewChangeMessage extends MessagePayload implements MessageWithRound {
+public class ViewChangeMessage extends MessagePayload implements MessageWithByzzFuzzRoundInfo {
     private final long newViewNumber;
     private final SpeculativeHistory speculativeHistoryP;
     private final Checkpoint speculativeHistoryQ;
@@ -26,11 +25,12 @@ public class ViewChangeMessage extends MessagePayload implements MessageWithRoun
         return "VIEW-CHANGE";
     }
 
-    /**
-     * Get the request of the message.
-     *
-     * @return The request of the message.
-     */
+    @Override
+    public long getViewNumber() {
+        return this.newViewNumber;
+    }
+
+    @Override
     public long getRound() {
         return getNewViewNumber();
     }

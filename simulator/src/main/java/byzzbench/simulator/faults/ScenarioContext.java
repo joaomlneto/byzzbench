@@ -29,11 +29,11 @@ public class ScenarioContext {
      * Creates a new fault context.
      *
      * @param scenario The scenario that is being processed.
-     * @param event    The event that is being processed.
+     * @param Event    The event that is being processed.
      */
-    public ScenarioContext(@NonNull Scenario scenario, Event event) {
+    public ScenarioContext(@NonNull Scenario scenario, Event Event) {
         this.scenario = scenario;
-        this.eventOptional = event;
+        this.eventOptional = Event;
     }
 
     /**

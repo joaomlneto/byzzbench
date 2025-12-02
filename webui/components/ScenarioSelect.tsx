@@ -1,42 +1,39 @@
 "use client";
 
-import {
-  changeScenario,
-  useGetCurrentScenarioId,
-  useGetScenarios,
-} from "@/lib/byzzbench-client";
+import { useGetScenarios } from "@/lib/byzzbench-client";
 import { Select } from "@mantine/core";
+import { showNotification } from "@mantine/notifications";
 import { useQueryClient } from "@tanstack/react-query";
 import React from "react";
 
 export const ScenarioSelect = () => {
   const queryClient = useQueryClient();
   const scenarios = useGetScenarios();
-  const currentScenarioId = useGetCurrentScenarioId();
   return (
     <Select
-      data={scenarios.data?.data}
-      value={currentScenarioId.data?.data}
+      data={/*scenarios.data?.data*/ []}
+      //value={currentScenarioId.data?.data}
       onChange={(value) => {
         // check if value is null
         if (value === null) {
           console.log("Scenario is null");
           return;
         }
+        console.log("Selected scenario", value);
+        showNotification({
+          message: "No longer available",
+        });
+        /*
         void changeScenario(
           { scenarioId: value },
-          {
-            one: 1,
-            two: 2,
-          },
         )
-          .then(async () => {
-            queryClient.invalidateQueries();
-            console.log("Scenario changed to ", value);
-          })
-          .catch((error) => {
-            console.log("Failed to change scenario", error);
-          });
+        .then(async () => {
+          queryClient.invalidateQueries();
+          console.log("Scenario changed to ", value);
+        })
+        .catch((error) => {
+          console.log("Failed to change scenario", error);
+        });*/
       }}
     />
   );

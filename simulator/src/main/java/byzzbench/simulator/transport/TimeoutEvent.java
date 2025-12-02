@@ -20,7 +20,7 @@ import java.time.Instant;
 @JsonTypeName("Timeout")
 @SuperBuilder
 @ToString(callSuper = true)
-public class TimeoutEvent extends BaseEvent implements MailboxEvent {
+public class TimeoutEvent extends Event implements MailboxEvent {
 
     /**
      * A human description of the event.
@@ -68,5 +68,10 @@ public class TimeoutEvent extends BaseEvent implements MailboxEvent {
     @Override
     public String getRecipientId() {
         return nodeId;
+    }
+
+    @Override
+    public String getType() {
+        return "Timeout";
     }
 }

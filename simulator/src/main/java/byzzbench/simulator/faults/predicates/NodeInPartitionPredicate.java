@@ -12,7 +12,7 @@ public class NodeInPartitionPredicate implements FaultPredicate {
 
     @Override
     public String getId() {
-        return "NodeInPartitionPredicate-%d".formatted(this.nodeId);
+        return "NodeInPartitionPredicate-%s-%d".formatted(this.nodeId, this.partitionId);
     }
 
     @Override

@@ -1,12 +1,19 @@
 "use client";
 
-import { EventCard } from "@/components/Events/EventCard";
+import { ActionCard } from "@/components/Events/EventCard";
 import { Schedule } from "@/lib/byzzbench-client";
-import { Badge, Card, Group, Pagination, Title, Tooltip } from "@mantine/core";
+import {
+  Badge,
+  Card,
+  Group,
+  JsonInput,
+  Pagination,
+  Switch,
+  Title,
+  Tooltip,
+} from "@mantine/core";
 import { usePagination } from "@mantine/hooks";
-import { useQueryClient } from "@tanstack/react-query";
-import { useRouter } from "next/navigation";
-import React from "react";
+import React, { useMemo, useState } from "react";
 import { ScheduleMenu } from "./ScheduleMenu";
 
 export type ScheduleDetailsProps = {
@@ -15,6 +22,7 @@ export type ScheduleDetailsProps = {
   hideTitle?: boolean;
   hideScenario?: boolean;
   hideSchedule?: boolean;
+  hideParameters?: boolean;
   hideMaterializeButton?: boolean;
   hideSaveButton?: boolean;
   hideDownloadButton?: boolean;
@@ -29,12 +37,22 @@ export const ScheduleDetails = ({
   hideTitle = false,
   hideScenario = false,
   hideSchedule = false,
+  hideParameters = false,
   entriesPerPage = ENTRIES_PER_PAGE,
   schedule,
 }: ScheduleDetailsProps) => {
-  const queryClient = useQueryClient();
-  const router = useRouter();
-  const numPages = Math.ceil((schedule.events?.length ?? 0) / entriesPerPage);
+  const [hideDelivered, setHideDelivered] = useState(false);
+
+  const actions = useMemo(() => {
+    if (hideDelivered) {
+      return schedule.actions?.filter(
+        (action) => action.type !== "DeliverMessageAction",
+      );
+    }
+    return schedule.actions;
+  }, [hideDelivered, schedule.actions]);
+
+  const numPages = Math.ceil((actions?.length ?? 0) / entriesPerPage);
   const pagination = usePagination({ total: numPages, initialPage: 1 });
   const start = (pagination.active - 1) * entriesPerPage;
   const end = start + entriesPerPage;
@@ -46,13 +64,18 @@ export const ScheduleDetails = ({
           <ScheduleMenu title={title} schedule={schedule} />
           {!hideTitle && (
             <Title order={4}>
-              {schedule.scenarioId} - {title}
+              {schedule.scheduleId} - {title}
             </Title>
           )}
+          <Switch
+            checked={hideDelivered}
+            onChange={(e) => setHideDelivered(e.currentTarget.checked)}
+            label={"hide messages"}
+          />
           {!hideScenario && (
             <>
               <Tooltip label="Length of the schedule">
-                <Badge variant="white">{schedule.events.length}</Badge>
+                <Badge variant="white">{actions?.length}</Badge>
               </Tooltip>
               {schedule.brokenInvariants?.map((invariant) => (
                 <Tooltip
@@ -67,6 +90,13 @@ export const ScheduleDetails = ({
             </>
           )}
         </Group>
+        {!hideParameters && (
+          <JsonInput
+            label="Scenario Parameters"
+            value={JSON.stringify(schedule.parameters, null, 2)}
+            autosize
+          />
+        )}
         {!hideSchedule && (
           <>
             <Pagination
@@ -75,9 +105,9 @@ export const ScheduleDetails = ({
               siblings={3}
               boundaries={2}
             />
-            {schedule.events
+            {actions
               ?.slice(start, end)
-              .map((event) => <EventCard event={event} key={event.eventId} />)}
+              .map((action, i) => <ActionCard action={action} key={i} />)}
           </>
         )}
       </Card.Section>

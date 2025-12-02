@@ -17,9 +17,14 @@ import lombok.experimental.SuperBuilder;
 @JsonTypeName("GenericFault")
 @SuperBuilder
 @ToString(callSuper = true)
-public class GenericFaultEvent extends BaseEvent {
+public class GenericFaultEvent extends Event {
     /**
      * The payload of the request.
      */
     private final Fault payload;
+
+    @Override
+    public String getType() {
+        return "GenericFault";
+    }
 }

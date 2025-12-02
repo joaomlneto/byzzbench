@@ -1,5 +1,6 @@
 package byzzbench.simulator.faults.faults;
 
+import byzzbench.simulator.domain.Action;
 import byzzbench.simulator.faults.Fault;
 import byzzbench.simulator.faults.ScenarioContext;
 import byzzbench.simulator.transport.Router;
@@ -14,7 +15,7 @@ import lombok.ToString;
 @Getter
 @ToString
 @RequiredArgsConstructor
-public class HealNodeNetworkFault implements Fault {
+public class HealNodeNetworkFault extends Fault {
     @NonNull
     private final String nodeId;
 
@@ -43,9 +44,14 @@ public class HealNodeNetworkFault implements Fault {
      *
      * @param state the input argument
      */
-    @Override
+    @Deprecated
     public void accept(ScenarioContext state) {
         Router router = state.getScenario().getTransport().getRouter();
         router.healNode(nodeId);
+    }
+
+    @Override
+    public Action toAction(ScenarioContext context) {
+        throw new UnsupportedOperationException("Not supported yet.");
     }
 }

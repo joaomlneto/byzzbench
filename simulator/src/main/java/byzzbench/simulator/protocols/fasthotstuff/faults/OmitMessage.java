@@ -1,5 +1,6 @@
 package byzzbench.simulator.protocols.fasthotstuff.faults;
 
+import byzzbench.simulator.domain.FaultInjectionAction;
 import byzzbench.simulator.faults.Fault;
 import byzzbench.simulator.faults.ScenarioContext;
 import byzzbench.simulator.protocols.fasthotstuff.message.Block;
@@ -8,7 +9,7 @@ import byzzbench.simulator.transport.MessageEvent;
 
 import java.util.Optional;
 
-public class OmitMessage implements Fault {
+public class OmitMessage extends Fault {
     private final int round;
     private final String sender;
     private final Class<?> messageType;
@@ -24,7 +25,7 @@ public class OmitMessage implements Fault {
         return false;
     }
 
-    @Override
+    @Deprecated
     public void accept(ScenarioContext ctx) {
         Optional<Event> e = ctx.getEvent();
 
@@ -57,5 +58,10 @@ public class OmitMessage implements Fault {
     @Override
     public String getName() {
         return "Omit Message";
+    }
+
+    @Override
+    public FaultInjectionAction toAction(ScenarioContext context) {
+        throw new UnsupportedOperationException("not yet implemented");
     }
 }

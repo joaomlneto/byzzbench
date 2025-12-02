@@ -29,4 +29,9 @@ public class ProposalMessage extends GenericMessage {
     public long getRound() {
         return totalSeq + sequence + 1;
     }
+
+    @Override
+    public long getViewNumber() {
+        throw new UnsupportedOperationException("To do");
+    }
 }

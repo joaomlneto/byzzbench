@@ -1,8 +1,21 @@
 package byzzbench.simulator.transport;
 
 import byzzbench.simulator.faults.Fault;
+import byzzbench.simulator.nodes.Node;
+
+import java.util.SortedSet;
 
 public interface TransportObserver {
+    /**
+     * Called when a node unicasts a message to another node.
+     * onEventAdded is still invoked for each event created (one for each recipient).
+     *
+     * @param sender     The node sending the message.
+     * @param recipients The nodes receiving the message.
+     * @param payload    The payload of the message.
+     */
+    void onMulticast(Node sender, SortedSet<String> recipients, MessagePayload payload);
+
     /**
      * Called when an event is added to the transport layer.
      *
@@ -51,4 +64,10 @@ public interface TransportObserver {
      * @param event The timeout event that was created.
      */
     void onTimeout(TimeoutEvent event);
+
+    /**
+     * Called when Global Stabilization Time is reached.
+     */
+    void onGlobalStabilizationTime();
+
 }

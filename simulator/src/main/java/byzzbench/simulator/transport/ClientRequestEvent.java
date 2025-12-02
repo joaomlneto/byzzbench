@@ -17,4 +17,8 @@ import lombok.experimental.SuperBuilder;
 @SuperBuilder
 @ToString(callSuper = true)
 public class ClientRequestEvent extends BaseMessageEvent<MessagePayload> {
+    @Override
+    public String getType() {
+        return "ClientRequest";
+    }
 }

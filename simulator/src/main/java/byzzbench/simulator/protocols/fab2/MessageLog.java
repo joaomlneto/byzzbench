@@ -17,7 +17,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class MessageLog {
     @JsonIgnore
     private FastByzantineReplica replica = null;
-//    private NewFastByzantineReplica newFastByzantineReplica = null;
+    //    private NewFastByzantineReplica newFastByzantineReplica = null;
     private SortedMap<String, Pair> acceptorsWithAcceptedProposal = new TreeMap<>();
     @Getter
     private SortedMap<String, Pair> proposersWithLearnedValue = new TreeMap<>();
@@ -87,7 +87,8 @@ public class MessageLog {
     }
 
     public void resolveClientRequest(String clientId, Serializable request) {
-        DefaultClientRequestPayload clientRequest = new DefaultClientRequestPayload(request);
+        // FIXME: Request IDs are not implemented
+        DefaultClientRequestPayload clientRequest = new DefaultClientRequestPayload(-1, request);
         if (clientRequestMessages.containsKey(clientId)) clientRequestMessages.get(clientId).remove(clientRequest);
         reset();
         learnedValue = null;
@@ -223,7 +224,8 @@ public class MessageLog {
         learnersWithLearnedValue.put(senderId, learnValue);
 
         // Delete the message from the learnMessages map
-        if (learnMessages.containsKey(learnValue.getProposalNumber())) learnMessages.get(learnValue.getProposalNumber()).remove(learnMessage);
+        if (learnMessages.containsKey(learnValue.getProposalNumber()))
+            learnMessages.get(learnValue.getProposalNumber()).remove(learnMessage);
     }
 
     public boolean learnerHasLearnedValue(Pair learnValue, int quorum) {
@@ -279,7 +281,8 @@ public class MessageLog {
         Pair satisfiedValue = satisfiedMessage.getValueAndProposalNumber();
         satisfiedProposerNodes.computeIfAbsent(senderId, k -> satisfiedValue);
         // Remove the message from the satisfiedMessages map
-        if (satisfiedMessages.containsKey(satisfiedValue.getProposalNumber())) satisfiedMessages.get(satisfiedValue.getProposalNumber()).remove(satisfiedMessage);
+        if (satisfiedMessages.containsKey(satisfiedValue.getProposalNumber()))
+            satisfiedMessages.get(satisfiedValue.getProposalNumber()).remove(satisfiedMessage);
     }
 
     public Pair onPull(String senderId, PullMessage pullMessage) {

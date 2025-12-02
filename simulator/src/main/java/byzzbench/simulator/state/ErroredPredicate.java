@@ -8,7 +8,11 @@ import byzzbench.simulator.ScenarioPredicate;
  * It is only instantiated "manually" by the simulator catching an exception.
  * Its test method should never be called, and it will always throw an exception.
  */
-public class ErroredPredicate implements ScenarioPredicate {
+public class ErroredPredicate extends ScenarioPredicate {
+    public ErroredPredicate(Scenario scenario) {
+        super(scenario);
+    }
+
     @Override
     public String getId() {
         return "Error";

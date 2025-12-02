@@ -10,9 +10,17 @@ import { Collapse, Container, Group, Text, Title } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
 import React, { useMemo } from "react";
 
-export const MessageListEntry = ({ messageId }: { messageId: number }) => {
+export type MessageListEntryProps = {
+  scenarioId: number;
+  messageId: number;
+};
+
+export const MessageListEntry = ({
+  scenarioId,
+  messageId,
+}: MessageListEntryProps) => {
   const [opened, { toggle }] = useDisclosure(false);
-  const { data: message } = useGetMessage(messageId);
+  const { data: message } = useGetMessage(scenarioId, messageId);
 
   //const payload = useMemo(() => message?.data.payload, [message?.data.payload]);
   const payload = useMemo(() => message?.data, [message?.data]);
@@ -58,8 +66,14 @@ export const MessageListEntry = ({ messageId }: { messageId: number }) => {
         </Group>
         {payload?.status == "QUEUED" && (
           <Group gap="xs" wrap="nowrap">
-            <DeliverMessageActionIcon messageId={messageId} />
-            <DropMessageActionIcon messageId={messageId} />
+            <DeliverMessageActionIcon
+              scenarioId={scenarioId}
+              messageId={messageId}
+            />
+            <DropMessageActionIcon
+              scenarioId={scenarioId}
+              messageId={messageId}
+            />
           </Group>
         )}
       </Group>

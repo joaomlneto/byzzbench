@@ -1,32 +1,32 @@
 package byzzbench.simulator.protocols.tendermint;
 
+import byzzbench.simulator.domain.ScenarioParameters;
+import byzzbench.simulator.domain.Schedule;
+import byzzbench.simulator.exploration_strategy.ExplorationStrategy;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
+import org.springframework.boot.test.context.SpringBootTest;
+
 import java.util.SortedSet;
 import java.util.TreeSet;
 
-import byzzbench.simulator.protocols.tendermint.message.Block;
-import byzzbench.simulator.protocols.tendermint.message.ProposalMessage;
-import byzzbench.simulator.protocols.tendermint.message.RequestMessage;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import org.springframework.boot.test.context.SpringBootTest;
-
-import byzzbench.simulator.scheduler.Scheduler;
-
 @SpringBootTest
+@DisplayName("Tendermint: replica basics")
 public class TendermintReplicaTest {
 
+    private final int tolerance = 1;
+    ExplorationStrategy explorationStrategy = Mockito.mock(ExplorationStrategy.class);
     private TendermintReplica replicaA;
     private TendermintReplica replicaB;
     private TendermintReplica replicaC;
     private TendermintReplica replicaD;
-    private int tolerance = 1;
-    Scheduler scheduler = Mockito.mock(Scheduler.class);
 
     @Test
-    void test() {}
+    @DisplayName("Context and replica initialization runs without errors")
+    void test() {
+    }
 
     @BeforeEach
     void setup() {
@@ -40,7 +40,9 @@ public class TendermintReplicaTest {
         nodeIds.add("C");
         nodeIds.add("D");
 
-        TendermintScenarioExecutor tendermintScenarioExecutor = new TendermintScenarioExecutor(scheduler);
+        ScenarioParameters params = ScenarioParameters.builder().randomSeed(1L).build();
+        Schedule schedule = new Schedule(params);
+        TendermintScenarioExecutor tendermintScenarioExecutor = new TendermintScenarioExecutor(schedule);
         replicaA = new TendermintReplica(replicaAId, nodeIds, tendermintScenarioExecutor);
         replicaB = new TendermintReplica(replicaBId, nodeIds, tendermintScenarioExecutor);
         replicaC = new TendermintReplica(replicaCId, nodeIds, tendermintScenarioExecutor);
@@ -53,6 +55,7 @@ public class TendermintReplicaTest {
     }
 
     @Test
+    @DisplayName("Handle proposal (placeholder)")
     void testHandleProposal() {
 //        TendermintReplica spyReplica = Mockito.spy(replicaA);
 //        RequestMessage request = new RequestMessage("123", 0, "C0");

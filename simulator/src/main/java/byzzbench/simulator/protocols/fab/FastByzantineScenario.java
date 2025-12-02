@@ -1,25 +1,29 @@
 package byzzbench.simulator.protocols.fab;
 
-import byzzbench.simulator.BaseScenario;
-import byzzbench.simulator.Replica;
-import byzzbench.simulator.scheduler.Scheduler;
-import com.fasterxml.jackson.databind.JsonNode;
+import byzzbench.simulator.Scenario;
+import byzzbench.simulator.domain.ScenarioParameters;
+import byzzbench.simulator.domain.Schedule;
+import byzzbench.simulator.exploration_strategy.byzzfuzz.ByzzFuzzRoundInfoOracle;
+import byzzbench.simulator.exploration_strategy.byzzfuzz.ByzzFuzzScenario;
+import byzzbench.simulator.nodes.Client;
+import byzzbench.simulator.nodes.Replica;
+import byzzbench.simulator.transport.Transport;
 import lombok.extern.java.Log;
 
 import java.util.List;
 import java.util.SortedSet;
 import java.util.TreeSet;
 
+/**
+ * Single-shot implementation of the <a href="https://ieeexplore.ieee.org/document/1467815">Fast Byzantine Paxos (FaB Paxos)</a> protocol.
+ */
 @Log
-public class FastByzantineScenario extends BaseScenario {
-//    public FastByzantineScenario(Scheduler scheduler) {
-//        super("fab-java", scheduler);
-//        this.terminationCondition = new FastByzantineTerminationCondition();
-//    }
+public class FastByzantineScenario extends Scenario implements ByzzFuzzScenario {
+    private final FastByzantineByzzFuzzRoundInfoOracle roundInfoOracle;
 
-    public FastByzantineScenario(Scheduler scheduler) {
-        super("fab-java", scheduler);
-        this.terminationCondition = new FastByzantineTerminationCondition();
+    public FastByzantineScenario(Schedule schedule) {
+        super(schedule);
+        this.roundInfoOracle = new FastByzantineByzzFuzzRoundInfoOracle(this);
     }
 
     /**
@@ -27,12 +31,13 @@ public class FastByzantineScenario extends BaseScenario {
      */
 
     @Override
-    protected void loadScenarioParameters(JsonNode parameters) {
+    protected void loadScenarioParameters(ScenarioParameters parameters) {
         // no parameters to load
     }
 
     @Override
     protected void setup() {
+        Transport transport = this.getTransport();
         // Scenario with f = 1 (Byzantine nodes), p = 4, a = 6, l = 4.
         int p = 4;
         int a = 6;
@@ -346,4 +351,18 @@ public class FastByzantineScenario extends BaseScenario {
         return 1;
     }
 
+    @Override
+    public Class<? extends Replica> getReplicaClass() {
+        return FastByzantineReplica.class;
+    }
+
+    @Override
+    public Class<? extends Client> getClientClass() {
+        return FastByzantineClient.class;
+    }
+
+    @Override
+    public ByzzFuzzRoundInfoOracle getRoundInfoOracle() {
+        return this.roundInfoOracle;
+    }
 }

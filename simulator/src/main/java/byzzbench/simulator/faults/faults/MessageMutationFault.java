@@ -1,5 +1,7 @@
 package byzzbench.simulator.faults.faults;
 
+import byzzbench.simulator.domain.Action;
+import byzzbench.simulator.domain.FaultInjectionAction;
 import byzzbench.simulator.faults.Fault;
 import byzzbench.simulator.faults.ScenarioContext;
 import byzzbench.simulator.transport.Event;
@@ -12,7 +14,6 @@ import lombok.ToString;
 
 import java.io.Serializable;
 import java.util.Collection;
-import java.util.Comparator;
 import java.util.Optional;
 
 /**
@@ -22,14 +23,24 @@ import java.util.Optional;
 @Getter
 @ToString
 @RequiredArgsConstructor
-@EqualsAndHashCode
-public abstract class MessageMutationFault implements Fault, Comparable<MessageMutationFault> {
+@EqualsAndHashCode(callSuper = true)
+public abstract class MessageMutationFault extends Fault {
     @NonNull
     private final String id;
     @NonNull
     private final String name;
     @NonNull
     private final Collection<Class<? extends Serializable>> inputClasses;
+
+    /**
+     * The field to be modified
+     */
+    //private final String fieldName;
+
+    /**
+     * The function that specifies how to modify the field
+     */
+    //private final UnaryOperator<MessagePayload> transformFunction;
 
     /**
      * Checks if this mutator can be applied to the target class
@@ -60,8 +71,28 @@ public abstract class MessageMutationFault implements Fault, Comparable<MessageM
     }
 
     @Override
-    public int compareTo(MessageMutationFault other) {
-        return Comparator.comparing(MessageMutationFault::getId)
-                .compare(this, other);
+    public Action toAction(ScenarioContext context) {
+        // confirm event exists
+        if (context.getEvent().isEmpty()) {
+            throw new IllegalStateException("Cannot mutate an empty fault");
+        }
+
+        Event event = context.getEvent().get();
+
+        // confirm event is a message
+        if (!(event instanceof MessageEvent messageEvent)) {
+            throw new IllegalStateException("Cannot mutate an empty fault");
+        }
+
+        FaultInjectionAction action = new FaultInjectionAction();
+        action.setMessageId(event.getEventId());
+        throw new UnsupportedOperationException("not yet implemented!");
+        //action.setFieldName(this.fieldName);
+        //action.setTransformFunction(this.transformFunction);
+        //return action;
+    }
+
+    public void accept(ScenarioContext context) {
+        throw new UnsupportedOperationException("not yet implemented!");
     }
 }

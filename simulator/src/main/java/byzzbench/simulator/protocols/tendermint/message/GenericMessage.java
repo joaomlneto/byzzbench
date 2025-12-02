@@ -1,12 +1,12 @@
 package byzzbench.simulator.protocols.tendermint.message;
 
+import byzzbench.simulator.exploration_strategy.byzzfuzz.MessageWithByzzFuzzRoundInfo;
 import byzzbench.simulator.transport.MessagePayload;
-import byzzbench.simulator.transport.messages.MessageWithRound;
 
 import java.util.Comparator;
 import java.util.Objects;
 
-public abstract class GenericMessage extends MessagePayload implements Comparable<GenericMessage>, MessageWithRound {
+public abstract class GenericMessage extends MessagePayload implements Comparable<GenericMessage>, MessageWithByzzFuzzRoundInfo {
     public abstract Block getBlock();
 
     public abstract long getRound();

@@ -1,7 +1,10 @@
 package byzzbench.simulator.protocols.fab2;
 
-import byzzbench.simulator.Client;
 import byzzbench.simulator.Scenario;
+import byzzbench.simulator.nodes.Client;
+import byzzbench.simulator.nodes.ClientReply;
+import byzzbench.simulator.protocols.fab.FastByzantineReplica;
+import byzzbench.simulator.protocols.fab.Role;
 import byzzbench.simulator.protocols.pbft.message.RequestMessage;
 import byzzbench.simulator.transport.MessagePayload;
 import lombok.extern.java.Log;
@@ -92,11 +95,10 @@ FastByzantineClient extends Client {
     }
 
     @Override
-    public void sendRequest(String senderId) {
-        long sequenceNumber = this.getRequestSequenceNumber().getAndIncrement();
-        String command = String.format("%s/%d", this.getId(), sequenceNumber);
+    public void sendRequest(String requestId, String senderId) {
+        long sequenceNumber = this.getRequestSequenceNumber().get() - 1;
         // TODO: compute the digest
-        RequestMessage request = new RequestMessage(this.getId(), sequenceNumber, "-1", command);
+        RequestMessage request = new RequestMessage(this.getId(), sequenceNumber, "-1", requestId);
         this.getScenario().getTransport().sendMessage(this, request, senderId);
     }
 
@@ -109,7 +111,7 @@ FastByzantineClient extends Client {
             learners.incrementAndGet();
             if (learners.get() == 3) {
                 for (String proposer : proposersList) {
-                    this.sendRequest(proposer);
+                    this.sendRequest(this.generateRequestId(), proposer);
                 }
 
                 learners.set(0);
@@ -117,5 +119,28 @@ FastByzantineClient extends Client {
         } else {
             log.info("Client received a message from a non-learner node");
         }
+    }
+
+    @Override
+    public boolean isRequestCompleted(ClientReply message) {
+        Scenario s = this.getScenario();
+
+        long matchingReplies = this.getReplies().get(message.getRequestId()).stream().filter(
+                other -> other.equals(message.getReply())
+        ).count();
+
+        long numLearners = s.getReplicas().values().stream().filter(
+                        // is FaB replica
+                        byzzbench.simulator.protocols.fab.FastByzantineReplica.class::isInstance
+                )
+                .map(FastByzantineReplica.class::cast)
+                .filter(
+                        // replica is learner
+                        replica -> replica.getRoles().contains(Role.LEARNER)
+                )
+                .count();
+
+        // check if got f + 1 matching replies from learners
+        return matchingReplies >= ((numLearners - 1) / 3) + 1;
     }
 }

@@ -1,0 +1,72 @@
+package byzzbench.simulator.protocols.fasthotstuff;
+
+import byzzbench.simulator.Scenario;
+import byzzbench.simulator.domain.ScenarioParameters;
+import byzzbench.simulator.domain.Schedule;
+import byzzbench.simulator.nodes.Client;
+import byzzbench.simulator.nodes.Replica;
+import lombok.extern.java.Log;
+
+import java.util.SortedSet;
+import java.util.TreeSet;
+
+/**
+ * A scenario for running the <a href="https://arxiv.org/abs/2010.11454">Fast-HotStuff protocol</a>
+ */
+@Log
+public class FastHotStuffScenario extends Scenario {
+    private final int NUM_NODES = 4;
+
+    /**
+     * Creates a new scenario from the given schedule.
+     *
+     * @param schedule The schedule for the scenario.
+     */
+    public FastHotStuffScenario(Schedule schedule) {
+        super(schedule);
+    }
+
+    @Override
+    public void loadScenarioParameters(ScenarioParameters parameters) {
+        // no parameters to load
+    }
+
+    @Override
+    protected void setup() {
+        try {
+            SortedSet<String> nodeIds = new TreeSet<>();
+            for (int i = 0; i < NUM_NODES; i++) {
+                nodeIds.add(Character.toString((char) ('A' + i)));
+            }
+
+            nodeIds.forEach(nodeId -> {
+                Replica replica = new FastHotStuffReplica(nodeId, this);
+                this.addNode(replica);
+            });
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Override
+    public synchronized void run() {
+        // nothing to do at the moment
+        // TODO: genesis block creation logic should be moved here
+    }
+
+    @Override
+    public int maxFaultyReplicas(int n) {
+        return (n - 1) / 3;
+    }
+
+    @Override
+    public Class<? extends Replica> getReplicaClass() {
+        return FastHotStuffReplica.class;
+    }
+
+    @Override
+    public Class<? extends Client> getClientClass() {
+        // FIXME: no clients for this protocol!!
+        return null;
+    }
+}

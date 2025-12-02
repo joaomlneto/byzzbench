@@ -100,6 +100,14 @@ Reference: https://pnpm.io/installation
 
 For other operating systems, please refer to the respective installation instructions.
 
+## Benchmark Suite
+
+To build and run the benchmarking suite, run the following command:
+
+```
+./gradlew bootRun
+```
+
 ### Configuring
 
 To configure the simulator, you can modify the [
@@ -107,52 +115,11 @@ To configure the simulator, you can modify the [
 
 It has two main subsections:
 
-- `scheduler`: configuration about the testing strategy to be used and its parameters
-- `scenario`: Which protocol to be ran, and termination conditions for each run
-
-See below an excerpt of the most relevant parameters:
-
-```yml
-byzzbench:
-autostart: true    # start generating scenarios on startup
-numScenarios: 1000 # how many scenarios to be generated
-
-scheduler:
-id: "byzzfuzz" # which testing algorithm to use
-executionMode: sync # sync / async
-maxDropMessages: 0 # Maximum number of messages to drop per scenario
-maxMutateMessages: 0 # Maximum number of messages to mutate per scenario
-deliverTimeoutWeight: 1 # The weight for scheduler to trigger a timeout
-deliverMessageWeight: 99 # The weight for scheduler to deliver a message
-deliverClientRequestWeight: 99 # The weight for scheduler to deliver a client request to a replica
-dropMessageWeight: 0 # The weight for scheduler to drop a message
-mutateMessageWeight: 0 # The weight for scheduler to mutate a message
-params: # parameters for ByzzFuzz/Twins
-# ByzzFuzz
-numRoundsWithProcessFaults: 2
-numRoundsWithNetworkFaults: 1
-numRoundsWithFaults: 10
-# Twins
-numReplicas: 1
-numTwinsPerReplica: 2
-numRounds: 5
-
-scenario:
-id: pbft-java # which protocol to run
-termination: # Success condition for the scenario (conjunction)
-minEvents: 500 # schedule must have length > 500
-```
-
-## Running
-
-To build and run ByzzBench, run the following command from the root directory:
-
-```
-./gradlew bootRun
-```
-
-If `autostart` is set to true, it will generate the specified amount of scenarios, and output statistics to the terminal
-after completion (%correct, %buggy, %errors).
+- `explorationStrategy`: The explorationStrategy configuration: which explorationStrategy to use, and its parameters
+  such as the probability of
+  dropping messages.
+- `scenario`: The scenario configuration: which scenario to run, and its parameters such as conditions to stop the
+  simulation.
 
 ## Web Interface
 
@@ -179,15 +146,10 @@ Then, to start the web server, run the following command:
 
 The UI should then be available at http://localhost:3000
 
-## Available Benchmarks
+## Running Benchmarks
 
 We currently have the following protocols implemented:
 
-- [FaB](simulator/src/main/java/byzzbench/simulator/protocols/fab/FastByzantineReplica.java): The
-  single-shot [FaB protocol](https://www.researchgate.net/publication/228952725_Fast_Byzantine_Paxos), and a multi-shot
-  adaptation.
-- [hBFT](simulator/src/main/java/byzzbench/simulator/protocols/hbft/HbftJavaReplica.java): Implementation of
-  the [hBFT protocol](https://ieeexplore.ieee.org/document/6775264)
 - ~~[PBFT](simulator/src/main/java/byzzbench/simulator/protocols/pbft/PbftReplica.java): The original PBFT protocol, as
   described in
   the [PBFT paper](https://www.microsoft.com/en-us/research/publication/practical-byzantine-fault-tolerance/);~~

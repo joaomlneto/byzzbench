@@ -1,25 +1,26 @@
 package byzzbench.simulator.protocols.tendermint;
 
-import byzzbench.simulator.BaseScenario;
-import byzzbench.simulator.Replica;
-import byzzbench.simulator.scheduler.Scheduler;
-import com.fasterxml.jackson.databind.JsonNode;
+import byzzbench.simulator.Scenario;
+import byzzbench.simulator.domain.ScenarioParameters;
+import byzzbench.simulator.domain.Schedule;
+import byzzbench.simulator.nodes.Client;
+import byzzbench.simulator.nodes.Replica;
+import byzzbench.simulator.protocols.pbft_java.PbftClient;
 import lombok.extern.java.Log;
 
 import java.util.SortedSet;
 import java.util.TreeSet;
 
 @Log
-public class TendermintScenarioExecutor extends BaseScenario {
+public class TendermintScenarioExecutor extends Scenario {
     private final int NUM_NODES = 4;
 
-    public TendermintScenarioExecutor(Scheduler scheduler) {
-        super("tendermint", scheduler);
-        this.terminationCondition = new TendermintTerminationPredicate();
+    public TendermintScenarioExecutor(Schedule schedule) {
+        super(schedule);
     }
 
     @Override
-    public void loadScenarioParameters(JsonNode parameters) {
+    public void loadScenarioParameters(ScenarioParameters parameters) {
         // no parameters to load
     }
 
@@ -36,7 +37,10 @@ public class TendermintScenarioExecutor extends BaseScenario {
                 this.addNode(replica);
             });
 
-            this.setNumClients(1);
+            // create a single client?
+            String clientId = "C0";
+            Client client = new PbftClient(this, clientId);
+            this.addClient(client);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -62,5 +66,15 @@ public class TendermintScenarioExecutor extends BaseScenario {
     @Override
     public int maxFaultyReplicas(int n) {
         return 1;
+    }
+
+    @Override
+    public Class<? extends Replica> getReplicaClass() {
+        return TendermintReplica.class;
+    }
+
+    @Override
+    public Class<? extends Client> getClientClass() {
+        return PbftClient.class;
     }
 }

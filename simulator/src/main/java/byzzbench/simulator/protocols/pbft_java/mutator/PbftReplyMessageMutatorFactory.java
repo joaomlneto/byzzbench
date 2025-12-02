@@ -25,7 +25,7 @@ public class PbftReplyMessageMutatorFactory extends MessageMutatorFactory {
                         "pbft-reply-view-inc",
                         "Increment View Number",
                         List.of(ReplyMessage.class)) {
-                    @Override
+                    @Deprecated
                     public void accept(ScenarioContext serializable) {
                         Optional<Event> event = serializable.getEvent();
                         if (event.isEmpty()) {
@@ -46,7 +46,7 @@ public class PbftReplyMessageMutatorFactory extends MessageMutatorFactory {
                         "pbft-reply-view-dec",
                         "Decrement View Number",
                         List.of(ReplyMessage.class)) {
-                    @Override
+                    @Deprecated
                     public void accept(ScenarioContext serializable) {
                         Optional<Event> event = serializable.getEvent();
                         if (event.isEmpty()) {
@@ -67,7 +67,7 @@ public class PbftReplyMessageMutatorFactory extends MessageMutatorFactory {
                         "pbft-reply-result-wrong",
                         "Invalidate Result",
                         List.of(ReplyMessage.class)) {
-                    @Override
+                    @Deprecated
                     public void accept(ScenarioContext serializable) {
                         Optional<Event> event = serializable.getEvent();
                         if (event.isEmpty()) {
@@ -88,7 +88,7 @@ public class PbftReplyMessageMutatorFactory extends MessageMutatorFactory {
                         "pbft-reply-timestamp-wrong",
                         "Invalidate Timestamp",
                         List.of(ReplyMessage.class)) {
-                    @Override
+                    @Deprecated
                     public void accept(ScenarioContext serializable) {
                         Optional<Event> event = serializable.getEvent();
                         if (event.isEmpty()) {

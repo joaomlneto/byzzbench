@@ -65,9 +65,9 @@ public class MessageMutatorService {
         return new ArrayList<>(this.mutatorsByClass.getOrDefault(clazz, Collections.emptySortedSet()));
     }
 
-    public List<MessageMutationFault> getMutatorsForEvent(Event event) {
+    public List<MessageMutationFault> getMutatorsForEvent(Event Event) {
         // return empty list if it is not a message event
-        if (!(event instanceof MessageEvent me)) {
+        if (!(Event instanceof MessageEvent me)) {
             return Collections.emptyList();
         }
 

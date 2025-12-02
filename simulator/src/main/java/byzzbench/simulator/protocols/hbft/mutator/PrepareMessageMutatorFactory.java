@@ -11,20 +11,18 @@ import org.springframework.stereotype.Component;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.Random;
 
 @Component
 @ToString
 public class PrepareMessageMutatorFactory extends MessageMutatorFactory {
     RuntimeException invalidMessageTypeException = new IllegalArgumentException("Invalid message type");
-    Random random = new Random();
     int bound = 100;
 
     @Override
     public List<MessageMutationFault> mutators() {
         return List.of(
                 new MessageMutationFault("hbft-prepare-view-inc", "Increment View Number", List.of(PrepareMessage.class)) {
-                    @Override
+                    @Deprecated
                     public void accept(ScenarioContext serializable) {
                         Optional<Event> event = serializable.getEvent();
                         if (event.isEmpty()) {
@@ -42,7 +40,7 @@ public class PrepareMessageMutatorFactory extends MessageMutatorFactory {
                     }
                 },
                 new MessageMutationFault("hbft-prepare-view-dec", "Decrement View Number", List.of(PrepareMessage.class)) {
-                    @Override
+                    @Deprecated
                     public void accept(ScenarioContext serializable) {
                         Optional<Event> event = serializable.getEvent();
                         if (event.isEmpty()) {
@@ -60,7 +58,7 @@ public class PrepareMessageMutatorFactory extends MessageMutatorFactory {
                     }
                 },
                 new MessageMutationFault("hbft-prepare-seq-inc", "Increment Sequence Number", List.of(PrepareMessage.class)) {
-                    @Override
+                    @Deprecated
                     public void accept(ScenarioContext serializable) {
                         Optional<Event> event = serializable.getEvent();
                         if (event.isEmpty()) {
@@ -79,7 +77,7 @@ public class PrepareMessageMutatorFactory extends MessageMutatorFactory {
                     }
                 },
                 new MessageMutationFault("hbft-prepare-sec-dec", "Decrement Sequence Number", List.of(PrepareMessage.class)) {
-                    @Override
+                    @Deprecated
                     public void accept(ScenarioContext serializable) {
                         Optional<Event> event = serializable.getEvent();
                         if (event.isEmpty()) {
@@ -97,7 +95,7 @@ public class PrepareMessageMutatorFactory extends MessageMutatorFactory {
                     }
                 },
                 new MessageMutationFault("hbft-prepare-different-digest", "Change digest", List.of(PrepareMessage.class)) {
-                    @Override
+                    @Deprecated
                     public void accept(ScenarioContext serializable) {
                         Optional<Event> event = serializable.getEvent();
                         if (event.isEmpty()) {

@@ -1,5 +1,6 @@
 package byzzbench.simulator.faults.behaviors;
 
+import byzzbench.simulator.domain.Action;
 import byzzbench.simulator.faults.FaultBehavior;
 import byzzbench.simulator.faults.ScenarioContext;
 import byzzbench.simulator.transport.Router;
@@ -62,6 +63,11 @@ public class CreateNetworkPartitionsBehavior implements FaultBehavior {
     }
 
     @Override
+    public Action toAction(ScenarioContext context) {
+        throw new UnsupportedOperationException("Not supported yet.");
+    }
+
+    @Deprecated
     public void accept(ScenarioContext context) {
         Router router = context.getScenario().getTransport().getRouter();
         for (String[] partition : partitions) {

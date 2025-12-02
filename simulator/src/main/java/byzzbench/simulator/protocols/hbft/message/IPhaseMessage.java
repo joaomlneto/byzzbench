@@ -1,9 +1,9 @@
 package byzzbench.simulator.protocols.hbft.message;
 
+import byzzbench.simulator.exploration_strategy.byzzfuzz.MessageWithByzzFuzzRoundInfo;
 import byzzbench.simulator.transport.MessagePayload;
-import byzzbench.simulator.transport.messages.MessageWithRound;
 
-public abstract class IPhaseMessage extends MessagePayload implements MessageWithRound {
+public abstract class IPhaseMessage extends MessagePayload implements MessageWithByzzFuzzRoundInfo {
     /**
      * Get the view number of the message.
      *

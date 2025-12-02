@@ -1,5 +1,6 @@
 package byzzbench.simulator.transport;
 
+import byzzbench.simulator.faults.behaviors.MutateMessageBehavior;
 import byzzbench.simulator.utils.NonNull;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -7,12 +8,14 @@ import lombok.ToString;
 import lombok.experimental.SuperBuilder;
 
 import java.io.Serializable;
+import java.time.Instant;
+import java.util.List;
 
 @EqualsAndHashCode(callSuper = true)
 @Data
 @SuperBuilder
 @ToString(callSuper = true)
-public abstract class BaseMessageEvent<T extends Serializable> extends BaseEvent implements MailboxEvent {
+public abstract class BaseMessageEvent<T extends Serializable> extends Event implements MailboxEvent {
     /**
      * The unique identifier of the receiving node
      */
@@ -29,11 +32,16 @@ public abstract class BaseMessageEvent<T extends Serializable> extends BaseEvent
      * The time the request was created.
      */
     @NonNull
-    private final long timestamp;
+    private final Instant timestamp;
 
     /**
      * The payload of the message.
      */
     @NonNull
     private T payload;
+
+    /**
+     * List of mutations to be applied to the message.
+     */
+    private List<MutateMessageBehavior> mutations;
 }

@@ -1,12 +1,23 @@
 package byzzbench.simulator.service;
 
 import byzzbench.simulator.Scenario;
-import byzzbench.simulator.ScenarioFactory;
-import com.fasterxml.jackson.databind.JsonNode;
+import byzzbench.simulator.config.ByzzBenchConfig;
+import byzzbench.simulator.domain.Action;
+import byzzbench.simulator.domain.Campaign;
+import byzzbench.simulator.domain.ScenarioParameters;
+import byzzbench.simulator.domain.Schedule;
+import byzzbench.simulator.repository.ScheduleRepository;
+import jakarta.annotation.PostConstruct;
+import jakarta.annotation.PreDestroy;
 import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.java.Log;
+import org.springframework.beans.factory.config.BeanDefinition;
+import org.springframework.context.annotation.ClassPathScanningCandidateComponentProvider;
+import org.springframework.core.type.filter.AssignableTypeFilter;
 import org.springframework.stereotype.Service;
 
+import java.lang.reflect.Constructor;
 import java.util.*;
 
 /**
@@ -16,50 +27,142 @@ import java.util.*;
 @Service
 @Getter
 @Log
+@RequiredArgsConstructor
 public class ScenarioService {
-    private final MessageMutatorService messageMutatorService;
-
     /**
-     * Map of scenario id to scenario factory bean
+     * Application configuration
      */
-    private final SortedMap<String, ScenarioFactory> scenarioFactories = new TreeMap<>();
+    private final ByzzBenchConfig byzzBenchConfig;
 
     /**
-     * List of scenarios that have been created by this service
+     * Repository for schedules
+     */
+    private final ScheduleRepository scheduleRepository;
+
+    /**
+     * Map of scenario classnames to their respective classes
+     */
+    private final SortedMap<String, Class<Scenario>> scenarioClasses = new TreeMap<>();
+
+    /**
+     * The schedules that are currently active (with an active simulation in memory)
      */
     @Getter
-    private final List<Scenario> scenarios = Collections.synchronizedList(new ArrayList<>());
+    private final Map<Long, Schedule> activeSchedules = new HashMap<>();
 
-    public ScenarioService(List<? extends ScenarioFactory> scenarioExecutors, MessageMutatorService messageMutatorService) {
-        this.messageMutatorService = messageMutatorService;
-        for (ScenarioFactory scenarioExecutor : scenarioExecutors) {
-            if (scenarioFactories.containsKey(scenarioExecutor.getId())) {
-                throw new IllegalArgumentException("Duplicate scenario id: " + scenarioExecutor.getId());
+    @PostConstruct
+    public void onStartup() {
+        ClassPathScanningCandidateComponentProvider provider =
+                new ClassPathScanningCandidateComponentProvider(false);
+        provider.addIncludeFilter(new AssignableTypeFilter(Scenario.class));
+        Set<BeanDefinition> components = provider.findCandidateComponents("byzzbench");
+        components.forEach(bd -> {
+            try {
+                log.info("Found scenario class: " + bd.getBeanClassName());
+                Class<?> cls = Class.forName(bd.getBeanClassName());
+                scenarioClasses.put(bd.getBeanClassName(), (Class<Scenario>) cls);
+            } catch (Exception e) {
+                e.printStackTrace();
             }
-            scenarioFactories.put(scenarioExecutor.getId(), scenarioExecutor);
+        });
+    }
+
+    /**
+     * Save all schedules to the database on shutdown
+     */
+    @PreDestroy
+    public void onShutdown() {
+        this.saveAllSchedules();
+    }
+
+    /**
+     * Save all schedules to the database and clear the in-memory cache
+     */
+    public synchronized void saveAllSchedules() {
+        scheduleRepository.saveAll(activeSchedules.values());
+        this.activeSchedules.clear();
+    }
+
+    /**
+     * Save a schedule to the database and remove it from the in-memory cache
+     *
+     * @param scheduleId the id of the schedule to save
+     */
+    public synchronized void storeSchedule(long scheduleId) {
+        Schedule schedule = this.activeSchedules.get(scheduleId);
+        if (schedule != null) {
+            scheduleRepository.save(schedule);
+            if (byzzBenchConfig.isRemoveCompletedSimulations()) {
+                this.activeSchedules.remove(scheduleId);
+            }
         }
     }
 
     /**
-     * Get a scenario by id
+     * Generate a scenario from parameters.
      *
-     * @param id the id of the scenario
-     * @return the scenario
+     * @param parameters the parameters that describe the scenario to generate
+     * @param campaign   the campaign this scenario belongs to
+     * @return the generated scenario
      * @throws IllegalArgumentException if the scenario id is unknown
+     * @throws IllegalStateException    if the schedule is already materialized
      */
-    public Scenario generateScenario(String id, JsonNode parameters) {
-        ScenarioFactory scenario = scenarioFactories.get(id);
-        if (scenario == null) {
-            log.severe("Unknown scenario: " + id);
-            log.severe("Available scenarios:");
-            for (String scenarioId : scenarioFactories.keySet()) {
-                log.severe("- " + scenarioId);
-            }
-            throw new IllegalArgumentException("Unknown scenario id: " + id);
+    public synchronized Scenario generateScenario(ScenarioParameters parameters, Campaign campaign) {
+        Schedule schedule = new Schedule(parameters);
+        schedule.setCampaign(campaign);
+        scheduleRepository.save(schedule);
+        return this.generateScenario(schedule);
+    }
+
+    /**
+     * Generate a scenario from a schedule.
+     *
+     * @param schedule the schedule that describes the scenario to generate
+     * @return the generated scenario
+     * @throws IllegalArgumentException if the scenario id is unknown
+     * @throws IllegalStateException    if the schedule is already materialized
+     */
+    public synchronized Scenario generateScenario(Schedule schedule) {
+        if (schedule.isMaterialized()) {
+            throw new IllegalStateException("Schedule is already materialized");
         }
-        Scenario s = scenario.createScenario(messageMutatorService, parameters);
-        this.scenarios.add(s);
-        return s;
+
+        try {
+            // find the scenario class by its id
+            ScenarioParameters parameters = schedule.getParameters();
+            Class<? extends Scenario> scenarioClass = this.scenarioClasses.get(parameters.getScenarioId());
+
+            // if not found, throw an exception
+            if (scenarioClass == null) {
+                log.severe("Unknown scenario: " + parameters.getScenarioId());
+                log.severe("Available scenarios:");
+                for (String scenarioClassName : scenarioClasses.keySet()) {
+                    log.severe("- " + scenarioClassName);
+                }
+                throw new IllegalArgumentException("Unknown scenario id: " + parameters.getScenarioId());
+            }
+
+            // instantiate the scenario and initialize it with the schedule parameters
+            Class[] constructorParams = new Class[]{Schedule.class};
+            Constructor<? extends Scenario> cons = scenarioClass.getConstructor(constructorParams);
+            Scenario scenario = cons.newInstance(schedule);
+            scenario.loadParameters(schedule.getParameters());
+
+            // apply each action in order
+            for (Action action : schedule.getActions()) {
+                action.accept(scenario);
+            }
+
+            // mark the schedule as materialized
+            schedule.setScenario(scenario);
+
+            this.activeSchedules.put(schedule.getScheduleId(), schedule);
+            System.out.println("Active schedules: " + this.activeSchedules.keySet());
+            return scenario;
+        } catch (Exception e) {
+            log.severe("Failed to generate scenario: " + e.getMessage());
+            throw new RuntimeException(e);
+        }
     }
 
     /**
@@ -67,7 +170,54 @@ public class ScenarioService {
      *
      * @return the ids of all registered scenarios
      */
-    public List<String> getScenarioIds() {
-        return List.copyOf(scenarioFactories.keySet());
+    public List<String> getScenarioFactoryIds() {
+        return List.copyOf(scenarioClasses.keySet());
     }
+
+    /**
+     * Retrieves a scenario by its unique identifier from the list of created scenarios.
+     *
+     * @param scenarioId the unique identifier of the desired scenario
+     * @return the scenario that matches the specified identifier
+     * @throws NoSuchElementException if no scenario with the specified identifier is found
+     */
+    public synchronized Scenario getScenarioById(long scenarioId) {
+        Schedule schedule = this.getScheduleById(scenarioId);
+
+        if (!schedule.isMaterialized()) {
+            throw new IllegalStateException("Schedule " + scenarioId + " is not materialized");
+        }
+
+        return schedule.getScenario();
+    }
+
+    /**
+     * Get the ids of all currently materialized schedules
+     *
+     * @return the ids of all materialized schedules
+     */
+    public synchronized Set<Long> getMaterializedScheduleIds() {
+        return this.getActiveSchedules().keySet();
+    }
+
+    /**
+     * Retrieves a schedule by its unique identifier. If the schedule is not already
+     * loaded in memory, it fetches it from the repository and caches it.
+     *
+     * @param scheduleId the unique identifier of the desired schedule
+     * @return the schedule that matches the specified identifier
+     * @throws NoSuchElementException if no schedule with the specified identifier is found
+     */
+    public synchronized Schedule getScheduleById(long scheduleId) {
+        // If the schedule is already active, return it
+        if (this.activeSchedules.containsKey(scheduleId)) {
+            return this.activeSchedules.get(scheduleId);
+        }
+
+        // If not, fetch it from the repository.
+        // It is guaranteed to be inactive at this point.
+        return this.scheduleRepository.findByScheduleId(scheduleId)
+                .orElseThrow(() -> new NoSuchElementException("No schedule found with id: " + scheduleId));
+    }
+
 }

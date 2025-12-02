@@ -1,52 +1,50 @@
 package byzzbench.simulator.transport;
 
 import byzzbench.simulator.utils.NonNull;
-import com.fasterxml.jackson.annotation.JsonSubTypes;
-import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import org.springframework.validation.annotation.Validated;
+import lombok.Builder;
+import lombok.Data;
+import lombok.experimental.SuperBuilder;
 
-import javax.annotation.processing.Generated;
 import java.io.Serializable;
 import java.time.Instant;
 
-@Validated
-@Generated(value = "io.swagger.codegen.v3.generators.java.SpringCodegen", date = "2020-11-16T16:49:29.361700Z[Europe/Lisbon]")
-@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "type", visible = true)
-@JsonSubTypes({
-        @JsonSubTypes.Type(value = TimeoutEvent.class, name = "Timeout"),
-        @JsonSubTypes.Type(value = MessageEvent.class, name = "Message"),
-        @JsonSubTypes.Type(value = ClientRequestEvent.class, name = "ClientRequest"),
-        @JsonSubTypes.Type(value = MutateMessageEvent.class, name = "MutateMessage"),
-        @JsonSubTypes.Type(value = GenericFaultEvent.class, name = "GenericFault"),
-})
-public interface Event extends Serializable {
+@Data
+@SuperBuilder
+public abstract class Event implements Serializable {
     /**
-     * Get the eventId
-     *
-     * @return a long representing the eventId
+     * The unique identifier of the event.
      */
     @NonNull
-    long getEventId();
+    private final long eventId;
 
     /**
-     * Get the time at which the event was created
-     *
-     * @return an Instant representing the time at which the event was created
+     * The physical time at which the request was created.
      */
-    Instant getCreatedAt();
+    @Builder.Default
+    @NonNull
+    private final Instant createdAt = Instant.now();
 
     /**
-     * Get the time at which the event was delivered
-     *
-     * @return an Instant representing the time at which the event was delivered
+     * The physical time at which the request was delivered.
      */
-    Instant getDeliveredAt();
+    @NonNull
+    private transient Instant deliveredAt;
 
-    Status getStatus();
+    /**
+     * The status of the event.
+     */
+    @Builder.Default
+    @NonNull
+    private Status status = Status.QUEUED;
 
-    void setStatus(Status status);
+    /**
+     * A description of the type of event.
+     *
+     * @return The type of event.
+     */
+    public abstract String getType();
 
-    enum Status {
+    public enum Status {
         QUEUED,
         DELIVERED,
         DROPPED

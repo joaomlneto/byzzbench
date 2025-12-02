@@ -1,15 +1,8 @@
-import {
-  changeScenario,
-  deleteAutomaticFaults,
-  deliverMessage,
-  getEvent,
-  mutateMessage,
-  MutateMessageEvent,
-  Schedule,
-} from "@/lib/byzzbench-client";
-import { ActionIcon, Burger, Menu, Title } from "@mantine/core";
+"use client";
+
+import { materializeSchedule, Schedule } from "@/lib/byzzbench-client";
+import { Burger, Menu, Title } from "@mantine/core";
 import { openContextModal } from "@mantine/modals";
-import { showNotification } from "@mantine/notifications";
 import { useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import React from "react";
@@ -25,24 +18,24 @@ export const ScheduleMenu = ({ title, schedule }: ScheduleMenuProps) => {
   return (
     <Menu>
       <Menu.Target>
-        <ActionIcon variant="subtle">
-          <Burger size={16} />
-        </ActionIcon>
+        <Burger size={16} component="span" />
       </Menu.Target>
       <Menu.Dropdown>
         <Menu.Item
           onClick={async () => {
             console.log("Materializing Schedule: ", schedule);
-            await changeScenario({ scenarioId: schedule.scenarioId }, {});
-            // remove all pre-scheduled faults.
-            // we are going to replay event-by-event.
-            await deleteAutomaticFaults();
+            if (!schedule.materialized) {
+              const result = await materializeSchedule(schedule.scheduleId!);
+              console.log("Materialize result: ", result.data);
+            }
+            router.push(`/scenarios/${schedule.scheduleId}`);
 
+            /*
             let i = 0;
             let hasNotifiedMismatchedEvents = false;
 
-            for (const event of schedule.events ?? []) {
-              const remoteEvent = await getEvent(event.eventId).then(
+            for (const event of schedule.actions ?? []) {
+              const remoteEvent = await getEvent(event.actionId).then(
                 (event) => event.data,
               );
 
@@ -57,14 +50,14 @@ export const ScheduleMenu = ({ title, schedule }: ScheduleMenuProps) => {
               if (JSON.stringify(objA) !== JSON.stringify(objB)) {
                 hasNotifiedMismatchedEvents = true;
                 console.error(
-                  `Event ${event.eventId} does not match remote event`,
+                  `Event ${event.actionId} does not match remote event`,
                   objA,
                   objB,
                 );
                 if (!hasNotifiedMismatchedEvents) {
                   showNotification({
                     title: "Error materializing schedule",
-                    message: `Event ${event.eventId} does not match remote event. Will continue to try to materialize the rest of the schedule. See console for more details.`,
+                    message: `Event ${event.actionId} does not match remote event. Will continue to try to materialize the rest of the schedule. See console for more details.`,
                     color: "red",
                   });
                 }
@@ -73,32 +66,32 @@ export const ScheduleMenu = ({ title, schedule }: ScheduleMenuProps) => {
               }
 
               console.log(
-                `Pushing Event ${++i}/${schedule.events.length}: ${event}`,
+                `Pushing Event ${++i}/${schedule.actions.length}: ${event}`,
               );
               switch (event.type) {
                 case "Message":
                 case "Timeout":
                 case "ClientRequest":
-                  await deliverMessage(event.eventId);
+                  await deliverMessage(event.actionId);
                   break;
                 case "MutateMessage":
                   await mutateMessage(
-                    (event as MutateMessageEvent).payload!.eventId,
-                    (event as MutateMessageEvent).payload!.mutatorId,
+                    (event as FaultInjectionAction).payload!.eventId,
+                    (event as FaultInjectionAction).payload!.mutatorId,
                   );
                   break;
                 case "GenericFault":
                   // Ignore these: messages that were dropped are already dropped anyways
                   /*await enableNetworkFault(
                     (event as GenericFaultEvent).payload!.id!,
-                  );*/
+                  );* /
                   break;
                 default:
                   console.error("Unknown event type", event);
               }
             }
-            await queryClient.invalidateQueries();
-            router.push("/");
+             */
+            //await queryClient.invalidateQueries();
           }}
         >
           Materialize
@@ -128,7 +121,7 @@ export const ScheduleMenu = ({ title, schedule }: ScheduleMenuProps) => {
             )}`;
             const link = document.createElement("a");
             link.href = jsonString;
-            link.download = `${schedule.scenarioId}-${Date.now()}.schedule.json`;
+            link.download = `${schedule.scheduleId}-${Date.now()}.schedule.json`;
             link.click();
           }}
         >

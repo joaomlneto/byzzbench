@@ -8,14 +8,16 @@ import { useQueryClient } from "@tanstack/react-query";
 import React from "react";
 
 type DropMessageActionIconProps = {
+  scenarioId: number;
   messageId: number;
 };
 
 export const DropMessageActionIcon = ({
+  scenarioId,
   messageId,
 }: DropMessageActionIconProps) => {
   const queryClient = useQueryClient();
-  const { mutate } = useDropMessage(messageId);
+  const { mutate } = useDropMessage(scenarioId, messageId);
 
   return (
     <ActionIcon

@@ -11,14 +11,18 @@ import { useQueryClient } from "@tanstack/react-query";
 import React, { useMemo } from "react";
 
 export type FaultsListEntryProps = {
+  scenarioId: number;
   faultId: string;
   disabled?: boolean;
 };
 
-export const FaultsListEntry = ({ faultId }: FaultsListEntryProps) => {
+export const FaultsListEntry = ({
+  scenarioId,
+  faultId,
+}: FaultsListEntryProps) => {
   const queryClient = useQueryClient();
-  const faultQuery = useGetNetworkFault(faultId);
-  const enabledFaultsQuery = useGetEnabledNetworkFaults();
+  const faultQuery = useGetNetworkFault(scenarioId, faultId);
+  const enabledFaultsQuery = useGetEnabledNetworkFaults(scenarioId);
 
   const isEnabled = useMemo(() => {
     return enabledFaultsQuery.data?.data.includes(faultId);
@@ -33,7 +37,7 @@ export const FaultsListEntry = ({ faultId }: FaultsListEntryProps) => {
               size="sm"
               onClick={async (e) => {
                 e.preventDefault();
-                await enableNetworkFault(faultId)
+                await enableNetworkFault(scenarioId, faultId)
                   .then(() => {
                     showNotification({
                       message: "Fault triggered",

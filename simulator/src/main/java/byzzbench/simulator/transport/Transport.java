@@ -1,10 +1,10 @@
 package byzzbench.simulator.transport;
 
-import byzzbench.simulator.Client;
-import byzzbench.simulator.Node;
 import byzzbench.simulator.Scenario;
 import byzzbench.simulator.faults.Fault;
 import byzzbench.simulator.faults.ScenarioContext;
+import byzzbench.simulator.nodes.Client;
+import byzzbench.simulator.nodes.Node;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -51,9 +51,9 @@ public class Transport {
      * Map of automatic fault id to the {@link Fault} object. This is used to
      * apply faulty behaviors automatically  to the system whenever their predicate is satisfied.
      */
-    @JsonIgnore
-    @Getter(onMethod_ = {@Synchronized})
-    private final SortedMap<String, Fault> automaticFaults = new TreeMap<>();
+    //@JsonIgnore
+    //@Getter(onMethod_ = {@Synchronized})
+    //private final SortedMap<String, Fault> automaticFaults = new TreeMap<>();
 
     /**
      * Map of network fault id to the {@link Fault} object. This is used to
@@ -104,7 +104,8 @@ public class Transport {
      */
     public synchronized void addFault(Fault fault, boolean triggerAutomatically) {
         if (triggerAutomatically) {
-            this.automaticFaults.put(fault.getId(), fault);
+            throw new UnsupportedOperationException("Automatic faults are not supported anymore!");
+            //this.automaticFaults.put(fault.getId(), fault);
         } else {
             this.networkFaults.put(fault.getId(), fault);
         }
@@ -169,9 +170,10 @@ public class Transport {
         // notify observers
         this.observers.forEach(o -> o.onEventAdded(event));
 
-        // apply automatic faults
+        // FIXME: old behavior - apply automatic faults. delete me!
+        /*
         this.automaticFaults.values()
-                .forEach(f -> f.testAndAccept(new ScenarioContext(this.scenario, event)));
+                .forEach(f -> f.testAndAccept(new ScenarioContext(this.scenario, event)));*/
 
         // notify observers
         this.getObservers().forEach(o -> o.onEventAdded(event));
@@ -186,6 +188,8 @@ public class Transport {
      */
     public synchronized void multicast(Node sender, SortedSet<String> recipients,
                                        MessagePayload payload) {
+        this.observers.forEach(o -> o.onMulticast(sender, recipients, payload));
+
         for (String recipient : recipients) {
             long messageId = this.eventSeqNum.getAndIncrement();
             MessageEvent messageEvent = MessageEvent.builder()
@@ -204,6 +208,10 @@ public class Transport {
     }
 
     public synchronized void deliverEvent(long eventId) {
+        this.deliverEvent(eventId, true);
+    }
+
+    public synchronized void deliverEvent(long eventId, boolean addToSchedule) {
         Event e = this.getEvents().get(eventId);
 
         // check if null
@@ -218,34 +226,28 @@ public class Transport {
 
         // if it is a MessageEvent and there is no connectivity between the nodes, drop it
         if (e instanceof MessageEvent m && !router.haveConnectivity(m.getSenderId(), m.getRecipientId())) {
-            log.info("Dropped: " + m.getSenderId() + "->" + m.getRecipientId() + ": " + m.getPayload());
+            log.fine("Dropped: " + m.getSenderId() + "->" + m.getRecipientId() + ": " + m.getPayload());
             m.setStatus(Event.Status.DROPPED);
             return;
         }
 
         // deliver the event
-        this.scenario.getSchedule().appendEvent(e);
+        if (addToSchedule) {
+            this.scenario.getSchedule().appendEvent(e);
+        }
         e.setStatus(Event.Status.DELIVERED);
 
         // For timeouts, this should be called before, so the Replica time is updated
         this.getObservers().forEach(o -> o.onEventDelivered(e));
 
         switch (e) {
-            case ClientRequestEvent c -> {
-                this.scenario.getNodes().get(c.getRecipientId()).handleMessage(c.getSenderId(), c.getPayload());
-            }
-            case MessageEvent m -> {
-                this.scenario.getNodes().get(m.getRecipientId()).handleMessage(m.getSenderId(), m.getPayload());
-            }
-            case TimeoutEvent t -> {
-                t.getTask().run();
-            }
-            default -> {
-                throw new IllegalArgumentException("Unknown event type");
-            }
+            case MessageEvent m ->
+                    this.scenario.getNodes().get(m.getRecipientId()).handleMessage(m.getSenderId(), m.getPayload());
+            case TimeoutEvent t -> t.getTask().run();
+            default -> throw new IllegalArgumentException("Unknown event type");
         }
 
-        log.info("Delivered " + e);
+        log.fine("Delivered " + e);
     }
 
     /**
@@ -273,7 +275,7 @@ public class Transport {
 
         e.setStatus(Event.Status.DROPPED);
         this.getObservers().forEach(o -> o.onEventDropped(e));
-        log.info("Dropped: " + e);
+        log.fine("Dropped: " + e);
     }
 
     /**
@@ -295,7 +297,7 @@ public class Transport {
     public synchronized void applyMutation(long eventId, Fault fault) {
         Event e = this.getEvents().get(eventId);
 
-        // check if event does not exist
+        // check if the event does not exist
         if (e == null) {
             throw new IllegalArgumentException(String.format("Event %d not found", eventId));
         }
@@ -305,7 +307,7 @@ public class Transport {
             throw new IllegalArgumentException("Mutator not found");
         }
 
-        // check if event is not in QUEUED state
+        // check if the event is not in QUEUED state
         if (e.getStatus() != Event.Status.QUEUED) {
             log.warning("Attempting to mutate event not in QUEUED state");
             return;
@@ -318,7 +320,7 @@ public class Transport {
                     "Event %d is not a message - cannot mutate it.", eventId));
         }
 
-        // check if sender is faulty
+        // check if the sender is faulty
         if (!this.scenario.isFaultyReplica(m.getSenderId())) {
             throw new IllegalArgumentException(
                     String.format("Cannot mutate message: sender %s is not marked as faulty", m.getSenderId())
@@ -336,7 +338,7 @@ public class Transport {
         }
 
         // apply the mutation
-        fault.accept(input);
+        fault.toAction(input).accept(this.scenario);
         scenario.markReplicaFaulty(m.getSenderId());
 
         // create a new event for the mutation
@@ -353,7 +355,7 @@ public class Transport {
         this.scenario.getSchedule().appendEvent(mutateMessageEvent);
         this.getObservers().forEach(o -> o.onMessageMutation(mutateMessageEvent.getPayload()));
 
-        log.info("Mutated: " + m);
+        log.fine("Mutated: " + m);
     }
 
     public synchronized void applyFault(String faultId) {
@@ -374,7 +376,7 @@ public class Transport {
         }
 
         // apply the fault
-        fault.accept(input);
+        fault.toAction(this.scenario).accept(this.scenario);
 
         // create a new event for the fault and append it to the schedule
         GenericFaultEvent faultEvent = GenericFaultEvent.builder()
@@ -397,6 +399,7 @@ public class Transport {
      */
     public synchronized long setTimeout(Node node, Runnable runnable,
                                         Duration timeout, String description) {
+        //System.out.println("Setting timeout for " + node.getId() + " in " + timeout + "ms: " + description);
         TimeoutEvent timeoutEvent = TimeoutEvent.builder()
                 .eventId(this.eventSeqNum.getAndIncrement())
                 .description(description)
@@ -407,7 +410,7 @@ public class Transport {
                 .build();
         this.appendEvent(timeoutEvent);
         this.observers.forEach(o -> o.onTimeout(timeoutEvent));
-        log.info(description + " timeout set for " + node.getId() + " in " + timeout + "ms: " + timeoutEvent);
+        log.fine(description + " timeout set for " + node.getId() + " in " + timeout + "ms: " + timeoutEvent);
         return timeoutEvent.getEventId();
     }
 
@@ -475,11 +478,23 @@ public class Transport {
     }
 
     /**
+     * Gets all queued messages in the transport layer.
+     *
+     * @return A list of queued message events.
+     */
+    public synchronized List<MessageEvent> getQueuedMessages() {
+        return this.getEventsInState(Event.Status.QUEUED).stream()
+                .filter(MessageEvent.class::isInstance)
+                .map(MessageEvent.class::cast)
+                .toList();
+    }
+
+    /**
      * Clears all timeouts for a given node.
      *
      * @param node The node to clear timeouts for.
      */
-    public synchronized void clearReplicaTimeouts(Node node) {
+    public synchronized void clearNodeTimeouts(Node node) {
         // get all event IDs for timeouts from this node
         List<Long> eventIds = this.getQueuedTimeouts(node);
 
@@ -546,5 +561,6 @@ public class Transport {
                 });
 
         this.isGlobalStabilizationTime = true;
+        this.observers.forEach(TransportObserver::onGlobalStabilizationTime);
     }
 }

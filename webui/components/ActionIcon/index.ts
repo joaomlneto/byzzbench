@@ -5,5 +5,6 @@ export * from "./ForceSyncActionIcon";
 export * from "./ResetActionIcon";
 export * from "./SaveScheduleActionIcon";
 export * from "./SelectScenarioActionIcon";
+export * from "./ShowConfigActionIcon";
 export * from "./StartActionIcon";
 export * from "./StopActionIcon";

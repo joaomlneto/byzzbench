@@ -5,10 +5,12 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.io.Serializable;
+
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class Checkpoint implements Comparable<Checkpoint>{
+public class Checkpoint implements Comparable<Checkpoint>, Serializable {
     private long sequenceNumber;
     private SpeculativeHistory history;
 

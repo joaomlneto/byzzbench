@@ -4,6 +4,7 @@ import byzzbench.simulator.utils.NonNull;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import lombok.Builder;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.ToString;
 import lombok.experimental.SuperBuilder;
 
@@ -14,11 +15,12 @@ import java.time.Instant;
  *
  * @see Event
  */
+@EqualsAndHashCode(callSuper = true)
 @Data
 @JsonTypeName("MutateMessage")
 @SuperBuilder
 @ToString(callSuper = true)
-public class MutateMessageEvent implements Event {
+public class MutateMessageEvent extends Event {
     /**
      * The unique identifier of the event.
      */
@@ -55,4 +57,9 @@ public class MutateMessageEvent implements Event {
      */
     @Builder.Default
     private Status status = Status.QUEUED;
+
+    @Override
+    public String getType() {
+        return "MutateMessage";
+    }
 }

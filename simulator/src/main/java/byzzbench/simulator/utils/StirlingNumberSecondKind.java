@@ -1,8 +1,5 @@
 package byzzbench.simulator.utils;
 
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-
 import java.util.*;
 
 /**
@@ -13,11 +10,6 @@ public class StirlingNumberSecondKind {
      * Memoization map to store computed Stirling numbers.
      */
     private static final Map<MemoEntryKey, Long> memo = new HashMap<>();
-
-    /**
-     * Random number generator.
-     */
-    private static final Random rand = new Random();
 
     private StirlingNumberSecondKind() {
         // Utility class - cannot be instantiated
@@ -145,7 +137,7 @@ public class StirlingNumberSecondKind {
      * @param <T>      the type of the elements
      * @return k partitions of the elements
      */
-    public static <T> Collection<Collection<T>> getRandomPartition(Collection<T> elements, int k) {
+    public static <T> Collection<Collection<T>> getRandomPartition(Collection<T> elements, int k, Random rand) {
         List<Collection<T>> partitions = new ArrayList<>();
         List<T> sortedElements = new ArrayList<>(elements);
 
@@ -172,10 +164,6 @@ public class StirlingNumberSecondKind {
         return partitions;
     }
 
-    @Data
-    @EqualsAndHashCode
-    public static class MemoEntryKey {
-        private final long n;
-        private final long k;
+    public record MemoEntryKey(long n, long k) {
     }
 }

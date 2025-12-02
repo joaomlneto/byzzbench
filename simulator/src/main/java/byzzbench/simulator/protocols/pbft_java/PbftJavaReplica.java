@@ -1,8 +1,8 @@
 package byzzbench.simulator.protocols.pbft_java;
 
-import byzzbench.simulator.LeaderBasedProtocolReplica;
 import byzzbench.simulator.Scenario;
-import byzzbench.simulator.protocols.hbft.message.ClientRequestMessage;
+import byzzbench.simulator.nodes.ClientRequest;
+import byzzbench.simulator.nodes.LeaderBasedProtocolReplica;
 import byzzbench.simulator.protocols.pbft_java.message.*;
 import byzzbench.simulator.state.LogEntry;
 import byzzbench.simulator.state.SerializableLogEntry;
@@ -72,7 +72,6 @@ public class PbftJavaReplica<O extends Serializable, R extends Serializable> ext
 
     @Override
     public void initialize() {
-        System.out.println("Initializing replica " + this.getId());
         this.setView(1);
     }
 
@@ -89,12 +88,16 @@ public class PbftJavaReplica<O extends Serializable, R extends Serializable> ext
      * Check the timeout for a given request.
      *
      * @param key The key for the request
-     * @return The remaining time for the timeout
      */
-    public Duration checkTimeout(ReplicaRequestKey key) {
+    public void handleRequestTimeout(ReplicaRequestKey key) {
         LinearBackoff backoff = this.timeouts.get(key);
         if (backoff == null) {
-            return Duration.ZERO;
+            log.warning(this.getId() + " found no timer for request " + key);
+            log.info(this.getId() + " " + this.timeouts.size() + " active timers:");
+            this.timeouts.keySet().forEach(k -> System.out.println("Active request timer: " + k));
+            return;
+            //throw new IllegalStateException(this.getId() + " found no timer for request " + key);
+            //return Duration.ZERO;
         }
 
         synchronized (backoff) {
@@ -116,11 +119,10 @@ public class PbftJavaReplica<O extends Serializable, R extends Serializable> ext
             if ((!remainingTime.isPositive()) && !backoff.isWaitingForVotes()) {
                 this.disgruntled = true;
 
-                long newViewNumber = backoff.getNewViewNumber();
                 backoff.expire();
 
                 ViewChangeMessage viewChange = messageLog.produceViewChange(
-                        newViewNumber,
+                        backoff.getNewViewNumber(),
                         this.getId(),
                         this.tolerance);
                 this.sendViewChange(viewChange);
@@ -131,11 +133,11 @@ public class PbftJavaReplica<O extends Serializable, R extends Serializable> ext
                  * due to having to als include the time for the votes to be
                  * received and processed
                  */
-                return backoff.getTimeout();
+                //return backoff.getTimeout();
+            } else {
+                // Timer has not expired yet, so wait out the remaining we computed
+                throw new IllegalStateException("Timer has not expired yet?!");
             }
-
-            // Timer has not expired yet, so wait out the remaining we computed
-            return remainingTime;
         }
     }
 
@@ -151,12 +153,13 @@ public class PbftJavaReplica<O extends Serializable, R extends Serializable> ext
             RequestMessage request = ticket.getRequest();
             Instant timestamp = request.getTimestamp();
             ReplyMessage reply = new ReplyMessage(
+                    ticket.getRequest().getOperation(),
                     viewNumber,
                     timestamp,
                     clientId,
                     this.getId(),
                     result);
-            this.sendReply(clientId, reply);
+            this.sendReply(clientId, timestamp, reply);
         }).exceptionally(t -> {
             throw new RuntimeException(t);
         });
@@ -190,7 +193,12 @@ public class PbftJavaReplica<O extends Serializable, R extends Serializable> ext
         }
 
         // Start the timer for this request per PBFT 4.4
-        this.timeouts.computeIfAbsent(key, k -> new LinearBackoff(this, this.getViewNumber(), this.timeout));
+        this.timeouts.computeIfAbsent(key, k ->
+                new LinearBackoff(this, this.getViewNumber(), this.timeout, String.format("Request %s", k), () -> this.handleRequestTimeout(key)));
+
+        // print keys in timeouts
+        log.info(this.getId() + " " + this.timeouts.size() + " active timers:");
+        this.timeouts.keySet().forEach(k -> System.out.println("Active request timer: " + k));
 
         String primaryId = this.getRoundRobinPrimaryId();
 
@@ -207,11 +215,9 @@ public class PbftJavaReplica<O extends Serializable, R extends Serializable> ext
          * fulfilled serially in an async manner because each reply to a
          * buffered request is guaranteed to dispatch the next buffered request.
          */
-        if (!wasRequestBuffered) {
-            if (messageLog.shouldBuffer()) {
-                messageLog.buffer(request);
-                return;
-            }
+        if (!wasRequestBuffered && messageLog.shouldBuffer()) {
+            messageLog.buffer(request);
+            return;
         }
 
         long currentViewNumber = this.getViewNumber();
@@ -484,6 +490,7 @@ public class PbftJavaReplica<O extends Serializable, R extends Serializable> ext
                     String clientId = request.getClientId();
                     Instant timestamp = request.getTimestamp();
                     ReplyMessage reply = new ReplyMessage(
+                            ticket.getRequest().getOperation(),
                             currentViewNumber,
                             timestamp,
                             clientId,
@@ -492,9 +499,15 @@ public class PbftJavaReplica<O extends Serializable, R extends Serializable> ext
 
                     ReplicaRequestKey key = new ReplicaRequestKey(clientId, timestamp);
                     messageLog.completeTicket(key, currentViewNumber, seqNumber);
-                    this.sendReply(clientId, reply);
+                    this.sendReply(clientId, timestamp, reply);
 
-                    this.timeouts.remove(key);
+                    log.info(this.getId() + " " + this.timeouts.size() + " active timers:");
+                    this.timeouts.keySet().forEach(k -> System.out.println("Active request timer: " + k));
+
+                    if (this.timeouts.containsKey(key)) {
+                        this.timeouts.get(key).stop();
+                        this.timeouts.remove(key);
+                    }
                 }
 
                 /*
@@ -541,9 +554,9 @@ public class PbftJavaReplica<O extends Serializable, R extends Serializable> ext
      * @param clientId The client ID
      * @param reply    The reply message
      */
-    public void sendReply(String clientId, ReplyMessage reply) {
+    public void sendReply(String clientId, Instant requestTimestamp, ReplyMessage reply) {
         //this.sendMessage(reply, clientId);
-        this.sendReplyToClient(clientId, reply);
+        this.sendReplyToClient(clientId, requestTimestamp, reply);
 
         // When prior requests are fulfilled, attempt to process the buffer
         // to ensure they are dispatched in a timely manner
@@ -627,7 +640,6 @@ public class PbftJavaReplica<O extends Serializable, R extends Serializable> ext
         }
 
         // PBFT 4.5.2 - Start the timers that will vote for newViewNumber + 1.
-        /*
         if (result.isBeginNextVote()) {
             for (LinearBackoff backoff : this.timeouts.values()) {
                 synchronized (backoff) {
@@ -637,7 +649,7 @@ public class PbftJavaReplica<O extends Serializable, R extends Serializable> ext
                     }
                 }
             }
-        }*/
+        }
 
         if (newPrimaryId.equals(this.getId())) {
             /*
@@ -733,19 +745,22 @@ public class PbftJavaReplica<O extends Serializable, R extends Serializable> ext
         return operation;
     }
 
-    public void handleClientRequest(String clientId, Serializable request) {
-        RequestMessage m = new RequestMessage(request, this.getCurrentTime(), clientId);
+    public void handleClientRequest(String clientId, ClientRequest request) {
+        RequestMessage m = new RequestMessage(request.getOperation(), request.getTimestamp(), clientId);
         this.recvRequest(m);
     }
 
     @Override
     public void handleMessage(String sender, MessagePayload m) {
         switch (m) {
-            case ClientRequestMessage clientRequest -> handleClientRequest(sender, clientRequest.getOperation());
+            case ClientRequest clientRequest -> handleClientRequest(sender, clientRequest);
             case RequestMessage request -> recvRequest(request);
             case PrePrepareMessage prePrepare -> recvPrePrepare(prePrepare);
             case PrepareMessage prepare -> recvPrepare(prepare);
             case CommitMessage commit -> recvCommit(commit);
+            case ViewChangeMessage viewChange -> recvViewChange(viewChange);
+            case NewViewMessage newView -> recvNewView(newView);
+            case CheckpointMessage checkpoint -> recvCheckpoint(checkpoint);
             case null, default -> throw new IllegalArgumentException("Unknown message type: " + m);
         }
     }

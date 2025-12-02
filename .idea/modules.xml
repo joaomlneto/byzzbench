@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ProjectModuleManager">
+    <modules>
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/byzzbench.iml" filepath="$PROJECT_DIR$/.idea/modules/byzzbench.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/buildSrc/byzzbench.buildSrc.iml" filepath="$PROJECT_DIR$/.idea/modules/buildSrc/byzzbench.buildSrc.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/buildSrc/byzzbench.buildSrc.main.iml" filepath="$PROJECT_DIR$/.idea/modules/buildSrc/byzzbench.buildSrc.main.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/buildSrc/byzzbench.buildSrc.test.iml" filepath="$PROJECT_DIR$/.idea/modules/buildSrc/byzzbench.buildSrc.test.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/simulator/byzzbench.simulator.iml" filepath="$PROJECT_DIR$/.idea/modules/simulator/byzzbench.simulator.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/simulator/byzzbench.simulator.aot.iml" filepath="$PROJECT_DIR$/.idea/modules/simulator/byzzbench.simulator.aot.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/simulator/byzzbench.simulator.aotTest.iml" filepath="$PROJECT_DIR$/.idea/modules/simulator/byzzbench.simulator.aotTest.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/simulator/byzzbench.simulator.main.iml" filepath="$PROJECT_DIR$/.idea/modules/simulator/byzzbench.simulator.main.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/simulator/byzzbench.simulator.test.iml" filepath="$PROJECT_DIR$/.idea/modules/simulator/byzzbench.simulator.test.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/utilities/byzzbench.utilities.iml" filepath="$PROJECT_DIR$/.idea/modules/utilities/byzzbench.utilities.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/utilities/byzzbench.utilities.main.iml" filepath="$PROJECT_DIR$/.idea/modules/utilities/byzzbench.utilities.main.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/utilities/byzzbench.utilities.test.iml" filepath="$PROJECT_DIR$/.idea/modules/utilities/byzzbench.utilities.test.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/simulator/git.byzzbench.simulator.main.iml" filepath="$PROJECT_DIR$/.idea/modules/simulator/git.byzzbench.simulator.main.iml" />
+    </modules>
+  </component>
+</project>

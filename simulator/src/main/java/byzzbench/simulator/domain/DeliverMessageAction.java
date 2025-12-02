@@ -1,0 +1,78 @@
+package byzzbench.simulator.domain;
+
+import byzzbench.simulator.Scenario;
+import byzzbench.simulator.transport.MessageEvent;
+import byzzbench.simulator.transport.MessagePayload;
+import byzzbench.simulator.utils.NonNull;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Transient;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.NoArgsConstructor;
+import lombok.ToString;
+import lombok.experimental.SuperBuilder;
+
+import java.time.Instant;
+
+@Entity
+@EqualsAndHashCode(callSuper = true)
+@Data
+@SuperBuilder
+@ToString(callSuper = true)
+@NoArgsConstructor
+public class DeliverMessageAction extends Action {
+    /**
+     * The unique identifier of this message event.
+     */
+    @NonNull
+    private long messageEventId;
+
+    /**
+     * The unique identifier of the receiving node
+     */
+    @NonNull
+    private String recipientId;
+
+    /**
+     * The unique identifier of the client that generated the event.
+     */
+    @NonNull
+    private String senderId;
+
+    /**
+     * The time the request was created.
+     */
+    @NonNull
+    private Instant timestamp;
+
+    /**
+     * The payload of the message.
+     */
+    @NonNull
+    @Column(columnDefinition = "bytea")
+    @Transient // Marked as Transient to avoid JPA persistence issues
+    private MessagePayload payload;
+
+    /**
+     * Converts a MessageEvent to a DeliverMessageAction.
+     *
+     * @param messageEvent The MessageEvent to convert.
+     * @return The DeliverMessageAction that represents the delivery of the message.
+     */
+    public static DeliverMessageAction fromEvent(MessageEvent messageEvent) {
+        return DeliverMessageAction.builder()
+                .messageEventId(messageEvent.getEventId())
+                .recipientId(messageEvent.getRecipientId())
+                .senderId(messageEvent.getSenderId())
+                .timestamp(messageEvent.getTimestamp())
+                .payload(messageEvent.getPayload())
+                .build();
+    }
+
+    @Override
+    public void accept(Scenario scenario) {
+        scenario.getTransport().deliverEvent(this.messageEventId, true);
+
+    }
+}

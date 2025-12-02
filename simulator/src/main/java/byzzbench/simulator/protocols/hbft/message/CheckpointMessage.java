@@ -1,10 +1,10 @@
 package byzzbench.simulator.protocols.hbft.message;
 
+import byzzbench.simulator.exploration_strategy.byzzfuzz.MessageWithByzzFuzzRoundInfo;
 import byzzbench.simulator.protocols.hbft.SpeculativeHistory;
 import byzzbench.simulator.transport.MessagePayload;
-import byzzbench.simulator.transport.messages.MessageWithRound;
 
-public abstract class CheckpointMessage extends MessagePayload implements MessageWithRound{
+public abstract class CheckpointMessage extends MessagePayload implements MessageWithByzzFuzzRoundInfo {
     public abstract String getReplicaId();
 
     public abstract long getLastSeqNumber();
@@ -21,4 +21,5 @@ public abstract class CheckpointMessage extends MessagePayload implements Messag
     public long getRound() {
         return getLastSeqNumber();
     }
+
 }

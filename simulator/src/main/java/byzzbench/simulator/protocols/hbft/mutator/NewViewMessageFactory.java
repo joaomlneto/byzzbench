@@ -15,20 +15,18 @@ import org.springframework.stereotype.Component;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.Optional;
-import java.util.Random;
 
 @Component
 @ToString
 public class NewViewMessageFactory extends MessageMutatorFactory {
     RuntimeException invalidMessageTypeException = new IllegalArgumentException("Invalid message type");
-    Random random = new Random();
     int bound = 100;
 
     @Override
     public List<MessageMutationFault> mutators() {
         return List.of(
                 new MessageMutationFault("hbft-new-view-view-inc", "Increment View Number", List.of(NewViewMessage.class)) {
-                    @Override
+                    @Deprecated
                     public void accept(ScenarioContext serializable) {
                         Optional<Event> event = serializable.getEvent();
                         if (event.isEmpty()) {
@@ -46,7 +44,7 @@ public class NewViewMessageFactory extends MessageMutatorFactory {
                     }
                 },
                 new MessageMutationFault("hbft-new-view-view-dec", "Decrement View Number", List.of(NewViewMessage.class)) {
-                    @Override
+                    @Deprecated
                     public void accept(ScenarioContext serializable) {
                         Optional<Event> event = serializable.getEvent();
                         if (event.isEmpty()) {
@@ -64,7 +62,7 @@ public class NewViewMessageFactory extends MessageMutatorFactory {
                     }
                 },
                 new MessageMutationFault("hbft-new-view-checkpoint-decrement-seqNum", "Decrement checkpoint seqNum", List.of(NewViewMessage.class)) {
-                    @Override
+                    @Deprecated
                     public void accept(ScenarioContext serializable) {
                         Optional<Event> event = serializable.getEvent();
                         if (event.isEmpty()) {
@@ -87,7 +85,7 @@ public class NewViewMessageFactory extends MessageMutatorFactory {
                     }
                 },
                 new MessageMutationFault("hbft-new-view-checkpoint-increment-seqNum", "Increment checkpoint seqNum", List.of(NewViewMessage.class)) {
-                    @Override
+                    @Deprecated
                     public void accept(ScenarioContext serializable) {
                         Optional<Event> event = serializable.getEvent();
                         if (event.isEmpty()) {
@@ -109,7 +107,7 @@ public class NewViewMessageFactory extends MessageMutatorFactory {
                     }
                 },
                 new MessageMutationFault("hbft-new-view-remove-last-req-checkpoint", "Remove last request from checkpoint", List.of(NewViewMessage.class)) {
-                    @Override
+                    @Deprecated
                     public void accept(ScenarioContext serializable) {
                         Optional<Event> event = serializable.getEvent();
                         if (event.isEmpty()) {
@@ -135,7 +133,7 @@ public class NewViewMessageFactory extends MessageMutatorFactory {
                     }
                 },
                 new MessageMutationFault("hbft-new-view-remove-first-req-checkpoint", "Remove first request from checkpoint", List.of(NewViewMessage.class)) {
-                    @Override
+                    @Deprecated
                     public void accept(ScenarioContext serializable) {
                         Optional<Event> event = serializable.getEvent();
                         if (event.isEmpty()) {
@@ -215,7 +213,7 @@ public class NewViewMessageFactory extends MessageMutatorFactory {
                 //     }
                 // },
                 new MessageMutationFault("hbft-new-view-add-increment-last-request", "Increment last req seq number", List.of(NewViewMessage.class)) {
-                    @Override
+                    @Deprecated
                     public void accept(ScenarioContext serializable) {
                         Optional<Event> event = serializable.getEvent();
                         if (event.isEmpty()) {
@@ -239,7 +237,7 @@ public class NewViewMessageFactory extends MessageMutatorFactory {
                     }
                 },
                 new MessageMutationFault("hbft-new-view-add-decrement-last-request", "Decrement last req seq number", List.of(NewViewMessage.class)) {
-                    @Override
+                    @Deprecated
                     public void accept(ScenarioContext serializable) {
                         Optional<Event> event = serializable.getEvent();
                         if (event.isEmpty()) {
@@ -263,7 +261,7 @@ public class NewViewMessageFactory extends MessageMutatorFactory {
                     }
                 },
                 new MessageMutationFault("hbft-new-view-add-increment-first-request", "Increment first req seq number", List.of(NewViewMessage.class)) {
-                    @Override
+                    @Deprecated
                     public void accept(ScenarioContext serializable) {
                         Optional<Event> event = serializable.getEvent();
                         if (event.isEmpty()) {
@@ -287,7 +285,7 @@ public class NewViewMessageFactory extends MessageMutatorFactory {
                     }
                 },
                 new MessageMutationFault("hbft-new-view-add-decrement-first-request", "Decrement first req seq number", List.of(NewViewMessage.class)) {
-                    @Override
+                    @Deprecated
                     public void accept(ScenarioContext serializable) {
                         Optional<Event> event = serializable.getEvent();
                         if (event.isEmpty()) {
@@ -311,7 +309,7 @@ public class NewViewMessageFactory extends MessageMutatorFactory {
                     }
                 },
                 new MessageMutationFault("hbft-new-view-remove-last-request", "Remove last request from R", List.of(NewViewMessage.class)) {
-                    @Override
+                    @Deprecated
                     public void accept(ScenarioContext serializable) {
                         Optional<Event> event = serializable.getEvent();
                         if (event.isEmpty()) {
@@ -334,7 +332,7 @@ public class NewViewMessageFactory extends MessageMutatorFactory {
                     }
                 },
                 new MessageMutationFault("hbft-new-view-remove-first-request", "Remove first request from R", List.of(NewViewMessage.class)) {
-                    @Override
+                    @Deprecated
                     public void accept(ScenarioContext serializable) {
                         Optional<Event> event = serializable.getEvent();
                         if (event.isEmpty()) {
@@ -357,7 +355,7 @@ public class NewViewMessageFactory extends MessageMutatorFactory {
                     }
                 },
                 new MessageMutationFault("hbft-new-view-remove-change-last-req-null", "Change last request to null in R", List.of(NewViewMessage.class)) {
-                    @Override
+                    @Deprecated
                     public void accept(ScenarioContext serializable) {
                         Optional<Event> event = serializable.getEvent();
                         if (event.isEmpty()) {
@@ -380,7 +378,7 @@ public class NewViewMessageFactory extends MessageMutatorFactory {
                     }
                 },
                 new MessageMutationFault("hbft-new-view-remove-change-first-req-null", "Change first request to null in R", List.of(NewViewMessage.class)) {
-                    @Override
+                    @Deprecated
                     public void accept(ScenarioContext serializable) {
                         Optional<Event> event = serializable.getEvent();
                         if (event.isEmpty()) {
@@ -403,7 +401,7 @@ public class NewViewMessageFactory extends MessageMutatorFactory {
                     }
                 },
                 new MessageMutationFault("hbft-new-view-add-null-request", "Add null request to R", List.of(NewViewMessage.class)) {
-                    @Override
+                    @Deprecated
                     public void accept(ScenarioContext serializable) {
                         Optional<Event> event = serializable.getEvent();
                         if (event.isEmpty()) {

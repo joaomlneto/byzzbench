@@ -1,14 +1,13 @@
 package byzzbench.simulator.faults.behaviors;
 
+import byzzbench.simulator.domain.Action;
+import byzzbench.simulator.domain.DropMessageAction;
 import byzzbench.simulator.faults.FaultBehavior;
 import byzzbench.simulator.faults.ScenarioContext;
-import byzzbench.simulator.transport.Event;
-import byzzbench.simulator.transport.MessageEvent;
 import byzzbench.simulator.transport.Router;
 import lombok.extern.java.Log;
 
 import java.util.Collection;
-import java.util.Optional;
 
 @Log
 public class ByzzFuzzDropMessageBehavior implements FaultBehavior {
@@ -78,32 +77,14 @@ public class ByzzFuzzDropMessageBehavior implements FaultBehavior {
     }
 
     @Override
+    public Action toAction(ScenarioContext context) {
+        return DropMessageAction.builder()
+                .eventId(context.getEvent().orElseThrow().getEventId())
+                .build();
+    }
+
+    @Deprecated
     public void accept(ScenarioContext context) {
-        Optional<Event> event = context.getEvent();
-
-        if (event.isEmpty()) {
-            log.warning("No event to mutate");
-            return;
-        }
-
-        Event e = event.get();
-
-        if (!(e instanceof MessageEvent messageEvent)) {
-            log.warning("Event is not a message event");
-            return;
-        }
-
-        String sender = messageEvent.getSenderId();
-        String recipient = messageEvent.getRecipientId();
-
-        // if the sender and recipient are in the same partition, do nothing
-        if (router.haveConnectivity(sender, recipient)) {
-            return;
-        }
-
-        // otherwise, drop the message: the sender and recipient are in different partitions
-        if (e.getStatus() == Event.Status.QUEUED) {
-            context.getScenario().getTransport().dropEvent(e.getEventId());
-        }
+        throw new UnsupportedOperationException("THIS SHOULD BE REMOVED - USE ACTIONS INSTEAD!");
     }
 }

@@ -1,7 +1,7 @@
 package byzzbench.simulator.protocols.fab2;
 
-import byzzbench.simulator.LeaderBasedProtocolReplica;
 import byzzbench.simulator.Scenario;
+import byzzbench.simulator.nodes.LeaderBasedProtocolReplica;
 import byzzbench.simulator.protocols.fab2.messages.*;
 import byzzbench.simulator.state.SerializableLogEntry;
 import byzzbench.simulator.state.TotalOrderCommitLog;
@@ -402,7 +402,8 @@ public class FastByzantineReplica extends LeaderBasedProtocolReplica {
                 committed = true;
 
                 log.info("Learner " + getId() + " sending reply to client...");
-                this.sendReplyToClient(clientId, acceptValue.getValue());
+                // FIXME: Request IDs are not implemented
+                this.sendReplyToClient(clientId, -1, acceptValue.getValue());
             }
 
             multicastMessage(new LearnMessage(acceptValue), this.proposerNodeIds);
@@ -502,7 +503,8 @@ public class FastByzantineReplica extends LeaderBasedProtocolReplica {
                 committed = true;
 
                 log.info("Learner " + getId() + " sending reply to client...");
-                this.sendReplyToClient(clientId, learnMessage.getValueAndProposalNumber().getValue());
+                // FIXME: Request IDs are not implemented
+                this.sendReplyToClient(clientId, -1, learnMessage.getValueAndProposalNumber().getValue());
             }
 
             multicastMessage(new LearnMessage(learnMessage.getValueAndProposalNumber()), this.proposerNodeIds);

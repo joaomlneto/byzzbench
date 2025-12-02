@@ -1,5 +1,6 @@
 package byzzbench.simulator.faults.behaviors;
 
+import byzzbench.simulator.domain.FaultInjectionAction;
 import byzzbench.simulator.faults.FaultBehavior;
 import byzzbench.simulator.faults.ScenarioContext;
 import byzzbench.simulator.transport.Router;
@@ -20,6 +21,11 @@ public class IsolateNodeBehavior implements FaultBehavior {
     }
 
     @Override
+    public FaultInjectionAction toAction(ScenarioContext context) {
+        throw new UnsupportedOperationException("Not implemented yet");
+    }
+
+    @Deprecated
     public void accept(ScenarioContext context) {
         Router router = context.getScenario().getTransport().getRouter();
         router.isolateNode(nodeId);

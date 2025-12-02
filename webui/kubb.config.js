@@ -4,7 +4,6 @@ import createSwaggerClient from "@kubb/swagger-client";
 import createSwaggerTanstackQuery from "@kubb/swagger-tanstack-query";
 import createSwaggerTS from "@kubb/swagger-ts";
 import createSwaggerZod from "@kubb/swagger-zod";
-import createSwaggerZodios from "@kubb/swagger-zodios";
 
 export default defineConfig(async () => {
   return {
@@ -32,7 +31,6 @@ export default defineConfig(async () => {
         dataReturnType: "full",
       }),
       createSwaggerZod({}),
-      createSwaggerZodios({}),
     ],
   };
 });

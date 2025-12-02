@@ -1,5 +1,6 @@
 package byzzbench.simulator.faults;
 
+import byzzbench.simulator.domain.Action;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Data;
 
@@ -7,7 +8,7 @@ import lombok.Data;
  * A base fault implementation that provides a name, predicate, and behavior.
  */
 @Data
-public class BaseFault implements Fault {
+public class BaseFault extends Fault {
     private final String id;
     @JsonIgnore
     private final FaultPredicate predicate;
@@ -19,12 +20,16 @@ public class BaseFault implements Fault {
     }
 
     @Override
+    public Action toAction(ScenarioContext context) {
+        return this.behavior.toAction(context);
+    }
+
+    @Override
     public boolean test(ScenarioContext state) {
         return predicate.test(state);
     }
 
-    @Override
     public void accept(ScenarioContext state) {
-        behavior.accept(state);
+        behavior.toAction(state).accept(state.getScenario());
     }
 }

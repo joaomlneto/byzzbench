@@ -23,35 +23,39 @@ public class LinearBackoff {
     private final Timer timer;
 
     /**
+     * The description of this linear backoff.
+     */
+    private final String description;
+
+    /**
      * The new view number.
      */
     @Getter
     private long newViewNumber;
-
     /**
      * The duration of the timeout.
      */
     @Getter
     private Duration timeout;
-
     /**
      * The start time of the linear backoff.
      */
     private Instant startTime;
-
     /**
      * Whether the linear backoff is waiting for votes.
      */
     @Getter
     private boolean waitingForVotes;
 
-    public LinearBackoff(PbftJavaReplica<?, ?> replica, long curViewNumber, Duration timeout) {
+    public LinearBackoff(PbftJavaReplica<?, ?> replica, long curViewNumber, Duration timeout, String description, Runnable callback) {
         this.replica = replica;
         this.initialTimeout = timeout;
         this.newViewNumber = curViewNumber + 1;
+        this.description = description;
         this.timeout = this.initialTimeout;
         this.startTime = replica.getCurrentTime();
-        this.timer = new Timer(replica, "timeout", timeout, null);
+        this.timer = new Timer(replica, description, timeout, callback);
+        this.timer.start();
     }
 
     public void expire() {
@@ -69,5 +73,9 @@ public class LinearBackoff {
             this.waitingForVotes = false;
             this.startTime = this.replica.getCurrentTime();
         }
+    }
+
+    public void stop() {
+        this.timer.stop();
     }
 }

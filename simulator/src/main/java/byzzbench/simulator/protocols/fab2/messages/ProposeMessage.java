@@ -1,10 +1,9 @@
 package byzzbench.simulator.protocols.fab2.messages;
 
+import byzzbench.simulator.exploration_strategy.byzzfuzz.MessageWithByzzFuzzRoundInfo;
 import byzzbench.simulator.protocols.fab2.Pair;
 import byzzbench.simulator.protocols.fab2.ProgressCertificate;
 import byzzbench.simulator.protocols.pbft_java.message.IPhaseMessage;
-import byzzbench.simulator.transport.MessagePayload;
-import byzzbench.simulator.transport.messages.MessageWithRound;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -17,7 +16,7 @@ import lombok.With;
 @Data
 @EqualsAndHashCode(callSuper = true)
 @With
-public class ProposeMessage extends IPhaseMessage implements MessageWithRound {
+public class ProposeMessage extends IPhaseMessage implements MessageWithByzzFuzzRoundInfo {
     private final String replicaId;
     private final Pair valueAndProposalNumber;
     private final ProgressCertificate progressCertificate;

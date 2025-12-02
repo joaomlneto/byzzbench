@@ -1,7 +1,7 @@
 "use client";
 
 import { Button, Menu, rem } from "@mantine/core";
-import { IconBug, IconHome, IconSearch } from "@tabler/icons-react";
+import { IconBug, IconCamper, IconHome, IconSearch } from "@tabler/icons-react";
 import { useRouter } from "next/navigation";
 import React from "react";
 
@@ -19,6 +19,14 @@ export const HeaderMenu = () => {
           onClick={() => router.push("/")}
         >
           Scenario
+        </Menu.Item>
+        <Menu.Item
+          leftSection={
+            <IconCamper style={{ width: rem(14), height: rem(14) }} />
+          }
+          onClick={() => router.push("/campaigns")}
+        >
+          Campaigns
         </Menu.Item>
         <Menu.Item
           leftSection={

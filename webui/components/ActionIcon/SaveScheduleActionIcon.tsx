@@ -8,10 +8,16 @@ import { IconDeviceFloppy } from "@tabler/icons-react";
 import { useQueryClient } from "@tanstack/react-query";
 import React from "react";
 
-export const SaveScheduleActionIcon = () => {
+export type SaveScheduleActionIconProps = {
+  scheduleId: number;
+};
+
+export const SaveScheduleActionIcon = ({
+  scheduleId,
+}: SaveScheduleActionIconProps) => {
   const queryClient = useQueryClient();
 
-  const { data: schedule } = useGetSchedule();
+  const { data: schedule } = useGetSchedule(scheduleId);
 
   return (
     <Tooltip label="Save current schedule">

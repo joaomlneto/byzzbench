@@ -1,23 +1,21 @@
 "use client";
 import { NodeStateNavLink } from "@/components/NodeStateNavLink";
-import { MessageEvent } from "@/lib/byzzbench-client";
-import { Card, CardProps } from "@mantine/core";
+import { DeliverMessageAction } from "@/lib/byzzbench-client";
+import { CardProps } from "@mantine/core";
 import React from "react";
 
-export type DeliverMessageEventCardProps = {
-  event: MessageEvent;
+export type DeliverMessageActionCardProps = {
+  action: DeliverMessageAction;
 } & CardProps;
 
-export const DeliverMessageEventCard = ({
-  event,
+export const DeliverMessageActionCard = ({
+  action,
   ...otherProps
-}: DeliverMessageEventCardProps) => {
+}: DeliverMessageActionCardProps) => {
   return (
-    <Card p={2} {...otherProps}>
-      <NodeStateNavLink
-        label={`${event.eventId}: Deliver ${event.payload?.type} from ${event.senderId} to ${event.recipientId}`}
-        data={event}
-      />
-    </Card>
+    <NodeStateNavLink
+      label={`Deliver ${action.payload?.type} from ${action.senderId} to ${action.recipientId}`}
+      data={action}
+    />
   );
 };

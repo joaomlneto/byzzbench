@@ -24,7 +24,7 @@ public class PrePrepareMessageMutatorFactory extends MessageMutatorFactory {
                         "pbft-preprepare-view-inc",
                         "Increment View Number",
                         List.of(PrePrepareMessage.class)) {
-                    @Override
+                    @Deprecated
                     public void accept(ScenarioContext serializable) {
                         Optional<Event> event = serializable.getEvent();
                         if (event.isEmpty()) {
@@ -42,7 +42,7 @@ public class PrePrepareMessageMutatorFactory extends MessageMutatorFactory {
                     }
                 },
                 new MessageMutationFault("pbft-preprepare-view-dec", "Decrement View Number", List.of(PrePrepareMessage.class)) {
-                    @Override
+                    @Deprecated
                     public void accept(ScenarioContext serializable) {
                         Optional<Event> event = serializable.getEvent();
                         if (event.isEmpty()) {
@@ -60,7 +60,7 @@ public class PrePrepareMessageMutatorFactory extends MessageMutatorFactory {
                     }
                 },
                 new MessageMutationFault("pbft-preprepare-seq-inc", "Increment Sequence Number", List.of(PrePrepareMessage.class)) {
-                    @Override
+                    @Deprecated
                     public void accept(ScenarioContext serializable) {
                         Optional<Event> event = serializable.getEvent();
                         if (event.isEmpty()) {
@@ -79,7 +79,7 @@ public class PrePrepareMessageMutatorFactory extends MessageMutatorFactory {
                     }
                 },
                 new MessageMutationFault("pbft-preprepare-sec-dec", "Decrement Sequence Number", List.of(PrePrepareMessage.class)) {
-                    @Override
+                    @Deprecated
                     public void accept(ScenarioContext serializable) {
                         Optional<Event> event = serializable.getEvent();
                         if (event.isEmpty()) {
@@ -97,7 +97,7 @@ public class PrePrepareMessageMutatorFactory extends MessageMutatorFactory {
                     }
                 },
                 new MessageMutationFault("pbft-preprepare-digest-modify", "Mutate digest", List.of(PrePrepareMessage.class)) {
-                    @Override
+                    @Deprecated
                     public void accept(ScenarioContext serializable) {
                         Optional<Event> event = serializable.getEvent();
                         if (event.isEmpty()) {
@@ -113,9 +113,10 @@ public class PrePrepareMessageMutatorFactory extends MessageMutatorFactory {
                         mutatedMessage.sign(message.getSignedBy());
                         messageEvent.setPayload(mutatedMessage);
                     }
-                },
+                }
+                /*,
                 new MessageMutationFault("pbft-preprepare-request-operation-modify", "Mutate request operation", List.of(PrePrepareMessage.class)) {
-                    @Override
+                    @Deprecated
                     public void accept(ScenarioContext serializable) {
                         Optional<Event> event = serializable.getEvent();
                         if (event.isEmpty()) {
@@ -131,7 +132,7 @@ public class PrePrepareMessageMutatorFactory extends MessageMutatorFactory {
                         mutatedMessage.sign(message.getSignedBy());
                         messageEvent.setPayload(mutatedMessage);
                     }
-                }
+                }*/
         );
     }
 }

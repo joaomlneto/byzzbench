@@ -1,47 +1,55 @@
 package byzzbench.simulator.protocols.pbft_java;
 
-import byzzbench.simulator.BaseScenario;
-import byzzbench.simulator.Replica;
-import byzzbench.simulator.scheduler.Scheduler;
-import com.fasterxml.jackson.databind.JsonNode;
+import byzzbench.simulator.Scenario;
+import byzzbench.simulator.domain.ScenarioParameters;
+import byzzbench.simulator.domain.Schedule;
+import byzzbench.simulator.exploration_strategy.byzzfuzz.ByzzFuzzRoundInfoOracle;
+import byzzbench.simulator.exploration_strategy.byzzfuzz.ByzzFuzzScenario;
+import byzzbench.simulator.nodes.Client;
+import byzzbench.simulator.nodes.Replica;
 import lombok.extern.java.Log;
 
 import java.time.Duration;
-import java.util.SortedSet;
-import java.util.TreeSet;
 
 /**
  * A scenario for running the <a href="https://github.com/caojohnny/pbft-java">PBFT-Java protocol</a>, an implementation
  * of the PBFT protocol in Java.
  */
 @Log
-public class PbftJavaScenario extends BaseScenario {
+public class PbftJavaScenario extends Scenario implements ByzzFuzzScenario {
     private final int numReplicas = 4;
+    private final PbftJavaByzzFuzzRoundInfoOracle roundInfoOracle;
 
-    public PbftJavaScenario(Scheduler scheduler) {
-        super("pbft-java", scheduler);
-        this.terminationCondition = new PbftTerminationPredicate();
+    /**
+     * Creates a new scenario with the given unique identifier and exploration_strategy.
+     *
+     * @param schedule The schedule for the scenario.
+     */
+    public PbftJavaScenario(Schedule schedule) {
+        super(schedule);
+        roundInfoOracle = new PbftJavaByzzFuzzRoundInfoOracle(this);
     }
 
     @Override
-    public void loadScenarioParameters(JsonNode parameters) {
+    public void loadScenarioParameters(ScenarioParameters parameters) {
         // no parameters to load
     }
 
     @Override
     protected void setup() {
-        SortedSet<String> nodeIds = new TreeSet<>();
+        // add replicas
         for (int i = 0; i < numReplicas; i++) {
-            nodeIds.add(Character.toString((char) ('A' + i)));
+            MessageLog messageLog = new MessageLog(100, 100, 200);
+            Replica replica = new PbftJavaReplica<String, String>(Character.toString((char) ('A' + i)), this, 1, Duration.ofSeconds(1), messageLog);
+            this.addNode(replica);
         }
 
-        nodeIds.forEach(nodeId -> {
-            MessageLog messageLog = new MessageLog(100, 100, 200);
-            Replica replica = new PbftJavaReplica<String, String>(nodeId, this, 1, Duration.ofSeconds(1), messageLog);
-            this.addNode(replica);
-        });
-
-        this.setNumClients(1);
+        // add clients
+        for (int i = 0; i < 1; i++) {
+            String clientId = String.format("C%d", i);
+            Client client = new PbftClient(this, clientId);
+            this.addClient(client);
+        }
     }
 
     @Override
@@ -58,5 +66,20 @@ public class PbftJavaScenario extends BaseScenario {
     @Override
     public int maxFaultyReplicas(int n) {
         return (n - 1) / 3;
+    }
+
+    @Override
+    public Class<? extends Replica> getReplicaClass() {
+        return PbftJavaReplica.class;
+    }
+
+    @Override
+    public Class<? extends Client> getClientClass() {
+        return PbftClient.class;
+    }
+
+    @Override
+    public ByzzFuzzRoundInfoOracle getRoundInfoOracle() {
+        return this.roundInfoOracle;
     }
 }

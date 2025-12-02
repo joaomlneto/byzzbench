@@ -8,7 +8,7 @@ import React, { useMemo, useState } from "react";
 
 const ITEMS_PER_PAGE = 20;
 
-export default function Home() {
+export default function Page() {
   const [selected, setSelected] = useState<"all" | "correct" | "buggy">("all");
   const scheduleIdsQuery = useGetAllScheduleIds({
     query: { enabled: selected === "all" },

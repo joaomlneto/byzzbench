@@ -1,35 +1,41 @@
 package byzzbench.simulator.protocols.XRPL;
 
-import byzzbench.simulator.BaseScenario;
-import byzzbench.simulator.Client;
-import byzzbench.simulator.scheduler.Scheduler;
+import byzzbench.simulator.Scenario;
+import byzzbench.simulator.domain.ScenarioParameters;
+import byzzbench.simulator.domain.Schedule;
+import byzzbench.simulator.nodes.Client;
+import byzzbench.simulator.nodes.Replica;
 import byzzbench.simulator.transport.DefaultClientRequestPayload;
-import com.fasterxml.jackson.databind.JsonNode;
+import lombok.extern.java.Log;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.SortedSet;
 import java.util.TreeSet;
 
-public class XRPLScenario extends BaseScenario {
+@Log
+public class XRPLScenario extends Scenario {
     private final int NUM_NODES = 7;
-
 
     private List<XRPLReplica> replica_list;
 
-    public XRPLScenario(Scheduler scheduler) {
-        super("xrpl", scheduler);
+    /**
+     * Creates a new scenario from the given schedule.
+     *
+     * @param schedule The schedule for the scenario.
+     */
+    public XRPLScenario(Schedule schedule) {
+        super(schedule);
     }
 
     @Override
-    public void loadScenarioParameters(JsonNode parameters) {
+    public void loadScenarioParameters(ScenarioParameters parameters) {
         // no parameters to load
     }
 
     @Override
     protected void setup() {
         setupForScenario3();
-        this.terminationCondition = new XRPLTerminationCondition(replica_list);
     }
 
     @Override
@@ -139,12 +145,13 @@ public class XRPLScenario extends BaseScenario {
     private void runScenario3() {
         System.out.println("Running scenario 3");
         try {
-            this.addClient(new Client(this, "C0") {
+            this.addClient(new XRPLClient(this, "C0") {
                 @Override
                 public void initialize() {
                     this.getScenario().getTransport().sendMessage(
                             this,
-                            new DefaultClientRequestPayload("tx"),
+                            // FIXME: Request IDs are not implemented
+                            new DefaultClientRequestPayload(0, "tx"),
                             "D"
                     );
                     //this.getScenario().getTransport().sendClientRequest(this.getId(), "tx", "D");
@@ -174,6 +181,16 @@ public class XRPLScenario extends BaseScenario {
         return maxFaultyReplicas;
     }
 
+    @Override
+    public Class<? extends Replica> getReplicaClass() {
+        return XRPLReplica.class;
+    }
+
+    @Override
+    public Class<? extends Client> getClientClass() {
+        return XRPLClient.class;
+    }
+
     /**
      * Sends a client request to a replica in the system.
      *
@@ -183,7 +200,8 @@ public class XRPLScenario extends BaseScenario {
      */
     private void sendClientRequest(String fromId, String operation, String toId) {
         Client from = this.getClients().get(fromId);
-        DefaultClientRequestPayload payload = new DefaultClientRequestPayload(operation);
-        this.transport.sendMessage(from, payload, toId);
+        // FIXME: Request IDs are not implemented
+        DefaultClientRequestPayload payload = new DefaultClientRequestPayload(0, operation);
+        this.getTransport().sendMessage(from, payload, toId);
     }
 }

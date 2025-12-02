@@ -1,17 +1,19 @@
 package byzzbench.simulator.protocols.hbft;
 
-import byzzbench.simulator.Client;
+import byzzbench.simulator.Scenario;
+import byzzbench.simulator.nodes.Client;
+import byzzbench.simulator.nodes.ClientReply;
 import byzzbench.simulator.protocols.hbft.message.*;
 import byzzbench.simulator.protocols.hbft.pojo.ClientReplyKey;
+import byzzbench.simulator.transport.DefaultClientReplyPayload;
 import byzzbench.simulator.transport.MessagePayload;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Getter;
-import lombok.experimental.SuperBuilder;
 
 import java.io.Serializable;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.time.Duration;
+import java.time.Instant;
 import java.util.*;
 
 
@@ -20,7 +22,6 @@ import java.util.*;
  * The client is responsible for sending requests to the replicas in the system.
  */
 @Getter
-@SuperBuilder
 public class HbftClient extends Client {
     /**
      * The message digest algorithm to use for hashing messages.
@@ -44,7 +45,7 @@ public class HbftClient extends Client {
     /**
      * The request sequence number already completed.
      */
-    private final Set<ClientReplyKey> completedRequests = new HashSet<>();
+    //private final Set<ClientReplyKey> completedRequests = new HashSet<>();
 
     /**
      * The sent requests.
@@ -54,18 +55,16 @@ public class HbftClient extends Client {
     /**
      * The sent requests by timestamp.
      */
-    private final SortedMap<Long, String> sentRequestsByTimestamp = new TreeMap<>();
+    private final SortedMap<Instant, String> sentRequestsByTimestamp = new TreeMap<>();
 
     /**
      * timeouts
      */
     private final SortedMap<Long, Long> timeouts = new TreeMap<>();
 
-    /**
-     * Timeout for client in seconds
-     */
-    private final long timeout = 8;
-
+    public HbftClient(Scenario scenario, String id) {
+        super(scenario, id);
+    }
 
     /**
      * As of hBFT 4.1, sends a request to all replica in the system.
@@ -73,14 +72,14 @@ public class HbftClient extends Client {
     @Override
     public void sendRequest() {
         String requestId = String.format("%s/%d", getId(), getRequestSequenceNumber().incrementAndGet());
-        long timestamp = this.getCurrentTime().toEpochMilli();
+        Instant timestamp = this.getCurrentTime();
         RequestMessage request = new RequestMessage(requestId, timestamp, getId());
         this.sentRequests.put(getRequestSequenceNumber().get(), request);
         this.sentRequestsByTimestamp.put(timestamp, requestId);
         this.broadcastRequest(timestamp, requestId);
 
         // Set timeout
-        Long timeoutId = this.setTimeout("REQUEST", this::retransmitOrPanic, this.timeout);
+        Long timeoutId = this.setTimeout("REQUEST", this::retransmitOrPanic, this.getTimeout());
         timeouts.put(getRequestSequenceNumber().get(), timeoutId);
     }
 
@@ -90,7 +89,7 @@ public class HbftClient extends Client {
             String requestId = String.format("%s/%d", getId(), getRequestSequenceNumber().get());
             // Based on hBFT 4.1 it uses the identical request
             // TODO: It probably should not be the same timestamp
-            long timestamp = this.sentRequests.get(getRequestSequenceNumber().get()).getTimestamp();
+            Instant timestamp = this.sentRequests.get(getRequestSequenceNumber().get()).getTimestamp();
             this.broadcastRequest(timestamp, requestId);
         } else if (this.shouldPanic(tolerance)) {
             RequestMessage message = this.sentRequests.get(getRequestSequenceNumber().get());
@@ -98,13 +97,13 @@ public class HbftClient extends Client {
             getScenario().getTransport().multicast(this, getScenario().getTransport().getNodeIds(), panic);
         }
         this.clearTimeout(timeouts.get(getRequestSequenceNumber().get()));
-        Long timeoutId = this.setTimeout("REQUEST", this::retransmitOrPanic, this.timeout);
+        Long timeoutId = this.setTimeout("REQUEST", this::retransmitOrPanic, this.getTimeout());
         timeouts.put(getRequestSequenceNumber().get(), timeoutId);
     }
 
-    private void broadcastRequest(long timestamp, String requestId) {
+    private void broadcastRequest(Instant timestamp, String requestId) {
         MessagePayload payload = new ClientRequestMessage(timestamp, requestId);
-        SortedSet<String> replicaIds = getScenario().getTransport().getNodeIds();
+        SortedSet<String> replicaIds = getScenario().getReplicaIds(this);
         getScenario().getTransport().multicast(this, replicaIds, payload);
     }
 
@@ -114,11 +113,19 @@ public class HbftClient extends Client {
      * @param senderId The ID of the sender of the reply.
      * @param payload  The payload received by the client.
      */
+    @Override
     public void handleMessage(String senderId, MessagePayload payload) {
-        if (!(payload instanceof ClientReplyMessage clientReplyMessage)) {
+        //System.out.printf("Client %s received %s from %s: %s%n", getId(), payload.getClass().getCanonicalName(), senderId, payload.getType());
+        
+        if (!(payload instanceof DefaultClientReplyPayload clientReplyMessage)) {
             return;
         }
-        ReplyMessage reply = clientReplyMessage.getReply();
+
+        if (!(clientReplyMessage.getReply() instanceof ClientReplyMessage replyMessage)) {
+            return;
+        }
+
+        ReplyMessage reply = replyMessage.getReply();
         ClientReplyKey key = new ClientReplyKey(reply.getResult().toString(), reply.getSequenceNumber());
         // Default is for testing only
         String currRequest = this.sentRequestsByTimestamp.getOrDefault(reply.getTimestamp(), "C/0");
@@ -130,26 +137,18 @@ public class HbftClient extends Client {
          * If the client received 2f + 1 correct replies,
          * and the request has not been completed yet.
          */
-        if (this.completedReplies(clientReplyMessage.getTolerance())
-                && !this.completedRequests.contains(key)
-                && getRequestSequenceNumber().get() <= getMaxRequests()) {
+        if (this.completedReplies(replyMessage.getTolerance())
+                && !this.completedRequests.contains(key)) {
             this.completedRequests.add(key);
             this.clearTimeout(this.timeouts.get(getRequestSequenceNumber().get()));
             this.sendRequest();
         }
     }
 
-    /**
-     * Set a timeout for this replica.
-     *
-     * @param name    a name for the timeout
-     * @param r       the runnable to execute when the timeout occurs
-     * @param timeout the timeout duration
-     * @return the timer object
-     */
-    public long setTimeout(String name, Runnable r, long timeout) {
-        Duration duration = Duration.ofSeconds(timeout);
-        return getScenario().getTransport().setTimeout(this, r, duration, name);
+    @Override
+    public boolean isRequestCompleted(ClientReply message) {
+        // we use custom logic. this should not be called!
+        throw new UnsupportedOperationException("isRequestCompleted is not supported in HbftClient");
     }
 
     /**
@@ -195,13 +194,6 @@ public class HbftClient extends Client {
         }
         return false;
     }
-
-    /**
-     * Clear all timeouts for this client.
-     */
-    // public void clearAllTimeouts() {
-    //     getScenario.getTransport().clearClientTimeouts(getId());
-    // }
 
     /**
      * Create a digest of a message.
