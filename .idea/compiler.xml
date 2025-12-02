@@ -9,7 +9,7 @@
           <entry name="$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.springframework.boot/spring-boot-configuration-processor/3.3.9/dce346a787b9de899bdf667adfaf87ce1bd69627/spring-boot-configuration-processor-3.3.9.jar" />
           <entry name="$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.projectlombok/lombok/1.18.36/5a30490a6e14977d97d9c73c924c1f1b5311ea95/lombok-1.18.36.jar" />
         </processorPath>
-        <module name="byzzbench.simulator.main" />
+        <module name="git.byzzbench.simulator.main" />
       </profile>
     </annotationProcessing>
     <bytecodeTargetLevel target="21" />
@@ -21,6 +21,7 @@
       <module name="byzzbench.simulator.aotTest" options="-parameters" />
       <module name="byzzbench.simulator.main" options="-parameters" />
       <module name="byzzbench.simulator.test" options="-parameters" />
+      <module name="git.byzzbench.simulator.main" options="-parameters" />
     </option>
   </component>
 </project>
