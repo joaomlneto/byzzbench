@@ -76,15 +76,18 @@ public abstract class ByzzFuzzRoundInfoOracle implements Serializable, Transport
         ByzzFuzzRoundInfo replicaRoundInfo = this.getReplicaRoundInfo(replicaId);
         if (messageRoundInfo.getViewNumber() > replicaRoundInfo.getViewNumber()) {
             // timeout / new-view triggered, possibly faulty leader, move to the next round
+            log.info("Updating replica %s view number from %s to %s".formatted(replicaId, replicaRoundInfo, messageRoundInfo));
             this.replicasRoundInfo.put(replicaId, messageRoundInfo);
         } else if (messageRoundInfo.getViewNumber() == replicaRoundInfo.getViewNumber()
                 && messageRoundInfo.getSequenceNumber() > replicaRoundInfo.getSequenceNumber()) {
             // sequence number incremented (something was committed)
+            log.info("Updating replica %s view number from %s to %s".formatted(replicaId, replicaRoundInfo, messageRoundInfo));
             this.replicasRoundInfo.put(replicaId, messageRoundInfo);
         } else if (messageRoundInfo.getViewNumber() == replicaRoundInfo.getViewNumber()
                 && messageRoundInfo.getSequenceNumber() == replicaRoundInfo.getSequenceNumber()
                 && messageRoundInfo.getVerbIndex() > replicaRoundInfo.getVerbIndex()) {
             // increase the round until the final verb (possibly out-of-order messages)
+            log.info("Updating replica %s view number from %s to %s".formatted(replicaId, replicaRoundInfo, messageRoundInfo));
             this.replicasRoundInfo.put(replicaId, messageRoundInfo);
         }
     }
@@ -143,25 +146,53 @@ public abstract class ByzzFuzzRoundInfoOracle implements Serializable, Transport
         return scenario.getReplicas().containsKey(nodeId);
     }
 
-    @Override
-    public void onMulticast(Node sender, SortedSet<String> recipients, MessagePayload payload) {
-        System.out.println("ByzzFuzzRoundInfoOracle#onMulticast");
-        System.out.println("payload: " + payload);
-        // ensure the message is MessageWithByzzFuzzRoundInfo
-        if (!(payload instanceof MessageWithByzzFuzzRoundInfo messageWithRoundInfo)) {
-            System.out.println("not a message with byzzfuzz round info");
+    private void onMulticastToReplicas(String senderId, ByzzFuzzRoundInfo messageRoundInfo) {
+        long currentReplicaRound = getReplicaRound(senderId);
+
+        if (messageRoundInfo == null) {
+            // Nothing to do if we don't know how to extract round info for replica-directed messages
             return;
         }
+
+        // if verb index is zero, skip
+        if (messageRoundInfo.getVerbIndex() == 0) {
+            return;
+        }
+
+        this.replicaRounds.put(senderId, currentReplicaRound + inSmallerRound(senderId, messageRoundInfo));
+        this.updateReplicaRoundInfo(senderId, messageRoundInfo);
+    }
+
+    private void onMulticastToClients(String senderId) {
+        long currentReplicaRound = getReplicaRound(senderId);
+        ByzzFuzzRoundInfo replicaRoundInfo = this.getReplicaRoundInfo(senderId);
+        int finalVerb = this.numRoundsToProcessRequest();
+
+        // Match FaultInjector semantics: always increment round by +1 on reply
+        this.replicaRounds.put(senderId, currentReplicaRound + 1);
+
+        // After sending a reply, the replica should be at the final verb for the current (view, seq)
+        ByzzFuzzRoundInfo afterReplyRoundInfo = new ByzzFuzzRoundInfo(
+                replicaRoundInfo.getViewNumber(),
+                replicaRoundInfo.getSequenceNumber(),
+                finalVerb
+        );
+        this.replicasRoundInfo.put(senderId, afterReplyRoundInfo);
+    }
+
+    @Override
+    public void onMulticast(Node sender, SortedSet<String> recipients, MessagePayload payload) {
         String senderReplicaId = sender.getId();
 
         // ensure the sender is a replica
         if (!isReplica(senderReplicaId)) {
-            System.out.println("sender is not a replica");
             return;
         }
 
-        ByzzFuzzRoundInfo messageRoundInfo = extractMessageRoundInformation(messageWithRoundInfo);
-        long currentReplicaRound = getReplicaRound(senderReplicaId);
+        // Ensure round information is available
+        if (!(payload instanceof MessageWithByzzFuzzRoundInfo messageWithRoundInfo)) {
+            return;
+        }
 
         // check if the recipients are replicas or clients
         boolean sentToClient = recipients.stream().anyMatch(this::isClient);
@@ -179,28 +210,10 @@ public abstract class ByzzFuzzRoundInfoOracle implements Serializable, Transport
 
         // Replica multicasted a message to other replicas
         if (sentToReplicas) {
-            System.out.println("sent to replicas!!");
-            System.out.println("verb index: " + messageRoundInfo.getVerbIndex());
-            // if verb index is zero, skip
-            if (messageRoundInfo.getVerbIndex() == 0) {
-                return;
-            }
-            this.replicaRounds.put(senderReplicaId, currentReplicaRound + inSmallerRound(senderReplicaId, messageRoundInfo));
-            this.updateReplicaRoundInfo(senderReplicaId, messageRoundInfo);
-            return;
-        }
-
-        // Replica sent a message to clients
-        if (sentToClient) {
-            System.out.println("sent to client!!");
-            this.replicaRounds.put(senderReplicaId, currentReplicaRound + 1);
-            ByzzFuzzRoundInfo replicaRoundInfo = this.getReplicaRoundInfo(senderReplicaId);
-            ByzzFuzzRoundInfo afterReplyRoundInfo = new ByzzFuzzRoundInfo(
-                    replicaRoundInfo.getViewNumber(),
-                    replicaRoundInfo.getSequenceNumber(),
-                    this.numRoundsToProcessRequest()
-            );
-            this.replicasRoundInfo.put(senderReplicaId, afterReplyRoundInfo);
+            ByzzFuzzRoundInfo messageRoundInfo = extractMessageRoundInformation(messageWithRoundInfo);
+            this.onMulticastToReplicas(senderReplicaId, messageRoundInfo);
+        } else {
+            this.onMulticastToClients(senderReplicaId);
         }
     }
 
@@ -241,7 +254,6 @@ public abstract class ByzzFuzzRoundInfoOracle implements Serializable, Transport
 
     @Override
     public void onEventDelivered(Event event) {
-        System.out.println("ByzzFuzzRoundInfoOracle#onEventDelivered");
         // ensure it is a message
         if (!(event instanceof MessageEvent messageEvent)) {
             return;
