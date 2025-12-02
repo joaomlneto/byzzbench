@@ -1,8 +1,11 @@
 title: ByzzBench
 description: "ByzzBench: A Benchmark Framework for Byzantine Fault Tolerance Testing Algorithms"
 theme: just-the-docs
-
+baseurl: "/byzzbench"
 url: https://just-the-docs.github.io
+repository: joaomlneto/byzzbench
+
+permalink: pretty
 
 aux_links:
   Repository: https://github.com/joaomlneto/byzzbench
