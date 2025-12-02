@@ -45,7 +45,7 @@ jobs:
 
       - name: Build container image with gradle, and push to registry
         run: |
-          ./gradlew bootBuildImage -DskipTests=true
+          ./gradlew bootBuildImage
         #docker push ghcr.io/joaomlneto/$IMAGE_NAME:$IMAGE_TAG
         env:
           MAVEN_REPOSITORY_USERNAME: ${{ github.actor }}
