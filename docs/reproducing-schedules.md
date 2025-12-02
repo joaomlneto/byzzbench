@@ -1,3 +1,8 @@
+---
+layout: default
+title: Reproducing Schedules
+---
+
 # Reproducing Schedules
 
 ByzzBench ensures that the execution of distributed systems is fully deterministic. This means that given the same

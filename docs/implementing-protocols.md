@@ -1,3 +1,8 @@
+---
+layout: default
+title: Implementing new BFT Protocols
+---
+
 # Implementing new BFT Protocols
 
 This document describes the steps to implement a new BFT protocol in ByzzBench.
