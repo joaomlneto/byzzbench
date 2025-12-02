@@ -59,7 +59,8 @@ public class Schedule implements Serializable {
      * The set of invariants that are violated by this schedule.
      */
     @NonNull
-    @Transient
+    @Type(JsonType.class)
+    @Column(columnDefinition = "json")
     private SortedSet<ScenarioPredicate> brokenInvariants = new TreeSet<>();
 
     /**
@@ -161,6 +162,10 @@ public class Schedule implements Serializable {
 
     public boolean isMaterialized() {
         return this.scenario != null;
+    }
+
+    public void clearScenario() {
+        this.scenario = null;
     }
 
     /**
