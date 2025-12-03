@@ -40,7 +40,7 @@ export default function Home() {
   const { data: schedulerIds } = useGetSchedulers();
 
   // Client-side pagination for scenarios
-  const SCENARIOS_PER_PAGE = 3;
+  const SCENARIOS_PER_PAGE = 10;
   const scenariosList = scenarioIds?.data ?? [];
   const scenariosTotalPages =
     Math.ceil(scenariosList.length / SCENARIOS_PER_PAGE) || 1;
@@ -52,7 +52,7 @@ export default function Home() {
   const scenariosEnd = scenariosStart + SCENARIOS_PER_PAGE;
 
   // Client-side pagination for schedules
-  const SCHEDULES_PER_PAGE = 3;
+  const SCHEDULES_PER_PAGE = 10;
   const schedulesList = scheduleIds?.data ?? [];
   const schedulesTotalPages =
     Math.ceil(schedulesList.length / SCHEDULES_PER_PAGE) || 1;
