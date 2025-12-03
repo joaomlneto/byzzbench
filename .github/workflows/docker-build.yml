@@ -40,6 +40,36 @@ jobs:
         run: |
           ./gradlew test
 
+      # Ensure OpenAPI spec is generated for the WebUI codegen step
+      - name: Generate OpenAPI spec
+        run: ./gradlew generateOpenApiDocs
+
+      # Build the Web UI to ensure it still compiles successfully
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'pnpm'
+          cache-dependency-path: 'webui/pnpm-lock.yaml'
+
+      - name: Install WebUI dependencies
+        working-directory: webui
+        run: |
+          corepack enable pnpm
+          pnpm i --frozen-lockfile
+
+      - name: Generate WebUI API client from OpenAPI
+        run: |
+          cp simulator/build/openapi.json webui/openapi.json
+          cd webui
+          pnpm run kubb:generate -- ./openapi.json
+
+      - name: Build WebUI
+        working-directory: webui
+        run: |
+          corepack enable pnpm
+          pnpm run build
+
       - name: Build container image with gradle, and push to registry
         run: |
           ./gradlew bootBuildImage
