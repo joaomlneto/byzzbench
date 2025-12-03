@@ -52,11 +52,16 @@ jobs:
           cache: 'pnpm'
           cache-dependency-path: 'webui/pnpm-lock.yaml'
 
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+          run_install: false
+
       - name: Install WebUI dependencies
         working-directory: webui
         run: |
-          corepack enable pnpm
-          pnpm i --frozen-lockfile
+          pnpm install --frozen-lockfile
 
       - name: Generate WebUI API client from OpenAPI
         run: |
@@ -67,7 +72,6 @@ jobs:
       - name: Build WebUI
         working-directory: webui
         run: |
-          corepack enable pnpm
           pnpm run build
 
       - name: Build container image with gradle, and push to registry
