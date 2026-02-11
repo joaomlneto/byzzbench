@@ -24,7 +24,7 @@
     "@tanstack/react-query": "^5.81.5",
     "@tanstack/react-query-devtools": "^5.81.5",
     "@tanstack/react-query-next-experimental": "^5.81.5",
-    "axios": "^1.8.1",
+    "axios": "^1.13.5",
     "clsx": "^2.1.1",
     "dayjs": "^1.11.13",
     "next": "^15.5.3",
