@@ -50,7 +50,7 @@ importers:
         version: 5.87.1(@tanstack/react-query@5.87.1(react@19.1.1))(next@15.5.10(react-dom@19.1.1(react@19.1.1))(react@19.1.1))(react@19.1.1)
       axios:
         specifier: ^1.8.1
-        version: 1.12.0
+        version: 1.13.5
       clsx:
         specifier: ^2.1.1
         version: 2.1.1
@@ -93,10 +93,10 @@ importers:
         version: 2.28.4(@kubb/react@2.28.4)(encoding@0.1.13)
       '@kubb/swagger-client':
         specifier: ^2.12.3
-        version: 2.28.4(@kubb/react@2.28.4)(axios@1.12.0)(encoding@0.1.13)
+        version: 2.28.4(@kubb/react@2.28.4)(axios@1.13.5)(encoding@0.1.13)
       '@kubb/swagger-tanstack-query':
         specifier: ^2.12.3
-        version: 2.28.4(@kubb/react@2.28.4)(axios@1.12.0)(encoding@0.1.13)
+        version: 2.28.4(@kubb/react@2.28.4)(axios@1.13.5)(encoding@0.1.13)
       '@kubb/swagger-ts':
         specifier: ^2.12.3
         version: 2.28.4(@kubb/react@2.28.4)(encoding@0.1.13)
@@ -1134,8 +1134,8 @@ packages:
     resolution: {integrity: sha512-Xm7bpRXnDSX2YE2YFfBk2FnF0ep6tmG7xPh8iHee8MIcrgq762Nkce856dYtJYLkuIoYZvGfTs/PbZhideTcEg==}
     engines: {node: '>=4'}
 
-  axios@1.12.0:
-    resolution: {integrity: sha512-oXTDccv8PcfjZmPGlWsPSwtOJCZ/b6W5jAMCNcfwJbCzDckwG0jrYJFaWH1yvivfCXjVzV/SPDEhMB3Q+DSurg==}
+  axios@1.13.5:
+    resolution: {integrity: sha512-cz4ur7Vb0xS4/KUN0tPWe44eqxrIu31me+fbang3ijiNscE129POzipJJA6zniq2C/Z6sJCjMimjS8Lc/GAs8Q==}
 
   axobject-query@4.1.0:
     resolution: {integrity: sha512-qIj0G9wZbMGNLjLmg1PT6v2mE9AH2zlnADJD/2tC6E00hgmhUOfEB6greHPAfLRSufHqROIUTkw6E+M3lH0PTQ==}
@@ -2001,7 +2001,7 @@ packages:
 
   glob@7.2.3:
     resolution: {integrity: sha512-nFR0zLpU2YCaRxwoCJvL6UvCH2JFyFVIvwTLsIf21AuHlMskA1hhTdk+LlYJtOlYt9v6dvszD2BGRqBL+iQK9Q==}
-    deprecated: Glob versions prior to v9 are no longer supported
+    deprecated: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting i@izs.me
 
   globals@13.24.0:
     resolution: {integrity: sha512-AhO5QUcj8llrbG09iWhPU2B204J1xnPeL8kQmVorSsy+Sjj1sk8gIyh6cUocGmH4L0UuhAJy+hJMRA4mgA4mFQ==}
@@ -4062,7 +4062,7 @@ snapshots:
       '@kubb/parser-ts': 2.28.4
       natural-orderby: 3.0.2
 
-  '@kubb/swagger-client@2.28.4(@kubb/react@2.28.4)(axios@1.12.0)(encoding@0.1.13)':
+  '@kubb/swagger-client@2.28.4(@kubb/react@2.28.4)(axios@1.13.5)(encoding@0.1.13)':
     dependencies:
       '@kubb/core': 2.28.4
       '@kubb/fs': 2.28.4
@@ -4072,12 +4072,12 @@ snapshots:
       '@kubb/react': 2.28.4
       '@kubb/swagger-ts': 2.28.4(@kubb/react@2.28.4)(encoding@0.1.13)
     optionalDependencies:
-      axios: 1.12.0
+      axios: 1.13.5
     transitivePeerDependencies:
       - encoding
       - supports-color
 
-  '@kubb/swagger-tanstack-query@2.28.4(@kubb/react@2.28.4)(axios@1.12.0)(encoding@0.1.13)':
+  '@kubb/swagger-tanstack-query@2.28.4(@kubb/react@2.28.4)(axios@1.13.5)(encoding@0.1.13)':
     dependencies:
       '@kubb/core': 2.28.4
       '@kubb/fs': 2.28.4
@@ -4085,7 +4085,7 @@ snapshots:
       '@kubb/parser-ts': 2.28.4
       '@kubb/plugin-oas': 2.28.4(@kubb/react@2.28.4)(encoding@0.1.13)
       '@kubb/react': 2.28.4
-      '@kubb/swagger-client': 2.28.4(@kubb/react@2.28.4)(axios@1.12.0)(encoding@0.1.13)
+      '@kubb/swagger-client': 2.28.4(@kubb/react@2.28.4)(axios@1.13.5)(encoding@0.1.13)
       '@kubb/swagger-ts': 2.28.4(@kubb/react@2.28.4)(encoding@0.1.13)
       '@kubb/swagger-zod': 2.28.4(@kubb/react@2.28.4)(encoding@0.1.13)
     transitivePeerDependencies:
@@ -4705,7 +4705,7 @@ snapshots:
 
   axe-core@4.10.3: {}
 
-  axios@1.12.0:
+  axios@1.13.5:
     dependencies:
       follow-redirects: 1.15.11
       form-data: 4.0.5
@@ -7300,7 +7300,7 @@ snapshots:
     dependencies:
       call-bind: 1.0.8
       define-properties: 1.2.1
-      es-object-atoms: 1.0.0
+      es-object-atoms: 1.1.1
 
   string_decoder@1.1.1:
     dependencies:
