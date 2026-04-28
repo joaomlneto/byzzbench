@@ -3,7 +3,7 @@ FROM node:24 AS nodejs-base
 
 # Generate the OpenAPI docs and build the Java application with better caching
 # Use a Gradle image that includes JDK 21 to align with runtime
-FROM gradle:8-jdk21 AS java-builder
+FROM gradle:9-jdk21 AS java-builder
 
 WORKDIR /app
 
