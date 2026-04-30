@@ -15,11 +15,11 @@ repositories {
 dependencies {
     constraints {
         // Define dependency versions as constraints
-        implementation("org.apache.commons:commons-text:1.13.1")
+        implementation("org.apache.commons:commons-text:1.15.0")
     }
 
     // Use JUnit Jupiter for testing.
-    testImplementation("org.junit.jupiter:junit-jupiter:6.0.1")
+    testImplementation("org.junit.jupiter:junit-jupiter:6.0.3")
 
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
