@@ -1,5 +1,5 @@
-# syntax=docker/dockerfile:1.6
-FROM node:24 AS nodejs-base
+# syntax=docker/dockerfile:1.23
+FROM node:24.15.0 AS nodejs-base
 
 # Generate the OpenAPI docs and build the Java application with better caching
 # Use a Gradle image that includes JDK 21 to align with runtime
