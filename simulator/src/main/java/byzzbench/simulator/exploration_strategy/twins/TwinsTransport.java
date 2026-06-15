@@ -1,5 +1,6 @@
 package byzzbench.simulator.exploration_strategy.twins;
 
+import byzzbench.simulator.Scenario;
 import byzzbench.simulator.exploration_strategy.byzzfuzz.MessageWithByzzFuzzRoundInfo;
 import byzzbench.simulator.nodes.Node;
 import byzzbench.simulator.nodes.Replica;
@@ -13,50 +14,97 @@ import java.time.Duration;
 import java.util.*;
 
 /**
- * A transport layer that is used by the {@link TwinsReplica} to route messages
- * internally between the twin replica instances.
+ * A transport layer that enforces a <b>single, global, per-round network
+ * partition</b> shared by every replica in the scenario, as described in
+ * "Twins: BFT Systems Made Robust" by Shehar Bano, Alberto Sonnino, Andrey
+ * Chursin, Dmitri Perelman, Zekun Li, Avery Ching and Dahlia Malkhi.
+ * https://drops.dagstuhl.de/entities/document/10.4230/LIPIcs.OPODIS.2021.7
+ * <p>
+ * The partitions are a property of the <i>scenario</i>, not of an individual
+ * twin: a message between two nodes is delivered for a given round only if both
+ * the (effective) sender address and the (effective) recipient address belong
+ * to the same partition of that round. The same schedule governs honest&harr;honest,
+ * honest&harr;twin and twin&harr;honest links alike.
+ * <p>
+ * Twin instances are represented in the partition by their internal addresses
+ * ({@code <id>:0}, {@code <id>:1}, ...) while honest replicas are represented by
+ * their plain id. This lets a node and its twin be placed in different
+ * partitions (account-address filtering, not public-key filtering), which is
+ * what enables equivocation/amnesia/lost-state behaviors.
  */
 @Log
 public class TwinsTransport extends Transport implements Serializable {
     /**
-     * Partitions to use for the replicas if another partition is not specified.
+     * The single global per-round partition schedule shared by all nodes.
+     * Maps a round number to the list of partitions in effect for that round.
+     */
+    @Getter
+    private final NavigableMap<Long, List<List<String>>> roundPartitions = new TreeMap<>();
+
+    /**
+     * Partition to use when a message carries no round information: a single
+     * partition containing the whole universe (i.e. fully connected).
      */
     @Getter
     private final List<List<String>> defaultPartitions;
 
     /**
-     * Scheduled partitions to use for each round.
+     * Effective (partition-universe) address of each replica instance. Honest
+     * replicas map to their id; twin instances map to their internal id.
      */
-    @Getter
-    private final Map<Long, List<List<String>>> roundPartitions = new TreeMap<>();
-
-    @Getter
-    private final Map<String, List<Long>> queuedTimeouts = new TreeMap<>();
+    private final Map<Replica, String> senderAddress = new HashMap<>();
 
     /**
-     * The Twins Replica using this transport.
+     * Maps an external recipient id to the effective addresses it expands to. An
+     * honest replica maps to a singleton of its id; a twin replica maps to the
+     * internal ids of all its instances.
      */
-    private final TwinsReplica twinsReplica;
+    private final Map<String, List<String>> recipientAddresses = new HashMap<>();
 
     /**
-     * Create a new Twins transport layer for the given Twins replica.
+     * Ids of the consensus replicas. Used to let client traffic bypass
+     * inter-replica partitioning.
+     */
+    private final Set<String> replicaIds = new HashSet<>();
+
+    /**
+     * Queued timeout event ids, tracked per effective address so that a twin
+     * instance's timeouts can be cleared independently of its sibling (which
+     * shares the same external id).
+     */
+    @Getter
+    private final Map<String, List<Long>> queuedTimeouts = new HashMap<>();
+
+    /**
+     * Create the global Twins transport.
      *
-     * @param twinsReplica the Twins replica
+     * @param scenario        the scenario
+     * @param roundPartitions the single, global per-round partition schedule
+     * @param universe        the partition universe (all effective addresses)
      */
-    public TwinsTransport(TwinsReplica twinsReplica) {
-        super(twinsReplica.getScenario());
-        this.twinsReplica = twinsReplica;
+    public TwinsTransport(Scenario scenario, Map<Long, List<List<String>>> roundPartitions, List<String> universe) {
+        super(scenario);
+        this.roundPartitions.putAll(roundPartitions);
+        this.defaultPartitions = List.of(new ArrayList<>(universe));
 
-        // By default, both internal replicas will be connected to the network.
-        List<String> singlePartition = new ArrayList<>();
-        singlePartition.addAll(twinsReplica.getNodeIds().stream().filter(id -> !id.equals(twinsReplica.getId())).toList());
-        singlePartition.addAll(twinsReplica.getInternalIds());
-        this.defaultPartitions = List.of(singlePartition);
+        // Build the address book for every consensus replica in the scenario.
+        for (Replica replica : scenario.getReplicas().values()) {
+            this.replicaIds.add(replica.getId());
+            if (replica instanceof TwinsReplica twin) {
+                this.recipientAddresses.put(twin.getId(), twin.getInternalIds());
+                for (Replica instance : twin.getReplicas()) {
+                    this.senderAddress.put(instance, twin.getInternalId(instance));
+                }
+            } else {
+                this.recipientAddresses.put(replica.getId(), List.of(replica.getId()));
+                this.senderAddress.put(replica, replica.getId());
+            }
+        }
     }
 
-
     /**
-     * Get the partitions to use for a given round number
+     * Get the partitions in effect for the given round (fully connected if the
+     * round has no scheduled partition, e.g. when over-running past numRounds).
      *
      * @param roundNumber the round number
      * @return the partitions to use
@@ -66,141 +114,140 @@ public class TwinsTransport extends Transport implements Serializable {
     }
 
     /**
-     * Get the partition that the given replica ID is in for the given round number.
+     * Get the effective partition-universe addresses an external id expands to.
      *
-     * @param replicaId   the replica ID
-     * @param roundNumber the round number
-     * @return the partition
+     * @param externalId the external (network-visible) id
+     * @return the effective addresses
      */
-    public List<String> getReplicaRoundPartition(String replicaId, long roundNumber) {
-        List<List<String>> partition = getRoundPartition(roundNumber);
-
-        for (List<String> replicaPartition : partition) {
-            if (replicaPartition.contains(replicaId)) {
-                return replicaPartition;
-            }
-        }
-
-        throw new IllegalArgumentException("Replica ID not found in any partition: " + replicaId);
+    public List<String> getEffectiveAddresses(String externalId) {
+        return this.recipientAddresses.getOrDefault(externalId, List.of(externalId));
     }
 
     /**
-     * Check if two nodes can communicate with each other, given a specific partition.
+     * Get the partition (for the given round) that contains the given address,
+     * or {@code null} if the address is not part of any partition.
      *
-     * @param sender    the sender node (internal ID of internal "twin" replica)
-     * @param recipient the recipient node
-     * @return true if the two nodes can communicate
+     * @param address the effective address
+     * @param round   the round number
+     * @return the partition containing the address, or null
      */
-    public boolean canSendMessage(String sender, String recipient, MessagePayload message) {
-        List<String> partition;
-        if (message instanceof MessageWithByzzFuzzRoundInfo messageWithByzzFuzzRoundInfo) {
-            // If the message has a round number, use the partition for that round
-            partition = getReplicaRoundPartition(sender, messageWithByzzFuzzRoundInfo.getRound());
-        } else {
-            // Default to the default partition
-            partition = getDefaultPartitions()
-                    .stream()
-                    .filter(p -> p.contains(sender))
-                    .findFirst()
-                    .orElseThrow(() -> new IllegalArgumentException("Sender not found in any partition: " + sender));
+    public List<String> getPartitionContaining(String address, long round) {
+        for (List<String> partition : getRoundPartition(round)) {
+            if (partition.contains(address)) {
+                return partition;
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Get the effective partition-universe address of a sending node.
+     */
+    private String getEffectiveAddress(Node node) {
+        if (node instanceof Replica replica) {
+            return this.senderAddress.getOrDefault(replica, replica.getId());
+        }
+        return node.getId();
+    }
+
+    /**
+     * Decide whether a message from {@code sender} can reach {@code recipient}
+     * under the global partition for the message's round.
+     *
+     * @param sender    the sending node
+     * @param recipient the external recipient id
+     * @param message   the message being sent
+     * @return true if the message can be delivered
+     */
+    public boolean canSendMessage(Node sender, String recipient, MessagePayload message) {
+        // Client (or otherwise non-consensus) traffic is never partitioned.
+        if (!this.replicaIds.contains(recipient)) {
+            return true;
         }
 
-        if (partition == null) {
-            throw new IllegalArgumentException("Sender not found in any partition: " + sender);
+        // Without round information we cannot place the message in a round, so it
+        // is not subject to round-based partitioning (treated as fully connected).
+        if (!(message instanceof MessageWithByzzFuzzRoundInfo roundInfo)) {
+            return true;
         }
 
-        return partition.contains(recipient);
+        long round = roundInfo.getRound();
+        String senderAddr = getEffectiveAddress(sender);
+        List<String> senderPartition = getPartitionContaining(senderAddr, round);
+
+        // Sender outside the partition universe: fail open.
+        if (senderPartition == null) {
+            return true;
+        }
+
+        // Deliverable iff some instance of the recipient shares the partition.
+        return getEffectiveAddresses(recipient).stream().anyMatch(senderPartition::contains);
     }
 
     @Override
     public synchronized void sendMessage(Node sender, MessagePayload message, String recipient) {
-        // Sanity check
-        if (!(sender instanceof Replica replicaSender)) {
-            throw new IllegalArgumentException("Sender must be a Replica");
-        }
-
-        String internalId = this.twinsReplica.getInternalId(replicaSender);
-
-        if (canSendMessage(internalId, recipient, message)) {
+        if (canSendMessage(sender, recipient, message)) {
             this.getScenario().getTransport().sendMessage(sender, message, recipient);
         } else {
-            log.info("Message from " + internalId + " to " + recipient + " blocked by partitioning");
+            log.info("Message from " + getEffectiveAddress(sender) + " to " + recipient + " blocked by partitioning");
         }
     }
 
     @Override
     public synchronized void multicast(Node sender, SortedSet<String> recipients, MessagePayload payload) {
-        // Sanity check
-        if (!(sender instanceof Replica replicaSender)) {
-            throw new IllegalArgumentException("Sender must be a Replica");
+        SortedSet<String> allowed = new TreeSet<>();
+        SortedSet<String> dropped = new TreeSet<>();
+        for (String recipient : recipients) {
+            if (canSendMessage(sender, recipient, payload)) {
+                allowed.add(recipient);
+            } else {
+                dropped.add(recipient);
+            }
         }
 
-        String internalId = this.twinsReplica.getInternalId(replicaSender);
-
-        // Send the message to the available recipients, if any
-        List<String> availableRecipients = recipients.stream()
-                .filter(recipient -> canSendMessage(internalId, recipient, payload))
-                .toList();
-        if (!availableRecipients.isEmpty()) {
-            this.getScenario().getTransport().multicast(sender, new TreeSet<>(availableRecipients), payload);
+        if (!allowed.isEmpty()) {
+            this.getScenario().getTransport().multicast(sender, allowed, payload);
         }
-
-        // Log the dropped recipients, if any
-        List<String> droppedRecipients = recipients.stream()
-                .filter(recipient -> !canSendMessage(internalId, recipient, payload))
-                .toList();
-        if (!droppedRecipients.isEmpty()) {
-            log.info("Message from " + internalId + " to " + droppedRecipients + " blocked by partitioning");
+        if (!dropped.isEmpty()) {
+            log.info("Message from " + getEffectiveAddress(sender) + " to " + dropped + " blocked by partitioning");
         }
     }
 
     @Override
     public synchronized void sendClientResponse(Node sender, MessagePayload response, String recipient) {
-        // Sanity check
-        if (!(sender instanceof Replica replicaSender)) {
-            throw new IllegalArgumentException("Sender must be a Replica");
-        }
-
-        String internalId = this.twinsReplica.getInternalId(replicaSender);
-
-        if (canSendMessage(internalId, recipient, response)) {
-            this.getScenario().getTransport().sendMessage(sender, response, recipient);
-        } else {
-            log.info("Message from " + internalId + " to " + recipient + " blocked by partitioning");
-        }
+        // Client responses are not subject to inter-replica partitioning.
+        this.getScenario().getTransport().sendMessage(sender, response, recipient);
     }
 
     @Override
     public synchronized long setTimeout(Node node, Runnable runnable, Duration timeout, String description) {
         long eventId = this.getScenario().getTransport().setTimeout(node, runnable, timeout, description);
-
         this.queuedTimeouts
-                .computeIfAbsent(node.getId(), k -> new ArrayList<>())
+                .computeIfAbsent(getEffectiveAddress(node), k -> new ArrayList<>())
                 .add(eventId);
-
         return eventId;
     }
 
     @Override
     public synchronized void clearTimeout(Node node, long eventId) {
         this.getScenario().getTransport().clearTimeout(node, eventId);
-
         this.queuedTimeouts
-                .computeIfAbsent(node.getId(), k -> new ArrayList<>())
-                .remove(eventId);
+                .getOrDefault(getEffectiveAddress(node), Collections.emptyList())
+                .remove(Long.valueOf(eventId));
     }
 
     @Override
     public synchronized void clearNodeTimeouts(Node node) {
-        if (!(node instanceof Replica replica)) {
-            throw new IllegalArgumentException("Node must be a Replica");
+        String address = getEffectiveAddress(node);
+        List<Long> timeouts = this.queuedTimeouts.getOrDefault(address, Collections.emptyList());
+
+        for (Long eventId : new ArrayList<>(timeouts)) {
+            try {
+                this.getScenario().getTransport().clearTimeout(node, eventId);
+            } catch (IllegalArgumentException e) {
+                // Timeout already fired or cleared; nothing to do.
+            }
         }
-
-        String internalId = this.twinsReplica.getInternalId(replica);
-
-        List<Long> replicaTimeouts = this.queuedTimeouts.getOrDefault(internalId, Collections.emptyList());
-
-        replicaTimeouts.forEach(eventId -> this.getScenario().getTransport().clearTimeout(node, eventId));
-        replicaTimeouts.clear();
+        timeouts.clear();
     }
 }

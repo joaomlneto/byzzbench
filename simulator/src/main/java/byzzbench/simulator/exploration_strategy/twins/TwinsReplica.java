@@ -4,17 +4,24 @@ import byzzbench.simulator.exploration_strategy.byzzfuzz.MessageWithByzzFuzzRoun
 import byzzbench.simulator.nodes.Replica;
 import byzzbench.simulator.state.TotalOrderCommitLog;
 import byzzbench.simulator.transport.MessagePayload;
-import byzzbench.simulator.utils.StirlingNumberSecondKind;
 import lombok.Getter;
+import lombok.Setter;
 import lombok.extern.java.Log;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
-import java.util.Random;
+import java.util.Set;
 
 /**
  * A Twins {@link Replica} that emulates byzantine behavior
  * by switching between different replica instances behind the scenes.
+ * <p>
+ * Every instance shares the same external identity ({@link #getId()}); to the
+ * rest of the system the twins are indistinguishable from a single node. The
+ * per-round network partition that decides which instance(s) see a given message
+ * is a <b>global</b> schedule shared by all nodes, held by the
+ * {@link TwinsTransport} injected via {@link #setTwinsTransport(TwinsTransport)}.
  * <p>
  * See "Twins: BFT Systems Made Robust" by Shehar Bano, Alberto Sonnino,
  * Andrey Chursin, Dmitri Perelman, Zekun Li, Avery Ching and Dahlia Malkhi.
@@ -23,23 +30,26 @@ import java.util.Random;
 @Getter
 @Log
 public class TwinsReplica extends Replica {
-    private final TwinsTransport twinsTransport;
     /**
-     * The list of replicas that are part of this Twins replica.
+     * The shared, global Twins transport holding the per-round partitions.
+     * Injected by the {@link TwinsExplorationStrategy} once all twins exist.
+     */
+    @Setter
+    private TwinsTransport twinsTransport;
+
+    /**
+     * The list of replica instances that are part of this Twins replica.
      */
     private final ArrayList<Replica> replicas = new ArrayList<>();
-    Random rand;
 
     /**
      * Create a new Twins replica.
      *
-     * @param replica   the replica to clone
-     * @param numTwins  the number of twins to create
-     * @param numRounds the number of rounds to generate partitions for
+     * @param replica  the replica to clone
+     * @param numTwins the number of twin instances to create (>= 2)
      */
-    public TwinsReplica(Replica replica, int numTwins, int numRounds) {
+    public TwinsReplica(Replica replica, int numTwins) {
         super(replica.getId(), replica.getScenario(), new TotalOrderCommitLog());
-        this.rand = new Random(replica.getScenario().getRandom().nextLong());
 
         // Sanity check: must have at least 2 twins
         if (numTwins < 2) {
@@ -51,31 +61,13 @@ public class TwinsReplica extends Replica {
             throw new IllegalArgumentException("Cannot create Twins replica from another Twins replica");
         }
 
-        // create the twin copies
+        // create the twin copies (all sharing the same external identity)
         replicas.add(replica);
         for (int i = 1; i < numTwins; i++) {
             Replica twin = replica.getScenario().cloneReplica(replica);
             replicas.add(twin);
             twin.initialize();
         }
-
-        // Update the replicas to use a Twins transport
-        // Note: this must be done after the replicas are created and added to the list!
-        this.twinsTransport = new TwinsTransport(this);
-        this.replicas.forEach(r -> r.setTransport(this.twinsTransport));
-
-        // Create some round partitions.
-        List<String> nodeIds = new ArrayList<>(replica.getNodeIds().stream().filter(id -> !id.equals(this.getId())).toList());
-        nodeIds.addAll(getInternalIds());
-        List<List<List<String>>> options = StirlingNumberSecondKind.getPartitions(nodeIds, 1);
-        options.addAll(StirlingNumberSecondKind.getPartitions(nodeIds, 2));
-        options.addAll(StirlingNumberSecondKind.getPartitions(nodeIds, 3));
-        for (long i = 0; i < numRounds; i++) {
-            this.twinsTransport.getRoundPartitions().put(i, options.get(rand.nextInt(options.size())));
-        }
-
-        // print getRoundPartitions, one per line
-        this.twinsTransport.getRoundPartitions().forEach((k, v) -> log.info("Round " + k + ": " + v));
 
         // Mark ourselves as faulty
         this.markFaulty();
@@ -129,33 +121,43 @@ public class TwinsReplica extends Replica {
     }
 
     /**
-     * Get the internal replicas that should handle the given message.
+     * Get the internal replicas that should handle the given message, according
+     * to the global per-round partition: an instance handles the message only if
+     * it shares the sender's partition for that round.
      *
-     * @param sender  the sender of the message
+     * @param sender  the (external) id of the sender of the message
      * @param message the message to deliver
      * @return the list of internal replicas that should handle the message
      */
     public List<Replica> getInternalReplicasHandlingMessage(String sender, MessagePayload message) {
-        List<String> partition;
-        if (message instanceof MessageWithByzzFuzzRoundInfo messageWithByzzFuzzRoundInfo) {
-            // If the message has a round number, use the partition for that round
-            partition = this.twinsTransport.getReplicaRoundPartition(sender, messageWithByzzFuzzRoundInfo.getRound());
-        } else {
-            // Default to the default partition
-            // If the sender is not in *any* partition, default to delivering to all internal replicas
-            partition = this.twinsTransport.getDefaultPartitions()
-                    .stream()
-                    .filter(p -> p.contains(sender))
-                    .findFirst()
-                    .orElse(this.getInternalIds()); // default to all internal replicas handling the message
+        // Messages without round info (e.g. client requests) are not partitioned:
+        // deliver to all twin instances.
+        if (!(message instanceof MessageWithByzzFuzzRoundInfo roundInfo)) {
+            return new ArrayList<>(replicas);
         }
 
-        if (partition == null) {
-            throw new IllegalArgumentException("Sender not found in any partition: " + sender);
+        long round = roundInfo.getRound();
+        List<String> senderAddresses = this.twinsTransport.getEffectiveAddresses(sender);
+
+        // Collect the addresses reachable from the sender in this round's partition.
+        Set<String> reachable = new HashSet<>();
+        boolean senderPartitioned = false;
+        for (String senderAddress : senderAddresses) {
+            List<String> partition = this.twinsTransport.getPartitionContaining(senderAddress, round);
+            if (partition != null) {
+                senderPartitioned = true;
+                reachable.addAll(partition);
+            }
         }
 
-        return partition.stream()
-                .filter(this::isInternalId)
+        // Sender outside the partition universe (e.g. a client): deliver to all.
+        if (!senderPartitioned) {
+            return new ArrayList<>(replicas);
+        }
+
+        // Deliver only to this twin's instances that share a partition with the sender.
+        return getInternalIds().stream()
+                .filter(reachable::contains)
                 .map(this::getInternalReplicaFromId)
                 .toList();
     }
@@ -164,7 +166,7 @@ public class TwinsReplica extends Replica {
     public void handleMessage(String sender, MessagePayload message) {
         List<Replica> internalReplicas = this.getInternalReplicasHandlingMessage(sender, message);
 
-        // deliver to all sub-replicas
+        // deliver to all sub-replicas in the sender's partition
         for (Replica internalReplica : internalReplicas) {
             internalReplica.handleMessage(sender, message);
         }
